@@ -1,0 +1,17 @@
+{
+  "gradeX": [
+    { "name": "Student A", "marks": "495/500", "imageUrl": null },
+    { "name": "Student B", "marks": "489/500", "imageUrl": null },
+    { "name": "Student C", "marks": "487/500", "imageUrl": null }
+  ],
+  "gradeXII": [
+    { "name": "Student D", "marks": "1180/1200", "imageUrl": null },
+    { "name": "Student E", "marks": "1165/1200", "imageUrl": null },
+    { "name": "Student F", "marks": "1158/1200", "imageUrl": null }
+  ],
+  "sports": {
+    "imageUrl": null,
+    "description": "Our students won district-level championships in athletics and team sports."
+  }
+}
+

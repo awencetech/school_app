@@ -1,0 +1,44 @@
+{
+  "leadership": [
+    {
+      "name": "K.SARAVANAN",
+      "designation": "(Chairman)",
+      "heading": "Vision And Mission of our Founder",
+      "description": "School App is designed to provide effective communication and information to parents and students. Our vision is to create an environment that motivates every learner to achieve excellence with discipline and values.\n\nWe believe in holistic education that balances academics, sports, arts, and life skills. The school focuses on character building, leadership, and responsibility through continuous guidance and supportive mentorship.\n\nOur mission is to ensure every child receives quality education with individual attention, modern teaching practices, and a safe campus that nurtures confidence and curiosity.",
+      "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=realistic%20passport%20photo%20of%20an%20Indian%20school%20founder%20male%2C%20formal%20suit%2C%20neutral%20background%2C%20sharp%20focus%2C%20soft%20studio%20lighting%2C%20high%20detail&image_size=square",
+      "imageOnLeft": true
+    },
+    {
+      "name": "R.KANNAN",
+      "designation": "(Secretary)",
+      "heading": "Dear Prospective Parents,",
+      "description": "We are delighted that you are considering our school for your child’s future. We encourage a learning culture that is caring, structured, and academically strong.\n\nOur school provides a disciplined environment where students are trained to respect values, participate actively, and grow with confidence. Parents are requested to check the dashboard frequently for updates and important notices.\n\nWe look forward to partnering with you to support your child in achieving both academic excellence and personal growth.",
+      "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=realistic%20passport%20photo%20of%20an%20Indian%20school%20secretary%20male%2C%20formal%20shirt%2C%20smiling%2C%20neutral%20background%2C%20studio%20lighting%2C%20high%20detail&image_size=square",
+      "imageOnLeft": true
+    },
+    {
+      "name": "P.ANANDHEEN",
+      "designation": "(Headmaster)",
+      "heading": "Message From the Headmaster",
+      "description": "Our school aims to build strong fundamentals through structured teaching methods and regular assessment. We encourage students to ask questions, think critically, and develop problem-solving skills.\n\nWe believe education is not only about marks but also about character. Through co-curricular activities, clubs, and leadership opportunities, students develop communication skills and teamwork.\n\nTogether with parents and teachers, we ensure every student receives guidance, encouragement, and the confidence to face the future.",
+      "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=realistic%20passport%20photo%20of%20an%20Indian%20headmaster%20male%2C%20formal%20attire%2C%20neutral%20background%2C%20soft%20studio%20lighting%2C%20high%20detail&image_size=square",
+      "imageOnLeft": false
+    },
+    {
+      "name": "S.MOHAMMED",
+      "designation": "(Correspondent)",
+      "heading": "Commitment to Excellence",
+      "description": "We are committed to delivering quality education supported by modern infrastructure and dedicated staff. Our focus is to provide opportunities that help students discover their strengths.\n\nThe school maintains a safe, inclusive campus with clear rules and supportive discipline. Parents are requested to ensure students follow school policies and avoid bringing mobile phones to school.\n\nWe continuously improve our processes through feedback, innovation, and the shared goal of shaping responsible citizens.",
+      "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=realistic%20passport%20photo%20of%20an%20Indian%20school%20correspondent%20male%2C%20formal%20shirt%2C%20neutral%20background%2C%20studio%20lighting%2C%20high%20detail&image_size=square",
+      "imageOnLeft": true
+    },
+    {
+      "name": "V.SELVAKUMAR",
+      "designation": "(Principal)",
+      "heading": "Principal’s Note",
+      "description": "Our goal is to provide a balanced learning experience that develops knowledge, discipline, creativity, and empathy. We encourage students to participate in sports, arts, and community activities.\n\nTeachers are trained to use effective classroom strategies so every learner can progress at their own pace. Communication with parents is strengthened through timely updates and circulars.\n\nWe welcome you to our school family and look forward to a productive and successful academic journey together.",
+      "image": "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=realistic%20passport%20photo%20of%20an%20Indian%20school%20principal%20male%2C%20formal%20suit%2C%20neutral%20background%2C%20soft%20studio%20lighting%2C%20high%20detail&image_size=square",
+      "imageOnLeft": false
+    }
+  ]
+}

@@ -24,7 +24,7 @@ class RoleDashboard extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color(0xFF333856),
         centerTitle: true,
         title: Text(
           title,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/student_achievement.dart';
-import '../../services/dummy_data_service.dart';
+import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/cards/student_achievement_card.dart';
@@ -28,94 +28,115 @@ class AchievementsScreen extends StatelessWidget {
 class _AchievementsBody extends StatelessWidget {
   const _AchievementsBody();
 
+  BoxFit _boxFitForString(String imageFit) {
+    switch (imageFit) {
+      case 'contain':
+        return BoxFit.contain;
+      case 'fill':
+        return BoxFit.fill;
+      case 'cover':
+      default:
+        return BoxFit.cover;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final config = context.watch<SchoolConfigService>();
+    final gradeXStudents = config.gradeXTopper;
+    final gradeXIIStudents = config.gradeXIITopper;
+    final sports = config.sportsAchievements;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 16),
-        FutureBuilder<List<StudentAchievement>>(
-          future: DummyDataService.getGradeX(),
-          initialData: DummyDataService.fallbackGradeX,
-          builder: (context, snapshot) {
-            final students = snapshot.data ?? DummyDataService.fallbackGradeX;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Text(
-                    'Grade X',
-                    style: AppTextStyles.sectionTitle.copyWith(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Text(
+                'Grade X',
+                style: AppTextStyles.sectionTitle.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 16),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.68,
-                  ),
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    final student = students[index];
-                    return StudentAchievementCard(
-                      image: student.imageUrl ?? '',
-                      studentName: student.name,
-                      marks: student.marks,
-                    );
-                  },
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (gradeXStudents.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text('No Grade X toppers added yet.'),
                 ),
-              ],
-            );
-          },
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.68,
+                ),
+                itemCount: gradeXStudents.length,
+                itemBuilder: (context, index) {
+                  final student = gradeXStudents[index];
+                  return StudentAchievementCard(
+                    image: student.photoBase64,
+                    studentName: student.studentName,
+                    marks: student.marks,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
+          ],
         ),
         const SizedBox(height: 20),
-        FutureBuilder<List<StudentAchievement>>(
-          future: DummyDataService.getGradeXII(),
-          initialData: DummyDataService.fallbackGradeXII,
-          builder: (context, snapshot) {
-            final students = snapshot.data ?? DummyDataService.fallbackGradeXII;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Text(
-                    'Grade XII',
-                    style: AppTextStyles.sectionTitle.copyWith(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Text(
+                'Grade XII',
+                style: AppTextStyles.sectionTitle.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 16),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.68,
-                  ),
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    final student = students[index];
-                    return StudentAchievementCard(
-                      image: student.imageUrl ?? '',
-                      studentName: student.name,
-                      marks: student.marks,
-                    );
-                  },
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (gradeXIIStudents.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text('No Grade XII toppers added yet.'),
                 ),
-              ],
-            );
-          },
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.68,
+                ),
+                itemCount: gradeXIIStudents.length,
+                itemBuilder: (context, index) {
+                  final student = gradeXIIStudents[index];
+                  return StudentAchievementCard(
+                    image: student.photoBase64,
+                    studentName: student.studentName,
+                    marks: student.marks,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
+          ],
         ),
         const SizedBox(height: 20),
         Center(
@@ -128,11 +149,22 @@ class _AchievementsBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const SportsAchievementCard(
-          image: '',
-          title: 'Student Name',
-          description: 'Achievements Description',
-        ),
+        if (sports.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text('No sports achievements added yet.'),
+          )
+        else
+          ...sports.map(
+            (achievement) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SportsAchievementCard(
+                image: achievement.imageBase64,
+                title: achievement.studentName,
+                description: achievement.description,
+              ),
+            ),
+          ),
         const SizedBox(height: 24),
       ],
     );

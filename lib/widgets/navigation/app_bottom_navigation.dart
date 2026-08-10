@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../theme/app_colors.dart';
 
 /// Bottom navigation used on the main area screens.
 class AppBottomNavigation extends StatelessWidget {
@@ -10,33 +11,59 @@ class AppBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(
-      builder: (context, state, child) {
-        return BottomNavigationBar(
-          currentIndex: state.bottomNavIndex,
-          onTap: (index) {
-            state.setBottomNavIndex(index);
+    AppState? state;
+    try {
+      state = context.watch<AppState>();
+    } catch (_) {
+      state = null;
+    }
 
-            final currentRoute = ModalRoute.of(context)?.settings.name;
-            if (currentRoute == AppRoutes.createAccount ||
-                currentRoute == AppRoutes.forgotPassword) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.main,
-                (route) => false,
-              );
-            }
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.school), label: 'School'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.emoji_events), label: 'Exploit'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.support_agent), label: 'Support'),
-            BottomNavigationBarItem(icon: Icon(Icons.login), label: 'Login'),
-          ],
-        );
+    final isLoggedIn = state?.isLoggedIn ?? false;
+    final navItems = <BottomNavigationBarItem>[
+      const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      const BottomNavigationBarItem(icon: Icon(Icons.school), label: 'School'),
+      const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.support_agent),
+        label: 'Support',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(isLoggedIn ? Icons.logout : Icons.login),
+        label: isLoggedIn ? 'Logout' : 'Login',
+      ),
+    ];
+
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color(0xFF333856),
+      selectedItemColor: AppColors.white,
+      unselectedItemColor: AppColors.white.withValues(alpha: 0.82),
+      selectedFontSize: 10,
+      unselectedFontSize: 10,
+      currentIndex: state?.bottomNavIndex ?? 0,
+      onTap: (index) {
+        if (index == 4 && isLoggedIn) {
+          state?.setLoggedIn(false);
+          state?.setBottomNavIndex(0);
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.main,
+            (route) => false,
+          );
+          return;
+        }
+
+        state?.setBottomNavIndex(index);
+
+        final currentRoute = ModalRoute.of(context)?.settings.name;
+        if (currentRoute == AppRoutes.createAccount ||
+            currentRoute == AppRoutes.forgotPassword) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.main,
+            (route) => false,
+          );
+        }
       },
+      items: navItems,
     );
   }
 }

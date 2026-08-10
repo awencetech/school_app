@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import 'package:school_app/app.dart';
 import 'package:school_app/screens/achievements/achievements_screen.dart';
@@ -14,9 +15,20 @@ import 'package:school_app/screens/login/create_account_screen.dart';
 import 'package:school_app/screens/login/forgot_password_screen.dart';
 import 'package:school_app/screens/login/login_screen.dart';
 import 'package:school_app/screens/school/school_screen.dart';
+import 'package:school_app/screens/student/student_info_screen.dart';
+import 'package:school_app/services/app_state.dart';
+import 'package:school_app/services/school_config_service.dart';
 import 'package:school_app/widgets/cards/staff_profile_card.dart';
 import 'package:school_app/widgets/cards/student_achievement_card.dart';
 import 'package:school_app/widgets/important_news_ticker.dart';
+import 'package:school_app/widgets/navigation/app_bottom_navigation.dart';
+
+Widget _withSchoolConfig(Widget child) {
+  return ChangeNotifierProvider(
+    create: (_) => SchoolConfigService(),
+    child: MaterialApp(home: child),
+  );
+}
 
 void main() {
   testWidgets('SchoolApp builds', (WidgetTester tester) async {
@@ -33,7 +45,7 @@ void main() {
   });
 
   testWidgets('LoginScreen matches the reference sign-in layout', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+    await tester.pumpWidget(_withSchoolConfig(const LoginScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('School name'), findsOneWidget);
@@ -71,10 +83,49 @@ void main() {
   });
 
   testWidgets('SchoolScreen renders a staff profile list without blanking', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: SchoolScreen()));
+    await tester.pumpWidget(_withSchoolConfig(const SchoolScreen()));
     await tester.pumpAndSettle();
 
     expect(find.byType(StaffProfileCard), findsWidgets);
+  });
+
+  testWidgets('AppBottomNavigation switches to Logout when the user is logged in', (WidgetTester tester) async {
+    final appState = AppState();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AppState>.value(
+        value: appState,
+        child: const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: AppBottomNavigation(),
+            body: SizedBox(),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Login'), findsOneWidget);
+
+    await appState.setLoggedIn(true);
+    await tester.pump();
+
+    expect(find.text('Logout'), findsOneWidget);
+  });
+
+  testWidgets('StudentInfoScreen matches the reference student information layout', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: StudentInfoScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Student Info'), findsOneWidget);
+    expect(find.text('Student name'), findsOneWidget);
+    expect(find.text('Student ID'), findsOneWidget);
+    expect(find.text('Mail ID :'), findsOneWidget);
+    expect(find.text('Mobile No :'), findsOneWidget);
+    expect(find.text('Special Needs :'), findsOneWidget);
+    expect(find.text('Address'), findsOneWidget);
+    expect(find.text('Groups and Classes of Student name'), findsOneWidget);
+    expect(find.text('Your Location'), findsOneWidget);
+    expect(find.text('Parent Details'), findsOneWidget);
   });
 
   testWidgets('ImportantNewsTicker does not overflow', (WidgetTester tester) async {

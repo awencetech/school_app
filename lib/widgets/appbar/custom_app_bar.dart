@@ -20,7 +20,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.topBar,
       leading: showBack
           ? IconButton(
               onPressed: () => Navigator.of(context).maybePop(),

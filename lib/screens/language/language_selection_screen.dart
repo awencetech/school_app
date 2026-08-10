@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/language_option.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/appbar/custom_app_bar.dart';
@@ -14,10 +17,52 @@ import '../../widgets/cards/language_card.dart';
 class LanguageSelectionScreen extends StatelessWidget {
   const LanguageSelectionScreen({super.key});
 
+  Widget _languagePosterPlaceholder(BuildContext context) {
+    return Container(
+      color: AppColors.divider,
+      child: Center(
+        child: Text(
+          'School Poster',
+          style: AppTextStyles.subtitle.copyWith(color: AppColors.hintText),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPoster(BuildContext context, String? posterSource) {
+    if (posterSource != null && posterSource.isNotEmpty) {
+      final uri = Uri.tryParse(posterSource);
+      if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+        return Image.network(
+          posterSource,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('School poster loading error: $error');
+            debugPrint('Poster URL: $posterSource');
+            return _languagePosterPlaceholder(context);
+          },
+        );
+      }
+
+      return Image.memory(
+        base64Decode(posterSource),
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => _languagePosterPlaceholder(context),
+      );
+    }
+
+    return Image.asset(
+      'assets/images/school_poster.png',
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => _languagePosterPlaceholder(context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final config = context.watch<SchoolConfigService>();
     return Scaffold(
-      appBar: const CustomAppBar(title: 'SCHOOL NAME'),
+      appBar: CustomAppBar(title: config.schoolName),
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
@@ -42,28 +87,10 @@ class LanguageSelectionScreen extends StatelessWidget {
                           final bannerWidth = constraints.maxWidth * 0.9;
 
                           return Center(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: SizedBox(
-                                width: bannerWidth,
-                                height: 180,
-                                child: Image.asset(
-                                  'assets/images/school_poster.png',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: AppColors.divider,
-                                      child: Center(
-                                        child: Text(
-                                          'School Banner',
-                                          style: AppTextStyles.subtitle
-                                              .copyWith(color: AppColors.hintText),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
+                            child: SizedBox(
+                              width: bannerWidth,
+                              height: 180,
+                              child: _buildPoster(context, config.posterDisplaySource),
                             ),
                           );
                         },

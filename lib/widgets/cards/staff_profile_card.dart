@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -31,12 +33,12 @@ class StaffProfileCard extends StatelessWidget {
         .toList(growable: false);
 
     final imageWidget = Container(
-      width: 90,
-      height: 90,
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border.all(color: const Color(0xFFBDBDBD), width: 1),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.zero,
       ),
       child: Row(
         children: [
@@ -47,10 +49,7 @@ class StaffProfileCard extends StatelessWidget {
           ),
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(2),
-                bottomRight: Radius.circular(2),
-              ),
+              borderRadius: BorderRadius.zero,
               child: image.isEmpty
                   ? Image.asset(
                       'assets/images/founder.png',
@@ -59,28 +58,49 @@ class StaffProfileCard extends StatelessWidget {
                         return Container(color: AppColors.divider);
                       },
                     )
-                  : Image.network(
-                      image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(
-                          'assets/images/founder.png',
+                  : Builder(builder: (context) {
+                      try {
+                        final decoded = base64Decode(image);
+                        return Image.memory(
+                          decoded,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Container(color: AppColors.divider);
+                            return Image.asset(
+                              'assets/images/founder.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(color: AppColors.divider);
+                              },
+                            );
                           },
                         );
-                      },
-                    ),
+                      } catch (_) {
+                        return Image.network(
+                          image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/founder.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(color: AppColors.divider);
+                              },
+                            );
+                          },
+                        );
+                      }
+                    }),
             ),
           ),
         ],
       ),
     );
 
+    final firstParagraph = paragraphs.isNotEmpty ? paragraphs.first : '';
+    final remainingParagraphs = paragraphs.length > 1 ? paragraphs.sublist(1) : <String>[];
+
     final content = Expanded(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
@@ -115,10 +135,10 @@ class StaffProfileCard extends StatelessWidget {
               color: const Color(0xFF000000),
             ),
           ),
-          const SizedBox(height: 6),
-          for (var i = 0; i < paragraphs.length; i++) ...[
+          if (firstParagraph.isNotEmpty) ...[
+            const SizedBox(height: 6),
             Text(
-              paragraphs[i],
+              firstParagraph,
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 height: 1.25,
@@ -127,26 +147,48 @@ class StaffProfileCard extends StatelessWidget {
               ),
               textAlign: TextAlign.left,
             ),
-            if (i != paragraphs.length - 1) const SizedBox(height: 6),
           ],
         ],
       ),
     );
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final memberCard = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (imageOnLeft) ...[
-          imageWidget,
-          const SizedBox(width: 12),
-        ],
-        content,
-        if (!imageOnLeft) ...[
-          const SizedBox(width: 12),
-          imageWidget,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageOnLeft) ...[
+              imageWidget,
+              const SizedBox(width: 12),
+            ],
+            content,
+            if (!imageOnLeft) ...[
+              const SizedBox(width: 12),
+              imageWidget,
+            ],
+          ],
+        ),
+        if (remainingParagraphs.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          for (var i = 0; i < remainingParagraphs.length; i++) ...[
+            Text(
+              remainingParagraphs[i],
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                height: 1.25,
+                letterSpacing: 0,
+                color: const Color(0xFF333333),
+              ),
+              textAlign: TextAlign.left,
+            ),
+            if (i != remainingParagraphs.length - 1) const SizedBox(height: 6),
+          ],
         ],
       ],
     );
+
+    return memberCard;
   }
 }
 

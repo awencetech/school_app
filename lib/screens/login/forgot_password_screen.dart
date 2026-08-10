@@ -14,7 +14,7 @@ class ForgotPasswordScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.topBar,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
@@ -56,19 +56,10 @@ class ForgotPasswordScreen extends StatelessWidget {
                   GestureDetector(
                     onTap: () => Navigator.of(context)
                         .pushNamed(AppRoutes.createAccount),
-                    child: RichText(
-                      text: TextSpan(
-                        style: AppTextStyles.body,
-                        children: const [
-                          TextSpan(text: 'Don\'t have an account? '),
-                          TextSpan(
-                            text: 'Register',
-                            style: TextStyle(
-                              color: AppColors.blueButton,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                    child: Text(
+                      'Don\'t have an account? Register',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.primaryText,
                       ),
                     ),
                   ),

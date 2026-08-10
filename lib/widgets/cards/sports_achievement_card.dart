@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -16,37 +18,96 @@ class SportsAchievementCard extends StatelessWidget {
   final String title;
   final String description;
 
+  Widget _buildImage(String image) {
+    final trimmed = image.trim();
+    if (trimmed.isEmpty) {
+      return const Center(
+        child: Icon(
+          Icons.image_outlined,
+          color: AppColors.hintText,
+        ),
+      );
+    }
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      return Image.network(
+        trimmed,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(
+              Icons.image_outlined,
+              color: AppColors.hintText,
+            ),
+          );
+        },
+      );
+    }
+
+    UriData? uriData;
+    try {
+      uriData = UriData.parse(trimmed);
+    } catch (_) {
+      uriData = null;
+    }
+    if (uriData != null && uriData.contentAsBytes().isNotEmpty) {
+      return Image.memory(
+        uriData.contentAsBytes(),
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+
+    final normalized = trimmed.toLowerCase().startsWith('data:')
+        ? trimmed.substring(trimmed.indexOf(',') + 1).replaceAll(RegExp(r'\s+'), '')
+        : trimmed.replaceAll(RegExp(r'\s+'), '');
+
+    try {
+      final bytes = base64Decode(normalized);
+      return Image.memory(
+        bytes,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } catch (_) {
+      return const Center(
+        child: Icon(
+          Icons.image_outlined,
+          color: AppColors.hintText,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
+        SizedBox(
           width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border.all(color: const Color(0xFFBDBDBD), width: 1),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                color: AppColors.white,
+                child: image.isEmpty
+                    ? const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          color: AppColors.hintText,
+                        ),
+                      )
+                    : _buildImage(image),
+              ),
+            ),
           ),
-          child: image.isEmpty
-              ? const Center(
-                  child: Icon(
-                    Icons.image_outlined,
-                    color: AppColors.hintText,
-                  ),
-                )
-              : Image.network(
-                  image,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Icon(
-                        Icons.image_outlined,
-                        color: AppColors.hintText,
-                      ),
-                    );
-                  },
-                ),
         ),
         const SizedBox(width: 12),
         Expanded(

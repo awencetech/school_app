@@ -5,6 +5,7 @@ class AppColors {
   AppColors._();
 
   static const primary = Color(0xFF333856);
+  static const topBar = Color(0xFF363B60);
   static const primaryDark = Color(0xFF2C314D);
   static const background = Color(0xFFF4F5F8);
   static const white = Color(0xFFFFFFFF);

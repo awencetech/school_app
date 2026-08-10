@@ -30,7 +30,8 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       textTheme: baseTextTheme,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.topBar,
+        surfaceTintColor: AppColors.topBar,
         foregroundColor: AppColors.white,
         elevation: 2,
         centerTitle: true,

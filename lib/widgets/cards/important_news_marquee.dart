@@ -115,7 +115,6 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
           ),
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),

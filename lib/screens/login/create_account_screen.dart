@@ -14,13 +14,8 @@ class CreateAccountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
-        ),
-        title: const Text('SCHOOL NAME'),
-        titleTextStyle: AppTextStyles.appTitle,
+        backgroundColor: AppColors.topBar,
+        title: const Text('Create Account'),
       ),
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -42,26 +37,22 @@ class CreateAccountScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   const CustomTextField(
                     label: 'Username',
-                    hintText: 'Username',
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
                   const CustomTextField(
                     label: 'Email',
-                    hintText: 'Email',
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
                   const CustomTextField(
                     label: 'Password',
-                    hintText: 'Password',
                     obscureText: true,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
                   const CustomTextField(
                     label: 'Password (Again)',
-                    hintText: 'Password (Again)',
                     obscureText: true,
                     textInputAction: TextInputAction.done,
                   ),

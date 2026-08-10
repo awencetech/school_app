@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
@@ -24,7 +25,6 @@ class SupportScreen extends StatelessWidget {
         child: Align(
           alignment: Alignment.topCenter,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
@@ -42,72 +42,68 @@ class SupportScreen extends StatelessWidget {
                 style: AppTextStyles.body,
               ),
               const SizedBox(height: 4),
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 6),
-                      child: Icon(
-                        Icons.square,
-                        size: 8,
-                        color: AppColors.primaryText,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Icon(
+                      Icons.square,
+                      size: 8,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => _email(email),
+                    child: Text(
+                      email,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.blueButton,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _email(email),
-                      child: Text(
-                        email,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.blueButton,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 'For feedback, support or queries',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.body,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 'You can also contact support team at',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.body,
               ),
               const SizedBox(height: 4),
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 6),
-                      child: Icon(
-                        Icons.square,
-                        size: 8,
-                        color: AppColors.primaryText,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Icon(
+                      Icons.square,
+                      size: 8,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => _email(supportEmail),
+                    child: Text(
+                      supportEmail,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.blueButton,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _email(supportEmail),
-                      child: Text(
-                        supportEmail,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.blueButton,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Wrap(
                 alignment: WrapAlignment.center,
                 children: [
@@ -117,7 +113,9 @@ class SupportScreen extends StatelessWidget {
                     style: AppTextStyles.body,
                   ),
                   InkWell(
-                    onTap: () => _email(supportEmail),
+                    onTap: () => Navigator.of(context).pushNamed(
+                      AppRoutes.supportQuery,
+                    ),
                     child: Text(
                       'Click here to send query',
                       style: AppTextStyles.body.copyWith(

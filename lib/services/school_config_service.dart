@@ -235,77 +235,107 @@ class SchoolConfigService extends ChangeNotifier {
 
     try {
       final saved = await _repository.getMainPageInfo();
-      schoolName = saved.schoolSettings.schoolName.isNotEmpty ? saved.schoolSettings.schoolName : schoolName;
-      if (saved.schoolSettings.schoolQuote.isNotEmpty) {
-        quote = saved.schoolSettings.schoolQuote;
-      }
-      if (saved.schoolSettings.welcomeText.isNotEmpty) {
-        _welcome = saved.schoolSettings.welcomeText;
-      }
-      if (saved.schoolSettings.schoolWebsite.isNotEmpty) {
-        websiteUrl = saved.schoolSettings.schoolWebsite;
-      }
-      if (saved.schoolSettings.runningContent.isNotEmpty) {
-        runningItems = List<String>.from(saved.schoolSettings.runningContent);
-      }
-      if (saved.schoolSettings.schoolPoster.isNotEmpty) {
-        posterUrl = saved.schoolSettings.schoolPoster;
+
+      // SERVER IS AUTHORITATIVE: apply server values and persist to SharedPreferences
+      schoolName = saved.schoolSettings.schoolName ?? '';
+      await PreferencesService.setString(_nameKey, schoolName);
+
+      quote = saved.schoolSettings.schoolQuote ?? '';
+      await PreferencesService.setString(_quoteKey, quote);
+
+      _welcome = saved.schoolSettings.welcomeText ?? '';
+      await PreferencesService.setString(_welcomeKey, _welcome);
+
+      websiteUrl = saved.schoolSettings.schoolWebsite ?? '';
+      await PreferencesService.setString(_websiteKey, websiteUrl);
+
+      runningItems = (saved.schoolSettings.runningContent ?? []).map((e) => e.toString()).toList(growable: false);
+      await PreferencesService.setString(_runningItemsKey, jsonEncode(runningItems));
+
+      // Poster: accept empty string as authoritative too (clears cache)
+      final remotePoster = saved.schoolSettings.schoolPoster ?? '';
+      if (remotePoster.isNotEmpty) {
+        posterUrl = remotePoster;
         posterBase64 = null;
-        await PreferencesService.setString(_posterKey, saved.schoolSettings.schoolPoster);
-        print('Loaded school poster URL: $posterUrl');
+        await PreferencesService.setString(_posterKey, remotePoster);
       } else {
         posterUrl = null;
         posterBase64 = null;
         await PreferencesService.setString(_posterKey, '');
       }
-      if (saved.schoolContent.founder.name.isNotEmpty) founderName = saved.schoolContent.founder.name;
-      if (saved.schoolContent.secretary.name.isNotEmpty) secretaryName = saved.schoolContent.secretary.name;
-      if (saved.schoolContent.headmaster.name.isNotEmpty) headmasterName = saved.schoolContent.headmaster.name;
-      if (saved.schoolContent.members.isNotEmpty) {
-        managementMembers = saved.schoolContent.members
-            .map((member) => ManagementMember(
-                  photoBase64: member.photo,
-                  name: member.name,
-                  designation: member.designation,
-                  title: member.title,
-                  description: member.description,
-                ))
-            .toList();
-      }
-      if (saved.gradePage.grade10.students.isNotEmpty) {
-        gradeXTopper = saved.gradePage.grade10.students
-            .map((student) => TopperEntry(
-                  photoBase64: student.photo,
-                  studentName: student.studentName,
-                  marks: student.marks,
-                  imageFit: student.imageFit,
-                  cropData: student.cropData,
-                ))
-            .toList();
-      }
-      if (saved.gradePage.grade12.students.isNotEmpty) {
-        gradeXIITopper = saved.gradePage.grade12.students
-            .map((student) => TopperEntry(
-                  photoBase64: student.photo,
-                  studentName: student.studentName,
-                  marks: student.marks,
-                  imageFit: student.imageFit,
-                  cropData: student.cropData,
-                ))
-            .toList();
-      }
-      if (saved.gradePage.sportsAchievements.isNotEmpty) {
-        sportsAchievements = saved.gradePage.sportsAchievements
-            .map((achievement) => SportsAchievementEntry(
-                  imageBase64: achievement.image,
-                  studentName: achievement.studentName,
-                  achievementTitle: '',
-                  description: achievement.achievementDescription,
-                ))
-            .toList();
-      }
+
+      // Founder / Secretary / Headmaster / Management members
+      founderPhotoBase64 = saved.schoolContent.founder.photo ?? '';
+      founderName = saved.schoolContent.founder.name ?? '';
+      founderDesignation = saved.schoolContent.founder.designation ?? '';
+      founderVisionTitle = saved.schoolContent.founder.visionTitle ?? '';
+      founderVisionDescription = saved.schoolContent.founder.visionDescription ?? '';
+      await PreferencesService.setString(_founderPhotoKey, founderPhotoBase64 ?? '');
+      await PreferencesService.setString(_founderNameKey, founderName);
+      await PreferencesService.setString(_founderDesignationKey, founderDesignation);
+      await PreferencesService.setString(_founderVisionTitleKey, founderVisionTitle);
+      await PreferencesService.setString(_founderVisionDescKey, founderVisionDescription);
+
+      secretaryPhotoBase64 = saved.schoolContent.secretary.photo ?? '';
+      secretaryName = saved.schoolContent.secretary.name ?? '';
+      secretaryDesignation = saved.schoolContent.secretary.designation ?? '';
+      secretaryWelcomeTitle = saved.schoolContent.secretary.welcomeTitle ?? '';
+      secretaryWelcomeMessage = saved.schoolContent.secretary.welcomeMessage ?? '';
+      await PreferencesService.setString(_secretaryPhotoKey, secretaryPhotoBase64 ?? '');
+      await PreferencesService.setString(_secretaryNameKey, secretaryName);
+      await PreferencesService.setString(_secretaryDesignationKey, secretaryDesignation);
+      await PreferencesService.setString(_secretaryWelcomeTitleKey, secretaryWelcomeTitle);
+      await PreferencesService.setString(_secretaryWelcomeMessageKey, secretaryWelcomeMessage);
+
+      headmasterPhotoBase64 = saved.schoolContent.headmaster.photo ?? '';
+      headmasterName = saved.schoolContent.headmaster.name ?? '';
+      headmasterDesignation = saved.schoolContent.headmaster.designation ?? '';
+      headmasterMessageTitle = saved.schoolContent.headmaster.messageTitle ?? '';
+      headmasterMessage = saved.schoolContent.headmaster.message ?? '';
+      await PreferencesService.setString(_headmasterPhotoKey, headmasterPhotoBase64 ?? '');
+      await PreferencesService.setString(_headmasterNameKey, headmasterName);
+      await PreferencesService.setString(_headmasterDesignationKey, headmasterDesignation);
+      await PreferencesService.setString(_headmasterMessageTitleKey, headmasterMessageTitle);
+      await PreferencesService.setString(_headmasterMessageKey, headmasterMessage);
+
+      managementMembers = (saved.schoolContent.members ?? []).map((member) => ManagementMember(
+            photoBase64: member.photo ?? '',
+            name: member.name ?? '',
+            designation: member.designation ?? '',
+            title: member.title ?? '',
+            description: member.description ?? '',
+          )).toList();
+      await PreferencesService.setString(_managementMembersKey, jsonEncode(managementMembers.map((e) => e.toJson()).toList()));
+
+      // Grades and sports
+      gradeXTopper = (saved.gradePage.grade10.students ?? []).map((student) => TopperEntry(
+            photoBase64: student.photo ?? '',
+            studentName: student.studentName ?? '',
+            marks: student.marks ?? '',
+            imageFit: student.imageFit ?? 'cover',
+            cropData: student.cropData,
+          )).toList();
+      await PreferencesService.setString(_gradeXKey, jsonEncode(gradeXTopper.map((e) => e.toJson()).toList()));
+
+      gradeXIITopper = (saved.gradePage.grade12.students ?? []).map((student) => TopperEntry(
+            photoBase64: student.photo ?? '',
+            studentName: student.studentName ?? '',
+            marks: student.marks ?? '',
+            imageFit: student.imageFit ?? 'cover',
+            cropData: student.cropData,
+          )).toList();
+      await PreferencesService.setString(_gradeXIIKey, jsonEncode(gradeXIITopper.map((e) => e.toJson()).toList()));
+
+      sportsAchievements = (saved.gradePage.sportsAchievements ?? []).map((achievement) => SportsAchievementEntry(
+            imageBase64: achievement.image ?? '',
+            studentName: achievement.studentName ?? '',
+            achievementTitle: '',
+            description: achievement.achievementDescription ?? '',
+          )).toList();
+      await PreferencesService.setString(_sportsAchievementsKey, jsonEncode(sportsAchievements.map((e) => e.toJson()).toList()));
+
     } catch (_) {
-      // The cached values remain the safe fallback when the API is unavailable.
+      // Keep the locally cached value if the backend is temporarily unavailable.
     }
 
     notifyListeners();

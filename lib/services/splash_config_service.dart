@@ -52,14 +52,32 @@ class SplashConfigService extends ChangeNotifier {
 
     try {
       final saved = await _repository.getMainPageInfo();
-      if (saved.splashScreen.title.isNotEmpty) title = saved.splashScreen.title;
-      if (saved.splashScreen.subtitle.isNotEmpty) subtitle = saved.splashScreen.subtitle;
-      if (saved.splashScreen.sinceYear.isNotEmpty) since = saved.splashScreen.sinceYear;
-      if ((saved.splashScreen.quote ?? '').isNotEmpty) quote = (saved.splashScreen.quote ?? '');
-      if (saved.splashScreen.image.isNotEmpty) imageBase64 = saved.splashScreen.image;
+
+      // Server authoritative: overwrite local splash values and persist
+      title = saved.splashScreen.title ?? '';
+      await PreferencesService.setString(_titleKey, title);
+
+      subtitle = saved.splashScreen.subtitle ?? '';
+      await PreferencesService.setString(_subtitleKey, subtitle);
+
+      since = saved.splashScreen.sinceYear ?? '';
+      await PreferencesService.setString(_sinceKey, since);
+
+      quote = (saved.splashScreen.quote ?? '');
+      await PreferencesService.setString(_quoteKey, quote);
+
+      // image may be base64 or an HTTP/HTTPS URL - store as-is and let widgets choose how to render
+      imageBase64 = saved.splashScreen.image ?? '';
+      await PreferencesService.setString(_imageKey, imageBase64 ?? '');
+
       imageScale = saved.splashScreen.imageScale is double ? saved.splashScreen.imageScale : (double.tryParse(saved.splashScreen.imageScale?.toString() ?? '') ?? imageScale);
+      await PreferencesService.setString(_imageScaleKey, imageScale.toString());
+
       imageOffsetX = saved.splashScreen.imageOffsetX is double ? saved.splashScreen.imageOffsetX : (double.tryParse(saved.splashScreen.imageOffsetX?.toString() ?? '') ?? imageOffsetX);
+      await PreferencesService.setString(_imageOffsetXKey, imageOffsetX.toString());
+
       imageOffsetY = saved.splashScreen.imageOffsetY is double ? saved.splashScreen.imageOffsetY : (double.tryParse(saved.splashScreen.imageOffsetY?.toString() ?? '') ?? imageOffsetY);
+      await PreferencesService.setString(_imageOffsetYKey, imageOffsetY.toString());
     } catch (_) {
       // Keep the cached values if the server is temporarily unavailable.
     }

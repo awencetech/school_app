@@ -205,10 +205,15 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                       ),
                       child: _imageBase64 != null
                           ? Center(
-                              child: Image.memory(
-                                base64Decode(_imageBase64!),
-                                fit: BoxFit.contain,
-                              ),
+                              child: _imageBase64!.trim().startsWith('http')
+                                  ? Image.network(
+                                      _imageBase64!,
+                                      fit: BoxFit.contain,
+                                    )
+                                  : Image.memory(
+                                      base64Decode(_imageBase64!),
+                                      fit: BoxFit.contain,
+                                    ),
                             )
                           : const Icon(Icons.image, size: 36),
                     ),

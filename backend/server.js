@@ -3,11 +3,13 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
-const { MongoClient } = require('mongodb');
+const { Readable } = require('stream');
+const { MongoClient, ObjectId, GridFSBucket } = require('mongodb');
 
 dotenv.config({ path: path.join(__dirname, 'env.development') });
 
 const app = express();
+app.set('trust proxy', true);
 const port = Number(process.env.PORT) || 3001;
 const mongoUri = process.env.MONGODB_URI;
 const uploadDirectory = path.join(__dirname, 'uploads');
@@ -31,19 +33,13 @@ app.use((req, res, next) => {
 app.use('/uploads', express.static(uploadDirectory));
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadDirectory),
-    filename: (_req, file, cb) => {
-      const safeName = file.originalname.replace(/\s+/g, '_');
-      const uniqueName = `${Date.now()}-${safeName}`;
-      cb(null, uniqueName);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 let client;
 let mainPageInfoCollection;
+let imageBucket;
 
 async function connectMongo() {
   if (!mongoUri) {
@@ -55,9 +51,33 @@ async function connectMongo() {
     await client.connect();
     const db = client.db('mainpage');
     mainPageInfoCollection = db.collection('mainPageInfo');
+    imageBucket = new GridFSBucket(db, { bucketName: 'images' });
   }
 
   return mainPageInfoCollection;
+}
+
+function safeUploadFilename(originalName) {
+  const safeName = originalName.replace(/\s+/g, '_');
+  return `${Date.now()}-${safeName}`;
+}
+
+async function saveFileToGridFS(file) {
+  if (!imageBucket) {
+    throw new Error('GridFS bucket is not initialized');
+  }
+
+  const filename = safeUploadFilename(file.originalname);
+  const uploadStream = imageBucket.openUploadStream(filename, {
+    metadata: { contentType: file.mimetype || 'application/octet-stream' },
+  });
+
+  const readable = Readable.from(file.buffer);
+  return new Promise((resolve, reject) => {
+    readable.pipe(uploadStream)
+      .on('error', reject)
+      .on('finish', () => resolve({ id: uploadStream.id, filename }));
+  });
 }
 
 function buildDefaultDocument() {
@@ -140,17 +160,23 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.post('/api/upload/school-poster', upload.single('file'), (req, res) => {
+app.post('/api/upload/school-poster', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No poster file was uploaded.' });
   }
 
-  const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  return res.status(200).json({
-    url,
-    filename: req.file.filename,
-    originalName: req.file.originalname,
-  });
+  try {
+    const saved = await saveFileToGridFS(req.file);
+    const url = `${req.protocol}://${req.get('host')}/api/images/${saved.id}`;
+    return res.status(200).json({
+      url,
+      filename: saved.filename,
+      originalName: req.file.originalname,
+    });
+  } catch (error) {
+    console.error('POST /api/upload/school-poster failed:', error);
+    return res.status(500).json({ message: 'Unable to save the poster image.' });
+  }
 });
 
 app.get('/api/mainpage-info', async (req, res) => {
@@ -236,6 +262,88 @@ app.put('/api/mainpage-info/grades', async (req, res) => {
   } catch (error) {
     console.error('PUT /api/mainpage-info/grades failed:', error);
     return res.status(500).json({ message: 'Unable to save changes. Please try again.' });
+  }
+});
+
+app.get('/api/images/:id', async (req, res) => {
+  if (!imageBucket) {
+    return res.status(503).json({ message: 'Image storage is not initialized.' });
+  }
+
+  const idParam = req.params.id;
+
+  // Try to treat the param as an ObjectId first. If that fails, fall back to
+  // searching by filename. This makes the endpoint tolerant to both direct
+  // ObjectId URLs and older filename-based references.
+  try {
+    let downloadStream;
+    let fileFound = false;
+
+    try {
+      const fileId = new ObjectId(idParam);
+      downloadStream = imageBucket.openDownloadStream(fileId);
+    } catch (err) {
+      // Not a valid ObjectId; attempt to find by filename
+      const files = await imageBucket.find({ filename: idParam }).toArray();
+      if (!files || files.length === 0) {
+        return res.status(404).json({ message: 'Image not found.' });
+      }
+      const fileDoc = files[0];
+      const contentType = fileDoc.metadata?.contentType || fileDoc.contentType || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', fileDoc.length);
+      const streamByName = imageBucket.openDownloadStream(fileDoc._id);
+      return streamByName.pipe(res);
+    }
+
+    downloadStream.on('file', (file) => {
+      fileFound = true;
+      const contentType = file.metadata?.contentType || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', file.length);
+    });
+
+    downloadStream.on('error', (error) => {
+      console.error('GET /api/images/:id failed:', error);
+      if (error.code === 'ENOENT' || error.message?.includes('FileNotFound')) {
+        return res.status(404).json({ message: 'Image not found.' });
+      }
+      return res.status(500).json({ message: 'Unable to load the image.' });
+    });
+
+    downloadStream.on('end', () => {
+      if (!fileFound) {
+        res.status(404).json({ message: 'Image not found.' });
+      }
+    });
+
+    return downloadStream.pipe(res);
+  } catch (e) {
+    console.error('GET /api/images/:id unexpected error:', e);
+    return res.status(500).json({ message: 'Unable to load the image.' });
+  }
+});
+
+app.get('/uploads/:filename', async (req, res) => {
+  if (!imageBucket) {
+    return res.status(503).json({ message: 'Image storage is not initialized.' });
+  }
+
+  try {
+    const files = await imageBucket.find({ filename: req.params.filename }).toArray();
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: 'Image not found.' });
+    }
+
+    const fileDoc = files[0];
+    const downloadStream = imageBucket.openDownloadStream(fileDoc._id);
+    const contentType = fileDoc.metadata?.contentType || fileDoc.contentType || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', fileDoc.length);
+    downloadStream.pipe(res);
+  } catch (error) {
+    console.error('GET /uploads/:filename fallback failed:', error);
+    return res.status(500).json({ message: 'Unable to load the image.' });
   }
 });
 

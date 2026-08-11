@@ -1,0 +1,235 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../theme/app_colors.dart';
+import '../../widgets/navigation/app_bottom_navigation.dart';
+
+/// Student menu screen matching the provided reference flow.
+class StudentMenuScreen extends StatelessWidget {
+  const StudentMenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
+        ),
+        title: Text(
+          'SCHOOL NAME',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.white,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Student Menu',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFE5E7EB),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Student Name',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Student ID :',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Admission No :',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Grade :',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Year :',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Status : Active',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF222222),
+                ),
+              ),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 0.95,
+                ),
+                itemCount: 10,
+                itemBuilder: (context, index) {
+                  const items = [
+                    _StudentMenuTile(
+                      icon: Icons.info,
+                      label: 'Student Info',
+                      color: Color(0xFF26C6DA),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.calendar_today,
+                      label: 'Attendance\nApply Leave',
+                      color: Color(0xFFF57C00),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.bar_chart,
+                      label: 'Exam Score',
+                      color: Color(0xFF2E7D32),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.menu_book,
+                      label: 'Student Diary',
+                      color: Color(0xFF26C6DA),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.emoji_events,
+                      label: 'Achievements\nAwards',
+                      color: Color(0xFF8E24AA),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.payments,
+                      label: 'Fee Information',
+                      color: Color(0xFFB0C400),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.checkroom,
+                      label: 'Size & Uniform\nOrdering',
+                      color: Color(0xFF2196F3),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.medical_services,
+                      label: 'Medical',
+                      color: Color(0xFF90A4AE),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.folder,
+                      label: 'Student Resources',
+                      color: Color(0xFFD84315),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.assignment_turned_in,
+                      label: 'PTM Status',
+                      color: Color(0xFF0D47A1),
+                    ),
+                  ];
+                  return items[index];
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: const AppBottomNavigation(),
+    );
+  }
+}
+
+class _StudentMenuTile extends StatelessWidget {
+  const _StudentMenuTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Icon(
+            icon,
+            size: 13,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF222222),
+          ),
+        ),
+      ],
+    );
+  }
+}

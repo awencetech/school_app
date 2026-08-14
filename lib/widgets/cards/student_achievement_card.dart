@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -33,12 +34,13 @@ class StudentAchievementCard extends StatelessWidget {
 
     final uri = Uri.tryParse(trimmed);
     if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
-      return Image.network(
-        trimmed,
+      return CachedNetworkImage(
+        imageUrl: trimmed,
         width: double.infinity,
         height: double.infinity,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) {
+        placeholder: (context, url) => Container(color: AppColors.divider),
+        errorWidget: (context, url, error) {
           return const Center(
             child: Icon(
               Icons.image_outlined,

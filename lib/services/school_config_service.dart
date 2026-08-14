@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -38,6 +39,7 @@ class SchoolConfigService extends ChangeNotifier {
   static const _headmasterMessageTitleKey = 'headmaster_message_title';
   static const _headmasterMessageKey = 'headmaster_message';
   static const _managementMembersKey = 'management_members';
+  static const _homeContentKey = 'home_content';
   static const _importantNewsKey = 'important_news';
   static const _sportsAchievementsKey = 'sports_achievements';
   static const _gradeXKey = 'grade_x_toppers';
@@ -83,6 +85,9 @@ class SchoolConfigService extends ChangeNotifier {
   String headmasterMessageTitle = '';
   String headmasterMessage = '';
   List<ManagementMember> managementMembers = [];
+  // Home-specific content items (editable from Content Edit). Kept separate
+  // from managementMembers which represent school staff.
+  List<ManagementMember> homeContent = [];
   List<NewsItem> importantNews = [];
   List<SportsAchievementEntry> sportsAchievements = [];
   List<TopperEntry> gradeXTopper = [];
@@ -134,47 +139,92 @@ class SchoolConfigService extends ChangeNotifier {
   }
 
   Future<void> _load() async {
-    final name = await PreferencesService.getString(_nameKey);
-    final quoteValue = await PreferencesService.getString(_quoteKey);
-    final welcomeValue = await PreferencesService.getString(_welcomeKey);
-    final websiteValue = await PreferencesService.getString(_websiteKey);
-    final runningJson = await PreferencesService.getString(_runningItemsKey);
-    final poster = await PreferencesService.getString(_posterKey);
-    final mottoValue = await PreferencesService.getString(_mottoKey);
-    final sinceValue = await PreferencesService.getString(_sinceYearKey);
-    final logo = await PreferencesService.getString(_logoKey);
-    final banner = await PreferencesService.getString(_bannerKey);
-    final gradePageBanner = await PreferencesService.getString(_gradePageBannerKey);
-    final founderPhoto = await PreferencesService.getString(_founderPhotoKey);
-    final founderNameValue = await PreferencesService.getString(_founderNameKey);
-    final founderDesignationValue = await PreferencesService.getString(_founderDesignationKey);
-    final founderVisionTitleValue = await PreferencesService.getString(_founderVisionTitleKey);
-    final founderVisionDescValue = await PreferencesService.getString(_founderVisionDescKey);
-    final secretaryPhoto = await PreferencesService.getString(_secretaryPhotoKey);
-    final secretaryNameValue = await PreferencesService.getString(_secretaryNameKey);
-    final secretaryDesignationValue = await PreferencesService.getString(_secretaryDesignationKey);
-    final secretaryWelcomeTitleValue = await PreferencesService.getString(_secretaryWelcomeTitleKey);
-    final secretaryWelcomeMessageValue = await PreferencesService.getString(_secretaryWelcomeMessageKey);
-    final headmasterPhoto = await PreferencesService.getString(_headmasterPhotoKey);
-    final headmasterNameValue = await PreferencesService.getString(_headmasterNameKey);
-    final headmasterDesignationValue = await PreferencesService.getString(_headmasterDesignationKey);
-    final headmasterMessageTitleValue = await PreferencesService.getString(_headmasterMessageTitleKey);
-    final headmasterMessageValue = await PreferencesService.getString(_headmasterMessageKey);
-    final managementMembersJson = await PreferencesService.getString(_managementMembersKey);
-    final importantNewsJson = await PreferencesService.getString(_importantNewsKey);
-    final sportsJson = await PreferencesService.getString(_sportsAchievementsKey);
-    final gradeXJson = await PreferencesService.getString(_gradeXKey);
-    final gradeXIIJson = await PreferencesService.getString(_gradeXIIKey);
-    final addressValue = await PreferencesService.getString(_addressKey);
-    final phoneValue = await PreferencesService.getString(_phoneKey);
-    final alternatePhoneValue = await PreferencesService.getString(_alternatePhoneKey);
-    final emailValue = await PreferencesService.getString(_emailKey);
-    final googleMapValue = await PreferencesService.getString(_googleMapKey);
-    final facebookValue = await PreferencesService.getString(_facebookKey);
-    final instagramValue = await PreferencesService.getString(_instagramKey);
-    final youtubeValue = await PreferencesService.getString(_youtubeKey);
-    final twitterValue = await PreferencesService.getString(_twitterKey);
-    final linkedInValue = await PreferencesService.getString(_linkedInKey);
+    final cached = await PreferencesService.getStrings([
+      _nameKey,
+      _quoteKey,
+      _welcomeKey,
+      _websiteKey,
+      _runningItemsKey,
+      _posterKey,
+      _mottoKey,
+      _sinceYearKey,
+      _logoKey,
+      _bannerKey,
+      _gradePageBannerKey,
+      _founderPhotoKey,
+      _founderNameKey,
+      _founderDesignationKey,
+      _founderVisionTitleKey,
+      _founderVisionDescKey,
+      _secretaryPhotoKey,
+      _secretaryNameKey,
+      _secretaryDesignationKey,
+      _secretaryWelcomeTitleKey,
+      _secretaryWelcomeMessageKey,
+      _headmasterPhotoKey,
+      _headmasterNameKey,
+      _headmasterDesignationKey,
+      _headmasterMessageTitleKey,
+      _headmasterMessageKey,
+      _managementMembersKey,
+      _importantNewsKey,
+      _sportsAchievementsKey,
+      _gradeXKey,
+      _gradeXIIKey,
+      _addressKey,
+      _phoneKey,
+      _alternatePhoneKey,
+      _emailKey,
+      _googleMapKey,
+      _facebookKey,
+      _instagramKey,
+      _youtubeKey,
+      _twitterKey,
+      _linkedInKey,
+    ]);
+
+    final name = cached[_nameKey];
+    final quoteValue = cached[_quoteKey];
+    final welcomeValue = cached[_welcomeKey];
+    final websiteValue = cached[_websiteKey];
+    final runningJson = cached[_runningItemsKey];
+    final poster = cached[_posterKey];
+    final mottoValue = cached[_mottoKey];
+    final sinceValue = cached[_sinceYearKey];
+    final logo = cached[_logoKey];
+    final banner = cached[_bannerKey];
+    final gradePageBanner = cached[_gradePageBannerKey];
+    final founderPhoto = cached[_founderPhotoKey];
+    final founderNameValue = cached[_founderNameKey];
+    final founderDesignationValue = cached[_founderDesignationKey];
+    final founderVisionTitleValue = cached[_founderVisionTitleKey];
+    final founderVisionDescValue = cached[_founderVisionDescKey];
+    final secretaryPhoto = cached[_secretaryPhotoKey];
+    final secretaryNameValue = cached[_secretaryNameKey];
+    final secretaryDesignationValue = cached[_secretaryDesignationKey];
+    final secretaryWelcomeTitleValue = cached[_secretaryWelcomeTitleKey];
+    final secretaryWelcomeMessageValue = cached[_secretaryWelcomeMessageKey];
+    final headmasterPhoto = cached[_headmasterPhotoKey];
+    final headmasterNameValue = cached[_headmasterNameKey];
+    final headmasterDesignationValue = cached[_headmasterDesignationKey];
+    final headmasterMessageTitleValue = cached[_headmasterMessageTitleKey];
+    final headmasterMessageValue = cached[_headmasterMessageKey];
+    final managementMembersJson = cached[_managementMembersKey];
+    final homeContentJson = cached[_homeContentKey];
+    final importantNewsJson = cached[_importantNewsKey];
+    final sportsJson = cached[_sportsAchievementsKey];
+    final gradeXJson = cached[_gradeXKey];
+    final gradeXIIJson = cached[_gradeXIIKey];
+    final addressValue = cached[_addressKey];
+    final phoneValue = cached[_phoneKey];
+    final alternatePhoneValue = cached[_alternatePhoneKey];
+    final emailValue = cached[_emailKey];
+    final googleMapValue = cached[_googleMapKey];
+    final facebookValue = cached[_facebookKey];
+    final instagramValue = cached[_instagramKey];
+    final youtubeValue = cached[_youtubeKey];
+    final twitterValue = cached[_twitterKey];
+    final linkedInValue = cached[_linkedInKey];
 
     if (name != null && name.isNotEmpty) schoolName = name;
     if (quoteValue != null && quoteValue.isNotEmpty) quote = quoteValue;
@@ -202,6 +252,9 @@ class SchoolConfigService extends ChangeNotifier {
     if (headmasterMessageValue != null && headmasterMessageValue.isNotEmpty) headmasterMessage = headmasterMessageValue;
     if (managementMembersJson != null && managementMembersJson.isNotEmpty) {
       managementMembers = _decodeMembers(managementMembersJson);
+    }
+    if (homeContentJson != null && homeContentJson.isNotEmpty) {
+      homeContent = _decodeMembers(homeContentJson);
     }
     if (importantNewsJson != null && importantNewsJson.isNotEmpty) {
       importantNews = _decodeNews(importantNewsJson);
@@ -232,6 +285,8 @@ class SchoolConfigService extends ChangeNotifier {
       } catch (_) {}
     }
     posterBase64 = poster != null && poster.isNotEmpty ? poster : null;
+
+    notifyListeners();
 
     try {
       final saved = await _repository.getMainPageInfo();
@@ -299,13 +354,46 @@ class SchoolConfigService extends ChangeNotifier {
       await PreferencesService.setString(_headmasterMessageKey, headmasterMessage);
 
       managementMembers = (saved.schoolContent.members ?? []).map((member) => ManagementMember(
-            photoBase64: member.photo ?? '',
-            name: member.name ?? '',
-            designation: member.designation ?? '',
-            title: member.title ?? '',
-            description: member.description ?? '',
+        id: member.id ?? '',
+        photoBase64: member.photo ?? '',
+        name: member.name ?? '',
+        designation: member.designation ?? '',
+        title: member.title ?? '',
+        description: member.description ?? '',
           )).toList();
       await PreferencesService.setString(_managementMembersKey, jsonEncode(managementMembers.map((e) => e.toJson()).toList()));
+
+      // Home content (separate list). If backend provides homeContent, use it.
+      homeContent = (saved.homeContent ?? []).map((raw) {
+        final item = raw as dynamic;
+        if (item is Map<String, dynamic>) {
+          return ManagementMember(
+            id: item['id']?.toString() ?? '',
+            photoBase64: item['photo']?.toString() ?? '',
+            name: item['name']?.toString() ?? '',
+            designation: item['designation']?.toString() ?? '',
+            title: item['title']?.toString() ?? '',
+            description: item['description']?.toString() ?? '',
+          );
+        }
+        if (item is ManagementMemberModel) {
+          return ManagementMember(
+            id: item.id ?? '',
+            photoBase64: item.photo ?? '',
+            name: item.name ?? '',
+            designation: item.designation ?? '',
+            title: item.title ?? '',
+            description: item.description ?? '',
+          );
+        }
+        try {
+          final s = item?.toString() ?? '';
+          return ManagementMember(id: '', photoBase64: '', name: s, designation: '', title: s, description: '');
+        } catch (_) {
+          return ManagementMember(id: '', photoBase64: '', name: '', designation: '', title: '', description: '');
+        }
+      }).toList();
+      await PreferencesService.setString(_homeContentKey, jsonEncode(homeContent.map((e) => e.toJson()).toList()));
 
       // Grades and sports
       gradeXTopper = (saved.gradePage.grade10.students ?? []).map((student) => TopperEntry(
@@ -727,9 +815,264 @@ class SchoolConfigService extends ChangeNotifier {
       }
       notifyListeners();
       return true;
+    } catch (error) {
+      debugPrint('SchoolConfigService.save failed: $error');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> saveManagementMembers(List<ManagementMember> managementMembers) async {
+    this.managementMembers = List<ManagementMember>.from(managementMembers);
+    await PreferencesService.setString(
+      _managementMembersKey,
+      jsonEncode(this.managementMembers.map((e) => e.toJson()).toList()),
+    );
+
+    try {
+      final contentPayload = SchoolContentModel(
+        founder: FounderModel(
+          photo: founderPhotoBase64 ?? '',
+          name: founderName,
+          designation: founderDesignation,
+          visionTitle: founderVisionTitle,
+          visionDescription: founderVisionDescription,
+        ),
+        secretary: SecretaryModel(
+          photo: secretaryPhotoBase64 ?? '',
+          name: secretaryName,
+          designation: secretaryDesignation,
+          welcomeTitle: secretaryWelcomeTitle,
+          welcomeMessage: secretaryWelcomeMessage,
+        ),
+        headmaster: HeadmasterModel(
+          photo: headmasterPhotoBase64 ?? '',
+          name: headmasterName,
+          designation: headmasterDesignation,
+          messageTitle: headmasterMessageTitle,
+          message: headmasterMessage,
+        ),
+        members: this.managementMembers
+            .map((member) => ManagementMemberModel(
+                  id: member.id.isNotEmpty ? member.id : (member.name.isNotEmpty ? member.name : member.title),
+                  photo: member.photoBase64,
+                  name: member.name,
+                  designation: member.designation,
+                  title: member.title,
+                  description: member.description,
+                  order: 0,
+                ))
+            .toList(),
+      );
+
+      final updated = await _repository.updateSchoolContent(contentPayload.toJson());
+
+      managementMembers = (updated.schoolContent.members ?? [])
+          .map((member) => ManagementMember(
+                id: member.id ?? '',
+                photoBase64: member.photo ?? '',
+                name: member.name ?? '',
+                designation: member.designation ?? '',
+                title: member.title ?? '',
+                description: member.description ?? '',
+              ))
+          .toList();
+      await PreferencesService.setString(
+        _managementMembersKey,
+        jsonEncode(managementMembers.map((e) => e.toJson()).toList()),
+      );
+      notifyListeners();
+      return true;
     } catch (_) {
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<bool> saveHomeContent(List<ManagementMember> items) async {
+    // Keep a snapshot of previously-cached in-memory items so we can detect
+    // intentional deletions performed by the user in this session.
+    final previousLocal = List<ManagementMember>.from(this.homeContent);
+
+    // Update in-memory list immediately (UI already shows these items).
+    this.homeContent = List<ManagementMember>.from(items);
+
+    try {
+      // Compute a stable item identity: prefer explicit id, otherwise use title+description.
+      String _deriveId(ManagementMember m) {
+        if (m.id.isNotEmpty) return m.id;
+        final title = m.title.trim();
+        final description = m.description.trim();
+        return title.isNotEmpty || description.isNotEmpty ? '$title|$description' : DateTime.now().millisecondsSinceEpoch.toString();
+      }
+
+      ManagementMember _ensureStableId(ManagementMember m) {
+        if (m.id.isNotEmpty) return m;
+        return ManagementMember(
+          id: '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1000000)}',
+          photoBase64: m.photoBase64,
+          name: m.name,
+          designation: m.designation,
+          title: m.title,
+          description: m.description,
+        );
+      }
+
+      String _deriveIdFromMap(Map<String, dynamic> item) {
+        final id = (item['id'] ?? '').toString().trim();
+        if (id.isNotEmpty) return id;
+        final title = (item['title'] ?? '').toString().trim();
+        final description = (item['description'] ?? '').toString().trim();
+        return title.isNotEmpty || description.isNotEmpty ? '$title|$description' : '';
+      }
+
+      this.homeContent = this.homeContent.map(_ensureStableId).toList();
+      final localIds = this.homeContent.map(_deriveId).toSet();
+      final previousIds = previousLocal.map(_deriveId).toSet();
+      final deletedIds = previousIds.difference(localIds);
+
+      // Fetch current server document so we can preserve any server-only items
+      // the user didn't intentionally delete. This avoids destructive writes
+      // when the UI list is incomplete for any reason.
+      final serverDoc = await _repository.getMainPageInfo();
+      final serverHomeRaw = serverDoc.homeContent ?? [];
+
+      // Normalize a server item to a Map<String,dynamic> with expected keys
+      Map<String, dynamic> normalizeServerItem(dynamic raw) {
+        if (raw is Map<String, dynamic>) return raw;
+        if (raw is ManagementMemberModel) {
+          return {
+            'id': raw.id ?? '',
+            'photo': raw.photo ?? '',
+            'name': raw.name ?? '',
+            'designation': raw.designation ?? '',
+            'title': raw.title ?? '',
+            'description': raw.description ?? '',
+            'order': raw.order ?? 0,
+          };
+        }
+        return {'id': raw.toString(), 'photo': '', 'name': raw.toString(), 'designation': '', 'title': raw.toString(), 'description': '', 'order': 0};
+      }
+
+      final serverItems = serverHomeRaw.map(normalizeServerItem).toList();
+
+      // Build the authoritative list to send: start with local items (user's
+      // intended state). For any server-side items not present locally, keep
+      // them only if the user didn't delete them in this session.
+      final List<Map<String, dynamic>> merged = [];
+
+      // Add local items first (sanitizing photo values)
+      for (final member in this.homeContent) {
+        String photoValue = member.photoBase64.trim();
+        final shouldStrip = photoValue.startsWith('data:') || photoValue.length > 100000;
+        if (shouldStrip) {
+          debugPrint('saveHomeContent: stripping large/photo data before send (len=${photoValue.length})');
+          photoValue = '';
+        }
+        merged.add({
+          'id': _deriveId(member),
+          'photo': photoValue,
+          'name': member.name,
+          'designation': member.designation,
+          'title': member.title,
+          'description': member.description,
+          'order': 0,
+        });
+      }
+
+      // Preserve server-only items that were not intentionally deleted
+      for (final s in serverItems) {
+        final serverId = _deriveIdFromMap(s);
+        if (serverId.isEmpty) continue;
+        if (localIds.contains(serverId)) continue; // already present in local
+        if (deletedIds.contains(serverId)) continue; // user deleted it
+        merged.add(s);
+      }
+
+      final payload = {'homeContent': merged};
+
+      debugPrint('saveHomeContent: sending payload with ${merged.length} items');
+      try {
+        // Full per-item debug logging (compact) — avoid printing huge base64
+        for (var i = 0; i < merged.length; i++) {
+          final m = merged[i];
+          final id = (m['id'] ?? '').toString();
+          final title = (m['title'] ?? '').toString();
+          final desc = (m['description'] ?? '').toString();
+          final photo = (m['photo'] ?? '').toString();
+          String photoInfo;
+          if (photo.isEmpty) {
+            photoInfo = 'empty';
+          } else if (photo.startsWith('http://') || photo.startsWith('https://')) {
+            photoInfo = 'url (${photo.length} chars)';
+          } else if (photo.startsWith('data:')) {
+            photoInfo = 'dataUri (${photo.length} chars)';
+          } else {
+            photoInfo = 'base64 (${photo.length} chars)';
+          }
+          debugPrint('-> item[$i] id="$id" title="${title}" descLen=${desc.length} photo=$photoInfo');
+        }
+      } catch (_) {}
+      final updated = await _repository.updateSchoolContent(payload);
+
+      // If the PUT response didn't include homeContent, fetch authoritative
+      // document with a GET and use that instead. This guarantees we never
+      // overwrite the editor state with stale cache.
+      MainPageInfo authoritative = updated;
+      try {
+        final returnedCount = (updated.homeContent ?? []).length;
+        final expectedCount = merged.length;
+        debugPrint('saveHomeContent: PUT returned homeContent count = $returnedCount, expected = $expectedCount');
+        if (returnedCount != expectedCount) {
+          debugPrint('saveHomeContent: PUT response count mismatch; performing GET fallback');
+          authoritative = await _repository.getMainPageInfo();
+          debugPrint('saveHomeContent: GET returned homeContent count = ${authoritative.homeContent?.length ?? 0}');
+        }
+      } catch (e) {
+        debugPrint('saveHomeContent: error inspecting PUT response: $e');
+      }
+
+      // Updated may include the new homeContent; sync it back from authoritative
+      homeContent = (authoritative.homeContent ?? []).map((raw) {
+        final item = raw as dynamic;
+        if (item is Map<String, dynamic>) {
+          return ManagementMember(
+            id: item['id']?.toString() ?? item['name']?.toString() ?? '',
+            photoBase64: item['photo']?.toString() ?? '',
+            name: item['name']?.toString() ?? '',
+            designation: item['designation']?.toString() ?? '',
+            title: item['title']?.toString() ?? '',
+            description: item['description']?.toString() ?? '',
+          );
+        }
+        if (item is ManagementMemberModel) {
+          return ManagementMember(
+            id: item.id ?? '',
+            photoBase64: item.photo ?? '',
+            name: item.name ?? '',
+            designation: item.designation ?? '',
+            title: item.title ?? '',
+            description: item.description ?? '',
+          );
+        }
+        try {
+          final s = item?.toString() ?? '';
+          return ManagementMember(id: '', photoBase64: '', name: s, designation: '', title: s, description: '');
+        } catch (_) {
+          return ManagementMember(id: '', photoBase64: '', name: '', designation: '', title: '', description: '');
+        }
+      }).toList();
+
+      // Persist authoritative server-backed homeContent to preferences
+      debugPrint('saveHomeContent: persisting ${homeContent.length} items to cache');
+      await PreferencesService.setString(_homeContentKey, jsonEncode(homeContent.map((e) => e.toJson()).toList()));
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // Surface the underlying error to the caller so UI can report a useful message
+      debugPrint('SchoolConfigService.saveHomeContent failed: $e');
+      notifyListeners();
+      rethrow;
     }
   }
 }

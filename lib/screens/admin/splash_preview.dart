@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
@@ -51,13 +52,14 @@ class SplashPreview extends StatelessWidget {
                       child: Transform.scale(
                         scale: imageScale,
                         child: imageBase64!.trim().startsWith('http')
-                            ? Image.network(
-                                imageBase64!,
+                            ? CachedNetworkImage(
+                                imageUrl: imageBase64!,
                                 width: 120,
                                 height: 120,
                                 fit: BoxFit.cover,
                                 alignment: Alignment.center,
-                                errorBuilder: (context, error, stackTrace) => const Center(
+                                placeholder: (context, url) => const Center(child: Icon(Icons.person)),
+                                errorWidget: (context, url, error) => const Center(
                                   child: Icon(Icons.person),
                                 ),
                               )

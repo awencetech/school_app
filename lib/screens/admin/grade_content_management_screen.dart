@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -465,10 +466,11 @@ class _GradeContentManagementScreenState extends State<GradeContentManagementScr
 
     final uri = Uri.tryParse(trimmed);
     if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
-      return Image.network(
-        trimmed,
+      return CachedNetworkImage(
+        imageUrl: trimmed,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) {
+        placeholder: (context, url) => Container(color: AppColors.divider),
+        errorWidget: (context, url, error) {
           return Container(
             color: AppColors.divider,
             child: const Center(child: Icon(Icons.image_outlined, color: AppColors.hintText)),

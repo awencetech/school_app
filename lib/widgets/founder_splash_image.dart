@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class FounderSplashImage extends StatelessWidget {
@@ -22,10 +23,12 @@ class FounderSplashImage extends StatelessWidget {
     if (imageBase64 != null && imageBase64!.trim().isNotEmpty) {
       final trimmed = imageBase64!.trim();
       if (trimmed.startsWith('http')) {
-        child = Image.network(
-          trimmed,
+        child = CachedNetworkImage(
+          imageUrl: trimmed,
           fit: BoxFit.contain,
           alignment: Alignment.center,
+          placeholder: (context, url) => const SizedBox.shrink(),
+          errorWidget: (context, url, error) => const SizedBox.shrink(),
         );
       } else {
         try {

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
-import '../../screens/achievements/achievements_screen.dart';
-import '../../screens/admin/grade_content_management_screen.dart';
+import 'admin_detail_page.dart';
+// kept minimal: no direct screen imports required for this page
 import '../../widgets/admin_bottom_nav.dart';
 
 class AdminOtherOptions extends StatefulWidget {
@@ -21,111 +21,64 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
       appBar: AppBar(backgroundColor: AppColors.topBar, title: const Text('Other Options')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Detail Page',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            const Text('1. Splash Screen'),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.adminSplashScreenEditor);
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final crossAxisCount = width < 600 ? 3 : 4;
+
+            final features = [
+              {
+                'label': 'main edit',
+                'icon': Icons.dashboard_outlined,
               },
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.spa, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('Splash Screen'),
-                ],
+            ];
+
+            return GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.85,
               ),
-            ),
-            const SizedBox(height: 24),
-            const Text('2. School Settings'),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.adminSchoolSettings);
-              },
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.school, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('School Settings'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text('3. School Content Management'),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context)
-                    .pushNamed(AppRoutes.adminSchoolContentManagement);
-              },
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.library_books, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('School Content Management'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text('4. Manage Grade Page'),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const GradeContentManagementScreen(),
+              itemCount: features.length,
+              itemBuilder: (context, index) {
+                final item = features[index];
+                return InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AdminDetailPage()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          item['icon'] as IconData,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item['label'] as String,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                 );
               },
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.admin_panel_settings, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('Manage Grade Page'),
-                ],
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
       bottomNavigationBar: AdminBottomNavigationBar(

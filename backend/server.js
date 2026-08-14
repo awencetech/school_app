@@ -100,6 +100,10 @@ function buildDefaultDocument() {
       selectedLanguage: '',
       themeColor: '',
     },
+    // Home-specific content (editable from Content Edit). Kept separate from
+    // schoolContent so the Home page can show its own items without affecting
+    // the School page staff content.
+    homeContent: [],
     schoolContent: {
       founder: {
         photo: '',
@@ -192,6 +196,26 @@ app.get('/api/mainpage-info', async (req, res) => {
       );
       return res.json(result.value || created);
     }
+
+    const hasTopLevelHomeContent = Array.isArray(doc.homeContent) && doc.homeContent.length > 0;
+    const legacyHomeContent = doc.schoolContent && Array.isArray(doc.schoolContent.homeContent) ? doc.schoolContent.homeContent : [];
+    let selectedHomeContent = doc.homeContent;
+    if (!hasTopLevelHomeContent && legacyHomeContent.length > 0) {
+      selectedHomeContent = legacyHomeContent;
+      console.log('GET /api/mainpage-info: promoting legacy schoolContent.homeContent to homeContent', {
+        topLevelCount: (doc.homeContent || []).length,
+        legacyCount: legacyHomeContent.length,
+      });
+    } else if (Array.isArray(doc.homeContent) && legacyHomeContent.length > doc.homeContent.length) {
+      selectedHomeContent = legacyHomeContent;
+      console.log('GET /api/mainpage-info: using longer legacy schoolContent.homeContent over top-level homeContent', {
+        topLevelCount: doc.homeContent.length,
+        legacyCount: legacyHomeContent.length,
+      });
+    }
+    doc.homeContent = selectedHomeContent;
+
+    console.log('GET /api/mainpage-info: returning document with homeContent count', (doc.homeContent || []).length);
     return res.json(doc);
   } catch (error) {
     console.error('GET /api/mainpage-info failed:', error);
@@ -240,11 +264,39 @@ app.put('/api/mainpage-info/settings', async (req, res) => {
 app.put('/api/mainpage-info/content', async (req, res) => {
   try {
     const current = (await getMainPageDocument()) || buildDefaultDocument();
-    const updated = await upsertMainPageDocument({
-      ...current,
-      schoolContent: req.body || current.schoolContent,
-    });
-    return res.json(updated);
+    const body = req.body || {};
+
+    // If payload explicitly provides homeContent, treat it as an update to the
+    // separate homeContent array (used by the app Home page). Otherwise treat
+    // the payload as the schoolContent object to preserve existing behavior.
+    let updatedDoc;
+    if (Object.prototype.hasOwnProperty.call(body, 'homeContent')) {
+      const homeContent = Array.isArray(body.homeContent) ? body.homeContent : [];
+      console.log('PUT /api/mainpage-info/content: saving top-level homeContent count', homeContent.length);
+      updatedDoc = await upsertMainPageDocument({
+        ...current,
+        homeContent,
+        schoolContent: {
+          ...current.schoolContent,
+          homeContent,
+        },
+      });
+    } else {
+      const nextSchoolContent = body || current.schoolContent;
+      const legacyHomeContent = nextSchoolContent && Array.isArray(nextSchoolContent.homeContent)
+        ? nextSchoolContent.homeContent
+        : current.homeContent;
+      console.log('PUT /api/mainpage-info/content: saving schoolContent with homeContent count', legacyHomeContent.length);
+
+      updatedDoc = await upsertMainPageDocument({
+        ...current,
+        schoolContent: nextSchoolContent,
+        homeContent: legacyHomeContent,
+      });
+    }
+
+    console.log('PUT /api/mainpage-info/content: stored document with homeContent count', (updatedDoc.homeContent || []).length);
+    return res.json(updatedDoc);
   } catch (error) {
     console.error('PUT /api/mainpage-info/content failed:', error);
     return res.status(500).json({ message: 'Unable to save changes. Please try again.' });

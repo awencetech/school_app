@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -75,10 +76,11 @@ class StaffProfileCard extends StatelessWidget {
                           },
                         );
                       } catch (_) {
-                        return Image.network(
-                          image,
+                        return CachedNetworkImage(
+                          imageUrl: image,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
+                          placeholder: (context, url) => Container(color: AppColors.divider),
+                          errorWidget: (context, url, error) {
                             return Image.asset(
                               'assets/images/founder.png',
                               fit: BoxFit.cover,

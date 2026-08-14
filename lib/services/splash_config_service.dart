@@ -32,14 +32,25 @@ class SplashConfigService extends ChangeNotifier {
   }
 
   Future<void> _load() async {
-    final img = await PreferencesService.getString(_imageKey);
-    final t = await PreferencesService.getString(_titleKey);
-    final s = await PreferencesService.getString(_subtitleKey);
-    final y = await PreferencesService.getString(_sinceKey);
-    final q = await PreferencesService.getString(_quoteKey);
-    final scale = await PreferencesService.getString(_imageScaleKey);
-    final offX = await PreferencesService.getString(_imageOffsetXKey);
-    final offY = await PreferencesService.getString(_imageOffsetYKey);
+    final cached = await PreferencesService.getStrings([
+      _imageKey,
+      _titleKey,
+      _subtitleKey,
+      _sinceKey,
+      _quoteKey,
+      _imageScaleKey,
+      _imageOffsetXKey,
+      _imageOffsetYKey,
+    ]);
+
+    final img = cached[_imageKey];
+    final t = cached[_titleKey];
+    final s = cached[_subtitleKey];
+    final y = cached[_sinceKey];
+    final q = cached[_quoteKey];
+    final scale = cached[_imageScaleKey];
+    final offX = cached[_imageOffsetXKey];
+    final offY = cached[_imageOffsetYKey];
 
     imageBase64 = img;
     if (t != null && t.isNotEmpty) title = t;
@@ -49,6 +60,8 @@ class SplashConfigService extends ChangeNotifier {
     if (scale != null && scale.isNotEmpty) imageScale = double.tryParse(scale) ?? imageScale;
     if (offX != null && offX.isNotEmpty) imageOffsetX = double.tryParse(offX) ?? imageOffsetX;
     if (offY != null && offY.isNotEmpty) imageOffsetY = double.tryParse(offY) ?? imageOffsetY;
+
+    notifyListeners();
 
     try {
       final saved = await _repository.getMainPageInfo();

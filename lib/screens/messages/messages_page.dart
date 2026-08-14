@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -396,11 +397,13 @@ class _MessagesPageState extends State<MessagesPage> {
                                     child: message.profileImage == null || message.profileImage!.isEmpty
                                         ? const Icon(Icons.person, color: Color(0xFF2F3352))
                                         : ClipOval(
-                                            child: Image.network(
-                                              message.profileImage!,
+                                            child: CachedNetworkImage(
+                                              imageUrl: message.profileImage!,
                                               fit: BoxFit.cover,
                                               width: 48,
                                               height: 48,
+                                              placeholder: (context, url) => Container(color: const Color(0xFFEDEFF6)),
+                                              errorWidget: (context, url, error) => const Icon(Icons.person, color: Color(0xFF2F3352)),
                                             ),
                                           ),
                                   ),

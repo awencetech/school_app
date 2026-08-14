@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/school_info.dart';
@@ -152,35 +153,25 @@ class HomeScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 18),
-          _NewsNote(
-            title: 'School App',
-            body:
-                'Parents are requested to update their School app profile with appropriate data for effective communication. For app related queries contact school.',
-          ),
-          const SizedBox(height: 14),
-          _NewsNote(
-            title: 'Check Dashboard Frequently',
-            body:
-                'Parents are requested to check the Dashboard Summary Info TAB in School App frequently so all dues be updated with latest News and information about the School.',
-          ),
-          const SizedBox(height: 14),
-          _NewsNote(
-            title: 'Students are strictly prohibited to bring mobile phone',
-            body:
-                'Parents are hereby notified not to allow their ward to come to school with mobile phones, if students violate the ban and carry mobile phone with them, it will be confiscated and sent to be returned with notice.',
-          ),
-          const SizedBox(height: 14),
-          _NewsNote(
-            title: 'Lunch Time Notice',
-            body:
-                'We highly appreciate you to send a complete healthy Vegetarian (egg is permitted) lunch box for your kids. Bringing non-vegetarian food to the campus is highly prohibited as per the norms of the school.',
-          ),
-          const SizedBox(height: 14),
-          _NewsNote(
-            title: 'Bring Books as per Time table',
-            body:
-                'All students are expected to bring their books and notes according to their Class Timetable posted in the app.',
-          ),
+          Builder(builder: (context) {
+            final config = context.watch<SchoolConfigService>();
+            final sections = config.homeContent;
+            return sections.isNotEmpty
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < sections.length; i++) ...[
+                                  _NewsNote(
+                                    title: sections[i].title.isNotEmpty ? sections[i].title : sections[i].name,
+                                    body: sections[i].description,
+                                    imageData: sections[i].photoBase64,
+                                  ),
+                                  const SizedBox(height: 14),
+                                ],
+                    ],
+                  )
+                : const SizedBox.shrink();
+          }),
           const SizedBox(height: 24),
         ],
       ),
@@ -189,16 +180,56 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _NewsNote extends StatelessWidget {
-  const _NewsNote({required this.title, required this.body});
+  const _NewsNote({required this.title, required this.body, this.imageData = ''});
 
   final String title;
   final String body;
+  final String imageData;
+
+  Widget _buildImage(String imageData) {
+    final trimmed = imageData.trim();
+    if (trimmed.isEmpty) return const SizedBox.shrink();
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      return Container(
+        height: 180,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.divider)),
+        clipBehavior: Clip.hardEdge,
+        child: CachedNetworkImage(
+          imageUrl: trimmed,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(color: AppColors.divider),
+          errorWidget: (context, url, error) => Container(color: AppColors.divider, child: const Center(child: Icon(Icons.broken_image, color: AppColors.hintText))),
+        ),
+      );
+    }
+
+    try {
+      final normalized = trimmed.toLowerCase().startsWith('data:')
+          ? trimmed.substring(trimmed.indexOf(',') + 1).replaceAll(RegExp(r'\s+'), '')
+          : trimmed.replaceAll(RegExp(r'\s+'), '');
+      final bytes = base64Decode(normalized);
+      return Container(
+        height: 180,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.divider)),
+        clipBehavior: Clip.hardEdge,
+        child: Image.memory(bytes, fit: BoxFit.cover),
+      );
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (imageData.isNotEmpty) ...[
+          _buildImage(imageData),
+          const SizedBox(height: 8),
+        ],
         Text(
           title,
           style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.w600),

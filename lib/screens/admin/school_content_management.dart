@@ -234,6 +234,7 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
               ElevatedButton(
                 onPressed: () {
                   final updatedMember = ManagementMember(
+                    id: member?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
                     photoBase64: memberPhotoBase64 ?? '',
                     name: nameController.text.trim(),
                     designation: designationController.text.trim(),

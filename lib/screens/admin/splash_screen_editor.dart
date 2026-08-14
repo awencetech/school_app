@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter/material.dart';
@@ -206,9 +207,11 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                       child: _imageBase64 != null
                           ? Center(
                               child: _imageBase64!.trim().startsWith('http')
-                                  ? Image.network(
-                                      _imageBase64!,
+                                  ? CachedNetworkImage(
+                                      imageUrl: _imageBase64!,
                                       fit: BoxFit.contain,
+                                      placeholder: (context, url) => const SizedBox.shrink(),
+                                      errorWidget: (context, url, error) => const Icon(Icons.image, size: 36),
                                     )
                                   : Image.memory(
                                       base64Decode(_imageBase64!),

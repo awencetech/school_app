@@ -3,6 +3,7 @@ class MainPageInfo {
     this.id = '',
     this.splashScreen = const SplashScreenModel(),
     this.schoolSettings = const SchoolSettingsModel(),
+    this.homeContent = const [],
     this.schoolContent = const SchoolContentModel(),
     this.gradePage = const GradePageModel(),
     this.updatedAt,
@@ -11,6 +12,7 @@ class MainPageInfo {
   final String id;
   final SplashScreenModel splashScreen;
   final SchoolSettingsModel schoolSettings;
+  final List<ManagementMemberModel> homeContent;
   final SchoolContentModel schoolContent;
   final GradePageModel gradePage;
   final DateTime? updatedAt;
@@ -20,6 +22,9 @@ class MainPageInfo {
       id: (json['_id'] ?? '').toString(),
       splashScreen: SplashScreenModel.fromJson(Map<String, dynamic>.from(json['splashScreen'] ?? {})),
       schoolSettings: SchoolSettingsModel.fromJson(Map<String, dynamic>.from(json['schoolSettings'] ?? {})),
+      homeContent: (json['homeContent'] as List<dynamic>? ?? [])
+          .map((item) => ManagementMemberModel.fromJson(Map<String, dynamic>.from(item)))
+          .toList(),
       schoolContent: SchoolContentModel.fromJson(Map<String, dynamic>.from(json['schoolContent'] ?? {})),
       gradePage: GradePageModel.fromJson(Map<String, dynamic>.from(json['gradePage'] ?? {})),
       updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
@@ -31,6 +36,7 @@ class MainPageInfo {
       if (id.isNotEmpty) '_id': id,
       'splashScreen': splashScreen.toJson(),
       'schoolSettings': schoolSettings.toJson(),
+      'homeContent': homeContent.map((e) => e.toJson()).toList(),
       'schoolContent': schoolContent.toJson(),
       'gradePage': gradePage.toJson(),
       'updatedAt': updatedAt?.toIso8601String(),

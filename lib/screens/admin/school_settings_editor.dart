@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -192,10 +193,11 @@ class _SchoolSettingsEditorState extends State<SchoolSettingsEditor> {
             if (_posterUrl != null && _posterUrl!.isNotEmpty)
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.network(
-                    _posterUrl!,
+                  child: CachedNetworkImage(
+                    imageUrl: _posterUrl!,
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
+                    placeholder: (context, url) => Container(color: Colors.grey.shade200),
+                    errorWidget: (context, url, error) {
                       debugPrint('School poster preview error: $error');
                       return Container(
                         color: Colors.grey.shade200,

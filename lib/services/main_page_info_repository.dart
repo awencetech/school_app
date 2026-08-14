@@ -58,6 +58,8 @@ class MainPageInfoRepository {
     return value;
   }
 
+  static Future<MainPageInfo>? _inFlightMainPageInfoFuture;
+
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Future<String> uploadPoster({required String fileName, required List<int> bytes}) async {
@@ -83,7 +85,18 @@ class MainPageInfoRepository {
     throw const FormatException('Invalid poster upload response');
   }
 
-  Future<MainPageInfo> getMainPageInfo() async {
+  Future<MainPageInfo> getMainPageInfo() {
+    if (_inFlightMainPageInfoFuture != null) {
+      return _inFlightMainPageInfoFuture!;
+    }
+
+    _inFlightMainPageInfoFuture = _fetchMainPageInfo().whenComplete(() {
+      _inFlightMainPageInfoFuture = null;
+    });
+    return _inFlightMainPageInfoFuture!;
+  }
+
+  Future<MainPageInfo> _fetchMainPageInfo() async {
     final response = await http.get(_uri('/api/mainpage-info')).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception('Failed to load MongoDB school configuration');
@@ -94,6 +107,27 @@ class MainPageInfoRepository {
       throw const FormatException('Invalid main page payload');
     }
     final normalizedPayload = Map<String, dynamic>.from(_normalizePayload(payload) as Map<String, dynamic>);
+
+    // Backwards compatibility: Some older writes incorrectly stored homeContent
+    // inside schoolContent.homeContent. If top-level homeContent is missing but
+    // schoolContent.homeContent exists, promote it to top-level so the app reads
+    // the correct Home-only content without affecting schoolContent.members.
+    try {
+      final List<dynamic>? topHomeContent = normalizedPayload['homeContent'] is List ? List<dynamic>.from(normalizedPayload['homeContent'] as List<dynamic>) : null;
+      final List<dynamic>? legacyHomeContent = normalizedPayload['schoolContent'] is Map<String, dynamic> &&
+              (normalizedPayload['schoolContent'] as Map<String, dynamic>).containsKey('homeContent')
+          ? List<dynamic>.from((normalizedPayload['schoolContent'] as Map<String, dynamic>)['homeContent'] as List<dynamic>)
+          : null;
+
+      if (legacyHomeContent != null && legacyHomeContent.isNotEmpty) {
+        if (topHomeContent == null || topHomeContent.length < legacyHomeContent.length) {
+          normalizedPayload['homeContent'] = legacyHomeContent;
+        }
+      }
+    } catch (_) {
+      // ignore and continue
+    }
+
     print('Loaded school poster URL: ${normalizedPayload['schoolSettings']?['schoolPoster'] ?? 'empty'}');
     try {
       final loadedQuote = normalizedPayload['splashScreen']?['quote'] ?? '';
@@ -110,7 +144,8 @@ class MainPageInfoRepository {
     ).timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Unable to save changes. Please try again.');
+      debugPrint('_updateSection failed: ${response.statusCode} ${response.body}');
+      throw Exception('Unable to save changes (${response.statusCode}): ${response.body}');
     }
 
     final payload = jsonDecode(response.body);
@@ -144,14 +179,40 @@ class MainPageInfoRepository {
     ).timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Unable to save changes. Please try again.');
+      throw Exception('Unable to save changes (${response.statusCode}): ${response.body}');
     }
 
-    final parsed = jsonDecode(response.body);
+    debugPrint('_updateSection response: ${response.statusCode} -- body length: ${response.body.length}');
+    dynamic parsed;
+    try {
+      parsed = jsonDecode(response.body);
+      debugPrint('_updateSection parsed successfully: ${parsed.runtimeType}');
+    } catch (e) {
+      debugPrint('_updateSection jsonDecode failed: $e -- body: ${response.body}');
+      throw FormatException('Invalid JSON response from server: ${e.toString()}');
+    }
     if (parsed is! Map<String, dynamic>) {
+      debugPrint('_updateSection unexpected payload type: ${parsed.runtimeType} -- body: ${response.body}');
       throw const FormatException('Invalid section payload');
     }
 
-    return MainPageInfo.fromJson(Map<String, dynamic>.from(_normalizePayload(parsed) as Map<String, dynamic>));
+    final normalized = Map<String, dynamic>.from(_normalizePayload(parsed) as Map<String, dynamic>);
+
+    // Backwards compatibility: promote nested schoolContent.homeContent -> top-level homeContent
+    try {
+      final List<dynamic>? topHomeContent = normalized['homeContent'] is List ? List<dynamic>.from(normalized['homeContent'] as List<dynamic>) : null;
+      final List<dynamic>? legacyHomeContent = normalized['schoolContent'] is Map<String, dynamic> &&
+              (normalized['schoolContent'] as Map<String, dynamic>).containsKey('homeContent')
+          ? List<dynamic>.from((normalized['schoolContent'] as Map<String, dynamic>)['homeContent'] as List<dynamic>)
+          : null;
+
+      if (legacyHomeContent != null && legacyHomeContent.isNotEmpty) {
+        if (topHomeContent == null || topHomeContent.length < legacyHomeContent.length) {
+          normalized['homeContent'] = legacyHomeContent;
+        }
+      }
+    } catch (_) {}
+
+    return MainPageInfo.fromJson(normalized);
   }
 }

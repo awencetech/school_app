@@ -18,6 +18,17 @@ class PreferencesService {
     }
   }
 
+  static Future<Map<String, String?>> getStrings(List<String> keys) async {
+    try {
+      final prefs = await _prefs;
+      return {
+        for (final key in keys) key: prefs.getString(key),
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
   static Future<void> setString(String key, String value) async {
     if (value.length > _maxStoredValueLength) {
       return;

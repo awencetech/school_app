@@ -63,13 +63,17 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
       final delta = widget.pixelsPerSecond * (dtMs / 1000);
       final next = _controller.offset + delta;
 
-      final max = _controller.position.maxScrollExtent;
-      if (max <= 0) return;
+      try {
+        final max = _controller.position.maxScrollExtent;
+        if (max <= 0) return;
 
-      if (next >= max) {
-        _controller.jumpTo(0);
-      } else {
-        _controller.jumpTo(next);
+        if (next >= max) {
+          _controller.jumpTo(0);
+        } else {
+          _controller.jumpTo(next);
+        }
+      } catch (_) {
+        // Ignore scroll operations during teardown or when the scroll position becomes inactive.
       }
     });
   }

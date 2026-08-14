@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -33,10 +34,11 @@ class LanguageSelectionScreen extends StatelessWidget {
     if (posterSource != null && posterSource.isNotEmpty) {
       final uri = Uri.tryParse(posterSource);
       if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
-        return Image.network(
-          posterSource,
+        return CachedNetworkImage(
+          imageUrl: posterSource,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
+          placeholder: (context, url) => Container(color: AppColors.divider),
+          errorWidget: (context, url, error) {
             debugPrint('School poster loading error: $error');
             debugPrint('Poster URL: $posterSource');
             return _languagePosterPlaceholder(context);

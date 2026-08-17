@@ -91,9 +91,10 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
     setState(() => _isSaving = true);
     try {
       await _userService.updateUser(widget.userId, email: email, password: password.isEmpty ? null : password);
+      if (!mounted) return;
       _showSuccess();
     } catch (e) {
-      _showError('Something went wrong! ${e.toString()}');
+      if (mounted) _showError('Something went wrong! ${e.toString()}');
     } finally {
       setState(() => _isSaving = false);
     }

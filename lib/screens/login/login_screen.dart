@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../services/user_service.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -21,13 +22,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  static const _studentUsername = 'StudentC@11';
-  static const _studentPassword = 'Studend123#';
-  static const _staffUsername = 'StaffC@22';
-  static const _staffPassword = 'Staff123#';
-  static const _adminUsername = 'AdminC@33';
-  static const _adminPassword = 'Admin123#';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -41,39 +36,34 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleSignIn() {
-    final username = _usernameController.text.trim();
+    final identifier = _usernameController.text.trim();
     final password = _passwordController.text.trim();
-
-    if (username == _studentUsername && password == _studentPassword) {
-      context.read<AppState>().setLoggedIn(true);
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.studentDashboard,
-        (route) => false,
+    setState(() => _isLoading = true);
+    final svc = UserService();
+    svc.login(identifier: identifier, password: password).then((user) async {
+      if (!mounted) return;
+      await context.read<AppState>().setAuthenticatedUser(
+        userId: user.userId,
+        email: user.email,
+        role: user.role,
       );
-      return;
-    }
 
-    if (username == _staffUsername && password == _staffPassword) {
-      context.read<AppState>().setLoggedIn(true);
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.staffDashboard,
-        (route) => false,
-      );
-      return;
-    }
-
-    if (username == _adminUsername && password == _adminPassword) {
-      context.read<AppState>().setLoggedIn(true);
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.adminDashboard,
-        (route) => false,
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Invalid username or password')),
-    );
+      // route based on authoritative backend role
+      if (user.role == 'student') {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.studentDashboard, (route) => false);
+      } else if (user.role == 'staff') {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.staffDashboard, (route) => false);
+      } else if (user.role == 'admin') {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid user role')));
+      }
+    }).catchError((e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid username or password')));
+    }).whenComplete(() {
+      if (mounted) setState(() => _isLoading = false);
+    });
   }
 
   @override
@@ -151,8 +141,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         SecondaryButton(
-                          label: 'Sign In',
-                          onPressed: isLoginEnabled ? _handleSignIn : null,
+                          label: _isLoading ? 'Signing in...' : 'Sign In',
+                          onPressed: isLoginEnabled && !_isLoading ? _handleSignIn : null,
                         ),
                         const SizedBox(height: 12),
                         GestureDetector(

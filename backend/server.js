@@ -309,6 +309,38 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Authentication - login
+app.post('/api/login', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const identifier = (body.identifier || body.email || body.userId || '').toString().trim();
+    const password = (body.password || '').toString();
+
+    if (!identifier || !password) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Attempt lookup by email (case-insensitive) then by userId
+    const lowered = identifier.toLowerCase();
+    let user = await usersCollection.findOne({ email: lowered });
+    if (!user) {
+      user = await usersCollection.findOne({ userId: identifier });
+    }
+
+    // Do not reveal whether user exists
+    if (!user || !user.password) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: 'Invalid email or password' });
+
+    return res.json({ success: true, user: sanitizeUserForResponse(user) });
+  } catch (error) {
+    console.error('POST /api/login failed:', error);
+    return res.status(500).json({ message: 'Unable to authenticate user.' });
+  }
+});
 app.post('/api/upload/school-poster', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No poster file was uploaded.' });

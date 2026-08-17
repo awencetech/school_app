@@ -7,11 +7,17 @@ import 'preferences_service.dart';
 class AppState extends ChangeNotifier {
   static const _languageKey = 'selected_language';
   static const _loggedInKey = 'user_logged_in';
+  static const _authUserIdKey = 'auth_user_id';
+  static const _authEmailKey = 'auth_user_email';
+  static const _authRoleKey = 'auth_user_role';
 
   LanguageOption? _selectedLanguage;
   int _bottomNavIndex = 0;
   bool _isLoggedIn = false;
   bool _isInitialized = false;
+  String? _currentUserId;
+  String? _currentUserEmail;
+  String? _currentUserRole;
 
   late final Future<void> initialization;
 
@@ -25,6 +31,10 @@ class AppState extends ChangeNotifier {
 
   bool get isLoggedIn => _isLoggedIn;
 
+  String? get currentUserId => _currentUserId;
+  String? get currentUserEmail => _currentUserEmail;
+  String? get currentUserRole => _currentUserRole;
+
   bool get isInitialized => _isInitialized;
 
   bool get hasSelectedLanguage => _selectedLanguage != null;
@@ -32,8 +42,14 @@ class AppState extends ChangeNotifier {
   Future<void> _loadInitialState() async {
     final savedLanguageCode = await PreferencesService.getString(_languageKey);
     final savedLoggedInState = await PreferencesService.getBool(_loggedInKey);
+    final savedUserId = await PreferencesService.getString(_authUserIdKey);
+    final savedEmail = await PreferencesService.getString(_authEmailKey);
+    final savedRole = await PreferencesService.getString(_authRoleKey);
     _selectedLanguage = LanguageOptionX.fromCode(savedLanguageCode);
     _isLoggedIn = savedLoggedInState ?? false;
+    _currentUserId = savedUserId;
+    _currentUserEmail = savedEmail;
+    _currentUserRole = savedRole;
     _isInitialized = true;
     notifyListeners();
   }
@@ -53,7 +69,25 @@ class AppState extends ChangeNotifier {
 
   Future<void> logout() async {
     await setLoggedIn(false);
+    // Clear stored authenticated user info
+    _currentUserId = null;
+    _currentUserEmail = null;
+    _currentUserRole = null;
+    await PreferencesService.setString(_authUserIdKey, '');
+    await PreferencesService.setString(_authEmailKey, '');
+    await PreferencesService.setString(_authRoleKey, '');
     setBottomNavIndex(0);
+  }
+
+  Future<void> setAuthenticatedUser({required String userId, required String email, required String role}) async {
+    _currentUserId = userId;
+    _currentUserEmail = email;
+    _currentUserRole = role;
+    await PreferencesService.setString(_authUserIdKey, userId);
+    await PreferencesService.setString(_authEmailKey, email);
+    await PreferencesService.setString(_authRoleKey, role);
+    await setLoggedIn(true);
+    notifyListeners();
   }
 
   void setBottomNavIndex(int index) {

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/news_item.dart';
 import '../../routes/app_routes.dart';
+import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -54,7 +55,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Welcome Staff Name',
+                    'Welcome ${context.watch<AppState>().currentUserId ?? 'Staff'}',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -198,7 +199,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Staff name',
+                                    context.watch<AppState>().currentUserId != null ? context.watch<AppState>().currentUserId! : 'Staff name',
                                     style: GoogleFonts.poppins(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,

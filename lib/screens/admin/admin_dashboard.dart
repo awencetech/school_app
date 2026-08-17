@@ -10,6 +10,7 @@ import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
+import '../../services/app_state.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -48,8 +49,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ? config.schoolName
                     : snapshot.data?.name ?? 'SCHOOL NAME';
                 final welcomeText = config.welcome.isNotEmpty
-                    ? config.welcome
-                    : 'Welcome Admin Name';
+                  ? config.welcome
+                  : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),

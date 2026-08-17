@@ -162,20 +162,21 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                               // confirmation
                               final should = await showDialog<bool>(
                                 context: context,
-                                builder: (context) => AlertDialog(
+                                builder: (BuildContext dialogContext) => AlertDialog(
                                   title: const Text('Delete User?'),
                                   content: Text(
                                       'Are you sure you want to permanently delete this user?\n\nUser ID: ${_user?.userId ?? ''}\nEmail: ${_user?.email ?? ''}'),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                    TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
                                     TextButton(
-                                      onPressed: () => Navigator.pop(context, true),
+                                      onPressed: () => Navigator.of(dialogContext).pop(true),
                                       child: const Text('Delete', style: TextStyle(color: Colors.red)),
                                     ),
                                   ],
                                 ),
                               );
 
+                              if (!mounted) return;
                               if (should != true) return;
 
                               setState(() => _isDeleting = true);

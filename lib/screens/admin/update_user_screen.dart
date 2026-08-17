@@ -49,11 +49,11 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
   void _showError(String msg) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Oops...'),
         content: Text(msg),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('OK')),
         ],
       ),
     );
@@ -62,13 +62,13 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
   void _showSuccess() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Success!'),
         content: const Text('User updated successfully.'),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(dialogContext).pop();
               Navigator.pop(context, true);
             },
             child: const Text('OK'),

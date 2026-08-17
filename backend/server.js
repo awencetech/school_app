@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const { Readable } = require('stream');
 const { MongoClient, ObjectId, GridFSBucket } = require('mongodb');
+const bcrypt = require('bcrypt');
 
 dotenv.config({ path: path.join(__dirname, 'env.development') });
 
@@ -40,6 +41,7 @@ const upload = multer({
 let client;
 let mainPageInfoCollection;
 let imageBucket;
+let usersCollection;
 
 async function connectMongo() {
   if (!mongoUri) {
@@ -51,11 +53,151 @@ async function connectMongo() {
     await client.connect();
     const db = client.db('mainpage');
     mainPageInfoCollection = db.collection('mainPageInfo');
+    usersCollection = db.collection('users');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
   }
 
   return mainPageInfoCollection;
 }
+
+function sanitizeUserForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    userId: doc.userId || doc.userID || '',
+    email: doc.email || '',
+    role: doc.role || 'student',
+  };
+}
+
+// Users CRUD
+app.get('/api/users', async (req, res) => {
+  try {
+    const role = req.query.role;
+    const filter = {};
+    if (role) filter.role = role;
+    const users = await usersCollection.find(filter).toArray();
+    return res.json(users.map(sanitizeUserForResponse));
+  } catch (error) {
+    console.error('GET /api/users failed:', error);
+    return res.status(500).json({ message: 'Unable to load users.' });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const userId = (body.userId || '').toString().trim();
+    const email = (body.email || '').toString().trim().toLowerCase();
+    const role = body.role || 'student';
+
+    if (!userId || !email) {
+      return res.status(422).json({ message: 'userId and email are required.' });
+    }
+
+    // uniqueness checks - check separately to give specific errors
+    const existUserId = await usersCollection.findOne({ userId });
+    if (existUserId) {
+      return res.status(409).json({ message: 'User ID already exists.' });
+    }
+    const existEmail = await usersCollection.findOne({ email });
+    if (existEmail) {
+      return res.status(409).json({ message: 'Email already exists.' });
+    }
+
+    // Hash password before saving
+    const plainPassword = body.password || '';
+    const hashed = plainPassword ? await bcrypt.hash(plainPassword, 10) : '';
+
+    const toSave = {
+      userId,
+      email,
+      password: hashed,
+      role,
+      createdAt: new Date().toISOString(),
+    };
+
+    const result = await usersCollection.insertOne(toSave);
+    const saved = await usersCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeUserForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/users failed:', error);
+    return res.status(500).json({ message: 'Unable to create user.' });
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    let doc;
+    try {
+      doc = await usersCollection.findOne({ _id: new ObjectId(id) });
+    } catch (e) {
+      doc = await usersCollection.findOne({ id });
+    }
+    if (!doc) return res.status(404).json({ message: 'User not found.' });
+    return res.json(sanitizeUserForResponse(doc));
+  } catch (error) {
+    console.error('GET /api/users/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to load user.' });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const body = req.body || {};
+
+    // find existing
+    let existing;
+    try {
+      existing = await usersCollection.findOne({ _id: new ObjectId(id) });
+    } catch (e) {
+      existing = await usersCollection.findOne({ id });
+    }
+    if (!existing) return res.status(404).json({ message: 'User not found.' });
+
+    // prevent role changes unless explicitly provided
+    const updates = {};
+    if (body.email) updates.email = body.email.toString().trim().toLowerCase();
+    if (body.password) {
+      // hash password before storing
+      updates.password = await bcrypt.hash(body.password, 10);
+    }
+
+    // check uniqueness for email change
+    if (updates.email && updates.email !== (existing.email || '').toLowerCase()) {
+      const conflict = await usersCollection.findOne({ email: updates.email, _id: { $ne: existing._id } });
+      if (conflict) return res.status(409).json({ message: 'Email already in use.' });
+    }
+
+    if (Object.keys(updates).length === 0) return res.status(422).json({ message: 'No updatable fields provided.' });
+
+    await usersCollection.updateOne({ _id: existing._id }, { $set: updates });
+    const updated = await usersCollection.findOne({ _id: existing._id });
+    return res.json(sanitizeUserForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/users/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update user.' });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    let result;
+    try {
+      result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
+    } catch (e) {
+      result = await usersCollection.deleteOne({ id });
+    }
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found.' });
+    return res.json({ message: 'User deleted.' });
+  } catch (error) {
+    console.error('DELETE /api/users/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete user.' });
+  }
+});
 
 function safeUploadFilename(originalName) {
   const safeName = originalName.replace(/\s+/g, '_');
@@ -406,12 +548,53 @@ app.get('/', (req, res) => {
   });
 });
 
+// Debug-only route: list registered routes when explicitly enabled.
+// Enable by setting SHOW_REGISTERED_ROUTES=true in the environment (do not enable in permanent production).
+if (process.env.SHOW_REGISTERED_ROUTES === 'true') {
+  app.get('/api/_routes', (req, res) => {
+    try {
+      const routes = [];
+      if (app && app._router && Array.isArray(app._router.stack)) {
+        app._router.stack.forEach((layer) => {
+          if (layer.route && layer.route.path) {
+            const methods = Object.keys(layer.route.methods).map((m) => m.toUpperCase()).join(',');
+            routes.push({ path: layer.route.path, methods });
+          }
+        });
+      }
+      return res.json({ success: true, routes });
+    } catch (e) {
+      console.error('Error listing routes:', e);
+      return res.status(500).json({ success: false });
+    }
+  });
+}
+
 async function startServer() {
   try {
     await connectMongo();
     console.log('Connected to MongoDB');
   } catch (error) {
     console.warn('MongoDB connection unavailable:', error.message);
+  }
+
+  // If requested via environment, log the registered routes to help diagnose
+  // deployment problems (e.g., missing routes in the deployed instance).
+  if (process.env.SHOW_REGISTERED_ROUTES === 'true') {
+    try {
+      const routeList = [];
+      if (app && app._router && Array.isArray(app._router.stack)) {
+        app._router.stack.forEach((layer) => {
+          if (layer.route && layer.route.path) {
+            const methods = Object.keys(layer.route.methods).map((m) => m.toUpperCase()).join(',');
+            routeList.push(`${methods} ${layer.route.path}`);
+          }
+        });
+      }
+      console.log('REGISTERED ROUTES:', routeList.join(' | '));
+    } catch (e) {
+      console.warn('Failed to list registered routes:', e && e.message);
+    }
   }
 
   app.listen(port, () => {

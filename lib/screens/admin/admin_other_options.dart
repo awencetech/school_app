@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
 import 'admin_detail_page.dart';
+import 'content_edit_screen.dart';
+import 'add_options.dart';
 // kept minimal: no direct screen imports required for this page
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -31,6 +33,10 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                 'label': 'main edit',
                 'icon': Icons.dashboard_outlined,
               },
+              {
+                'label': 'Add',
+                'icon': Icons.add_circle_outline,
+              },
             ];
 
             return GridView.builder(
@@ -45,9 +51,17 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                 final item = features[index];
                 return InkWell(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const AdminDetailPage()),
-                    );
+                    if (index == 0) {
+                      // Main Edit
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AdminDetailPage()),
+                      );
+                    } else if (index == 1) {
+                      // Add - opens Add Options Screen
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AddOptions()),
+                      );
+                    }
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Column(

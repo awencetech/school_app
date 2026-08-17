@@ -133,7 +133,8 @@ app.get('/api/users/:id', async (req, res) => {
     try {
       doc = await usersCollection.findOne({ _id: new ObjectId(id) });
     } catch (e) {
-      doc = await usersCollection.findOne({ id });
+      // fallback to lookup by userId string (e.g. "testlocal123")
+      doc = await usersCollection.findOne({ userId: id });
     }
     if (!doc) return res.status(404).json({ message: 'User not found.' });
     return res.json(sanitizeUserForResponse(doc));
@@ -153,7 +154,8 @@ app.put('/api/users/:id', async (req, res) => {
     try {
       existing = await usersCollection.findOne({ _id: new ObjectId(id) });
     } catch (e) {
-      existing = await usersCollection.findOne({ id });
+      // fallback to lookup by userId string
+      existing = await usersCollection.findOne({ userId: id });
     }
     if (!existing) return res.status(404).json({ message: 'User not found.' });
 
@@ -189,10 +191,11 @@ app.delete('/api/users/:id', async (req, res) => {
     try {
       result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
     } catch (e) {
-      result = await usersCollection.deleteOne({ id });
+      // fallback to delete by userId string
+      result = await usersCollection.deleteOne({ userId: id });
     }
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found.' });
-    return res.json({ message: 'User deleted.' });
+    if (result.deletedCount === 0) return res.status(404).json({ success: false, message: 'User not found' });
+    return res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     console.error('DELETE /api/users/:id failed:', error);
     return res.status(500).json({ message: 'Unable to delete user.' });

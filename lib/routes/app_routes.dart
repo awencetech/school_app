@@ -15,6 +15,8 @@ class AppRoutes {
   static const staffDashboard = '/staff-dashboard';
   static const adminDashboard = '/admin-dashboard';
   static const adminOtherOptions = '/admin/other-options';
+  static const adminOtherGroups = '/admin/other-groups';
+  static const adminGroupDetails = '/admin/group-details';
   static const adminSplashScreenEditor = '/admin/splash-screen';
   static const adminHomeScreen = '/admin/home-screen';
   static const adminSection = '/admin/section';

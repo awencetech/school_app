@@ -368,6 +368,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.group_work,
                               label: 'List Other\ngroups',
                               color: Color(0xFF7C3AED),
+                              onTap: () {
+                                Navigator.of(context)
+                                    .pushNamed(AppRoutes.adminOtherGroups);
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.edit,

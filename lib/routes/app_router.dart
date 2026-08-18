@@ -19,6 +19,8 @@ import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../screens/admin/admin_section_page.dart';
 import '../screens/admin/school_settings_editor.dart';
+import '../screens/admin/other_groups_screen.dart';
+import '../screens/admin/group_details_page.dart';
 import 'app_routes.dart';
 
 /// App-wide route factory.
@@ -47,6 +49,11 @@ class AppRouter {
       AppRoutes.staffDashboard => const StaffDashboard(),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
+      AppRoutes.adminOtherGroups => const OtherGroupsScreen(),
+      AppRoutes.adminGroupDetails => (() {
+        final group = settings.arguments as dynamic;
+        return GroupDetailsPage(group: group);
+      })(),
       AppRoutes.adminHomeScreen => const AdminHomeScreen(),
       AppRoutes.adminSchoolSettings => const SchoolSettingsEditor(),
       AppRoutes.adminSchoolContentManagement => const SchoolContentManagementScreen(),

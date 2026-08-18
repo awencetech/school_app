@@ -42,6 +42,15 @@ let client;
 let mainPageInfoCollection;
 let imageBucket;
 let usersCollection;
+let groupsCollection;
+
+const legacyGroupSeed = [
+  { name: 'NCC2022', id: 'NCC2022', type: 'Other', description: 'NCC2022', code: 'NCC2022', status: 'Active', year: '2022' },
+  { name: 'Second_Language_Tamil_Gr4_2026_27 - A', id: 'Second_Language_Tamil_Gr4_2026_27 - A', type: 'Other', description: 'Second_Language_Tamil_Gr4_2026_27 - A', code: 'Second_Language_Tamil_Gr4_2026_27 - A', status: 'Active', year: '2026-27' },
+  { name: 'USS - NSS G11', id: 'USS - NSS G11', type: 'Other', description: 'USS - NSS G11', code: 'USS - NSS G11', status: 'Active', year: '2026-27' },
+  { name: 'JRC - GRADE 6_TO_9', id: 'JRC - GRADE 6_TO_9', type: 'Other', description: 'JRC - GRADE 6_TO_9', code: 'JRC - GRADE 6_TO_9', status: 'Active', year: '2026-27' },
+  { name: 'SCOUTS AND GUIDES - GRADE 6_TO_9', id: 'SCOUTS AND GUIDES - GRADE 6_TO_9', type: 'Other', description: 'SCOUTS AND GUIDES - GRADE 6_TO_9', code: 'SCOUTS AND GUIDES - GRADE 6_TO_9', status: 'Active', year: '2026-27' },
+];
 
 async function connectMongo() {
   if (!mongoUri) {
@@ -54,10 +63,33 @@ async function connectMongo() {
     const db = client.db('mainpage');
     mainPageInfoCollection = db.collection('mainPageInfo');
     usersCollection = db.collection('users');
+    groupsCollection = db.collection('groups');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
   }
 
   return mainPageInfoCollection;
+}
+
+async function ensureLegacyGroupsSeeded() {
+  if (!groupsCollection) {
+    return false;
+  }
+
+  const existingCount = await groupsCollection.countDocuments();
+  if (existingCount > 0) {
+    return false;
+  }
+
+  const now = new Date().toISOString();
+  const documents = legacyGroupSeed.map((group, index) => ({
+    ...group,
+    order: index + 1,
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  await groupsCollection.insertMany(documents);
+  return true;
 }
 
 function sanitizeUserForResponse(doc) {
@@ -69,6 +101,170 @@ function sanitizeUserForResponse(doc) {
     role: doc.role || 'student',
   };
 }
+
+function sanitizeGroupForResponse(doc) {
+  if (!doc) return null;
+  return {
+    _id: doc._id ? doc._id.toString() : null,
+    databaseId: doc._id ? doc._id.toString() : null,
+    id: doc.id || '',
+    name: doc.name || '',
+    code: doc.code || doc.description || '',
+    description: doc.description || doc.code || '',
+    type: doc.type || 'Other',
+    status: doc.status || 'Active',
+    year: doc.year || '',
+    order: Number.isFinite(doc.order) ? Number(doc.order) : 0,
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+async function renumberGroups() {
+  if (!groupsCollection) return;
+  const groups = await groupsCollection.find({}).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
+  for (let index = 0; index < groups.length; index += 1) {
+    const group = groups[index];
+    await groupsCollection.updateOne(
+      { _id: group._id },
+      { $set: { order: index + 1, updatedAt: new Date().toISOString() } }
+    );
+  }
+}
+
+// Groups CRUD
+app.get('/api/groups', async (req, res) => {
+  try {
+    await connectMongo();
+    await ensureLegacyGroupsSeeded();
+    const groups = await groupsCollection.find({}).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
+    return res.json(groups.map(sanitizeGroupForResponse));
+  } catch (error) {
+    console.error('GET /api/groups failed:', error);
+    return res.status(500).json({ message: 'Unable to load groups.' });
+  }
+});
+
+app.post('/api/groups', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const name = (body.name || '').toString().trim();
+    const groupId = (body.id || body.groupId || '').toString().trim();
+    const type = (body.type || 'Other').toString().trim();
+    const description = (body.description || body.code || '').toString().trim();
+    const status = (body.status || 'Active').toString().trim();
+    const year = (body.year || '').toString().trim();
+
+    if (!name || !groupId || !type || !description || !year) {
+      return res.status(422).json({ message: 'All fields are required.' });
+    }
+
+    const exists = await groupsCollection.findOne({ id: groupId });
+    if (exists) {
+      return res.status(409).json({ message: 'Group ID already exists' });
+    }
+
+    const totalCount = await groupsCollection.countDocuments();
+    const createdAt = new Date().toISOString();
+    const toSave = {
+      name,
+      id: groupId,
+      type,
+      description,
+      code: description,
+      status,
+      year,
+      order: totalCount + 1,
+      createdAt,
+      updatedAt: createdAt,
+    };
+
+    const result = await groupsCollection.insertOne(toSave);
+    const saved = await groupsCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeGroupForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/groups failed:', error);
+    return res.status(500).json({ message: 'Unable to create group.' });
+  }
+});
+
+app.put('/api/groups/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const idParam = req.params.id;
+    const body = req.body || {};
+    const name = (body.name || '').toString().trim();
+    const groupId = (body.id || body.groupId || '').toString().trim();
+    const type = (body.type || 'Other').toString().trim();
+    const description = (body.description || body.code || '').toString().trim();
+    const status = (body.status || 'Active').toString().trim();
+    const year = (body.year || '').toString().trim();
+
+    if (!name || !groupId || !type || !description || !year) {
+      return res.status(422).json({ message: 'All fields are required.' });
+    }
+
+    let existing;
+    try {
+      existing = await groupsCollection.findOne({ _id: new ObjectId(idParam) });
+    } catch (_) {
+      existing = await groupsCollection.findOne({ id: idParam });
+    }
+
+    if (!existing) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    const duplicate = await groupsCollection.findOne({ id: groupId, _id: { $ne: existing._id } });
+    if (duplicate) {
+      return res.status(409).json({ message: 'Group ID already exists' });
+    }
+
+    const updatedAt = new Date().toISOString();
+    const updatedDoc = {
+      name,
+      id: groupId,
+      type,
+      description,
+      code: description,
+      status,
+      year,
+      updatedAt,
+    };
+
+    await groupsCollection.updateOne({ _id: existing._id }, { $set: updatedDoc });
+    const saved = await groupsCollection.findOne({ _id: existing._id });
+    return res.json(sanitizeGroupForResponse(saved));
+  } catch (error) {
+    console.error('PUT /api/groups/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update group.' });
+  }
+});
+
+app.delete('/api/groups/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const idParam = req.params.id;
+    let existing;
+    try {
+      existing = await groupsCollection.findOne({ _id: new ObjectId(idParam) });
+    } catch (_) {
+      existing = await groupsCollection.findOne({ id: idParam });
+    }
+
+    if (!existing) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    await groupsCollection.deleteOne({ _id: existing._id });
+    await renumberGroups();
+    return res.json({ success: true, message: 'Group deleted successfully' });
+  } catch (error) {
+    console.error('DELETE /api/groups/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete group.' });
+  }
+});
 
 // Users CRUD
 app.get('/api/users', async (req, res) => {

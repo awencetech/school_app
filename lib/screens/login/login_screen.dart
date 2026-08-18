@@ -60,7 +60,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }).catchError((e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid username or password')));
+      // Log error for debugging but show generic message to user
+      debugPrint('Login error: $e');
+      String message = 'Invalid username or password';
+      if (e is! Exception) {
+        message = 'Connection error. Please check your internet and try again.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }).whenComplete(() {
       if (mounted) setState(() => _isLoading = false);
     });

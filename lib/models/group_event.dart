@@ -1,0 +1,62 @@
+/// An event scheduled for one activity group.
+class GroupEvent {
+  const GroupEvent({
+    required this.id,
+    required this.groupId,
+    required this.title,
+    required this.startDate,
+    this.endDate,
+    this.startTime,
+    this.endTime,
+    this.description = '',
+    this.createdBy = '',
+  });
+
+  final String id;
+  final String groupId;
+  final String title;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final String? startTime;
+  final String? endTime;
+  final String description;
+  final String createdBy;
+
+  factory GroupEvent.fromJson(Map<String, dynamic> json) {
+    final startDate = _parseDate(
+      json['startDate'] ??
+          json['start_date'] ??
+          json['eventDate'] ??
+          json['event_date'],
+    );
+    if (startDate == null) {
+      throw const FormatException('Event startDate is invalid.');
+    }
+
+    return GroupEvent(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      groupId: (json['groupId'] ?? json['group_id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      startDate: startDate,
+      endDate: _parseDate(json['endDate'] ?? json['end_date']),
+      startTime: _optionalString(json['startTime'] ?? json['start_time']),
+      endTime: _optionalString(json['endTime'] ?? json['end_time']),
+      description: (json['description'] ?? '').toString(),
+      createdBy: (json['createdBy'] ?? '').toString(),
+    );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is Map && value[r'$date'] != null) {
+      return DateTime.tryParse(value[r'$date'].toString());
+    }
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString());
+  }
+
+  static String? _optionalString(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
+}

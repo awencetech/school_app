@@ -43,6 +43,7 @@ let mainPageInfoCollection;
 let imageBucket;
 let usersCollection;
 let groupsCollection;
+let eventsCollection;
 
 const legacyGroupSeed = [
   { name: 'NCC2022', id: 'NCC2022', type: 'Other', description: 'NCC2022', code: 'NCC2022', status: 'Active', year: '2022' },
@@ -64,6 +65,7 @@ async function connectMongo() {
     mainPageInfoCollection = db.collection('mainPageInfo');
     usersCollection = db.collection('users');
     groupsCollection = db.collection('groups');
+    eventsCollection = db.collection('events');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
   }
 
@@ -120,6 +122,22 @@ function sanitizeGroupForResponse(doc) {
   };
 }
 
+function sanitizeEventForResponse(doc) {
+  if (!doc) return null;
+  return {
+    _id: doc._id ? doc._id.toString() : null,
+    id: doc.id || (doc._id ? doc._id.toString() : ''),
+    groupId: doc.groupId || '',
+    title: doc.title || '',
+    startDate: doc.startDate || '',
+    endDate: doc.endDate || null,
+    startTime: doc.startTime || null,
+    endTime: doc.endTime || null,
+    description: doc.description || '',
+    createdBy: doc.createdBy || '',
+  };
+}
+
 async function renumberGroups() {
   if (!groupsCollection) return;
   const groups = await groupsCollection.find({}).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
@@ -142,6 +160,69 @@ app.get('/api/groups', async (req, res) => {
   } catch (error) {
     console.error('GET /api/groups failed:', error);
     return res.status(500).json({ message: 'Unable to load groups.' });
+  }
+});
+
+app.get('/api/groups/:groupId/events', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const groupIds = [groupId];
+    if (groupId.startsWith('SAMUNI-2022-')) {
+      groupIds.push(groupId.substring('SAMUNI-2022-'.length));
+    }
+    const events = await eventsCollection
+      .find({ groupId: { $in: groupIds } })
+      .sort({ startDate: 1, startTime: 1, createdAt: 1 })
+      .toArray();
+    return res.json(events.map(sanitizeEventForResponse));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/events failed:', error);
+    return res.status(500).json({ message: 'Unable to load group events.' });
+  }
+});
+
+app.post('/api/groups/:groupId/events', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const body = req.body || {};
+    const title = (body.title || '').toString().trim();
+    const startDate = (body.startDate || '').toString().trim();
+    const endDate = (body.endDate || startDate).toString().trim();
+
+    if (!groupId || !title || !startDate || Number.isNaN(Date.parse(startDate))) {
+      return res.status(422).json({ message: 'groupId, title, and a valid startDate are required.' });
+    }
+
+    const legacyGroupId = groupId.startsWith('SAMUNI-2022-')
+      ? groupId.substring('SAMUNI-2022-'.length)
+      : groupId;
+    const group = await groupsCollection.findOne({
+      id: { $in: [groupId, legacyGroupId] },
+    });
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    const now = new Date().toISOString();
+    const event = {
+      groupId,
+      title,
+      startDate,
+      endDate: Number.isNaN(Date.parse(endDate)) ? startDate : endDate,
+      startTime: body.startTime ? body.startTime.toString().trim() : null,
+      endTime: body.endTime ? body.endTime.toString().trim() : null,
+      description: body.description ? body.description.toString().trim() : '',
+      createdBy: body.createdBy ? body.createdBy.toString().trim() : '',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await eventsCollection.insertOne(event);
+    const saved = await eventsCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeEventForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/events failed:', error);
+    return res.status(500).json({ message: 'Unable to create group event.' });
   }
 });
 

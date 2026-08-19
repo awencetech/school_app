@@ -6,6 +6,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import 'future_event_calendar_page.dart';
 import 'group_info_page.dart';
 
 /// Group Details page showing comprehensive information about a selected group.
@@ -63,10 +64,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
             const SizedBox(height: 16),
 
             // Divider
-            Container(
-              height: 1,
-              color: AppColors.border,
-            ),
+            Container(height: 1, color: AppColors.border),
             const SizedBox(height: 24),
 
             // Group Menu Section
@@ -95,28 +93,87 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                     );
                   },
                 ),
-                _IconGridItem('Future Event Calendar', Icons.calendar_month, const Color(0xFFF59E0B)),
-                _IconGridItem('HW Today in class', Icons.book, const Color(0xFFEF4444)),
-                _IconGridItem('Group Messages', Icons.mail, const Color(0xFF16A34A)),
-                _IconGridItem('Write Write Msg!', Icons.edit, const Color(0xFF9333EA)),
-                _IconGridItem('Class Demography', Icons.people, const Color(0xFF06B6D4)),
-                _IconGridItem('Class Resources', Icons.library_books, const Color(0xFF8B5CF6)),
-                _IconGridItem('Photos News', Icons.photo_camera, const Color(0xFFEC4899)),
-                _IconGridItem('Class TimeTable', Icons.schedule, const Color(0xFF3B82F6)),
-                _IconGridItem('Class Planner', Icons.today, const Color(0xFF10B981)),
-                _IconGridItem('Video Conf', Icons.videocam, const Color(0xFFDC2626)),
-                _IconGridItem('Class FilePlan', Icons.folder, const Color(0xFF0EA5E9)),
-                _IconGridItem('Online Assignment', Icons.assignment, const Color(0xFFF97316)),
-                _IconGridItem('Online Assessment', Icons.assessment, const Color(0xFF6366F1)),
+                _IconGridItem(
+                  'Future Event Calendar',
+                  Icons.calendar_month,
+                  const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FutureEventCalendarPage(
+                          groupId: groupDatabaseId,
+                          groupName: widget.group.name,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _IconGridItem(
+                  'HW Today in class',
+                  Icons.book,
+                  const Color(0xFFEF4444),
+                ),
+                _IconGridItem(
+                  'Group Messages',
+                  Icons.mail,
+                  const Color(0xFF16A34A),
+                ),
+                _IconGridItem(
+                  'Write Write Msg!',
+                  Icons.edit,
+                  const Color(0xFF9333EA),
+                ),
+                _IconGridItem(
+                  'Class Demography',
+                  Icons.people,
+                  const Color(0xFF06B6D4),
+                ),
+                _IconGridItem(
+                  'Class Resources',
+                  Icons.library_books,
+                  const Color(0xFF8B5CF6),
+                ),
+                _IconGridItem(
+                  'Photos News',
+                  Icons.photo_camera,
+                  const Color(0xFFEC4899),
+                ),
+                _IconGridItem(
+                  'Class TimeTable',
+                  Icons.schedule,
+                  const Color(0xFF3B82F6),
+                ),
+                _IconGridItem(
+                  'Class Planner',
+                  Icons.today,
+                  const Color(0xFF10B981),
+                ),
+                _IconGridItem(
+                  'Video Conf',
+                  Icons.videocam,
+                  const Color(0xFFDC2626),
+                ),
+                _IconGridItem(
+                  'Class FilePlan',
+                  Icons.folder,
+                  const Color(0xFF0EA5E9),
+                ),
+                _IconGridItem(
+                  'Online Assignment',
+                  Icons.assignment,
+                  const Color(0xFFF97316),
+                ),
+                _IconGridItem(
+                  'Online Assessment',
+                  Icons.assessment,
+                  const Color(0xFF6366F1),
+                ),
               ],
             ),
             const SizedBox(height: 24),
 
             // Divider
-            Container(
-              height: 1,
-              color: AppColors.border,
-            ),
+            Container(height: 1, color: AppColors.border),
             const SizedBox(height: 24),
 
             // Teacher Options Section
@@ -133,21 +190,81 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
             // Second Icon Grid
             _IconGrid(
               items: [
-                _IconGridItem('Group/Class Menu', Icons.menu, const Color(0xFF06B6D4)),
-                _IconGridItem('Group Dashboard', Icons.dashboard, const Color(0xFF8B5CF6)),
-                _IconGridItem('Diary Summary', Icons.note_outlined, const Color(0xFFEC4899)),
-                _IconGridItem('Take Attendance', Icons.how_to_reg, const Color(0xFF10B981)),
-                _IconGridItem('Appreciate Award', Icons.emoji_events, const Color(0xFFF59E0B)),
-                _IconGridItem('Class FilePlan', Icons.folder, const Color(0xFFDC2626)),
-                _IconGridItem('Online Assignment', Icons.assignment, const Color(0xFF3B82F6)),
-                _IconGridItem('Online Assessment', Icons.assessment, const Color(0xFFF97316)),
-                _IconGridItem('Leave Approval', Icons.approval, const Color(0xFF6366F1)),
-                _IconGridItem('Medical Event List', Icons.health_and_safety, const Color(0xFF14B8A6)),
-                _IconGridItem('Happiness Report', Icons.insert_chart, const Color(0xFFD946EF)),
-                _IconGridItem('One on One Meeting', Icons.video_call, const Color(0xFFFACC15)),
-                _IconGridItem('Pick/Drop Entry', Icons.directions_car, const Color(0xFF0284C7)),
-                _IconGridItem('Access Mgmt', Icons.admin_panel_settings, const Color(0xFF84CC16)),
-                _IconGridItem('Class Fee Details', Icons.receipt, const Color(0xFFF43F5E)),
+                _IconGridItem(
+                  'Group/Class Menu',
+                  Icons.menu,
+                  const Color(0xFF06B6D4),
+                ),
+                _IconGridItem(
+                  'Group Dashboard',
+                  Icons.dashboard,
+                  const Color(0xFF8B5CF6),
+                ),
+                _IconGridItem(
+                  'Diary Summary',
+                  Icons.note_outlined,
+                  const Color(0xFFEC4899),
+                ),
+                _IconGridItem(
+                  'Take Attendance',
+                  Icons.how_to_reg,
+                  const Color(0xFF10B981),
+                ),
+                _IconGridItem(
+                  'Appreciate Award',
+                  Icons.emoji_events,
+                  const Color(0xFFF59E0B),
+                ),
+                _IconGridItem(
+                  'Class FilePlan',
+                  Icons.folder,
+                  const Color(0xFFDC2626),
+                ),
+                _IconGridItem(
+                  'Online Assignment',
+                  Icons.assignment,
+                  const Color(0xFF3B82F6),
+                ),
+                _IconGridItem(
+                  'Online Assessment',
+                  Icons.assessment,
+                  const Color(0xFFF97316),
+                ),
+                _IconGridItem(
+                  'Leave Approval',
+                  Icons.approval,
+                  const Color(0xFF6366F1),
+                ),
+                _IconGridItem(
+                  'Medical Event List',
+                  Icons.health_and_safety,
+                  const Color(0xFF14B8A6),
+                ),
+                _IconGridItem(
+                  'Happiness Report',
+                  Icons.insert_chart,
+                  const Color(0xFFD946EF),
+                ),
+                _IconGridItem(
+                  'One on One Meeting',
+                  Icons.video_call,
+                  const Color(0xFFFACC15),
+                ),
+                _IconGridItem(
+                  'Pick/Drop Entry',
+                  Icons.directions_car,
+                  const Color(0xFF0284C7),
+                ),
+                _IconGridItem(
+                  'Access Mgmt',
+                  Icons.admin_panel_settings,
+                  const Color(0xFF84CC16),
+                ),
+                _IconGridItem(
+                  'Class Fee Details',
+                  Icons.receipt,
+                  const Color(0xFFF43F5E),
+                ),
               ],
             ),
             const SizedBox(height: 40),
@@ -231,10 +348,7 @@ class _CompactGroupInfo extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          height: 1,
-          color: AppColors.border,
-        ),
+        Container(height: 1, color: AppColors.border),
       ],
     );
   }
@@ -279,11 +393,7 @@ class GroupMenuItem extends StatelessWidget {
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: Icon(
-                icon,
-                size: 19,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 19, color: Colors.white),
             ),
             const SizedBox(height: 5),
             Text(
@@ -352,4 +462,3 @@ class _IconGrid extends StatelessWidget {
     );
   }
 }
-

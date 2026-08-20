@@ -44,6 +44,8 @@ let imageBucket;
 let usersCollection;
 let groupsCollection;
 let eventsCollection;
+let todayInClassCollection;
+let groupMessagesCollection;
 
 const legacyGroupSeed = [
   { name: 'NCC2022', id: 'NCC2022', type: 'Other', description: 'NCC2022', code: 'NCC2022', status: 'Active', year: '2022' },
@@ -66,6 +68,8 @@ async function connectMongo() {
     usersCollection = db.collection('users');
     groupsCollection = db.collection('groups');
     eventsCollection = db.collection('events');
+    todayInClassCollection = db.collection('todayInClass');
+    groupMessagesCollection = db.collection('groupMessages');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
   }
 
@@ -136,6 +140,66 @@ function sanitizeEventForResponse(doc) {
     description: doc.description || '',
     createdBy: doc.createdBy || '',
   };
+}
+
+function sanitizeTodayInClassForResponse(doc) {
+  if (!doc) return null;
+  return {
+    _id: doc._id ? doc._id.toString() : null,
+    id: doc.id || (doc._id ? doc._id.toString() : ''),
+    groupId: doc.groupId || '',
+    date: doc.date || '',
+    subject: doc.subject || '',
+    message: doc.message || '',
+    sendToStudents: doc.sendToStudents === true,
+    sendToTeachers: doc.sendToTeachers === true,
+    commentsAllowed: doc.commentsAllowed !== false,
+    attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeGroupMessageForResponse(doc) {
+  if (!doc) return null;
+  return {
+    _id: doc._id ? doc._id.toString() : null,
+    id: doc.id || (doc._id ? doc._id.toString() : ''),
+    groupId: doc.groupId || '',
+    title: doc.title || '',
+    content: doc.content || doc.message || '',
+    authorId: doc.authorId || '',
+    authorRole: doc.authorRole || '',
+    category: doc.category || '',
+    target: doc.target || '',
+    approved: doc.approved === true,
+    approvedById: doc.approvedById || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function groupIdVariants(groupId) {
+  const variants = [groupId];
+  if (groupId.startsWith('SAMUNI-2022-')) {
+    variants.push(groupId.substring('SAMUNI-2022-'.length));
+  }
+  return variants;
+}
+
+function groupReferenceSlug(value) {
+  return value.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+async function findGroupByReference(groupId) {
+  const variants = groupIdVariants(groupId);
+  const exact = await groupsCollection.findOne({ id: { $in: variants } });
+  if (exact) return exact;
+
+  const requestedSlug = groupReferenceSlug(groupId.replace(/^SAMUNI-2022-/i, ''));
+  const groups = await groupsCollection.find({}).toArray();
+  return groups.find((group) => [group.id, group.name]
+    .some((value) => groupReferenceSlug(value) === requestedSlug)) || null;
 }
 
 async function renumberGroups() {
@@ -223,6 +287,154 @@ app.post('/api/groups/:groupId/events', async (req, res) => {
   } catch (error) {
     console.error('POST /api/groups/:groupId/events failed:', error);
     return res.status(500).json({ message: 'Unable to create group event.' });
+  }
+});
+
+app.get('/api/groups/:groupId/today-in-class', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const records = await todayInClassCollection
+      .find({ groupId: { $in: groupIdVariants(groupId) } })
+      .sort({ date: -1, createdAt: -1 })
+      .toArray();
+    return res.json(records.map(sanitizeTodayInClassForResponse));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/today-in-class failed:', error);
+    return res.status(500).json({ message: 'Unable to load Today in Class.' });
+  }
+});
+
+app.post('/api/groups/:groupId/today-in-class', async (req, res) => {
+  try {
+    await connectMongo();
+    const requestedGroupId = (req.params.groupId || '').trim();
+    const group = await findGroupByReference(requestedGroupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    const body = req.body || {};
+    const subject = (body.subject || '').toString().trim();
+    const message = (body.message || '').toString().trim();
+    const date = (body.date || '').toString().trim();
+    if (!subject || !message || !date || Number.isNaN(Date.parse(date))) {
+      return res.status(422).json({ message: 'Date, subject, and message are required.' });
+    }
+
+    const now = new Date().toISOString();
+    const record = {
+      groupId: requestedGroupId,
+      date,
+      subject,
+      message,
+      sendToStudents: body.sendToStudents === true,
+      sendToTeachers: body.sendToTeachers === true,
+      commentsAllowed: body.commentsAllowed !== false,
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await todayInClassCollection.insertOne(record);
+    const saved = await todayInClassCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeTodayInClassForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/today-in-class failed:', error);
+    return res.status(500).json({ message: 'Unable to save Today in Class.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    let result;
+    try {
+      result = await todayInClassCollection.deleteOne({ _id: new ObjectId(req.params.recordId), groupId: { $in: groupIdVariants(groupId) } });
+    } catch (_) {
+      result = await todayInClassCollection.deleteOne({ id: req.params.recordId, groupId: { $in: groupIdVariants(groupId) } });
+    }
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Today in Class record not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/today-in-class/:recordId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete Today in Class.' });
+  }
+});
+
+app.get('/api/groups/:groupId/messages', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messages = await groupMessagesCollection
+      .find({ groupId: { $in: groupIdVariants(groupId) } })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return res.json(messages.map(sanitizeGroupMessageForResponse));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/messages failed:', error);
+    return res.status(500).json({ message: 'Unable to load messages.' });
+  }
+});
+
+app.post('/api/groups/:groupId/messages', async (req, res) => {
+  try {
+    await connectMongo();
+    const requestedGroupId = (req.params.groupId || '').trim();
+    const group = await findGroupByReference(requestedGroupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+
+    const body = req.body || {};
+    const content = (body.content || body.message || '').toString().trim();
+    const category = (body.category || body.messageType || '').toString().trim();
+    if (!content || !category) {
+      return res.status(422).json({ message: 'Message type and message are required.' });
+    }
+
+    const now = new Date().toISOString();
+    const message = {
+      groupId: requestedGroupId,
+      groupName: (body.groupName || group.name || '').toString().trim(),
+      title: (body.title || category).toString().trim(),
+      content,
+      authorId: (body.authorId || body.senderId || '').toString().trim(),
+      authorRole: (body.authorRole || body.senderRole || '').toString().trim(),
+      senderName: (body.senderName || '').toString().trim(),
+      category,
+      target: (body.target || '').toString().trim(),
+      approved: body.approved === true,
+      approvedById: (body.approvedById || '').toString().trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await groupMessagesCollection.insertOne(message);
+    const saved = await groupMessagesCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeGroupMessageForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/messages failed:', error);
+    return res.status(500).json({ message: 'Unable to save message.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/messages/:messageId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    let result;
+    try {
+      result = await groupMessagesCollection.deleteOne({
+        _id: new ObjectId(req.params.messageId),
+        groupId: { $in: groupIdVariants(groupId) },
+      });
+    } catch (_) {
+      result = await groupMessagesCollection.deleteOne({
+        id: req.params.messageId,
+        groupId: { $in: groupIdVariants(groupId) },
+      });
+    }
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Message not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/messages/:messageId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete message.' });
   }
 });
 
@@ -634,6 +846,25 @@ app.post('/api/upload/school-poster', upload.single('file'), async (req, res) =>
   } catch (error) {
     console.error('POST /api/upload/school-poster failed:', error);
     return res.status(500).json({ message: 'Unable to save the poster image.' });
+  }
+});
+
+app.post('/api/upload/attachment', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No attachment file was uploaded.' });
+  }
+
+  try {
+    const saved = await saveFileToGridFS(req.file);
+    const url = `${req.protocol}://${req.get('host')}/api/images/${saved.id}`;
+    return res.status(200).json({
+      url,
+      filename: saved.filename,
+      originalName: req.file.originalname,
+    });
+  } catch (error) {
+    console.error('POST /api/upload/attachment failed:', error);
+    return res.status(500).json({ message: 'Unable to save the attachment.' });
   }
 });
 

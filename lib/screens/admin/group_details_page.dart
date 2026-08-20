@@ -8,6 +8,20 @@ import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import 'future_event_calendar_page.dart';
 import 'group_info_page.dart';
+import 'group_messages_page.dart';
+import 'homework_today_in_class_page.dart';
+import 'class_demography_page.dart';
+import 'class_resources_page.dart';
+import 'class_news_page.dart';
+import 'class_timetable_page.dart';
+import 'class_planner_page.dart';
+import 'online_class_meeting_page.dart';
+import 'class_fileplan_page.dart';
+import 'online_assignment_page.dart';
+import 'online_assessment_page.dart';
+import 'group_dashboard_page.dart';
+import 'absence_page.dart';
+import 'write_message_page.dart';
 
 /// Group Details page showing comprehensive information about a selected group.
 class GroupDetailsPage extends StatefulWidget {
@@ -112,61 +126,157 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'HW Today in class',
                   Icons.book,
                   const Color(0xFFEF4444),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => HomeworkTodayInClassPage(
+                          groupId: groupDatabaseId,
+                          groupName: widget.group.name,
+                          groupYear: widget.group.year,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Group Messages',
                   Icons.mail,
                   const Color(0xFF16A34A),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => GroupMessagesPage(
+                          groupId: groupDatabaseId,
+                          groupName: widget.group.name,
+                          groupYear: widget.group.year,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Write Write Msg!',
                   Icons.edit,
                   const Color(0xFF9333EA),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => WriteMessagePage(
+                          groupId: groupDatabaseId,
+                          groupName: widget.group.name,
+                          groupYear: widget.group.year,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class Demography',
                   Icons.people,
                   const Color(0xFF06B6D4),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassDemographyPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class Resources',
                   Icons.library_books,
                   const Color(0xFF8B5CF6),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassResourcesPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Photos News',
                   Icons.photo_camera,
                   const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassNewsPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class TimeTable',
                   Icons.schedule,
                   const Color(0xFF3B82F6),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassTimetablePage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class Planner',
                   Icons.today,
                   const Color(0xFF10B981),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassPlannerPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Video Conf',
                   Icons.videocam,
                   const Color(0xFFDC2626),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => OnlineClassMeetingPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class FilePlan',
                   Icons.folder,
                   const Color(0xFF0EA5E9),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassFileplanPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Online Assignment',
                   Icons.assignment,
                   const Color(0xFFF97316),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => OnlineAssignmentPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Online Assessment',
                   Icons.assessment,
                   const Color(0xFF6366F1),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => OnlineAssessmentPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -199,6 +309,13 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'Group Dashboard',
                   Icons.dashboard,
                   const Color(0xFF8B5CF6),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => GroupDashboardPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Diary Summary',
@@ -209,6 +326,13 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'Take Attendance',
                   Icons.how_to_reg,
                   const Color(0xFF10B981),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AbsencePage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Appreciate Award',
@@ -389,11 +513,16 @@ class GroupMenuItem extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: Icon(icon, size: 19, color: Colors.white),
+              child: Icon(
+                icon,
+                size: 19,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 5),
             Text(

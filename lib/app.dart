@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
 
 import 'routes/app_router.dart';
@@ -25,6 +26,12 @@ class SchoolApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'School App',
         theme: AppTheme.light,
+        localizationsDelegates: const [
+          FlutterQuillLocalizations.delegate,
+        ],
+        supportedLocales: [
+          const Locale('en', 'US'),
+        ],
         // Ensure splash screen is always shown first on initial app load
         // (including web refresh / deep links). The splash will receive the
         // originally requested route as `targetRoute` and navigate there

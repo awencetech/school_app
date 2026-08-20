@@ -27,7 +27,7 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
   final int _selectedBottomIndex = 0;
 
   int currentPage = 1;
-  static const int itemsPerPage = 10;
+  static const int itemsPerPage = 5;
 
   @override
   void initState() {
@@ -64,7 +64,9 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = error is ApiException ? error.message : 'Unable to load groups.';
+        _errorMessage = error is ApiException
+            ? error.message
+            : 'Unable to load groups.';
       });
     }
   }
@@ -76,9 +78,11 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
       } else {
         final lowerQuery = query.toLowerCase();
         filteredGroups = allGroups
-            .where((group) =>
-                group.name.toLowerCase().contains(lowerQuery) ||
-                group.code.toLowerCase().contains(lowerQuery))
+            .where(
+              (group) =>
+                  group.name.toLowerCase().contains(lowerQuery) ||
+                  group.code.toLowerCase().contains(lowerQuery),
+            )
             .toList();
       }
       currentPage = 1; // Reset to first page on search
@@ -92,7 +96,10 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
   List<Group> get paginatedGroups {
     if (filteredGroups.isEmpty) return [];
     final startIndex = (currentPage - 1) * itemsPerPage;
-    final endIndex = (startIndex + itemsPerPage).clamp(0, filteredGroups.length);
+    final endIndex = (startIndex + itemsPerPage).clamp(
+      0,
+      filteredGroups.length,
+    );
     return filteredGroups.sublist(startIndex, endIndex);
   }
 
@@ -105,11 +112,9 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
   }
 
   void _goToGroupDetails(Group group) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GroupDetailsPage(group: group),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => GroupDetailsPage(group: group)));
   }
 
   @override
@@ -183,45 +188,6 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
             else
               const SizedBox.shrink(),
 
-            // Pagination controls
-            if (totalPages > 1)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _PaginationButton(
-                      label: 'Prev',
-                      enabled: currentPage > 1,
-                      onTap: currentPage > 1
-                          ? () => _goToPage(currentPage - 1)
-                          : null,
-                    ),
-                    const SizedBox(width: 8),
-                    ...List.generate(totalPages, (index) {
-                      final pageNumber = index + 1;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: _PaginationButton(
-                          label: pageNumber.toString(),
-                          isActive: pageNumber == currentPage,
-                          onTap: () => _goToPage(pageNumber),
-                        ),
-                      );
-                    }),
-                    const SizedBox(width: 8),
-                    _PaginationButton(
-                      label: 'Next',
-                      enabled: currentPage < totalPages,
-                      onTap: currentPage < totalPages
-                          ? () => _goToPage(currentPage + 1)
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 20),
-
             // Groups grid/list
             if (!_isLoading && filteredGroups.isEmpty)
               Padding(
@@ -256,6 +222,16 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
                   );
                 },
               ),
+
+            if (!_isLoading && totalPages > 1) ...[
+              const SizedBox(height: 20),
+              _PaginationControls(
+                currentPage: currentPage,
+                totalPages: totalPages,
+                onPageChanged: _goToPage,
+              ),
+            ],
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -282,10 +258,9 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
               Navigator.of(context).pushNamed(AppRoutes.supportQuery);
               break;
             case 4:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.main,
-                (route) => false,
-              );
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
               break;
           }
         },
@@ -295,10 +270,7 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
 }
 
 class _GroupCard extends StatelessWidget {
-  const _GroupCard({
-    required this.group,
-    required this.onTap,
-  });
+  const _GroupCard({required this.group, required this.onTap});
 
   final Group group;
   final VoidCallback onTap;
@@ -345,6 +317,92 @@ class _GroupCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PaginationControls extends StatelessWidget {
+  const _PaginationControls({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageChanged,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
+
+  List<Object> get _pageItems {
+    if (totalPages <= 7) {
+      return List<int>.generate(totalPages, (index) => index + 1);
+    }
+
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', totalPages];
+    }
+
+    if (currentPage >= totalPages - 2) {
+      return [
+        1,
+        '...',
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
+    }
+
+    return [
+      1,
+      '...',
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      '...',
+      totalPages,
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      runSpacing: 8,
+      children: [
+        _PaginationButton(
+          label: 'Prev',
+          enabled: currentPage > 1,
+          onTap: currentPage > 1 ? () => onPageChanged(currentPage - 1) : null,
+        ),
+        for (final item in _pageItems)
+          if (item is int)
+            _PaginationButton(
+              label: item.toString(),
+              isActive: item == currentPage,
+              onTap: () => onPageChanged(item),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(
+                item as String,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ),
+        _PaginationButton(
+          label: 'Next',
+          enabled: currentPage < totalPages,
+          onTap: currentPage < totalPages
+              ? () => onPageChanged(currentPage + 1)
+              : null,
+        ),
+      ],
     );
   }
 }

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../routes/app_routes.dart';
+import '../../models/group.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
+import '../admin/class_demography_page.dart';
 
 /// More options screen for the classes/groups section.
 class StudentMoreOptionsScreen extends StatelessWidget {
@@ -133,10 +135,13 @@ class StudentMoreOptionsScreen extends StatelessWidget {
                       label: 'Write Message',
                       color: Color(0xFF9333EA),
                     ),
-                    const _MoreOptionTile(
-                      icon: Icons.pie_chart,
-                      label: 'Class Demography',
-                      color: Color(0xFF22C55E),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ClassDemographyPage(group: Group(id: 'NCC2022', name: 'NCC2022', year: '2026')))),
+                      child: const _MoreOptionTile(
+                        icon: Icons.pie_chart,
+                        label: 'Class Demography',
+                        color: Color(0xFF22C55E),
+                      ),
                     ),
                     const _MoreOptionTile(
                       icon: Icons.school,
@@ -241,6 +246,7 @@ class _MoreOptionTile extends StatelessWidget {
         Container(
           width: 28,
           height: 28,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(3),

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/news_item.dart';
+import '../../models/group.dart';
 import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
@@ -17,6 +18,7 @@ import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/cards/important_news_marquee.dart';
 import '../support/support_screen.dart';
 import '../messages/messages_page.dart';
+import 'class_demography_page.dart';
 
 /// Admin dashboard page matching the requested layout.
 class AdminDashboard extends StatefulWidget {
@@ -27,7 +29,7 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  int _selectedBottomIndex = 0;
+  final int _selectedBottomIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +255,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio: 0.95,
-                          children: const [
+                          children: [
                             _SchoolLinkChip(
                               icon: Icons.language,
                               label: 'Website',
@@ -293,6 +295,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.people,
                               label: 'Demography',
                               color: Color(0xFF388E3C),
+                              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ClassDemographyPage(group: Group(id: 'NCC2022', name: 'NCC2022', year: '2026')))),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.camera_alt,
@@ -503,17 +506,21 @@ class _SchoolLinkChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
         Container(
           width: 32,
           height: 32,
@@ -539,7 +546,8 @@ class _SchoolLinkChip extends StatelessWidget {
             color: const Color(0xFF222222),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }

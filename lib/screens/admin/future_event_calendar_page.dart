@@ -5,6 +5,7 @@ import '../../models/group_event.dart';
 import '../../services/group_event_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 enum _CalendarView { month, week, day }
@@ -118,6 +119,15 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        centerTitle: true,
+        title: Text('Future Events', style: AppTextStyles.appTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(2, 4, 2, 28),
         child: Column(

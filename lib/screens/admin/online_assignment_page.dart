@@ -34,7 +34,11 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
         ),
         title: const Text(
           'Today in Class',
-          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           SizedBox(
@@ -56,9 +60,33 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
               height: 27,
               child: Padding(
                 padding: const EdgeInsets.only(left: 7, top: 7),
-                child: Text(
-                  '${widget.group.name} - ${widget.group.year} - Homework, Assignments',
-                  style: const TextStyle(fontSize: 11, color: Color(0xff1d3557)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${widget.group.name} - ${widget.group.year} - Homework, Assignments',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xff1d3557),
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(27, 20),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Add',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Color(0xff0066cc),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -67,20 +95,39 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
               height: 31,
               child: Row(
                 children: [
-                  _Tab(label: 'List', selected: _selectedTab == 0, onTap: () => setState(() => _selectedTab = 0)),
-                  _Tab(label: 'Chart', selected: _selectedTab == 1, onTap: () => setState(() => _selectedTab = 1)),
-                  _Tab(label: 'Folder', selected: _selectedTab == 2, onTap: () => setState(() => _selectedTab = 2)),
-                  _Tab(label: 'Analyse', selected: _selectedTab == 3, onTap: () => setState(() => _selectedTab = 3)),
+                  _Tab(
+                    label: 'List',
+                    selected: _selectedTab == 0,
+                    onTap: () => setState(() => _selectedTab = 0),
+                  ),
+                  _Tab(
+                    label: 'Chart',
+                    selected: _selectedTab == 1,
+                    onTap: () => setState(() => _selectedTab = 1),
+                  ),
+                  _Tab(
+                    label: 'Folder',
+                    selected: _selectedTab == 2,
+                    onTap: () => setState(() => _selectedTab = 2),
+                  ),
+                  _Tab(
+                    label: 'Analyse',
+                    selected: _selectedTab == 3,
+                    onTap: () => setState(() => _selectedTab = 3),
+                  ),
                 ],
               ),
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xffeeeeee)),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'No Data available',
-                  style: TextStyle(fontSize: 10, color: Color(0xff222222)),
-                ),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTab,
+                children: [
+                  _listTab(),
+                  _chartTab(),
+                  _folderTab(),
+                  _analyseTab(),
+                ],
               ),
             ),
           ],
@@ -92,10 +139,120 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
       ),
     );
   }
+
+  Widget _listTab() => const Center(
+    child: Text(
+      'No Data available',
+      style: TextStyle(fontSize: 10, color: Color(0xff222222)),
+    ),
+  );
+
+  Widget _chartTab() => Align(
+    alignment: Alignment.topLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(left: 1, top: 8),
+      child: Row(
+        children: [
+          const Text(
+            'Skyline View',
+            style: TextStyle(fontSize: 10, color: Color(0xff222222)),
+          ),
+          const SizedBox(width: 8),
+          _smallAction(Icons.refresh, 'Refresh'),
+        ],
+      ),
+    ),
+  );
+
+  Widget _folderTab() => Align(
+    alignment: Alignment.topLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(left: 1, top: 8),
+      child: Row(
+        children: [
+          const Text(
+            'List of Resources',
+            style: TextStyle(fontSize: 10, color: Color(0xff222222)),
+          ),
+          const SizedBox(width: 8),
+          _smallAction(Icons.refresh, ''),
+        ],
+      ),
+    ),
+  );
+
+  Widget _analyseTab() => Align(
+    alignment: Alignment.topLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(left: 1, top: 10),
+      child: Row(
+        children: [
+          const Text(
+            'Report from Date:',
+            style: TextStyle(fontSize: 9, color: Color(0xff222222)),
+          ),
+          const SizedBox(width: 4),
+          SizedBox(
+            width: 96,
+            height: 19,
+            child: TextField(
+              controller: TextEditingController(text: '2026-07-22'),
+              style: const TextStyle(fontSize: 8),
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.symmetric(horizontal: 3),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          _smallAction(null, 'Run Report'),
+          const SizedBox(width: 4),
+          _smallAction(Icons.upload, ''),
+        ],
+      ),
+    ),
+  );
+
+  Widget _smallAction(IconData? icon, String label) => SizedBox(
+    height: 19,
+    child: OutlinedButton(
+      onPressed: () {},
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        side: const BorderSide(color: Color(0xff00a0df)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+      ),
+      child: icon == null
+          ? Text(
+              label,
+              style: const TextStyle(fontSize: 7, color: Color(0xff008ad8)),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 10, color: const Color(0xff008ad8)),
+                if (label.isNotEmpty)
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 7,
+                      color: Color(0xff008ad8),
+                    ),
+                  ),
+              ],
+            ),
+    ),
+  );
 }
 
 class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.selected, required this.onTap});
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -113,7 +270,13 @@ class _Tab extends StatelessWidget {
           color: selected ? Colors.white : Colors.transparent,
           border: selected ? Border.all(color: const Color(0xffd9e2ec)) : null,
         ),
-        child: Text(label, style: TextStyle(fontSize: 10, color: selected ? const Color(0xff333333) : const Color(0xff0066cc))),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: selected ? const Color(0xff333333) : const Color(0xff0066cc),
+          ),
+        ),
       ),
     );
   }

@@ -34,7 +34,11 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
         ),
         title: const Text(
           'Today in Class',
-          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           SizedBox(
@@ -56,15 +60,42 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
               height: 27,
               child: Padding(
                 padding: const EdgeInsets.only(left: 7, top: 7),
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 11, color: Color(0xff1d3557)),
-                    children: [
-                      TextSpan(text: widget.group.name),
-                      const TextSpan(text: ' '),
-                      const TextSpan(text: 'FlipLearn materials', style: TextStyle(fontStyle: FontStyle.italic)),
-                    ],
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xff1d3557),
+                          ),
+                          children: [
+                            TextSpan(text: widget.group.name),
+                            const TextSpan(text: ' '),
+                            const TextSpan(
+                              text: 'FlipLearn materials',
+                              style: TextStyle(fontStyle: FontStyle.italic),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(27, 20),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Add',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Color(0xff0066cc),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -73,9 +104,21 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
               height: 31,
               child: Row(
                 children: [
-                  _Tab(label: 'List', selected: _selectedTab == 0, onTap: () => setState(() => _selectedTab = 0)),
-                  _Tab(label: 'Chart', selected: _selectedTab == 1, onTap: () => setState(() => _selectedTab = 1)),
-                  _Tab(label: 'Folder', selected: _selectedTab == 2, onTap: () => setState(() => _selectedTab = 2)),
+                  _Tab(
+                    label: 'List',
+                    selected: _selectedTab == 0,
+                    onTap: () => setState(() => _selectedTab = 0),
+                  ),
+                  _Tab(
+                    label: 'Chart',
+                    selected: _selectedTab == 1,
+                    onTap: () => setState(() => _selectedTab = 1),
+                  ),
+                  _Tab(
+                    label: 'Folder',
+                    selected: _selectedTab == 2,
+                    onTap: () => setState(() => _selectedTab = 2),
+                  ),
                 ],
               ),
             ),
@@ -100,7 +143,11 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
 }
 
 class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.selected, required this.onTap});
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -118,7 +165,13 @@ class _Tab extends StatelessWidget {
           color: selected ? Colors.white : Colors.transparent,
           border: selected ? Border.all(color: const Color(0xffd9e2ec)) : null,
         ),
-        child: Text(label, style: TextStyle(fontSize: 10, color: selected ? const Color(0xff333333) : const Color(0xff0066cc))),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: selected ? const Color(0xff333333) : const Color(0xff0066cc),
+          ),
+        ),
       ),
     );
   }

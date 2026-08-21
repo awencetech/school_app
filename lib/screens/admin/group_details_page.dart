@@ -19,9 +19,15 @@ import 'online_class_meeting_page.dart';
 import 'class_fileplan_page.dart';
 import 'online_assignment_page.dart';
 import 'online_assessment_page.dart';
+import 'leave_approval_page.dart';
+import 'medical_event_list_page.dart';
+import 'happiness_report_page.dart';
+import 'one_on_one_meeting_page.dart';
 import 'group_dashboard_page.dart';
 import 'absence_page.dart';
 import 'write_message_page.dart';
+import 'group_achievement_award_page.dart';
+import 'diary_summary_page.dart';
 
 /// Group Details page showing comprehensive information about a selected group.
 class GroupDetailsPage extends StatefulWidget {
@@ -177,7 +183,8 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => ClassDemographyPage(group: widget.group),
+                        builder: (_) =>
+                            ClassDemographyPage(group: widget.group),
                       ),
                     );
                   },
@@ -237,7 +244,8 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => OnlineClassMeetingPage(group: widget.group),
+                        builder: (_) =>
+                            OnlineClassMeetingPage(group: widget.group),
                       ),
                     );
                   },
@@ -261,7 +269,8 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => OnlineAssignmentPage(group: widget.group),
+                        builder: (_) =>
+                            OnlineAssignmentPage(group: widget.group),
                       ),
                     );
                   },
@@ -273,7 +282,8 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => OnlineAssessmentPage(group: widget.group),
+                        builder: (_) =>
+                            OnlineAssessmentPage(group: widget.group),
                       ),
                     );
                   },
@@ -321,6 +331,13 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'Diary Summary',
                   Icons.note_outlined,
                   const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DiarySummaryPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Take Attendance',
@@ -338,41 +355,103 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'Appreciate Award',
                   Icons.emoji_events,
                   const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            GroupAchievementAwardPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class FilePlan',
                   Icons.folder,
                   const Color(0xFFDC2626),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassFileplanPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Online Assignment',
                   Icons.assignment,
                   const Color(0xFF3B82F6),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            OnlineAssignmentPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Online Assessment',
                   Icons.assessment,
                   const Color(0xFFF97316),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            OnlineAssessmentPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Leave Approval',
                   Icons.approval,
                   const Color(0xFF6366F1),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LeaveApprovalPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Medical Event List',
                   Icons.health_and_safety,
                   const Color(0xFF14B8A6),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MedicalEventListPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Happiness Report',
                   Icons.insert_chart,
                   const Color(0xFFD946EF),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            HappinessReportPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'One on One Meeting',
                   Icons.video_call,
                   const Color(0xFFFACC15),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            OneOnOneMeetingPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Pick/Drop Entry',
@@ -518,11 +597,7 @@ class GroupMenuItem extends StatelessWidget {
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: Icon(
-                icon,
-                size: 19,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 19, color: Colors.white),
             ),
             const SizedBox(height: 5),
             Text(

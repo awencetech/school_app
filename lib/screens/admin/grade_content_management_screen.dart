@@ -46,11 +46,10 @@ class _GradeContentManagementScreenState extends State<GradeContentManagementScr
 
   Future<String?> _pickImage() async {
     final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
-    if (result == null || result.files.isEmpty) return null;
+    if (result.isEmpty) return null;
 
-    final file = result.files.first;
-    final bytes = file.bytes;
-    if (bytes == null) return null;
+    final file = result.first;
+    final bytes = await file.readAsBytes();
 
     if (bytes.lengthInBytes > 5 * 1024 * 1024) {
       if (!mounted) return null;

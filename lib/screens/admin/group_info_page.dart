@@ -1,9 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
-import '../../models/user.dart';
-import '../../services/user_service.dart';
+import '../../services/group_state_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -19,16 +20,18 @@ class GroupInfoPage extends StatefulWidget {
 class _GroupInfoPageState extends State<GroupInfoPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  final UserService _userService = UserService();
+  final GroupStateService _stateService = GroupStateService.instance;
+  late final String _groupId;
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
-  List<User> _students = [];
-  List<User> _staff = [];
+  List<GroupStudent> _students = [];
+  List<GroupTeacher> _staff = [];
 
   @override
   void initState() {
     super.initState();
+    _groupId = widget.group.id.isNotEmpty ? widget.group.id : widget.group.name;
     _tabController = TabController(length: 2, vsync: this);
     _loadMembers();
   }
@@ -47,19 +50,9 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     });
 
     try {
-      final users = await _userService.getUsers();
-      final matchedRole = widget.group.name.trim();
-      _students = users
-          .where((user) => user.role == 'student')
-          .toList();
-      _staff = users
-          .where((user) => user.role == 'staff')
-          .toList();
-
-      if (_students.isEmpty && _staff.isEmpty && matchedRole.isNotEmpty) {
-        _students = [];
-        _staff = [];
-      }
+      await _stateService.initialize();
+      _students = await _stateService.getGroupStudents(_groupId);
+      _staff = await _stateService.getGroupTeachers(_groupId);
     } catch (_) {
       _hasError = true;
       _errorMessage = 'Unable to load group members.';
@@ -98,6 +91,19 @@ class _GroupInfoPageState extends State<GroupInfoPage>
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Edit group information',
+            icon: const Icon(Icons.edit_outlined, color: AppColors.white),
+            onPressed: () async {
+              await Navigator.of(context).pushNamed(
+                '/teacher/group-info-edit',
+                arguments: widget.group,
+              );
+              _loadMembers();
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -206,7 +212,7 @@ class _MemberGridPanel extends StatelessWidget {
   });
 
   final String title;
-  final List<User> members;
+  final List<dynamic> members;
   final String emptyMessage;
 
   @override
@@ -239,7 +245,21 @@ class _MemberGridPanel extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final member = members[index];
-          final displayName = member.userId.isNotEmpty ? member.userId : 'Unknown';
+          final displayName = member is GroupStudent
+            ? (member.name.isNotEmpty ? member.name : 'Unknown')
+            : member is GroupTeacher
+              ? (member.name.isNotEmpty ? member.name : 'Unknown')
+              : 'Unknown';
+          final imagePath = member is GroupStudent
+            ? member.imageUrl
+            : member is GroupTeacher
+              ? member.imageUrl
+              : null;
+          final details = member is GroupStudent
+            ? [member.admissionNo, member.section, member.contact, member.details]
+            : member is GroupTeacher
+              ? [member.subject, member.role, member.contact, member.details]
+              : <String>[];
 
           return Container(
             padding: const EdgeInsets.all(8),
@@ -249,17 +269,8 @@ class _MemberGridPanel extends StatelessWidget {
               border: Border.all(color: AppColors.border, width: 1),
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: const Color(0xFFE9EEF7),
-                  child: Icon(
-                    Icons.person,
-                    size: 26,
-                    color: AppColors.primary,
-                  ),
-                ),
+                _MemberAvatar(imagePath: imagePath),
                 const SizedBox(height: 6),
                 Text(
                   displayName,
@@ -272,11 +283,44 @@ class _MemberGridPanel extends StatelessWidget {
                     color: AppColors.primaryText,
                   ),
                 ),
+                ...details
+                    .where((detail) => detail.isNotEmpty)
+                    .take(2)
+                    .map(
+                      (detail) => Text(
+                        detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 8,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class _MemberAvatar extends StatelessWidget {
+  const _MemberAvatar({this.imagePath});
+
+  final String? imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = imagePath != null && imagePath!.isNotEmpty;
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: const Color(0xFFE9EEF7),
+      backgroundImage: hasImage ? FileImage(File(imagePath!)) : null,
+      child: hasImage
+          ? null
+          : const Icon(Icons.person, size: 26, color: AppColors.primary),
     );
   }
 }

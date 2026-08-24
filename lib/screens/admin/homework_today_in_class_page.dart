@@ -229,13 +229,14 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
 
   Future<void> _pickFile() async {
     final result = await FilePicker.pickFiles(withData: true);
-    final file = result?.files.single;
-    if (file?.bytes == null) {
+    final file = result.isEmpty ? null : result.single;
+    if (file == null) {
       return;
     }
+    final bytes = await file.readAsBytes();
     setState(() {
-      _selectedFileName = file!.name;
-      _selectedFileBytes = file.bytes;
+      _selectedFileName = file.name;
+      _selectedFileBytes = bytes;
     });
   }
 

@@ -116,9 +116,9 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
 
   Future<void> _pickImage(void Function(String?) updater) async {
     final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
-    final bytes = file.bytes;
+    if (result.isEmpty) return;
+    final file = result.first;
+    final bytes = await file.readAsBytes();
     if (bytes == null) return;
     updater(base64Encode(bytes));
   }

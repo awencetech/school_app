@@ -100,9 +100,9 @@ class _WriteMessagePageState extends State<WriteMessagePage> {
 
   Future<void> _pickFiles() async {
     final result = await FilePicker.pickFiles(withData: true, allowMultiple: true);
-    if (result == null || result.files.isEmpty || !mounted) return;
+    if (result.isEmpty || !mounted) return;
     setState(() {
-      _selectedFiles = result.files;
+      _selectedFiles = result;
       _filesUploaded = false;
     });
   }

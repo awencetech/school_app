@@ -208,11 +208,11 @@ class _ContentEditScreenState extends State<ContentEditScreen> {
   Future<void> _selectImage(int index) async {
     final repository = context.read<SchoolConfigService>().repository;
     final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
-    if (result == null || result.files.isEmpty) return;
+    if (result.isEmpty) return;
 
-    final file = result.files.first;
-    if (file.bytes == null) return;
-    if (file.size > 10 * 1024 * 1024) {
+    final file = result.first;
+    final bytes = await file.readAsBytes();
+    if (bytes.length > 10 * 1024 * 1024) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image must be 10MB or less.')),
@@ -227,7 +227,7 @@ class _ContentEditScreenState extends State<ContentEditScreen> {
     try {
       final uploadedUrl = await repository.uploadPoster(
             fileName: file.name,
-            bytes: file.bytes!,
+            bytes: bytes,
           );
       if (!mounted) return;
       setState(() {

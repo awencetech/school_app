@@ -10,7 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:school_app/app.dart';
+import 'package:school_app/models/group.dart';
 import 'package:school_app/screens/achievements/achievements_screen.dart';
+import 'package:school_app/screens/admin/group_info_edit_page.dart';
 import 'package:school_app/screens/login/create_account_screen.dart';
 import 'package:school_app/screens/login/forgot_password_screen.dart';
 import 'package:school_app/screens/login/login_screen.dart';
@@ -126,6 +128,26 @@ void main() {
     expect(find.text('Groups and Classes of Student name'), findsOneWidget);
     expect(find.text('Your Location'), findsOneWidget);
     expect(find.text('Parent Details'), findsOneWidget);
+  });
+
+  testWidgets('GroupInfoEditPage shows the selected group and edit fields', (WidgetTester tester) async {
+    final group = Group(
+      id: 'SAMUNI-2022-NCC2022',
+      name: 'NCC2022',
+      type: 'Other',
+      description: 'NCC2022',
+      status: 'Active',
+      year: '2022',
+    );
+
+    await tester.pumpWidget(MaterialApp(home: GroupInfoEditPage(group: group)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Group Info Edit'), findsOneWidget);
+    expect(find.text('NCC2022'), findsWidgets);
+    expect(find.text('SAMUNI-2022-NCC2022'), findsOneWidget);
+    expect(find.text('Save Changes'), findsOneWidget);
+    expect(find.text('Group Details'), findsOneWidget);
   });
 
   testWidgets('ImportantNewsTicker does not overflow', (WidgetTester tester) async {

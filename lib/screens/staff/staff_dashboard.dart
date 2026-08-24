@@ -35,7 +35,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
-        title: Text(context.watch<SchoolConfigService>().schoolName, style: AppTextStyles.appTitle),
+        title: Text(
+          context.watch<SchoolConfigService>().schoolName,
+          style: AppTextStyles.appTitle,
+        ),
         automaticallyImplyLeading: false,
       ),
       body: _selectedBottomIndex == 3
@@ -64,38 +67,44 @@ class _StaffDashboardState extends State<StaffDashboard> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (config.posterDisplaySource != null && config.posterDisplaySource!.isNotEmpty)
+                  if (config.posterDisplaySource != null &&
+                      config.posterDisplaySource!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: () {
-                            final posterSource = config.posterDisplaySource!;
-                            final uri = Uri.tryParse(posterSource);
-                            if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
-                              return CachedNetworkImage(
-                                imageUrl: posterSource,
-                                fit: BoxFit.contain,
-                                placeholder: (context, url) => Container(
-                                  color: AppColors.divider,
-                                ),
-                                errorWidget: (context, url, error) {
-                                  debugPrint('School poster loading error: $error');
-                                  debugPrint('Poster URL: $posterSource');
-                                  return Container(
-                                    color: AppColors.divider,
-                                    child: const Center(child: Text('School Poster')),
-                                  );
-                                },
-                              );
-                            }
-                            return Image.memory(
-                              base64Decode(posterSource),
+                          final posterSource = config.posterDisplaySource!;
+                          final uri = Uri.tryParse(posterSource);
+                          if (uri != null &&
+                              uri.hasScheme &&
+                              (uri.scheme == 'http' || uri.scheme == 'https')) {
+                            return CachedNetworkImage(
+                              imageUrl: posterSource,
                               fit: BoxFit.contain,
+                              placeholder: (context, url) =>
+                                  Container(color: AppColors.divider),
+                              errorWidget: (context, url, error) {
+                                debugPrint(
+                                  'School poster loading error: $error',
+                                );
+                                debugPrint('Poster URL: $posterSource');
+                                return Container(
+                                  color: AppColors.divider,
+                                  child: const Center(
+                                    child: Text('School Poster'),
+                                  ),
+                                );
+                              },
                             );
-                          }(),
-                        ),
+                          }
+                          return Image.memory(
+                            base64Decode(posterSource),
+                            fit: BoxFit.contain,
+                          );
+                        }(),
                       ),
+                    ),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -146,7 +155,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         ),
                         GestureDetector(
                           onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const MessagesPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const MessagesPage(),
+                            ),
                           ),
                           child: const _QuickAction(
                             icon: Icons.edit,
@@ -199,7 +210,12 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    context.watch<AppState>().currentUserId != null ? context.watch<AppState>().currentUserId! : 'Staff name',
+                                    context.watch<AppState>().currentUserId !=
+                                            null
+                                        ? context
+                                              .watch<AppState>()
+                                              .currentUserId!
+                                        : 'Staff name',
                                     style: GoogleFonts.poppins(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
@@ -291,7 +307,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             border: Border.all(color: AppColors.border),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.06),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.06,
+                                ),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -311,7 +329,8 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               const SizedBox(height: 12),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const _ClassAction(
                                     icon: Icons.message,
@@ -324,9 +343,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     color: Color(0xFFD32F2F),
                                   ),
                                   GestureDetector(
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.studentMoreOptions,
-                                    ),
+                                    onTap: () =>
+                                        Navigator.of(context).pushNamed(
+                                          AppRoutes.studentMoreOptions,
+                                        ),
                                     child: const _ClassAction(
                                       icon: Icons.more_horiz,
                                       label: 'More\\nOptions',
@@ -428,10 +448,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) {
           if (index == 4) {
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              AppRoutes.main,
-              (route) => false,
-            );
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
             return;
           }
 
@@ -474,11 +493,7 @@ class _QuickAction extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(2),
           ),
-          child: Icon(
-            icon,
-            size: 12,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 12, color: AppColors.white),
         ),
         const SizedBox(height: 3),
         Text(
@@ -521,11 +536,7 @@ class _InfoChip extends StatelessWidget {
             color: iconColor,
             borderRadius: BorderRadius.circular(2),
           ),
-          child: Icon(
-            icon,
-            size: 13,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 13, color: AppColors.white),
         ),
         const SizedBox(height: 4),
         Text(
@@ -567,11 +578,7 @@ class _ClassAction extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 18, color: AppColors.white),
         ),
         const SizedBox(height: 8),
         Text(
@@ -613,11 +620,7 @@ class _SchoolLinkChip extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 18, color: AppColors.white),
         ),
         const SizedBox(height: 8),
         Text(

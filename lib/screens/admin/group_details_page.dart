@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
+import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/slug_generator.dart';
@@ -23,6 +24,9 @@ import 'leave_approval_page.dart';
 import 'medical_event_list_page.dart';
 import 'happiness_report_page.dart';
 import 'one_on_one_meeting_page.dart';
+import 'pick_drop_entry_page.dart';
+import 'access_management_page.dart';
+import 'class_fee_details_page.dart';
 import 'group_dashboard_page.dart';
 import 'absence_page.dart';
 import 'write_message_page.dart';
@@ -62,7 +66,6 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Group Name (Compact Title)
             Text(
               widget.group.name,
               style: GoogleFonts.poppins(
@@ -314,6 +317,12 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'Group/Class Menu',
                   Icons.menu,
                   const Color(0xFF06B6D4),
+                  onTap: () {
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherGroupClasses,
+                      arguments: widget.group,
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Group Dashboard',
@@ -457,16 +466,39 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   'Pick/Drop Entry',
                   Icons.directions_car,
                   const Color(0xFF0284C7),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PickDropEntryPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Access Mgmt',
                   Icons.admin_panel_settings,
                   const Color(0xFF84CC16),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AccessManagementPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
                 _IconGridItem(
                   'Class Fee Details',
                   Icons.receipt,
                   const Color(0xFFF43F5E),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ClassFeeDetailsPage(group: widget.group),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

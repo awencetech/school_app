@@ -324,11 +324,10 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
 
   Future<void> _pickImage() async {
     final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
-    // Use provided bytes (withData: true) and do not perform any cropping.
-    final bytes = file.bytes;
-    if (bytes == null) return;
+    if (result.isEmpty) return;
+    final file = result.first;
+    // Use the selected file bytes without performing any cropping.
+    final bytes = await file.readAsBytes();
     setState(() {
       _imageBase64 = base64Encode(bytes);
       _imageScale = 1.0;

@@ -18,10 +18,15 @@ import '../screens/admin/admin_other_options.dart';
 import '../screens/admin/school_content_management.dart';
 import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
+import '../models/group.dart';
 import '../screens/admin/admin_section_page.dart';
 import '../screens/admin/school_settings_editor.dart';
 import '../screens/admin/other_groups_screen.dart';
 import '../screens/admin/group_details_page.dart';
+import '../screens/admin/group_info_edit_page.dart';
+import '../screens/admin/group_info_page.dart';
+import '../screens/admin/group_menu_page.dart';
+import '../screens/admin/group_menu_placeholder_page.dart';
 import 'app_routes.dart';
 
 /// App-wide route factory.
@@ -55,6 +60,70 @@ class AppRouter {
         final group = settings.arguments as dynamic;
         return GroupDetailsPage(group: group);
       })(),
+      AppRoutes.teacherGroupClasses => (() {
+        final group = settings.arguments as dynamic;
+        return GroupMenuPage(group: group);
+      })(),
+      AppRoutes.teacherGroupInfo => (() {
+        final group = settings.arguments as dynamic;
+        return GroupInfoPage(group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'));
+      })(),
+      AppRoutes.teacherFutureEventCalendar => _groupMenuPlaceholder(
+        settings,
+        'Future Event Calendar',
+      ),
+      AppRoutes.teacherHomeworkToday => _groupMenuPlaceholder(
+        settings,
+        'HW Today In Class',
+      ),
+      AppRoutes.teacherGroupMessages => _groupMenuPlaceholder(
+        settings,
+        'Group Messages',
+      ),
+      AppRoutes.teacherWriteMessage => _groupMenuPlaceholder(
+        settings,
+        'Write Write Emsg',
+      ),
+      AppRoutes.teacherClassDemography => _groupMenuPlaceholder(
+        settings,
+        'Class Demography',
+      ),
+      AppRoutes.teacherClassResources => _groupMenuPlaceholder(
+        settings,
+        'Class Resources',
+      ),
+      AppRoutes.teacherPhotosNews => _groupMenuPlaceholder(
+        settings,
+        'Photos News',
+      ),
+      AppRoutes.teacherClassTimetable => _groupMenuPlaceholder(
+        settings,
+        'Class Timetable',
+      ),
+      AppRoutes.teacherClassPlanner => _groupMenuPlaceholder(
+        settings,
+        'Class Planner',
+      ),
+      AppRoutes.teacherVideoConference => _groupMenuPlaceholder(
+        settings,
+        'Video Conf',
+      ),
+      AppRoutes.teacherClassFilePlan => _groupMenuPlaceholder(
+        settings,
+        'Class File/Plan',
+      ),
+      AppRoutes.teacherOnlineAssignment => _groupMenuPlaceholder(
+        settings,
+        'Online Assignment',
+      ),
+      AppRoutes.teacherOnlineAssessment => _groupMenuPlaceholder(
+        settings,
+        'Online Assessment',
+      ),
+      AppRoutes.teacherGroupInfoEdit => (() {
+        final group = settings.arguments as dynamic;
+        return GroupInfoEditPage(group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'));
+      })(),
       AppRoutes.adminHomeScreen => const AdminHomeScreen(),
       AppRoutes.adminSchoolSettings => const SchoolSettingsEditor(),
       AppRoutes.adminSchoolContentManagement =>
@@ -80,5 +149,10 @@ class AppRouter {
         return FadeTransition(opacity: curved, child: child);
       },
     );
+  }
+
+  static Widget _groupMenuPlaceholder(RouteSettings settings, String title) {
+    final group = settings.arguments as dynamic;
+    return GroupMenuPlaceholderPage(title: title, group: group);
   }
 }

@@ -9,6 +9,7 @@ class Group {
   final String status;
   final String year;
   final int order;
+  final String? imageUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -22,6 +23,7 @@ class Group {
     this.status = 'Active',
     this.year = '2022',
     this.order = 0,
+    this.imageUrl,
     this.createdAt,
     this.updatedAt,
   });
@@ -68,8 +70,39 @@ class Group {
       'status': status,
       'year': year,
       'order': order,
+      'imageUrl': imageUrl,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     };
+  }
+
+  Group copyWith({
+    String? databaseId,
+    String? id,
+    String? name,
+    String? code,
+    String? description,
+    String? type,
+    String? status,
+    String? year,
+    int? order,
+    String? imageUrl,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Group(
+      databaseId: databaseId ?? this.databaseId,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      year: year ?? this.year,
+      order: order ?? this.order,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }

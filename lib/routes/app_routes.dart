@@ -21,7 +21,8 @@ class AppRoutes {
   static const adminHomeScreen = '/admin/home-screen';
   static const adminSection = '/admin/section';
   static const adminSchoolSettings = '/admin/school-settings';
-  static const adminSchoolContentManagement = '/admin/school-content-management';
+  static const adminSchoolContentManagement =
+      '/admin/school-content-management';
   static const supportQuery = '/support-query';
+  static const privacyPolicy = '/privacy-policy';
 }
-

@@ -13,6 +13,7 @@ import '../screens/student/student_more_options_screen.dart';
 import '../screens/student/group_class_menu_screen.dart';
 import '../screens/student/student_menu_screen.dart';
 import '../screens/support/support_query_screen.dart';
+import '../screens/support/privacy_policy_screen.dart';
 import '../screens/admin/admin_other_options.dart';
 import '../screens/admin/school_content_management.dart';
 import '../screens/admin/splash_screen_editor.dart';
@@ -33,9 +34,9 @@ class AppRouter {
       // On first route resolution in this app session, show splash first so
       // users always see the splash on page refresh / initial load.
       _ when !_splashShown => () {
-          _splashShown = true;
-          return SplashScreen(targetRoute: settings.name);
-        }(),
+        _splashShown = true;
+        return SplashScreen(targetRoute: settings.name);
+      }(),
       AppRoutes.splash => const SplashScreen(),
       AppRoutes.language => const LanguageSelectionScreen(),
       AppRoutes.main => const MainShell(),
@@ -56,13 +57,15 @@ class AppRouter {
       })(),
       AppRoutes.adminHomeScreen => const AdminHomeScreen(),
       AppRoutes.adminSchoolSettings => const SchoolSettingsEditor(),
-      AppRoutes.adminSchoolContentManagement => const SchoolContentManagementScreen(),
+      AppRoutes.adminSchoolContentManagement =>
+        const SchoolContentManagementScreen(),
       AppRoutes.adminSection => (() {
         final title = settings.arguments as String? ?? 'Section';
         return AdminSectionPage(title: title);
       })(),
       AppRoutes.adminSplashScreenEditor => const SplashScreenEditor(),
       AppRoutes.supportQuery => const SupportQueryScreen(),
+      AppRoutes.privacyPolicy => const PrivacyPolicyScreen(),
       _ => const SplashScreen(),
     };
 
@@ -70,10 +73,12 @@ class AppRouter {
       settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut);
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOut,
+        );
         return FadeTransition(opacity: curved, child: child);
       },
     );
   }
 }
-

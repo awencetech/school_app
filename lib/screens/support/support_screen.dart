@@ -125,6 +125,30 @@ class SupportScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
+              Divider(
+                color: AppColors.divider,
+                thickness: 1,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Learn more about our data practices',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body,
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => Navigator.of(context).pushNamed(
+                  AppRoutes.privacyPolicy,
+                ),
+                child: Text(
+                  'Read our Privacy Policy',
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.blueButton,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

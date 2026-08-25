@@ -95,13 +95,10 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.image,
-    );
-    if (result.isEmpty) return;
-
-    final file = result.first;
-    final path = file.path;
+    final result = await FilePicker.pickFiles(type: FileType.image);
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final path = await _resolvePickedFilePath(file);
     if (path == null || path.isEmpty) return;
 
     setState(() {
@@ -242,10 +239,11 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                         child: OutlinedButton.icon(
                           onPressed: () async {
                             final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result.isEmpty) return;
-                            final file = result.first;
-                            if (file.path != null && file.path!.isNotEmpty) {
-                              setStateDialog(() => pickedImage = file.path);
+                            if (result == null || result.files.isEmpty) return;
+                            final file = result.files.first;
+                            final path = await _resolvePickedFilePath(file);
+                            if (path != null && path.isNotEmpty) {
+                              setStateDialog(() => pickedImage = path);
                             }
                           },
                           icon: const Icon(Icons.upload_file),
@@ -325,10 +323,11 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                         child: OutlinedButton.icon(
                           onPressed: () async {
                             final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result.isEmpty) return;
-                            final file = result.first;
-                            if (file.path != null && file.path!.isNotEmpty) {
-                              setStateDialog(() => pickedImage = file.path);
+                            if (result == null || result.files.isEmpty) return;
+                            final file = result.files.first;
+                            final path = await _resolvePickedFilePath(file);
+                            if (path != null && path.isNotEmpty) {
+                              setStateDialog(() => pickedImage = path);
                             }
                           },
                           icon: const Icon(Icons.upload_file),
@@ -391,6 +390,21 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     );
   }
 
+  Future<String?> _resolvePickedFilePath(PlatformFile file) async {
+    // If the picker gave a direct path, use it. Otherwise write bytes to a temp file.
+    try {
+      if (file.path != null && file.path!.isNotEmpty) return file.path;
+      if (file.bytes == null) return null;
+      final ext = file.extension ?? 'png';
+      final tmp = File('${Directory.systemTemp.path}/school_app_${DateTime.now().millisecondsSinceEpoch}.$ext');
+      await tmp.writeAsBytes(file.bytes!);
+      return tmp.path;
+    } catch (e) {
+      debugPrint('Error resolving picked file path: $e');
+      return null;
+    }
+  }
+
   Future<void> _showEditStudentDialog(GroupStudent student) async {
     final nameCtrl = TextEditingController(text: student.name);
     final idCtrl = TextEditingController(text: student.admissionNo);
@@ -417,10 +431,11 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                         child: OutlinedButton.icon(
                           onPressed: () async {
                             final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result.isEmpty) return;
-                            final file = result.first;
-                            if (file.path != null && file.path!.isNotEmpty) {
-                              setStateDialog(() => pickedImage = file.path);
+                            if (result == null || result.files.isEmpty) return;
+                            final file = result.files.first;
+                            final path = await _resolvePickedFilePath(file);
+                            if (path != null && path.isNotEmpty) {
+                              setStateDialog(() => pickedImage = path);
                             }
                           },
                           icon: const Icon(Icons.upload_file),
@@ -473,7 +488,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       if (s.imageUrl!.startsWith('http')) {
         imageProvider = NetworkImage(s.imageUrl!);
       } else {
-        imageProvider = FileImage(File(s.imageUrl!));
+        final f = File(s.imageUrl!);
+        if (f.existsSync()) imageProvider = FileImage(f);
       }
     }
 
@@ -519,7 +535,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       if (t.imageUrl!.startsWith('http')) {
         imageProvider = NetworkImage(t.imageUrl!);
       } else {
-        imageProvider = FileImage(File(t.imageUrl!));
+        final f = File(t.imageUrl!);
+        if (f.existsSync()) imageProvider = FileImage(f);
       }
     }
 

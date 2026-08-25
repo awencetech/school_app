@@ -13,6 +13,15 @@ class AppRoutes {
   static const groupClassMenu = '/group-class-menu';
   static const studentMenu = '/student-menu';
   static const staffDashboard = '/staff-dashboard';
+  static const staffInfo = '/staff-dashboard/staff-info';
+  static const staffApplyLeave = '/staff-dashboard/apply-leave';
+  static const staffSwipeAttendance = '/staff-dashboard/swipe-attendance';
+  static const staffManagementFeedback =
+      '/staff-dashboard/management-feedback';
+  static const staffMeeting = '/staff-dashboard/meeting';
+  static const staffResources = '/staff-dashboard/staff-resources';
+  static const staffHandbook = '/staff-dashboard/staff-handbook';
+  static const staffTodoTasks = '/staff-dashboard/to-do-tasks';
   static const adminDashboard = '/admin-dashboard';
   static const adminOtherOptions = '/admin/other-options';
   static const adminOtherGroups = '/admin/other-groups';

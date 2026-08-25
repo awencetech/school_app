@@ -9,7 +9,6 @@ import '../../services/group_service.dart';
 import '../../services/group_state_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
-import '../student/student_menu_screen.dart';
 
 class GroupInfoEditPage extends StatefulWidget {
   const GroupInfoEditPage({super.key, required this.group});
@@ -392,6 +391,82 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     );
   }
 
+  Future<void> _showEditStudentDialog(GroupStudent student) async {
+    final nameCtrl = TextEditingController(text: student.name);
+    final idCtrl = TextEditingController(text: student.admissionNo);
+    final sectionCtrl = TextEditingController(text: student.section);
+    String? pickedImage = student.imageUrl;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Edit Student'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                  TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'Student ID')),
+                  TextField(controller: sectionCtrl, decoration: const InputDecoration(labelText: 'Class')),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await FilePicker.pickFiles(type: FileType.image);
+                            if (result.isEmpty) return;
+                            final file = result.first;
+                            if (file.path != null && file.path!.isNotEmpty) {
+                              setStateDialog(() => pickedImage = file.path);
+                            }
+                          },
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload Image'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (pickedImage != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameCtrl.text.trim();
+                  final sid = idCtrl.text.trim();
+                  final cls = sectionCtrl.text.trim();
+                  if (name.isEmpty || sid.isEmpty) {
+                    _showSnackBar('Please enter name and student id.');
+                    return;
+                  }
+                  await _stateService.updateStudent(_groupId, student.id, {
+                    'name': name,
+                    'admissionNo': sid,
+                    'section': cls,
+                    'imageUrl': pickedImage ?? '',
+                  });
+                  final updated = await _stateService.getGroupStudents(_groupId);
+                  if (!mounted) return;
+                  setState(() => _students = updated);
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
   Widget _buildStudentCard(GroupStudent s) {
     ImageProvider? imageProvider;
     if (s.imageUrl != null && s.imageUrl!.isNotEmpty) {
@@ -403,9 +478,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     }
 
     return InkWell(
-      onTap: () {
-        // Navigate to student menu screen; pass student if needed later
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
+      onTap: () async {
+        await _showEditStudentDialog(s);
       },
       child: Container(
         padding: const EdgeInsets.all(8),

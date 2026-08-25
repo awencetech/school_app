@@ -9,6 +9,7 @@ import '../../services/group_service.dart';
 import '../../services/group_state_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import '../student/student_menu_screen.dart';
 
 class GroupInfoEditPage extends StatefulWidget {
   const GroupInfoEditPage({super.key, required this.group});
@@ -401,34 +402,39 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: imageProvider,
-            child: imageProvider == null ? const Icon(Icons.person, size: 28) : null,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            s.name.toUpperCase(),
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: const Color(0xFF00C853), borderRadius: BorderRadius.circular(10)),
-            child: const Text('100', style: TextStyle(color: Colors.white, fontSize: 11)),
-          ),
-        ],
+    return InkWell(
+      onTap: () {
+        // Navigate to student menu screen; pass student if needed later
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFE9EEF7),
+                image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
+              ),
+              child: imageProvider == null ? const Icon(Icons.person, size: 28, color: Color(0xFF5A6F92)) : null,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              s.name.toUpperCase(),
+              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

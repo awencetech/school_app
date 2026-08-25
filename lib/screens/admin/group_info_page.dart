@@ -5,8 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
 import '../../services/group_state_service.dart';
+import '../../services/app_route_observer.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import '../student/student_menu_screen.dart';
 
 class GroupInfoPage extends StatefulWidget {
   const GroupInfoPage({super.key, required this.group});
@@ -18,7 +20,7 @@ class GroupInfoPage extends StatefulWidget {
 }
 
 class _GroupInfoPageState extends State<GroupInfoPage>
-    with SingleTickerProviderStateMixin {
+  with SingleTickerProviderStateMixin, RouteAware {
   late final TabController _tabController;
   final GroupStateService _stateService = GroupStateService.instance;
   late final String _groupId;
@@ -37,7 +39,22 @@ class _GroupInfoPageState extends State<GroupInfoPage>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    _loadMembers();
+  }
+
+  @override
   void dispose() {
+    appRouteObserver.unsubscribe(this);
     _tabController.dispose();
     super.dispose();
   }
@@ -91,19 +108,6 @@ class _GroupInfoPageState extends State<GroupInfoPage>
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Edit group information',
-            icon: const Icon(Icons.edit_outlined, color: AppColors.white),
-            onPressed: () async {
-              await Navigator.of(context).pushNamed(
-                '/teacher/group-info-edit',
-                arguments: widget.group,
-              );
-              _loadMembers();
-            },
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -261,43 +265,49 @@ class _MemberGridPanel extends StatelessWidget {
               ? [member.subject, member.role, member.contact, member.details]
               : <String>[];
 
-          return Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Column(
-              children: [
-                _MemberAvatar(imagePath: imagePath),
-                const SizedBox(height: 6),
-                Text(
-                  displayName,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primaryText,
+          return InkWell(
+            onTap: () {
+              // Navigate to Student Menu when member tapped
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              child: Column(
+                children: [
+                  _MemberAvatar(imagePath: imagePath),
+                  const SizedBox(height: 6),
+                  Text(
+                    displayName,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primaryText,
+                    ),
                   ),
-                ),
-                ...details
-                    .where((detail) => detail.isNotEmpty)
-                    .take(2)
-                    .map(
-                      (detail) => Text(
-                        detail,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 8,
-                          color: AppColors.secondaryText,
+                  ...details
+                      .where((detail) => detail.isNotEmpty)
+                      .take(2)
+                      .map(
+                        (detail) => Text(
+                          detail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 8,
+                            color: AppColors.secondaryText,
+                          ),
                         ),
                       ),
-                    ),
-              ],
+                ],
+              ),
             ),
           );
         },

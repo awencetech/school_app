@@ -752,7 +752,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).maybePop(),
+                  onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Group Info Edit',

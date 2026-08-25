@@ -752,7 +752,17 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // Try to pop; if there's no back route (page is root), navigate to Group Menu explicitly
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed(
+                AppRoutes.teacherGroupClasses,
+                arguments: widget.group,
+              );
+            }
+          },
         ),
         title: Text(
           'Group Info Edit',

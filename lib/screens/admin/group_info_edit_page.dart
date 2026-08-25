@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -433,11 +434,25 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<String?> _resolvePickedFilePath(dynamic file) async {
-    // If the picker gave a direct path, use it. Otherwise write bytes to a temp file.
+    // If the picker gave a direct path, use it. Otherwise write bytes to a temp file or return a data URI on web.
     try {
       final dynamic df = file;
-      final p = df?.path as String?;
+      final p = (df?.path) as String?;
       if (p != null && p.isNotEmpty) return p;
+
+      if (kIsWeb) {
+        try {
+          final bytes = (df as dynamic).bytes as Uint8List?;
+          if (bytes == null) return null;
+          final ext = (df as dynamic).extension as String? ?? 'png';
+          final b64 = base64Encode(bytes);
+          return 'data:image/$ext;base64,$b64';
+        } catch (e) {
+          debugPrint('Error resolving picked file bytes on web: $e');
+          return null;
+        }
+      }
+
       final bytes = (df as dynamic).bytes as List<int>?;
       if (bytes == null) return null;
       final ext = (df as dynamic).extension as String? ?? 'png';
@@ -560,7 +575,17 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     if (s.imageUrl != null && s.imageUrl!.isNotEmpty) {
       final raw = s.imageUrl!.trim();
       // If it's already an absolute URL, use it
-      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      if (raw.startsWith('data:')) {
+        // data URI with base64 encoded bytes (web)
+        try {
+          final comma = raw.indexOf(',');
+          final b64 = raw.substring(comma + 1);
+          final bytes = base64Decode(b64);
+          imageProvider = MemoryImage(bytes);
+        } catch (e) {
+          debugPrint('Failed to decode data URI: $e');
+        }
+      } else if (raw.startsWith('http://') || raw.startsWith('https://')) {
         imageProvider = NetworkImage(raw);
       } else {
         // If it's a local file path that exists, use FileImage
@@ -615,7 +640,16 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     ImageProvider? imageProvider;
     if (t.imageUrl != null && t.imageUrl!.isNotEmpty) {
       final raw = t.imageUrl!.trim();
-      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      if (raw.startsWith('data:')) {
+        try {
+          final comma = raw.indexOf(',');
+          final b64 = raw.substring(comma + 1);
+          final bytes = base64Decode(b64);
+          imageProvider = MemoryImage(bytes);
+        } catch (e) {
+          debugPrint('Failed to decode data URI: $e');
+        }
+      } else if (raw.startsWith('http://') || raw.startsWith('https://')) {
         imageProvider = NetworkImage(raw);
       } else {
         final f = File(raw);

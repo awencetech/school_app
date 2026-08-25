@@ -37,6 +37,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   List<GroupStudent> _students = <GroupStudent>[];
   List<GroupTeacher> _teachers = <GroupTeacher>[];
   GroupSettings _settings = GroupSettings(groupId: '');
+  Set<String> _originalStudentIds = <String>{};
+  Set<String> _originalTeacherIds = <String>{};
 
   @override
   void initState() {
@@ -75,6 +77,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         _currentImageUrl = imageUrl;
         _students = students;
         _teachers = teachers;
+        _originalStudentIds = students.map((student) => student.id).toSet();
+        _originalTeacherIds = teachers.map((teacher) => teacher.teacherId).toSet();
         _settings = settings;
         _nameController.text = stored.name;
         _idController.text = stored.id;
@@ -153,23 +157,36 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         );
       }
 
-      await _stateService.updateGroup(_groupId, updatePayload);
+      final currentGroupId = _groupId;
+      await _stateService.updateGroup(currentGroupId, updatePayload);
       if (_selectedImagePath != null && _selectedImagePath!.isNotEmpty) {
-        await _stateService.uploadGroupImage(groupId, _selectedImagePath);
+        await _stateService.uploadGroupImage(currentGroupId, _selectedImagePath);
       }
       for (final student in _students) {
-        await _stateService.addStudent(groupId, student);
+        await _stateService.addStudent(currentGroupId, student);
+      }
+      final savedStudentIds = _students.map((student) => student.id).toSet();
+      for (final studentId in _originalStudentIds.difference(savedStudentIds)) {
+        await _stateService.removeStudent(currentGroupId, studentId);
       }
       for (final teacher in _teachers) {
-        await _stateService.assignTeacher(groupId, teacher.teacherId, {
+        await _stateService.assignTeacher(currentGroupId, teacher.teacherId, {
           'id': teacher.id,
           'name': teacher.name,
           'subject': teacher.subject,
           'role': teacher.role,
+          'imageUrl': teacher.imageUrl,
+          'details': teacher.details,
+          'contact': teacher.contact,
+          'email': teacher.email,
         });
       }
+      final savedTeacherIds = _teachers.map((teacher) => teacher.teacherId).toSet();
+      for (final teacherId in _originalTeacherIds.difference(savedTeacherIds)) {
+        await _stateService.removeTeacher(currentGroupId, teacherId);
+      }
       await _stateService.saveGroupSettings(
-        groupId,
+        currentGroupId,
         GroupSettings(
           groupId: groupId,
           section: _settings.section,
@@ -184,7 +201,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
 
       if (!mounted) return;
       _showSnackBar('Group information updated successfully.');
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
       _showSnackBar(error.toString());
@@ -196,6 +213,265 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _showAddStudentDialog() async {
+    final nameCtrl = TextEditingController();
+    final idCtrl = TextEditingController();
+    final classCtrl = TextEditingController();
+    String? pickedImage;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Add Student'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                  TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'Student ID')),
+                  TextField(controller: classCtrl, decoration: const InputDecoration(labelText: 'Class')),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await FilePicker.pickFiles(type: FileType.image);
+                            if (result.isEmpty) return;
+                            final file = result.first;
+                            if (file.path != null && file.path!.isNotEmpty) {
+                              setStateDialog(() => pickedImage = file.path);
+                            }
+                          },
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload Image'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (pickedImage != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameCtrl.text.trim();
+                  final sid = idCtrl.text.trim();
+                  final cls = classCtrl.text.trim();
+                  if (name.isEmpty || sid.isEmpty) {
+                    _showSnackBar('Please enter name and student id.');
+                    return;
+                  }
+                  final student = GroupStudent(
+                    id: 'student-${DateTime.now().millisecondsSinceEpoch}',
+                    groupId: _groupId,
+                    name: name,
+                    admissionNo: sid,
+                    section: cls,
+                    imageUrl: pickedImage,
+                    details: '',
+                    contact: '',
+                    email: '',
+                  );
+                  await _stateService.addStudent(_groupId, student);
+                  if (!mounted) return;
+                  setState(() => _students = [..._students, student]);
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  Future<void> _showAddTeacherDialog() async {
+    final nameCtrl = TextEditingController();
+    final teacherIdCtrl = TextEditingController();
+    final subjectCtrl = TextEditingController();
+    final roleCtrl = TextEditingController();
+    String? pickedImage;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Add Staff/Teacher'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                  TextField(controller: teacherIdCtrl, decoration: const InputDecoration(labelText: 'Teacher ID')),
+                  TextField(controller: subjectCtrl, decoration: const InputDecoration(labelText: 'Subject')),
+                  TextField(controller: roleCtrl, decoration: const InputDecoration(labelText: 'Role')),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await FilePicker.pickFiles(type: FileType.image);
+                            if (result.isEmpty) return;
+                            final file = result.first;
+                            if (file.path != null && file.path!.isNotEmpty) {
+                              setStateDialog(() => pickedImage = file.path);
+                            }
+                          },
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload Image'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (pickedImage != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameCtrl.text.trim();
+                  final tid = teacherIdCtrl.text.trim();
+                  final subject = subjectCtrl.text.trim();
+                  final role = roleCtrl.text.trim();
+                  if (name.isEmpty || tid.isEmpty) {
+                    _showSnackBar('Please enter name and teacher id.');
+                    return;
+                  }
+                  final teacher = GroupTeacher(
+                    id: 'teacher-${DateTime.now().millisecondsSinceEpoch}',
+                    groupId: _groupId,
+                    teacherId: tid,
+                    name: name,
+                    subject: subject,
+                    role: role.isEmpty ? 'Class Teacher' : role,
+                    imageUrl: pickedImage,
+                    details: '',
+                    contact: '',
+                    email: '',
+                  );
+                  await _stateService.assignTeacher(_groupId, teacher.teacherId, {
+                    'id': teacher.id,
+                    'name': teacher.name,
+                    'subject': teacher.subject,
+                    'role': teacher.role,
+                    'imageUrl': teacher.imageUrl ?? '',
+                    'details': teacher.details,
+                    'contact': teacher.contact,
+                    'email': teacher.email,
+                  });
+                  if (!mounted) return;
+                  setState(() => _teachers = [..._teachers, teacher]);
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  Widget _buildStudentCard(GroupStudent s) {
+    ImageProvider? imageProvider;
+    if (s.imageUrl != null && s.imageUrl!.isNotEmpty) {
+      if (s.imageUrl!.startsWith('http')) {
+        imageProvider = NetworkImage(s.imageUrl!);
+      } else {
+        imageProvider = FileImage(File(s.imageUrl!));
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: imageProvider,
+            child: imageProvider == null ? const Icon(Icons.person, size: 28) : null,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            s.name.toUpperCase(),
+            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(color: const Color(0xFF00C853), borderRadius: BorderRadius.circular(10)),
+            child: const Text('100', style: TextStyle(color: Colors.white, fontSize: 11)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeacherCard(GroupTeacher t) {
+    ImageProvider? imageProvider;
+    if (t.imageUrl != null && t.imageUrl!.isNotEmpty) {
+      if (t.imageUrl!.startsWith('http')) {
+        imageProvider = NetworkImage(t.imageUrl!);
+      } else {
+        imageProvider = FileImage(File(t.imageUrl!));
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: imageProvider,
+            child: imageProvider == null ? const Icon(Icons.person, size: 28) : null,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            t.name.toUpperCase(),
+            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(color: const Color(0xFF00C853), borderRadius: BorderRadius.circular(10)),
+            child: const Text('100', style: TextStyle(color: Colors.white, fontSize: 11)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -239,237 +515,144 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+          : DefaultTabController(
+              length: 2,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          _effectiveGroupName.isNotEmpty ? _effectiveGroupName : 'Group',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _groupId,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Container(
+                    color: AppColors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: TabBar(
+                      labelColor: AppColors.blueButton,
+                      unselectedLabelColor: AppColors.hintText,
+                                          indicator: const UnderlineTabIndicator(
+                                            borderSide: BorderSide(color: AppColors.blueButton, width: 2),
+                                            insets: EdgeInsets.symmetric(horizontal: 28),
+                                          ),
+                                          labelStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                                          unselectedLabelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w400),
+                                          tabs: const [
+                                            Tab(text: 'Students'),
+                                            Tab(text: 'Staff/Teachers'),
+                                          ],
+                                        ),
+                    // subtle divider below tabs to match screenshot
+                    // (keeps tabs visually separated from content)
+                    // no extra height so the layout stays tight
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    title: 'Group Image',
-                    child: Column(
+                  Expanded(
+                    child: TabBarView(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: imageWidget,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _pickImage,
-                                icon: const Icon(Icons.upload_file),
-                                label: const Text('Upload Image'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _pickImage,
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Change Image'),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
+                        // Students tab content: header with Add button and list/grid
+                        Container(
+                          color: AppColors.background,
                           width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: _removeImage,
-                            icon: const Icon(Icons.delete_outline),
-                            label: const Text('Remove Image'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    title: 'Group Details',
-                    child: Column(
-                      children: [
-                        _FieldRow(label: 'Group/Class Name', controller: _nameController),
-                        _FieldRow(label: 'Group ID', controller: _idController, readOnly: true),
-                        _FieldRow(label: 'Type', controller: _typeController),
-                        _FieldRow(label: 'Description', controller: _descriptionController, maxLines: 3),
-                        _FieldRow(label: 'Status', controller: _statusController),
-                        _FieldRow(label: 'Academic Year', controller: _yearController, keyboardType: TextInputType.number),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    title: 'Students',
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const Expanded(child: Text('Students')),
-                            TextButton.icon(
-                              onPressed: () {
-                                final student = GroupStudent(
-                                  id: 'student-${DateTime.now().millisecondsSinceEpoch}',
-                                  groupId: _groupId,
-                                  name: 'New Student',
-                                  admissionNo: 'ADM-${_students.length + 1}',
-                                  section: 'A',
-                                  details: 'Add student details here',
-                                  contact: '',
-                                  email: '',
-                                );
-                                setState(() => _students = [..._students, student]);
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Student'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Students',
+                                        style: TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () => _showAddStudentDialog(),
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Add'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: _students.isEmpty
+                                      ? Center(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 40),
+                                            child: Text(
+                                              'No students found in this group.',
+                                              textAlign: TextAlign.center,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w400,
+                                                color: AppColors.secondaryText,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : GridView.count(
+                                          crossAxisCount: 3,
+                                          mainAxisSpacing: 12,
+                                          crossAxisSpacing: 12,
+                                          childAspectRatio: 0.9,
+                                          children: _students.map((s) => _buildStudentCard(s)).toList(),
+                                        ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                        ..._students.map((student) => _StudentTile(student: student, onDelete: () => setState(() => _students.remove(student))))
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    title: 'Teachers / Staff',
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const Expanded(child: Text('Teachers / Staff')),
-                            TextButton.icon(
-                              onPressed: () {
-                                final teacher = GroupTeacher(
-                                  id: 'teacher-${DateTime.now().millisecondsSinceEpoch}',
-                                  groupId: _groupId,
-                                  teacherId: 'teacher-${DateTime.now().millisecondsSinceEpoch}',
-                                  name: 'New Teacher',
-                                  subject: 'Mathematics',
-                                  role: 'Class Teacher',
-                                  details: 'Add teacher details here',
-                                  contact: '',
-                                  email: '',
-                                );
-                                setState(() => _teachers = [..._teachers, teacher]);
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Teacher'),
+
+                        // Staff/Teachers tab content: header with Add button and list/grid
+                        Container(
+                          color: AppColors.background,
+                          width: double.infinity,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Staff/Teachers',
+                                        style: TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () => _showAddTeacherDialog(),
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Add'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: _teachers.isEmpty
+                                      ? Center(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 40),
+                                            child: Text(
+                                              'No staff found in this group.',
+                                              textAlign: TextAlign.center,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w400,
+                                                color: AppColors.secondaryText,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : GridView.count(
+                                          crossAxisCount: 3,
+                                          mainAxisSpacing: 12,
+                                          crossAxisSpacing: 12,
+                                          childAspectRatio: 0.9,
+                                          children: _teachers.map((t) => _buildTeacherCard(t)).toList(),
+                                        ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                        ..._teachers.map((teacher) => _TeacherTile(teacher: teacher, onDelete: () => setState(() => _teachers.remove(teacher))))
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    title: 'Group Settings',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                          value: _settings.communicationPermissions,
-                          onChanged: (value) => setState(() => _settings = GroupSettings(
-                            groupId: _groupId,
-                            section: _settings.section,
-                            communicationPermissions: value,
-                            studentPermissions: _settings.studentPermissions,
-                            teacherPermissions: _settings.teacherPermissions,
-                            description: _settings.description,
-                            status: _settings.status,
-                            academicYear: _settings.academicYear,
-                          )),
-                          title: const Text('Communication permissions'),
-                          ),
-                          SwitchListTile(
-                          value: _settings.studentPermissions,
-                          onChanged: (value) => setState(() => _settings = GroupSettings(
-                            groupId: _groupId,
-                            section: _settings.section,
-                            communicationPermissions: _settings.communicationPermissions,
-                            studentPermissions: value,
-                            teacherPermissions: _settings.teacherPermissions,
-                            description: _settings.description,
-                            status: _settings.status,
-                            academicYear: _settings.academicYear,
-                          )),
-                          title: const Text('Student permissions'),
-                          ),
-                          SwitchListTile(
-                          value: _settings.teacherPermissions,
-                          onChanged: (value) => setState(() => _settings = GroupSettings(
-                            groupId: _groupId,
-                            section: _settings.section,
-                            communicationPermissions: _settings.communicationPermissions,
-                            studentPermissions: _settings.studentPermissions,
-                            teacherPermissions: value,
-                            description: _settings.description,
-                            status: _settings.status,
-                            academicYear: _settings.academicYear,
-                          )),
-                          title: const Text('Teacher permissions'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _saving ? null : _saveChanges,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.blueButton,
-                            foregroundColor: AppColors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: _saving
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                )
-                              : const Text('Save Changes'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),

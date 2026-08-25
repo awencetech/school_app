@@ -96,9 +96,26 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.pickFiles(type: FileType.image);
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
+    final dynamic result = await FilePicker.pickFiles(type: FileType.image);
+    if (result == null) return;
+
+    // Normalize to a single file object (supports older API that returns List<PlatformFile>
+    // and newer FilePickerResult with .files)
+    dynamic file;
+    if (result is List && result.isNotEmpty) {
+      file = result.first;
+    } else {
+      // Try dynamic access to FilePickerResult.files for newer API versions
+      try {
+        final files = (result as dynamic).files;
+        if (files is List && files.isNotEmpty) file = files.first;
+      } catch (_) {}
+      if (file == null && result is PlatformFile) {
+        file = result;
+      }
+    }
+
+    if (file == null) return;
     final path = await _resolvePickedFilePath(file);
     if (path == null || path.isEmpty) return;
 
@@ -239,9 +256,21 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () async {
-                            final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result == null || result.files.isEmpty) return;
-                            final file = result.files.first;
+                            final dynamic result = await FilePicker.pickFiles(type: FileType.image);
+                            if (result == null) return;
+                            dynamic file;
+                            if (result is List && result.isNotEmpty) {
+                              file = result.first;
+                            } else {
+                              try {
+                                final files = (result as dynamic).files;
+                                if (files is List && files.isNotEmpty) file = files.first;
+                              } catch (_) {}
+                              if (file == null && result is PlatformFile) {
+                                file = result;
+                              }
+                            }
+                            if (file == null) return;
                             final path = await _resolvePickedFilePath(file);
                             if (path != null && path.isNotEmpty) {
                               setStateDialog(() => pickedImage = path);
@@ -323,9 +352,21 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () async {
-                            final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result == null || result.files.isEmpty) return;
-                            final file = result.files.first;
+                            final dynamic result = await FilePicker.pickFiles(type: FileType.image);
+                            if (result == null) return;
+                            dynamic file;
+                            if (result is List && result.isNotEmpty) {
+                              file = result.first;
+                            } else {
+                              try {
+                                final files = (result as dynamic).files;
+                                if (files is List && files.isNotEmpty) file = files.first;
+                              } catch (_) {}
+                              if (file == null && result is PlatformFile) {
+                                file = result;
+                              }
+                            }
+                            if (file == null) return;
                             final path = await _resolvePickedFilePath(file);
                             if (path != null && path.isNotEmpty) {
                               setStateDialog(() => pickedImage = path);
@@ -391,14 +432,17 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     );
   }
 
-  Future<String?> _resolvePickedFilePath(PlatformFile file) async {
+  Future<String?> _resolvePickedFilePath(dynamic file) async {
     // If the picker gave a direct path, use it. Otherwise write bytes to a temp file.
     try {
-      if (file.path != null && file.path!.isNotEmpty) return file.path;
-      if (file.bytes == null) return null;
-      final ext = file.extension ?? 'png';
+      final dynamic df = file;
+      final p = df?.path as String?;
+      if (p != null && p.isNotEmpty) return p;
+      final bytes = (df as dynamic).bytes as List<int>?;
+      if (bytes == null) return null;
+      final ext = (df as dynamic).extension as String? ?? 'png';
       final tmp = File('${Directory.systemTemp.path}/school_app_${DateTime.now().millisecondsSinceEpoch}.$ext');
-      await tmp.writeAsBytes(file.bytes!);
+      await tmp.writeAsBytes(bytes);
       return tmp.path;
     } catch (e) {
       debugPrint('Error resolving picked file path: $e');
@@ -431,14 +475,25 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () async {
-                            final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result == null || result.files.isEmpty) return;
-                            final file = result.files.first;
+                            final dynamic result = await FilePicker.pickFiles(type: FileType.image);
+                            if (result == null) return;
+                            dynamic file;
+                            if (result is List && result.isNotEmpty) {
+                              file = result.first;
+                            } else {
+                              try {
+                                final files = (result as dynamic).files;
+                                if (files is List && files.isNotEmpty) file = files.first;
+                              } catch (_) {}
+                              if (file == null && result is PlatformFile) file = result;
+                            }
+                            if (file == null) return;
                             final path = await _resolvePickedFilePath(file);
                             if (path != null && path.isNotEmpty) {
                               setStateDialog(() => pickedImage = path);
                             }
                           },
+
                           icon: const Icon(Icons.upload_file),
                           label: const Text('Upload Image'),
                         ),

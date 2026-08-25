@@ -246,46 +246,70 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             crossAxisSpacing: 18,
                             mainAxisSpacing: 12,
                             childAspectRatio: 0.82,
-                            children: const [
+                            children: [
                               _InfoChip(
                                 icon: Icons.info,
                                 label: 'Staff\\ninfo',
                                 iconColor: Color(0xFF22C8C8),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffInfo,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.beach_access,
                                 label: 'Apply leave\\nManage Leave',
                                 iconColor: Color(0xFFF57C00),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffApplyLeave,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.swipe,
                                 label: 'Swipe\\nAttendance',
                                 iconColor: Color(0xFF2E7D32),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffSwipeAttendance,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.feedback,
                                 label: 'Management\\nFeedback',
                                 iconColor: Color(0xFF1E88E5),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffManagementFeedback,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.meeting_room,
                                 label: 'Meeting',
                                 iconColor: Color(0xFFD32F2F),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffMeeting,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.folder,
                                 label: 'Staff\\nResources',
                                 iconColor: Color(0xFF8D6E63),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffResources,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.menu_book,
                                 label: 'Staff\\nHandbag',
                                 iconColor: Color(0xFFF4B400),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffHandbook,
+                                ),
                               ),
                               _InfoChip(
                                 icon: Icons.task,
                                 label: 'To Do\\nTasks',
                                 iconColor: Color(0xFF0288D1),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.staffTodoTasks,
+                                ),
                               ),
                             ],
                           ),
@@ -518,39 +542,44 @@ class _InfoChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.iconColor,
+    required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color iconColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: iconColor,
-            borderRadius: BorderRadius.circular(2),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: iconColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Icon(icon, size: 13, color: AppColors.white),
           ),
-          child: Icon(icon, size: 13, color: AppColors.white),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF222222),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF222222),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

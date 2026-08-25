@@ -7,6 +7,7 @@ import '../screens/login/create_account_screen.dart';
 import '../screens/login/forgot_password_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/staff/staff_dashboard.dart';
+import '../screens/staff/staff_placeholder_page.dart';
 import '../screens/student/student_dashboard.dart';
 import '../screens/student/student_info_screen.dart';
 import '../screens/student/student_more_options_screen.dart';
@@ -77,6 +78,26 @@ class AppRouter {
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),
       AppRoutes.studentMenu => const StudentMenuScreen(),
       AppRoutes.staffDashboard => const StaffDashboard(),
+      AppRoutes.staffInfo => const StaffPlaceholderPage(title: 'Staff Info'),
+      AppRoutes.staffApplyLeave => const StaffPlaceholderPage(
+        title: 'Apply Leave',
+      ),
+      AppRoutes.staffSwipeAttendance => const StaffPlaceholderPage(
+        title: 'Swipe Attendance',
+      ),
+      AppRoutes.staffManagementFeedback => const StaffPlaceholderPage(
+        title: 'Management Feedback',
+      ),
+      AppRoutes.staffMeeting => const StaffPlaceholderPage(title: 'Meeting'),
+      AppRoutes.staffResources => const StaffPlaceholderPage(
+        title: 'Staff Resources',
+      ),
+      AppRoutes.staffHandbook => const StaffPlaceholderPage(
+        title: 'Staff Handbook',
+      ),
+      AppRoutes.staffTodoTasks => const StaffPlaceholderPage(
+        title: 'To Do Tasks',
+      ),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
       AppRoutes.adminOtherGroups => const OtherGroupsScreen(),

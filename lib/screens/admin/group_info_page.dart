@@ -432,6 +432,8 @@ class _MemberGridPanel extends StatelessWidget {
               border: Border.all(color: AppColors.border, width: 1),
             ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _MemberAvatar(imagePath: imagePath),
                 const SizedBox(height: 6),

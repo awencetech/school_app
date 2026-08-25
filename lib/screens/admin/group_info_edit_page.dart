@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../models/group.dart';
 import '../../services/group_service.dart';
@@ -482,14 +483,40 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     );
   }
 
+  String _resolveApiBaseUrl() {
+    const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (override.isNotEmpty) return override;
+    const production = 'https://school-app-1uep.onrender.com';
+    if (kIsWeb) return production;
+    if (kReleaseMode) return production;
+    if (Platform.isAndroid) return 'http://10.0.2.2:3001';
+    return 'http://localhost:3001';
+  }
+
+  String _toAbsoluteImageUrl(String rawPath) {
+    final base = _resolveApiBaseUrl();
+    var p = rawPath.trim();
+    if (!p.startsWith('/')) p = '/$p';
+    return '$base$p';
+  }
+
   Widget _buildStudentCard(GroupStudent s) {
     ImageProvider? imageProvider;
     if (s.imageUrl != null && s.imageUrl!.isNotEmpty) {
-      if (s.imageUrl!.startsWith('http')) {
-        imageProvider = NetworkImage(s.imageUrl!);
+      final raw = s.imageUrl!.trim();
+      // If it's already an absolute URL, use it
+      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        imageProvider = NetworkImage(raw);
       } else {
-        final f = File(s.imageUrl!);
-        if (f.existsSync()) imageProvider = FileImage(f);
+        // If it's a local file path that exists, use FileImage
+        final f = File(raw);
+        if (f.existsSync()) {
+          imageProvider = FileImage(f);
+        } else {
+          // Otherwise treat it as a backend-relative path and build absolute URL
+          final abs = _toAbsoluteImageUrl(raw);
+          imageProvider = NetworkImage(abs);
+        }
       }
     }
 
@@ -532,11 +559,17 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   Widget _buildTeacherCard(GroupTeacher t) {
     ImageProvider? imageProvider;
     if (t.imageUrl != null && t.imageUrl!.isNotEmpty) {
-      if (t.imageUrl!.startsWith('http')) {
-        imageProvider = NetworkImage(t.imageUrl!);
+      final raw = t.imageUrl!.trim();
+      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        imageProvider = NetworkImage(raw);
       } else {
-        final f = File(t.imageUrl!);
-        if (f.existsSync()) imageProvider = FileImage(f);
+        final f = File(raw);
+        if (f.existsSync()) {
+          imageProvider = FileImage(f);
+        } else {
+          final abs = _toAbsoluteImageUrl(raw);
+          imageProvider = NetworkImage(abs);
+        }
       }
     }
 

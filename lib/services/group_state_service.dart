@@ -216,26 +216,63 @@ class GroupStateService {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         final groupId = (decoded['groupId'] ?? '').toString();
         if (groupId.isEmpty) continue;
-        final groupJson = decoded['group'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+        // Parse group safely
+        final dynamic groupRaw = decoded['group'];
+        final Map<String, dynamic> groupJson = groupRaw is Map ? Map<String, dynamic>.from(groupRaw) : <String, dynamic>{};
         final group = Group.fromJson(groupJson);
+
+        // image url
+        final String? imageUrl = decoded['imageUrl']?.toString();
+
+        // students: tolerate invalid entries
+        final rawStudents = (decoded['students'] as List?) ?? const [];
+        final List<GroupStudent> students = [];
+        for (final item in rawStudents) {
+          if (item is Map) {
+            try {
+              students.add(GroupStudent.fromJson(Map<String, dynamic>.from(item)));
+            } catch (e) {
+              debugPrint('Skipping invalid student entry for $groupId: $e');
+            }
+          } else {
+            debugPrint('Skipping non-map student entry for $groupId: $item');
+          }
+        }
+
+        // teachers: tolerate invalid entries
+        final rawTeachers = (decoded['teachers'] as List?) ?? const [];
+        final List<GroupTeacher> teachers = [];
+        for (final item in rawTeachers) {
+          if (item is Map) {
+            try {
+              teachers.add(GroupTeacher.fromJson(Map<String, dynamic>.from(item)));
+            } catch (e) {
+              debugPrint('Skipping invalid teacher entry for $groupId: $e');
+            }
+          } else {
+            debugPrint('Skipping non-map teacher entry for $groupId: $item');
+          }
+        }
+
+        // settings
+        final dynamic settingsRaw = decoded['settings'];
+        final GroupSettings settings = settingsRaw is Map
+            ? GroupSettings.fromJson(groupId, Map<String, dynamic>.from(settingsRaw))
+            : GroupSettings(
+                groupId: groupId,
+                status: group.status,
+                academicYear: group.year,
+                description: group.description,
+              );
+
         final state = GroupScopedData(
           groupId: groupId,
           group: group,
-          imageUrl: decoded['imageUrl']?.toString(),
-          students: ((decoded['students'] as List?) ?? const [])
-              .map((item) => GroupStudent.fromJson(Map<String, dynamic>.from(item as Map)))
-              .toList(),
-          teachers: ((decoded['teachers'] as List?) ?? const [])
-              .map((item) => GroupTeacher.fromJson(Map<String, dynamic>.from(item as Map)))
-              .toList(),
-          settings: decoded['settings'] != null
-              ? GroupSettings.fromJson(groupId, Map<String, dynamic>.from(decoded['settings'] as Map))
-              : GroupSettings(
-                  groupId: groupId,
-                  status: group.status,
-                  academicYear: group.year,
-                  description: group.description,
-                ),
+          imageUrl: imageUrl,
+          students: students,
+          teachers: teachers,
+          settings: settings,
         );
         _groups[groupId] = state;
       } catch (error) {

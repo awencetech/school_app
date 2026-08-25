@@ -276,7 +276,11 @@ class _GroupInfoPageState extends State<GroupInfoPage>
                             emptyMessage: 'No students found in this group.',
                             onMemberTap: (member) {
                               // Navigate to Student Menu when a student is tapped from Group Info
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => StudentMenuScreen(
+                                name: member is GroupStudent ? member.name : (member.name ?? 'Student'),
+                                admissionNo: member is GroupStudent ? member.admissionNo : '',
+                                imageUrl: member is GroupStudent ? member.imageUrl : (member is GroupTeacher ? member.imageUrl : null),
+                              )));
                             },
                           ),
                           _MemberGridPanel(
@@ -284,8 +288,12 @@ class _GroupInfoPageState extends State<GroupInfoPage>
                             members: _staff,
                             emptyMessage: 'No staff members found in this group.',
                             onMemberTap: (member) {
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
-                            },
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => StudentMenuScreen(
+                                name: member is GroupStudent ? member.name : (member is GroupTeacher ? member.name : 'Student'),
+                                admissionNo: member is GroupStudent ? member.admissionNo : '',
+                                imageUrl: member is GroupStudent ? member.imageUrl : (member is GroupTeacher ? member.imageUrl : null),
+                              )));
+                            }
                           ),
                         ],
                       ),

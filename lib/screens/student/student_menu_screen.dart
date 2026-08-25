@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -6,7 +10,46 @@ import '../../widgets/navigation/app_bottom_navigation.dart';
 
 /// Student menu screen matching the provided reference flow.
 class StudentMenuScreen extends StatelessWidget {
-  const StudentMenuScreen({super.key});
+  const StudentMenuScreen({
+    super.key,
+    this.name,
+    this.admissionNo,
+    this.imageUrl,
+  });
+
+  final String? name;
+  final String? admissionNo;
+  final String? imageUrl;
+
+  Widget _previewImageWidget(String src, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (src.startsWith('data:')) {
+      try {
+        final comma = src.indexOf(',');
+        final b64 = src.substring(comma + 1);
+        final bytes = base64Decode(b64);
+        return Image.memory(bytes, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+      } catch (e) {
+        debugPrint('Failed to decode data URI in StudentMenuScreen: $e');
+        return const Icon(Icons.broken_image);
+      }
+    }
+
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
+
+    if (kIsWeb) {
+      // On web, local file system paths are not accessible. Try to show as network resource.
+      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
+
+    try {
+      return Image.file(File(src), fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+    } catch (e) {
+      debugPrint('Error creating File image in StudentMenuScreen: $e');
+      return const Icon(Icons.broken_image);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +94,7 @@ class StudentMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Student Name',
+                name ?? 'Student Name',
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -59,14 +102,22 @@ class StudentMenuScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(4),
+              if (imageUrl != null && imageUrl!.isNotEmpty) ...[
+                SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: ClipRRect(borderRadius: BorderRadius.circular(4), child: _previewImageWidget(imageUrl!)),
                 ),
-              ),
+              ] else ...[
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 'Student ID :',

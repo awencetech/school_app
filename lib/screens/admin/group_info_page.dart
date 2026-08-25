@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
@@ -85,6 +87,36 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     }
   }
 
+  Widget _previewImageWidget(String src, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (src.startsWith('data:')) {
+      try {
+        final comma = src.indexOf(',');
+        final b64 = src.substring(comma + 1);
+        final bytes = base64Decode(b64);
+        return Image.memory(bytes, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+      } catch (e) {
+        debugPrint('Failed to decode data URI: $e');
+        return const Icon(Icons.broken_image);
+      }
+    }
+
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
+
+    if (kIsWeb) {
+      // On web, local file system paths are not accessible. Try to show as network resource.
+      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
+
+    try {
+      return Image.file(File(src), fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+    } catch (e) {
+      debugPrint('Error creating File image: $e');
+      return const Icon(Icons.broken_image);
+    }
+  }
+
   Future<void> _showEditStudentDialog(GroupStudent student) async {
     final nameCtrl = TextEditingController(text: student.name);
     final idCtrl = TextEditingController(text: student.admissionNo);
@@ -125,7 +157,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
                   ),
                   if (pickedImage != null) ...[
                     const SizedBox(height: 8),
-                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                                      SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
                 ],
               ),

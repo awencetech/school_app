@@ -286,7 +286,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                   ),
                   if (pickedImage != null) ...[
                     const SizedBox(height: 8),
-                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                    SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
                 ],
               ),
@@ -382,7 +382,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                   ),
                   if (pickedImage != null) ...[
                     const SizedBox(height: 8),
-                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                                      SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
                 ],
               ),
@@ -516,7 +516,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                   ),
                   if (pickedImage != null) ...[
                     const SizedBox(height: 8),
-                    SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                                SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
                 ],
               ),
@@ -567,6 +567,39 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     var p = rawPath.trim();
     if (!p.startsWith('/')) p = '/$p';
     return '$base$p';
+  }
+
+  Widget _previewImageWidget(String src, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (src.startsWith('data:')) {
+      try {
+        final comma = src.indexOf(',');
+        final b64 = src.substring(comma + 1);
+        final bytes = base64Decode(b64);
+        return Image.memory(bytes, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+      } catch (e) {
+        debugPrint('Failed to decode data URI: $e');
+        return const Icon(Icons.broken_image);
+      }
+    }
+
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
+
+    // For web, local file paths are not available; try resolving as backend-relative
+    if (kIsWeb) {
+      final abs = _toAbsoluteImageUrl(src);
+      return Image.network(abs, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
+
+    // Native: use file
+    try {
+      return Image.file(File(src), fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+    } catch (e) {
+      debugPrint('Error creating File image: $e');
+      final abs = _toAbsoluteImageUrl(src);
+      return Image.network(abs, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+    }
   }
 
   Widget _buildStudentCard(GroupStudent s) {
@@ -696,25 +729,20 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   @override
   Widget build(BuildContext context) {
     final imageWidget = _selectedImagePath != null
-        ? Image.file(
-            File(_selectedImagePath!),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: 150,
-          )
-        : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty
-            ? Image.network(
-                _currentImageUrl!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: 150,
-                errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
-              )
-            : Container(
-                height: 150,
-                color: const Color(0xffe9eef7),
-                child: const Icon(Icons.image, size: 48, color: Color(0xff5a6f92)),
-              ));
+            ? _previewImageWidget(_selectedImagePath!, fit: BoxFit.cover, width: double.infinity, height: 150)
+            : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty
+                ? Image.network(
+                    _currentImageUrl!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 150,
+                    errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
+                  )
+                : Container(
+                    height: 150,
+                    color: const Color(0xffe9eef7),
+                    child: const Icon(Icons.image, size: 48, color: Color(0xff5a6f92)),
+                  ));
 
     return Scaffold(
       backgroundColor: AppColors.background,

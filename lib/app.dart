@@ -6,6 +6,7 @@ import 'routes/app_router.dart';
 import 'routes/app_routes.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/app_state.dart';
+import 'services/app_route_observer.dart';
 import 'services/school_config_service.dart';
 import 'services/splash_config_service.dart';
 import 'theme/app_theme.dart';
@@ -49,6 +50,7 @@ class SchoolApp extends StatelessWidget {
           ];
         },
         onGenerateRoute: AppRouter.onGenerateRoute,
+        navigatorObservers: [appRouteObserver],
       ),
     );
   }

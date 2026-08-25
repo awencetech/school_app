@@ -7,31 +7,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
-import 'future_event_calendar_page.dart';
-import 'group_info_page.dart';
-import 'group_messages_page.dart';
-import 'homework_today_in_class_page.dart';
-import 'class_demography_page.dart';
-import 'class_resources_page.dart';
-import 'class_news_page.dart';
-import 'class_timetable_page.dart';
-import 'class_planner_page.dart';
-import 'online_class_meeting_page.dart';
-import 'class_fileplan_page.dart';
-import 'online_assignment_page.dart';
-import 'online_assessment_page.dart';
-import 'leave_approval_page.dart';
-import 'medical_event_list_page.dart';
-import 'happiness_report_page.dart';
-import 'one_on_one_meeting_page.dart';
-import 'pick_drop_entry_page.dart';
-import 'access_management_page.dart';
-import 'class_fee_details_page.dart';
-import 'group_dashboard_page.dart';
-import 'absence_page.dart';
-import 'write_message_page.dart';
-import 'group_achievement_award_page.dart';
-import 'diary_summary_page.dart';
 
 /// Group Details page showing comprehensive information about a selected group.
 class GroupDetailsPage extends StatefulWidget {
@@ -109,11 +84,10 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.info,
                   const Color(0xFF2563EB),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GroupInfoPage(group: widget.group),
-                      ),
-                    );
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.teacherGroupInfo,
+                        arguments: widget.group,
+                      );
                   },
                 ),
                 _IconGridItem(
@@ -121,13 +95,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.calendar_month,
                   const Color(0xFFF59E0B),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FutureEventCalendarPage(
-                          groupId: groupDatabaseId,
-                          groupName: widget.group.name,
-                        ),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherFutureEventCalendar,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -136,14 +106,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.book,
                   const Color(0xFFEF4444),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => HomeworkTodayInClassPage(
-                          groupId: groupDatabaseId,
-                          groupName: widget.group.name,
-                          groupYear: widget.group.year,
-                        ),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherHomeworkToday,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -152,14 +117,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.mail,
                   const Color(0xFF16A34A),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GroupMessagesPage(
-                          groupId: groupDatabaseId,
-                          groupName: widget.group.name,
-                          groupYear: widget.group.year,
-                        ),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherGroupMessages,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -168,14 +128,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.edit,
                   const Color(0xFF9333EA),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => WriteMessagePage(
-                          groupId: groupDatabaseId,
-                          groupName: widget.group.name,
-                          groupYear: widget.group.year,
-                        ),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherWriteMessage,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -184,11 +139,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.people,
                   const Color(0xFF06B6D4),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ClassDemographyPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassDemography,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -197,10 +150,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.library_books,
                   const Color(0xFF8B5CF6),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ClassResourcesPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassResources,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -209,10 +161,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.photo_camera,
                   const Color(0xFFEC4899),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ClassNewsPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherPhotosNews,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -221,10 +172,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.schedule,
                   const Color(0xFF3B82F6),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ClassTimetablePage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassTimetable,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -233,10 +183,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.today,
                   const Color(0xFF10B981),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ClassPlannerPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassPlanner,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -245,11 +194,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.videocam,
                   const Color(0xFFDC2626),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OnlineClassMeetingPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherVideoConference,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -258,10 +205,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.folder,
                   const Color(0xFF0EA5E9),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ClassFileplanPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassFilePlan,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -270,11 +216,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.assignment,
                   const Color(0xFFF97316),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OnlineAssignmentPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherOnlineAssignment,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -283,11 +227,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.assessment,
                   const Color(0xFF6366F1),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OnlineAssessmentPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherOnlineAssessment,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -319,7 +261,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF06B6D4),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherGroupClasses,
+                      AppRoutes.teacherGroupClassMenu,
                       arguments: widget.group,
                     );
                   },
@@ -329,10 +271,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.dashboard,
                   const Color(0xFF8B5CF6),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GroupDashboardPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherGroupDashboard,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -341,10 +282,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.note_outlined,
                   const Color(0xFFEC4899),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => DiarySummaryPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherDiarySummary,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -353,10 +293,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.how_to_reg,
                   const Color(0xFF10B981),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => AbsencePage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherTakeAttendance,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -365,11 +304,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.emoji_events,
                   const Color(0xFFF59E0B),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            GroupAchievementAwardPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherAppreciateAward,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -378,10 +315,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.folder,
                   const Color(0xFFDC2626),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ClassFileplanPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassFilePlan,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -390,11 +326,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.assignment,
                   const Color(0xFF3B82F6),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OnlineAssignmentPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherOnlineAssignment,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -403,11 +337,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.assessment,
                   const Color(0xFFF97316),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OnlineAssessmentPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherOnlineAssessment,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -416,10 +348,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.approval,
                   const Color(0xFF6366F1),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => LeaveApprovalPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherLeaveApproval,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -428,11 +359,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.health_and_safety,
                   const Color(0xFF14B8A6),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            MedicalEventListPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherMedicalEventList,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -441,11 +370,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.insert_chart,
                   const Color(0xFFD946EF),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            HappinessReportPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherHappinessReport,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -454,11 +381,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.video_call,
                   const Color(0xFFFACC15),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OneOnOneMeetingPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherOneOnOneMeeting,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -467,10 +392,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.directions_car,
                   const Color(0xFF0284C7),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PickDropEntryPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherPickDropEntry,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -479,11 +403,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.admin_panel_settings,
                   const Color(0xFF84CC16),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            AccessManagementPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherAccessManagement,
+                      arguments: widget.group,
                     );
                   },
                 ),
@@ -492,11 +414,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.receipt,
                   const Color(0xFFF43F5E),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ClassFeeDetailsPage(group: widget.group),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.teacherClassFeeDetails,
+                      arguments: widget.group,
                     );
                   },
                 ),

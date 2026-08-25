@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/group.dart';
+import '../../routes/app_routes.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class GroupMenuPage extends StatelessWidget {
@@ -13,93 +14,106 @@ class GroupMenuPage extends StatelessWidget {
       'Group Info',
       Icons.info_outline,
       Color(0xff2563eb),
-      '/teacher/group-info',
+      AppRoutes.teacherEditGroupInfo,
     ),
     _GroupMenuItem(
       'Future Event Calendar',
       Icons.calendar_month,
       Color(0xfff59e0b),
-      '/teacher/future-event-calendar',
+      AppRoutes.teacherEditFutureEventCalendar,
     ),
     _GroupMenuItem(
       'HW Today In Class',
       Icons.assignment,
       Color(0xffef4444),
-      '/teacher/homework-today',
+      AppRoutes.teacherEditHomeworkToday,
     ),
     _GroupMenuItem(
       'Group Messages',
       Icons.mail_outline,
       Color(0xff16a34a),
-      '/teacher/group-messages',
+      AppRoutes.teacherEditGroupMessages,
     ),
     _GroupMenuItem(
       'Write Write Emsg',
       Icons.edit,
       Color(0xff9333ea),
-      '/teacher/write-message',
+      AppRoutes.teacherEditWriteMessage,
     ),
     _GroupMenuItem(
       'Class Demography',
       Icons.groups,
       Color(0xff06b6d4),
-      '/teacher/class-demography',
+      AppRoutes.teacherEditClassDemography,
     ),
     _GroupMenuItem(
       'Class Resources',
       Icons.library_books,
       Color(0xff8b5cf6),
-      '/teacher/class-resources',
+      AppRoutes.teacherEditClassResources,
     ),
     _GroupMenuItem(
       'Photos News',
       Icons.photo_camera,
       Color(0xffec4899),
-      '/teacher/photos-news',
+      AppRoutes.teacherEditPhotosNews,
     ),
     _GroupMenuItem(
       'Class Timetable',
       Icons.schedule,
       Color(0xff3b82f6),
-      '/teacher/class-timetable',
+      AppRoutes.teacherEditClassTimetable,
     ),
     _GroupMenuItem(
       'Class Planner',
       Icons.today,
       Color(0xff10b981),
-      '/teacher/class-planner',
+      AppRoutes.teacherEditClassPlanner,
     ),
     _GroupMenuItem(
       'Video Conf',
       Icons.videocam,
       Color(0xffdc2626),
-      '/teacher/video-conference',
+      AppRoutes.teacherEditVideoConference,
     ),
     _GroupMenuItem(
       'Class File/Plan',
       Icons.folder,
       Color(0xff0ea5e9),
-      '/teacher/class-file-plan',
+      AppRoutes.teacherEditClassFilePlan,
     ),
     _GroupMenuItem(
       'Online Assignment',
       Icons.assignment_turned_in,
       Color(0xfff97316),
-      '/teacher/online-assignment',
+      AppRoutes.teacherEditOnlineAssignment,
     ),
     _GroupMenuItem(
       'Online Assessment',
       Icons.assessment,
       Color(0xff6366f1),
-      '/teacher/online-assessment',
+      AppRoutes.teacherEditOnlineAssessment,
     ),
     _GroupMenuItem(
       'Group Info Edit',
       Icons.edit_note,
       Color(0xff4f46e5),
-      '/teacher/group-info-edit',
+      AppRoutes.teacherEditGroupInfoEdit,
     ),
   ];
+
+  Future<void> _openItem(BuildContext context, _GroupMenuItem item) async {
+    final result = await Navigator.of(context).pushNamed(
+      item.route,
+      arguments: group,
+    );
+    if (item.route == AppRoutes.teacherGroupInfoEdit && result == true && context.mounted) {
+      Navigator.of(context).pushNamed(
+        AppRoutes.teacherGroupInfo,
+        arguments: group,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +131,7 @@ class GroupMenuPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
         title: const Text(
-          'Group Menu',
+          'Group Menu Edit',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
@@ -153,9 +167,7 @@ class GroupMenuPage extends StatelessWidget {
                     final item = _items[index];
                     return _GroupMenuTile(
                       item: item,
-                      onTap: () => Navigator.of(
-                        context,
-                      ).pushNamed(item.route, arguments: group),
+                      onTap: () => _openItem(context, item),
                     );
                   },
                 ),

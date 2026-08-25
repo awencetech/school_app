@@ -219,12 +219,9 @@ class _GroupInfoPageState extends State<GroupInfoPage>
                             title: 'Students',
                             members: _students,
                             emptyMessage: 'No students found in this group.',
-                            onMemberTap: (member) async {
-                              if (member is GroupStudent) {
-                                await _showEditStudentDialog(member);
-                              } else {
-                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
-                              }
+                            onMemberTap: (member) {
+                              // Navigate to Student Menu when a student is tapped from Group Info
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
                             },
                           ),
                           _MemberGridPanel(

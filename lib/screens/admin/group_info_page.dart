@@ -91,7 +91,82 @@ class _GroupInfoPageState extends State<GroupInfoPage>
       fontWeight: FontWeight.w600,
     );
 
-    return Scaffold(
+    Future<void> _showEditStudentDialog(BuildContext parentContext, GroupStudent student) async {
+      final nameCtrl = TextEditingController(text: student.name);
+      final idCtrl = TextEditingController(text: student.admissionNo);
+      final sectionCtrl = TextEditingController(text: student.section);
+      String? pickedImage = student.imageUrl;
+
+      await showDialog<void>(
+        context: parentContext,
+        builder: (context) {
+          return StatefulBuilder(builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Edit Student'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                    TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'Student ID')),
+                    TextField(controller: sectionCtrl, decoration: const InputDecoration(labelText: 'Class')),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final result = await FilePicker.pickFiles(type: FileType.image);
+                              if (result.isEmpty) return;
+                              final file = result.first;
+                              if (file.path != null && file.path!.isNotEmpty) {
+                                setStateDialog(() => pickedImage = file.path);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Upload Image'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (pickedImage != null) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(height: 80, child: Image.file(File(pickedImage!), fit: BoxFit.cover)),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final sid = idCtrl.text.trim();
+                    final cls = sectionCtrl.text.trim();
+                    if (name.isEmpty || sid.isEmpty) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(const SnackBar(content: Text('Please enter name and student id.')));
+                      return;
+                    }
+                    await _stateService.updateStudent(_groupId, student.id, {
+                      'name': name,
+                      'admissionNo': sid,
+                      'section': cls,
+                      'imageUrl': pickedImage ?? '',
+                    });
+                    final updated = await _stateService.getGroupStudents(_groupId);
+                    if (mounted) setState(() => _students = updated);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          });
+        },
+      );
+    }
+
+    return Scaffold
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
@@ -267,48 +342,53 @@ class _MemberGridPanel extends StatelessWidget {
 
           return InkWell(
             onTap: () {
-              // Navigate to Student Menu when member tapped
+            // Open edit dialog for students
+            if (member is GroupStudent) {
+              _showEditStudentDialog(context, member);
+            } else {
+              // For staff, could open staff edit in future; currently open student menu
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentMenuScreen()));
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border, width: 1),
-              ),
-              child: Column(
-                children: [
-                  _MemberAvatar(imagePath: imagePath),
-                  const SizedBox(height: 6),
-                  Text(
-                    displayName,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.primaryText,
-                    ),
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border, width: 1),
+            ),
+            child: Column(
+              children: [
+                _MemberAvatar(imagePath: imagePath),
+                const SizedBox(height: 6),
+                Text(
+                  displayName,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primaryText,
                   ),
-                  ...details
-                      .where((detail) => detail.isNotEmpty)
-                      .take(2)
-                      .map(
-                        (detail) => Text(
-                          detail,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.poppins(
-                            fontSize: 8,
-                            color: AppColors.secondaryText,
-                          ),
+                ),
+                ...details
+                    .where((detail) => detail.isNotEmpty)
+                    .take(2)
+                    .map(
+                      (detail) => Text(
+                        detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 8,
+                          color: AppColors.secondaryText,
                         ),
                       ),
-                ],
-              ),
+                    ),
+              ],
             ),
+          ),
           );
         },
       ),

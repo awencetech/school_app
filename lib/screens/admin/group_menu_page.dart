@@ -127,7 +127,17 @@ class GroupMenuPage extends StatelessWidget {
         automaticallyImplyLeading: false,
         centerTitle: true,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () async {
+            try {
+              final didPop = await Navigator.of(context, rootNavigator: true).maybePop();
+              if (!didPop) {
+                Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRoutes.main);
+              }
+            } catch (e) {
+              debugPrint('Back navigation failed on GroupMenuPage: $e');
+              Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRoutes.main);
+            }
+          },
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
         title: const Text(

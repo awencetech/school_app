@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import '../../utils/file_picker_helper.dart' as fp_helper;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart';
@@ -434,24 +435,22 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<String?> _resolvePickedFilePath(dynamic file) async {
-    // If the picker gave a direct path, use it. Otherwise write bytes to a temp file or return a data URI on web.
+    // On web use our helper picker (FilePicker web sometimes returns a WebPlatformFile without usable bytes)
+    if (kIsWeb) {
+      try {
+        final data = await fp_helper.pickImageAsDataUri();
+        return data;
+      } catch (e) {
+        debugPrint('Error resolving picked file bytes on web: $e');
+        return null;
+      }
+    }
+
+    // If the picker gave a direct path, use it. Otherwise write bytes to a temp file.
     try {
       final dynamic df = file;
       final p = (df?.path) as String?;
       if (p != null && p.isNotEmpty) return p;
-
-      if (kIsWeb) {
-        try {
-          final bytes = (df as dynamic).bytes as Uint8List?;
-          if (bytes == null) return null;
-          final ext = (df as dynamic).extension as String? ?? 'png';
-          final b64 = base64Encode(bytes);
-          return 'data:image/$ext;base64,$b64';
-        } catch (e) {
-          debugPrint('Error resolving picked file bytes on web: $e');
-          return null;
-        }
-      }
 
       final bytes = (df as dynamic).bytes as List<int>?;
       if (bytes == null) return null;

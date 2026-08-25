@@ -277,6 +277,23 @@ class _GroupInfoPageState extends State<GroupInfoPage>
   }
 }
 
+String _resolveApiBaseUrl() {
+  const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  if (override.isNotEmpty) return override;
+  const production = 'https://school-app-1uep.onrender.com';
+  if (kIsWeb) return production;
+  if (kReleaseMode) return production;
+  if (Platform.isAndroid) return 'http://10.0.2.2:3001';
+  return 'http://localhost:3001';
+}
+
+String _toAbsoluteImageUrl(String rawPath) {
+  final base = _resolveApiBaseUrl();
+  var p = rawPath.trim();
+  if (!p.startsWith('/')) p = '/$p';
+  return '$base$p';
+}
+
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message, required this.onRetry});
 
@@ -438,13 +455,40 @@ class _MemberAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = imagePath != null && imagePath!.isNotEmpty;
+    ImageProvider? provider;
+    if (hasImage) {
+      final raw = imagePath!.trim();
+      if (raw.startsWith('data:')) {
+        try {
+          final comma = raw.indexOf(',');
+          final b64 = raw.substring(comma + 1);
+          final bytes = base64Decode(b64);
+          provider = MemoryImage(bytes);
+        } catch (e) {
+          debugPrint('Failed to decode data URI in _MemberAvatar: $e');
+        }
+      } else if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        provider = NetworkImage(raw);
+      } else {
+        if (!kIsWeb) {
+          final f = File(raw);
+          if (f.existsSync()) {
+            provider = FileImage(f);
+          } else {
+            provider = NetworkImage(_toAbsoluteImageUrl(raw));
+          }
+        } else {
+          // On web, local file paths aren't accessible; treat as backend-relative
+          provider = NetworkImage(_toAbsoluteImageUrl(raw));
+        }
+      }
+    }
+
     return CircleAvatar(
       radius: 24,
       backgroundColor: const Color(0xFFE9EEF7),
-      backgroundImage: hasImage ? FileImage(File(imagePath!)) : null,
-      child: hasImage
-          ? null
-          : const Icon(Icons.person, size: 26, color: AppColors.primary),
+      backgroundImage: provider,
+      child: provider == null ? const Icon(Icons.person, size: 26, color: AppColors.primary) : null,
     );
   }
 }

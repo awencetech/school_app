@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 
@@ -32,6 +33,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
   String _errorMessage = '';
   List<GroupStudent> _students = [];
   List<GroupTeacher> _staff = [];
+  StreamSubscription<String>? _groupChangeSub;
 
   @override
   void initState() {
@@ -39,6 +41,11 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     _groupId = widget.group.id.isNotEmpty ? widget.group.id : widget.group.name;
     _tabController = TabController(length: 2, vsync: this);
     _loadMembers();
+
+    // subscribe to group changes so edits made elsewhere are reflected immediately
+    _groupChangeSub = _stateService.onGroupChanged.where((id) => id == _groupId).listen((_) {
+      if (mounted) _loadMembers();
+    });
   }
 
   @override
@@ -59,6 +66,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
   void dispose() {
     appRouteObserver.unsubscribe(this);
     _tabController.dispose();
+    _groupChangeSub?.cancel();
     super.dispose();
   }
 
@@ -216,6 +224,21 @@ class _GroupInfoPageState extends State<GroupInfoPage>
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Undo last change',
+            icon: const Icon(Icons.undo, color: AppColors.white),
+            onPressed: () async {
+              final ok = await _stateService.undoLastChange(_groupId);
+              if (ok) {
+                await _loadMembers();
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Undo applied')));
+              } else {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nothing to undo')));
+              }
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

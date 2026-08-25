@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -196,7 +197,11 @@ class GroupStateService {
   static final GroupStateService instance = GroupStateService._();
 
   final Map<String, GroupScopedData> _groups = <String, GroupScopedData>{};
+  final Map<String, String?> _lastState = <String, String?>{};
+  final StreamController<String> _groupChangeController = StreamController<String>.broadcast();
   bool _initialized = false;
+
+  Stream<String> get onGroupChanged => _groupChangeController.stream;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -265,7 +270,14 @@ class GroupStateService {
   Future<void> _saveState(String groupId) async {
     final prefs = await SharedPreferences.getInstance();
     final state = _ensureState(groupId);
+    // keep previous raw for undo
+    final prev = prefs.getString(_key(groupId));
+    _lastState[groupId] = prev;
     await prefs.setString(_key(groupId), jsonEncode(state.toJson()));
+    // notify listeners that this group's state changed
+    try {
+      _groupChangeController.add(groupId);
+    } catch (_) {}
   }
 
   Future<Group> getGroup(String groupId) async {
@@ -413,5 +425,54 @@ class GroupStateService {
     final state = _ensureState(groupId);
     state.settings = settings;
     await _saveState(groupId);
+  }
+
+  /// Undo the last persisted change for [groupId]. Returns true if undo applied.
+  Future<bool> undoLastChange(String groupId) async {
+    await initialize();
+    final prefs = await SharedPreferences.getInstance();
+    final prev = _lastState[groupId];
+    if (prev == null) return false;
+    if (prev.isEmpty) {
+      await prefs.remove(_key(groupId));
+      _groups.remove(groupId);
+    } else {
+      await prefs.setString(_key(groupId), prev);
+      try {
+        final decoded = jsonDecode(prev) as Map<String, dynamic>;
+        final gid = (decoded['groupId'] ?? '').toString();
+        final groupJson = decoded['group'] as Map<String, dynamic>? ?? <String, dynamic>{};
+        final group = Group.fromJson(groupJson);
+        final state = GroupScopedData(
+          groupId: gid,
+          group: group,
+          imageUrl: decoded['imageUrl']?.toString(),
+          students: ((decoded['students'] as List?) ?? const [])
+              .map((item) => GroupStudent.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList(),
+          teachers: ((decoded['teachers'] as List?) ?? const [])
+              .map((item) => GroupTeacher.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList(),
+          settings: decoded['settings'] != null
+              ? GroupSettings.fromJson(gid, Map<String, dynamic>.from(decoded['settings'] as Map))
+              : GroupSettings(
+                  groupId: gid,
+                  status: group.status,
+                  academicYear: group.year,
+                  description: group.description,
+                ),
+        );
+        _groups[gid] = state;
+      } catch (e) {
+        debugPrint('Failed to restore previous state for $groupId: $e');
+      }
+    }
+    // notify listeners
+    try {
+      _groupChangeController.add(groupId);
+    } catch (_) {}
+    // clear last state after undo to avoid repeated undo
+    _lastState.remove(groupId);
+    return true;
   }
 }

@@ -28,46 +28,35 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AspectRatio(
             aspectRatio: 16 / 9,
             child: () {
-                final posterSource = context.watch<SchoolConfigService>().posterDisplaySource;
-                if (posterSource != null && posterSource.isNotEmpty) {
-                  final uri = Uri.tryParse(posterSource);
-                  if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
-                    return Image.network(
-                      posterSource,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        debugPrint('School poster loading error: $error');
-                        debugPrint('Poster URL: $posterSource');
-                        return Container(
-                          color: AppColors.divider,
-                          child: Center(
-                            child: Text(
-                              'School Poster',
-                              style: AppTextStyles.subtitle.copyWith(color: AppColors.hintText),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-
-                  return Image.memory(
-                    base64Decode(posterSource),
-                    fit: BoxFit.contain,
+              final posterSource = context
+                  .watch<SchoolConfigService>()
+                  .posterDisplaySource;
+              if (posterSource != null && posterSource.isNotEmpty) {
+                final uri = Uri.tryParse(posterSource);
+                if (uri != null &&
+                    uri.hasScheme &&
+                    (uri.scheme == 'http' || uri.scheme == 'https')) {
+                  return Image.network(
+                    posterSource,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+                      debugPrint('School poster loading error: $error');
+                      debugPrint('Poster URL: $posterSource');
                       return Container(
                         color: AppColors.divider,
                         child: Center(
                           child: Text(
                             'School Poster',
-                            style: AppTextStyles.subtitle.copyWith(color: AppColors.hintText),
+                            style: AppTextStyles.subtitle.copyWith(
+                              color: AppColors.hintText,
+                            ),
                           ),
                         ),
                       );
@@ -75,103 +64,135 @@ class HomeScreen extends StatelessWidget {
                   );
                 }
 
-                return Image.asset(
-                  'assets/images/school_poster.png',
-                  fit: BoxFit.contain,
+                return Image.memory(
+                  base64Decode(posterSource),
+                  fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: AppColors.divider,
                       child: Center(
                         child: Text(
                           'School Poster',
-                          style: AppTextStyles.subtitle.copyWith(color: AppColors.hintText),
+                          style: AppTextStyles.subtitle.copyWith(
+                            color: AppColors.hintText,
+                          ),
                         ),
                       ),
                     );
                   },
                 );
-              }(),
+              }
+
+              return Image.asset(
+                'assets/images/school_poster.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: AppColors.divider,
+                    child: Center(
+                      child: Text(
+                        'School Poster',
+                        style: AppTextStyles.subtitle.copyWith(
+                          color: AppColors.hintText,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }(),
           ),
           const SizedBox(height: 16),
-          FutureBuilder<SchoolInfo>(
-            future: DummyDataService.getSchoolInfo(),
-            builder: (context, snapshot) {
-              final info = snapshot.data;
-              final config = context.watch<SchoolConfigService>();
-              final displayName = config.schoolName.isNotEmpty ? config.schoolName : (info?.name ?? 'SCHOOL NAME');
-              final displayQuote = config.quote.isNotEmpty
-                  ? config.quote
-                  : (info?.quote ?? 'Every student has the potential to achieve greatness through dedication, discipline, and continuous learning.');
-              final displayWelcome = config.welcome.isNotEmpty
-                  ? config.welcome
-                  : 'Welcome To ${displayName}';
-              final website = config.websiteUrl.isNotEmpty ? config.websiteUrl : (info?.websiteUrl ?? '');
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: FutureBuilder<SchoolInfo>(
+              future: DummyDataService.getSchoolInfo(),
+              builder: (context, snapshot) {
+                final info = snapshot.data;
+                final config = context.watch<SchoolConfigService>();
+                final displayName = config.schoolName.isNotEmpty
+                    ? config.schoolName
+                    : (info?.name ?? 'SCHOOL NAME');
+                final displayQuote = config.quote.isNotEmpty
+                    ? config.quote
+                    : (info?.quote ??
+                          'Every student has the potential to achieve greatness through dedication, discipline, and continuous learning.');
+                final displayWelcome = config.welcome.isNotEmpty
+                    ? config.welcome
+                    : 'Welcome To ${displayName}';
+                final website = config.websiteUrl.isNotEmpty
+                    ? config.websiteUrl
+                    : (info?.websiteUrl ?? '');
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    displayName,
-                    style: AppTextStyles.sectionTitle,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    displayQuote,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF616161),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      displayName,
+                      style: AppTextStyles.sectionTitle,
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 12),
-                  ImportantNewsTicker(
-                    items: config.runningItems,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    displayWelcome,
-                    style: AppTextStyles.subtitle,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  PrimaryButton(
-                    label: 'Sign In',
-                    onPressed: () => context.read<AppState>().setBottomNavIndex(4),
-                  ),
-                  const SizedBox(height: 12),
-                  SecondaryButton(
-                    label: 'School Website',
-                    onPressed: website.isNotEmpty
-                        ? () => _openWebsite(website)
-                        : null,
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(height: 8),
+                    Text(
+                      displayQuote,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF616161),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    ImportantNewsTicker(items: config.runningItems),
+                    const SizedBox(height: 12),
+                    Text(
+                      displayWelcome,
+                      style: AppTextStyles.subtitle,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    PrimaryButton(
+                      label: 'Sign In',
+                      onPressed: () =>
+                          context.read<AppState>().setBottomNavIndex(4),
+                    ),
+                    const SizedBox(height: 12),
+                    SecondaryButton(
+                      label: 'School Website',
+                      onPressed: website.isNotEmpty
+                          ? () => _openWebsite(website)
+                          : null,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           const SizedBox(height: 18),
-          Builder(builder: (context) {
-            final config = context.watch<SchoolConfigService>();
-            final sections = config.homeContent;
-            return sections.isNotEmpty
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < sections.length; i++) ...[
-                                  _NewsNote(
-                                    title: sections[i].title.isNotEmpty ? sections[i].title : sections[i].name,
-                                    body: sections[i].description,
-                                    imageData: sections[i].photoBase64,
-                                  ),
-                                  const SizedBox(height: 14),
-                                ],
-                    ],
-                  )
-                : const SizedBox.shrink();
-          }),
+          Builder(
+            builder: (context) {
+              final config = context.watch<SchoolConfigService>();
+              final sections = config.homeContent;
+              return sections.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < sections.length; i++) ...[
+                          _NewsNote(
+                            title: sections[i].title.isNotEmpty
+                                ? sections[i].title
+                                : sections[i].name,
+                            body: sections[i].description,
+                            imageData: sections[i].photoBase64,
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      ],
+                    )
+                  : const SizedBox.shrink();
+            },
+          ),
           const SizedBox(height: 24),
         ],
       ),
@@ -180,7 +201,11 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _NewsNote extends StatelessWidget {
-  const _NewsNote({required this.title, required this.body, this.imageData = ''});
+  const _NewsNote({
+    required this.title,
+    required this.body,
+    this.imageData = '',
+  });
 
   final String title;
   final String body;
@@ -191,28 +216,43 @@ class _NewsNote extends StatelessWidget {
     if (trimmed.isEmpty) return const SizedBox.shrink();
 
     final uri = Uri.tryParse(trimmed);
-    if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+    if (uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'http' || uri.scheme == 'https')) {
       return Container(
         height: 180,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.divider)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.divider),
+        ),
         clipBehavior: Clip.hardEdge,
         child: CachedNetworkImage(
           imageUrl: trimmed,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(color: AppColors.divider),
-          errorWidget: (context, url, error) => Container(color: AppColors.divider, child: const Center(child: Icon(Icons.broken_image, color: AppColors.hintText))),
+          errorWidget: (context, url, error) => Container(
+            color: AppColors.divider,
+            child: const Center(
+              child: Icon(Icons.broken_image, color: AppColors.hintText),
+            ),
+          ),
         ),
       );
     }
 
     try {
       final normalized = trimmed.toLowerCase().startsWith('data:')
-          ? trimmed.substring(trimmed.indexOf(',') + 1).replaceAll(RegExp(r'\s+'), '')
+          ? trimmed
+                .substring(trimmed.indexOf(',') + 1)
+                .replaceAll(RegExp(r'\s+'), '')
           : trimmed.replaceAll(RegExp(r'\s+'), '');
       final bytes = base64Decode(normalized);
       return Container(
         height: 180,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.divider)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.divider),
+        ),
         clipBehavior: Clip.hardEdge,
         child: Image.memory(bytes, fit: BoxFit.cover),
       );
@@ -240,4 +280,3 @@ class _NewsNote extends StatelessWidget {
     );
   }
 }
-

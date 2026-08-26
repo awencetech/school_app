@@ -36,7 +36,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
-        title: Text(context.watch<SchoolConfigService>().schoolName, style: AppTextStyles.appTitle),
+        title: Text(
+          context.watch<SchoolConfigService>().schoolName,
+          style: AppTextStyles.appTitle,
+        ),
         automaticallyImplyLeading: false,
       ),
       body: _selectedBottomIndex == 3
@@ -66,9 +69,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                   const SizedBox(height: 12),
                   // Poster from school config (if set)
-                  if (config.posterDisplaySource != null && config.posterDisplaySource!.isNotEmpty)
+                  if (config.posterDisplaySource != null &&
+                      config.posterDisplaySource!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.zero,
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: _buildPosterWidget(config.posterDisplaySource!),
@@ -104,19 +108,22 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 0.95,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 0.95,
+                          ),
                       itemCount: 8,
                       padding: EdgeInsets.zero,
                       itemBuilder: (context, index) {
                         final items = [
                           GestureDetector(
                             onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const MessagesPage()),
+                              MaterialPageRoute(
+                                builder: (_) => const MessagesPage(),
+                              ),
                             ),
                             child: const _QuickAction(
                               icon: Icons.message,
@@ -196,7 +203,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    context.watch<AppState>().currentUserId != null ? context.watch<AppState>().currentUserId! : 'Student name',
+                                    context.watch<AppState>().currentUserId !=
+                                            null
+                                        ? context
+                                              .watch<AppState>()
+                                              .currentUserId!
+                                        : 'Student name',
                                     style: GoogleFonts.poppins(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
@@ -223,19 +235,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           child: GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              crossAxisSpacing: 18,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.82,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 4,
+                                  crossAxisSpacing: 18,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 0.82,
+                                ),
                             itemCount: 6,
                             itemBuilder: (context, index) {
                               final items = [
                                 GestureDetector(
-                                  onTap: () => Navigator.of(context).pushNamed(
-                                    AppRoutes.studentInfo,
-                                  ),
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pushNamed(AppRoutes.studentInfo),
                                   child: const _InfoChip(
                                     icon: Icons.info,
                                     label: 'Student Info',
@@ -263,9 +276,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   iconColor: Color(0xFF1E88E5),
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.of(context).pushNamed(
-                                    AppRoutes.studentMenu,
-                                  ),
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pushNamed(AppRoutes.studentMenu),
                                   child: const _InfoChip(
                                     icon: Icons.more_horiz,
                                     label: 'More Info',
@@ -309,9 +322,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.studentMoreOptions,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.studentMoreOptions),
                                 child: const _ClassTile(
                                   icon: Icons.more_horiz,
                                   label: 'More',
@@ -392,10 +405,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) {
           if (index == 4) {
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              AppRoutes.main,
-              (route) => false,
-            );
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
             return;
           }
 
@@ -416,10 +428,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildPosterWidget(String posterSource) {
     final uri = Uri.tryParse(posterSource);
-    if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+    if (uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'http' || uri.scheme == 'https')) {
       return CachedNetworkImage(
         imageUrl: posterSource,
-        fit: BoxFit.contain,
+        fit: BoxFit.cover,
         placeholder: (context, url) => Container(color: AppColors.divider),
         errorWidget: (context, url, error) {
           debugPrint('School poster loading error: $error');
@@ -432,10 +446,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       );
     }
 
-    return Image.memory(
-      base64Decode(posterSource),
-      fit: BoxFit.contain,
-    );
+    return Image.memory(base64Decode(posterSource), fit: BoxFit.cover);
   }
 }
 
@@ -462,11 +473,7 @@ class _QuickAction extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(2),
           ),
-          child: Icon(
-            icon,
-            size: 12,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 12, color: AppColors.white),
         ),
         const SizedBox(height: 3),
         Text(
@@ -509,11 +516,7 @@ class _InfoChip extends StatelessWidget {
             color: iconColor,
             borderRadius: BorderRadius.circular(2),
           ),
-          child: Icon(
-            icon,
-            size: 13,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 13, color: AppColors.white),
         ),
         const SizedBox(height: 4),
         Text(
@@ -556,11 +559,7 @@ class _ClassTile extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 16, color: AppColors.white),
         ),
         const SizedBox(height: 4),
         Text(
@@ -610,11 +609,7 @@ class _SchoolLinkTile extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: AppColors.white,
-          ),
+          child: Icon(icon, size: 16, color: AppColors.white),
         ),
         const SizedBox(height: 4),
         Text(

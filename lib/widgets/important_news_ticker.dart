@@ -52,10 +52,10 @@ class _ImportantNewsTickerState extends State<ImportantNewsTicker>
   }
 
   TextStyle get _tickerTextStyle => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: AppColors.primaryText,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.primaryText,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -82,23 +82,6 @@ class _ImportantNewsTickerState extends State<ImportantNewsTicker>
           return SizedBox(height: widget.height);
         }
 
-        if (textWidth <= available) {
-          return Padding(
-            padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
-            child: SizedBox(
-              height: widget.height,
-              child: Center(
-                child: Text(
-                  text,
-                  style: _tickerTextStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          );
-        }
-
         const gap = 56.0;
         final trackWidth = textWidth + gap;
 
@@ -111,7 +94,9 @@ class _ImportantNewsTickerState extends State<ImportantNewsTicker>
             onTapUp: (_) => _setPaused(false),
             onTapCancel: () => _setPaused(false),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.horizontalPadding,
+              ),
               child: SizedBox(
                 height: widget.height,
                 child: ClipRect(

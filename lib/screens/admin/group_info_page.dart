@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
 import '../../services/group_state_service.dart';
+import '../../services/group_service.dart';
 import '../../services/app_route_observer.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -24,9 +25,10 @@ class GroupInfoPage extends StatefulWidget {
 }
 
 class _GroupInfoPageState extends State<GroupInfoPage>
-  with SingleTickerProviderStateMixin, RouteAware {
+    with SingleTickerProviderStateMixin, RouteAware {
   late final TabController _tabController;
   final GroupStateService _stateService = GroupStateService.instance;
+  final GroupService _groupService = GroupService();
   late final String _groupId;
   bool _isLoading = true;
   bool _hasError = false;
@@ -43,9 +45,11 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     _loadMembers();
 
     // subscribe to group changes so edits made elsewhere are reflected immediately
-    _groupChangeSub = _stateService.onGroupChanged.where((id) => id == _groupId).listen((_) {
-      if (mounted) _loadMembers();
-    });
+    _groupChangeSub = _stateService.onGroupChanged
+        .where((id) => id == _groupId)
+        .listen((_) {
+          if (mounted) _loadMembers();
+        });
   }
 
   @override
@@ -79,8 +83,38 @@ class _GroupInfoPageState extends State<GroupInfoPage>
 
     try {
       await _stateService.initialize();
-      _students = await _stateService.getGroupStudents(_groupId);
-      _staff = await _stateService.getGroupTeachers(_groupId);
+      final localStudents = await _stateService.getGroupStudents(_groupId);
+      final localStaff = await _stateService.getGroupTeachers(_groupId);
+      _students = localStudents;
+      _staff = localStaff;
+      try {
+        final remote = await _groupService.getGroupDetails(
+          widget.group.databaseId.isNotEmpty
+              ? widget.group.databaseId
+              : _groupId,
+        );
+        final shouldMigrateStudents =
+            remote.students.isEmpty && localStudents.isNotEmpty;
+        final shouldMigrateStaff =
+            remote.teachers.isEmpty && localStaff.isNotEmpty;
+        _students = shouldMigrateStudents ? localStudents : remote.students;
+        _staff = shouldMigrateStaff ? localStaff : remote.teachers;
+        if (shouldMigrateStudents || shouldMigrateStaff) {
+          await _groupService.updateGroup(
+            widget.group.databaseId,
+            name: remote.group.name,
+            id: remote.group.id,
+            type: remote.group.type,
+            description: remote.group.description,
+            status: remote.group.status,
+            year: remote.group.year,
+            students: _students,
+            teachers: _staff,
+          );
+        }
+      } catch (_) {
+        // Keep locally cached members when MongoDB is unavailable.
+      }
     } catch (_) {
       _hasError = true;
       _errorMessage = 'Unable to load group members.';
@@ -95,13 +129,24 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     }
   }
 
-  Widget _previewImageWidget(String src, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+  Widget _previewImageWidget(
+    String src, {
+    BoxFit fit = BoxFit.cover,
+    double? width,
+    double? height,
+  }) {
     if (src.startsWith('data:')) {
       try {
         final comma = src.indexOf(',');
         final b64 = src.substring(comma + 1);
         final bytes = base64Decode(b64);
-        return Image.memory(bytes, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+        return Image.memory(
+          bytes,
+          fit: fit,
+          width: width,
+          height: height,
+          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        );
       } catch (e) {
         debugPrint('Failed to decode data URI: $e');
         return const Icon(Icons.broken_image);
@@ -109,16 +154,34 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     }
 
     if (src.startsWith('http://') || src.startsWith('https://')) {
-      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        src,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
 
     if (kIsWeb) {
       // On web, local file system paths are not accessible. Try to show as network resource.
-      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        src,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
 
     try {
-      return Image.file(File(src), fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+      return Image.file(
+        File(src),
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+      );
     } catch (e) {
       debugPrint('Error creating File image: $e');
       return const Icon(Icons.broken_image);
@@ -134,68 +197,98 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Edit Student'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'Student ID')),
-                  TextField(controller: sectionCtrl, decoration: const InputDecoration(labelText: 'Class')),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result.isEmpty) return;
-                            final file = result.first;
-                            if (file.path != null && file.path!.isNotEmpty) {
-                              setStateDialog(() => pickedImage = file.path);
-                            }
-                          },
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Image'),
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Edit Student'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                    ),
+                    TextField(
+                      controller: idCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Student ID',
+                      ),
+                    ),
+                    TextField(
+                      controller: sectionCtrl,
+                      decoration: const InputDecoration(labelText: 'Class'),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final result = await FilePicker.pickFiles(
+                                type: FileType.image,
+                              );
+                              if (result.isEmpty) return;
+                              final file = result.first;
+                              if (file.path != null && file.path!.isNotEmpty) {
+                                setStateDialog(() => pickedImage = file.path);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Upload Image'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (pickedImage != null) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 80,
+                        child: _previewImageWidget(
+                          pickedImage!,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ],
-                  ),
-                  if (pickedImage != null) ...[
-                    const SizedBox(height: 8),
-                                      SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameCtrl.text.trim();
-                  final sid = idCtrl.text.trim();
-                  final cls = sectionCtrl.text.trim();
-                  if (name.isEmpty || sid.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter name and student id.')));
-                    return;
-                  }
-                  await _stateService.updateStudent(_groupId, student.id, {
-                    'name': name,
-                    'admissionNo': sid,
-                    'section': cls,
-                    'imageUrl': pickedImage ?? '',
-                  });
-                  final updated = await _stateService.getGroupStudents(_groupId);
-                  if (mounted) setState(() => _students = updated);
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final sid = idCtrl.text.trim();
+                    final cls = sectionCtrl.text.trim();
+                    if (name.isEmpty || sid.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter name and student id.'),
+                        ),
+                      );
+                      return;
+                    }
+                    await _stateService.updateStudent(_groupId, student.id, {
+                      'name': name,
+                      'admissionNo': sid,
+                      'section': cls,
+                      'imageUrl': pickedImage ?? '',
+                    });
+                    final updated = await _stateService.getGroupStudents(
+                      _groupId,
+                    );
+                    if (mounted) setState(() => _students = updated);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
@@ -232,9 +325,15 @@ class _GroupInfoPageState extends State<GroupInfoPage>
               final ok = await _stateService.undoLastChange(_groupId);
               if (ok) {
                 await _loadMembers();
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Undo applied')));
+                if (mounted)
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Undo applied')));
               } else {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nothing to undo')));
+                if (mounted)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Nothing to undo')),
+                  );
               }
             },
           ),
@@ -243,63 +342,73 @@ class _GroupInfoPageState extends State<GroupInfoPage>
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _hasError
-              ? _ErrorState(
-                  message: _errorMessage,
-                  onRetry: _loadMembers,
-                )
-              : Column(
-                  children: [
-                    Container(
-                      color: AppColors.white,
-                      child: TabBar(
-                        controller: _tabController,
-                        isScrollable: false,
-                        labelColor: AppColors.blueButton,
-                        unselectedLabelColor: AppColors.secondaryText,
-                        indicatorColor: AppColors.blueButton,
-                        indicatorWeight: 2,
-                        labelStyle: tabTextStyle,
-                        unselectedLabelStyle: tabTextStyle,
-                        tabs: const [
-                          Tab(text: 'Students'),
-                          Tab(text: 'Staff/Teachers'),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _MemberGridPanel(
-                            title: 'Students',
-                            members: _students,
-                            emptyMessage: 'No students found in this group.',
-                            onMemberTap: (member) {
-                              // Navigate to Student Menu when a student is tapped from Group Info
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => StudentMenuScreen(
-                                name: member is GroupStudent ? member.name : (member.name ?? 'Student'),
-                                admissionNo: member is GroupStudent ? member.admissionNo : '',
-                                imageUrl: member is GroupStudent ? member.imageUrl : (member is GroupTeacher ? member.imageUrl : null),
-                              )));
-                            },
-                          ),
-                          _MemberGridPanel(
-                            title: 'Staff/Teachers',
-                            members: _staff,
-                            emptyMessage: 'No staff members found in this group.',
-                            onMemberTap: (member) {
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => StudentMenuScreen(
-                                name: member is GroupStudent ? member.name : (member is GroupTeacher ? member.name : 'Student'),
-                                admissionNo: member is GroupStudent ? member.admissionNo : '',
-                                imageUrl: member is GroupStudent ? member.imageUrl : (member is GroupTeacher ? member.imageUrl : null),
-                              )));
-                            }
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          ? _ErrorState(message: _errorMessage, onRetry: _loadMembers)
+          : Column(
+              children: [
+                Container(
+                  color: AppColors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: false,
+                    labelColor: AppColors.blueButton,
+                    unselectedLabelColor: AppColors.secondaryText,
+                    indicatorColor: AppColors.blueButton,
+                    indicatorWeight: 2,
+                    labelStyle: tabTextStyle,
+                    unselectedLabelStyle: tabTextStyle,
+                    tabs: const [
+                      Tab(text: 'Students'),
+                      Tab(text: 'Staff/Teachers'),
+                    ],
+                  ),
                 ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _MemberGridPanel(
+                        title: 'Students',
+                        members: _students,
+                        emptyMessage: 'No students found in this group.',
+                        onMemberTap: (member) {
+                          // Navigate to Student Menu when a student is tapped from Group Info
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => StudentMenuScreen(
+                                name: member is GroupStudent
+                                    ? member.name
+                                    : (member.name ?? 'Student'),
+                                studentId: member is GroupStudent
+                                    ? member.admissionNo
+                                    : null,
+                                admissionNo: member is GroupStudent
+                                    ? member.admissionNo
+                                    : '',
+                                grade: member is GroupStudent
+                                    ? member.section
+                                    : null,
+                                year: widget.group.year,
+                                status: widget.group.status,
+                                imageUrl: member is GroupStudent
+                                    ? member.imageUrl
+                                    : (member is GroupTeacher
+                                          ? member.imageUrl
+                                          : null),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _MemberGridPanel(
+                        title: 'Staff/Teachers',
+                        members: _staff,
+                        emptyMessage: 'No staff members found in this group.',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: 2,
         onItemSelected: (_) {},
@@ -415,64 +524,69 @@ class _MemberGridPanel extends StatelessWidget {
         itemBuilder: (context, index) {
           final member = members[index];
           final displayName = member is GroupStudent
-            ? (member.name.isNotEmpty ? member.name : 'Unknown')
-            : member is GroupTeacher
+              ? (member.name.isNotEmpty ? member.name : 'Unknown')
+              : member is GroupTeacher
               ? (member.name.isNotEmpty ? member.name : 'Unknown')
               : 'Unknown';
           final imagePath = member is GroupStudent
-            ? member.imageUrl
-            : member is GroupTeacher
+              ? member.imageUrl
+              : member is GroupTeacher
               ? member.imageUrl
               : null;
           final details = member is GroupStudent
-            ? [member.admissionNo, member.section, member.contact, member.details]
-            : member is GroupTeacher
-              ? [member.subject, member.role, member.contact, member.details]
+              ? [
+                  member.admissionNo,
+                  member.section,
+                  member.contact,
+                  member.details,
+                ]
+              : member is GroupTeacher
+              ? [member.teacherId, member.subject, member.role]
               : <String>[];
 
           return InkWell(
             onTap: () => onMemberTap?.call(member),
             child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _MemberAvatar(imagePath: imagePath),
-                const SizedBox(height: 6),
-                Text(
-                  displayName,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primaryText,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _MemberAvatar(imagePath: imagePath),
+                  const SizedBox(height: 6),
+                  Text(
+                    displayName,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primaryText,
+                    ),
                   ),
-                ),
-                ...details
-                    .where((detail) => detail.isNotEmpty)
-                    .take(2)
-                    .map(
-                      (detail) => Text(
-                        detail,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 8,
-                          color: AppColors.secondaryText,
+                  ...details
+                      .where((detail) => detail.isNotEmpty)
+                      .take(2)
+                      .map(
+                        (detail) => Text(
+                          detail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 8,
+                            color: AppColors.secondaryText,
+                          ),
                         ),
                       ),
-                    ),
-              ],
+                ],
+              ),
             ),
-          ),
           );
         },
       ),
@@ -521,7 +635,9 @@ class _MemberAvatar extends StatelessWidget {
       radius: 24,
       backgroundColor: const Color(0xFFE9EEF7),
       backgroundImage: provider,
-      child: provider == null ? const Icon(Icons.person, size: 26, color: AppColors.primary) : null,
+      child: provider == null
+          ? const Icon(Icons.person, size: 26, color: AppColors.primary)
+          : null,
     );
   }
 }

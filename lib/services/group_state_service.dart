@@ -36,7 +36,9 @@ class GroupStudent {
       name: (json['name'] ?? '').toString(),
       admissionNo: (json['admissionNo'] ?? '').toString(),
       section: (json['section'] ?? '').toString(),
-      imageUrl: (json['imageUrl'] ?? '').toString().isEmpty ? null : (json['imageUrl'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? '').toString().isEmpty
+          ? null
+          : (json['imageUrl'] ?? '').toString(),
       details: (json['details'] ?? '').toString(),
       contact: (json['contact'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
@@ -44,16 +46,16 @@ class GroupStudent {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'groupId': groupId,
-        'name': name,
-        'admissionNo': admissionNo,
-        'section': section,
-        'imageUrl': imageUrl,
-        'details': details,
-        'contact': contact,
-        'email': email,
-      };
+    'id': id,
+    'groupId': groupId,
+    'name': name,
+    'admissionNo': admissionNo,
+    'section': section,
+    'imageUrl': imageUrl,
+    'details': details,
+    'contact': contact,
+    'email': email,
+  };
 }
 
 class GroupTeacher {
@@ -89,7 +91,9 @@ class GroupTeacher {
       name: (json['name'] ?? '').toString(),
       subject: (json['subject'] ?? '').toString(),
       role: (json['role'] ?? '').toString(),
-      imageUrl: (json['imageUrl'] ?? '').toString().isEmpty ? null : (json['imageUrl'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? '').toString().isEmpty
+          ? null
+          : (json['imageUrl'] ?? '').toString(),
       details: (json['details'] ?? '').toString(),
       contact: (json['contact'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
@@ -97,17 +101,17 @@ class GroupTeacher {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'groupId': groupId,
-        'teacherId': teacherId,
-        'name': name,
-        'subject': subject,
-        'role': role,
-        'imageUrl': imageUrl,
-        'details': details,
-        'contact': contact,
-        'email': email,
-      };
+    'id': id,
+    'groupId': groupId,
+    'teacherId': teacherId,
+    'name': name,
+    'subject': subject,
+    'role': role,
+    'imageUrl': imageUrl,
+    'details': details,
+    'contact': contact,
+    'email': email,
+  };
 }
 
 class GroupSettings {
@@ -145,15 +149,15 @@ class GroupSettings {
   }
 
   Map<String, dynamic> toJson() => {
-        'groupId': groupId,
-        'section': section,
-        'communicationPermissions': communicationPermissions,
-        'studentPermissions': studentPermissions,
-        'teacherPermissions': teacherPermissions,
-        'description': description,
-        'status': status,
-        'academicYear': academicYear,
-      };
+    'groupId': groupId,
+    'section': section,
+    'communicationPermissions': communicationPermissions,
+    'studentPermissions': studentPermissions,
+    'teacherPermissions': teacherPermissions,
+    'description': description,
+    'status': status,
+    'academicYear': academicYear,
+  };
 }
 
 class GroupScopedData {
@@ -164,15 +168,16 @@ class GroupScopedData {
     List<GroupStudent>? students,
     List<GroupTeacher>? teachers,
     GroupSettings? settings,
-  })  : students = students ?? <GroupStudent>[],
-        teachers = teachers ?? <GroupTeacher>[],
-        settings = settings ??
-            GroupSettings(
-              groupId: groupId,
-              status: group.status,
-              academicYear: group.year,
-              description: group.description,
-            );
+  }) : students = students ?? <GroupStudent>[],
+       teachers = teachers ?? <GroupTeacher>[],
+       settings =
+           settings ??
+           GroupSettings(
+             groupId: groupId,
+             status: group.status,
+             academicYear: group.year,
+             description: group.description,
+           );
 
   final String groupId;
   Group group;
@@ -182,13 +187,13 @@ class GroupScopedData {
   GroupSettings settings;
 
   Map<String, dynamic> toJson() => {
-        'groupId': groupId,
-        'group': group.toJson(),
-        'imageUrl': imageUrl,
-        'students': students.map((item) => item.toJson()).toList(),
-        'teachers': teachers.map((item) => item.toJson()).toList(),
-        'settings': settings.toJson(),
-      };
+    'groupId': groupId,
+    'group': group.toJson(),
+    'imageUrl': imageUrl,
+    'students': students.map((item) => item.toJson()).toList(),
+    'teachers': teachers.map((item) => item.toJson()).toList(),
+    'settings': settings.toJson(),
+  };
 }
 
 class GroupStateService {
@@ -198,7 +203,8 @@ class GroupStateService {
 
   final Map<String, GroupScopedData> _groups = <String, GroupScopedData>{};
   final Map<String, String?> _lastState = <String, String?>{};
-  final StreamController<String> _groupChangeController = StreamController<String>.broadcast();
+  final StreamController<String> _groupChangeController =
+      StreamController<String>.broadcast();
   bool _initialized = false;
 
   Stream<String> get onGroupChanged => _groupChangeController.stream;
@@ -219,7 +225,9 @@ class GroupStateService {
 
         // Parse group safely
         final dynamic groupRaw = decoded['group'];
-        final Map<String, dynamic> groupJson = groupRaw is Map ? Map<String, dynamic>.from(groupRaw) : <String, dynamic>{};
+        final Map<String, dynamic> groupJson = groupRaw is Map
+            ? Map<String, dynamic>.from(groupRaw)
+            : <String, dynamic>{};
         final group = Group.fromJson(groupJson);
 
         // image url
@@ -231,7 +239,9 @@ class GroupStateService {
         for (final item in rawStudents) {
           if (item is Map) {
             try {
-              students.add(GroupStudent.fromJson(Map<String, dynamic>.from(item)));
+              students.add(
+                GroupStudent.fromJson(Map<String, dynamic>.from(item)),
+              );
             } catch (e) {
               debugPrint('Skipping invalid student entry for $groupId: $e');
             }
@@ -246,7 +256,9 @@ class GroupStateService {
         for (final item in rawTeachers) {
           if (item is Map) {
             try {
-              teachers.add(GroupTeacher.fromJson(Map<String, dynamic>.from(item)));
+              teachers.add(
+                GroupTeacher.fromJson(Map<String, dynamic>.from(item)),
+              );
             } catch (e) {
               debugPrint('Skipping invalid teacher entry for $groupId: $e');
             }
@@ -258,7 +270,10 @@ class GroupStateService {
         // settings
         final dynamic settingsRaw = decoded['settings'];
         final GroupSettings settings = settingsRaw is Map
-            ? GroupSettings.fromJson(groupId, Map<String, dynamic>.from(settingsRaw))
+            ? GroupSettings.fromJson(
+                groupId,
+                Map<String, dynamic>.from(settingsRaw),
+              )
             : GroupSettings(
                 groupId: groupId,
                 status: group.status,
@@ -302,7 +317,8 @@ class GroupStateService {
     return state;
   }
 
-  GroupScopedData _ensureState(String groupId, {Group? seed}) => ensureStateForGroup(groupId, seed: seed);
+  GroupScopedData _ensureState(String groupId, {Group? seed}) =>
+      ensureStateForGroup(groupId, seed: seed);
 
   Future<void> _saveState(String groupId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -319,8 +335,10 @@ class GroupStateService {
 
   Future<Group> getGroup(String groupId) async {
     await initialize();
-    final state = _ensureState(groupId,
-        seed: Group(id: groupId, name: groupId, status: 'Active', year: '2022'));
+    final state = _ensureState(
+      groupId,
+      seed: Group(id: groupId, name: groupId, status: 'Active', year: '2022'),
+    );
     return state.group;
   }
 
@@ -339,9 +357,13 @@ class GroupStateService {
     state.settings = GroupSettings(
       groupId: groupId,
       section: data['section']?.toString() ?? state.settings.section,
-      communicationPermissions: data['communicationPermissions'] ?? state.settings.communicationPermissions,
-      studentPermissions: data['studentPermissions'] ?? state.settings.studentPermissions,
-      teacherPermissions: data['teacherPermissions'] ?? state.settings.teacherPermissions,
+      communicationPermissions:
+          data['communicationPermissions'] ??
+          state.settings.communicationPermissions,
+      studentPermissions:
+          data['studentPermissions'] ?? state.settings.studentPermissions,
+      teacherPermissions:
+          data['teacherPermissions'] ?? state.settings.teacherPermissions,
       description: state.group.description,
       status: state.group.status,
       academicYear: state.group.year,
@@ -375,7 +397,9 @@ class GroupStateService {
     await initialize();
     final state = _ensureState(groupId);
     final nextStudent = GroupStudent(
-      id: student.id.isNotEmpty ? student.id : 'student-${DateTime.now().millisecondsSinceEpoch}',
+      id: student.id.isNotEmpty
+          ? student.id
+          : 'student-${DateTime.now().millisecondsSinceEpoch}',
       groupId: groupId,
       name: student.name,
       admissionNo: student.admissionNo,
@@ -385,14 +409,23 @@ class GroupStateService {
       contact: student.contact,
       email: student.email,
     );
-    state.students = [...state.students.where((item) => item.id != nextStudent.id), nextStudent];
+    state.students = [
+      ...state.students.where((item) => item.id != nextStudent.id),
+      nextStudent,
+    ];
     await _saveState(groupId);
   }
 
-  Future<void> updateStudent(String groupId, String studentId, Map<String, dynamic> data) async {
+  Future<void> updateStudent(
+    String groupId,
+    String studentId,
+    Map<String, dynamic> data,
+  ) async {
     await initialize();
     final state = _ensureState(groupId);
-    final index = state.students.indexWhere((student) => student.id == studentId);
+    final index = state.students.indexWhere(
+      (student) => student.id == studentId,
+    );
     if (index < 0) return;
     final item = state.students[index];
     state.students[index] = GroupStudent(
@@ -401,7 +434,9 @@ class GroupStateService {
       name: data['name']?.toString() ?? item.name,
       admissionNo: data['admissionNo']?.toString() ?? item.admissionNo,
       section: data['section']?.toString() ?? item.section,
-      imageUrl: data['imageUrl']?.toString().isEmpty == true ? null : data['imageUrl']?.toString() ?? item.imageUrl,
+      imageUrl: data['imageUrl']?.toString().isEmpty == true
+          ? null
+          : data['imageUrl']?.toString() ?? item.imageUrl,
       details: data['details']?.toString() ?? item.details,
       contact: data['contact']?.toString() ?? item.contact,
       email: data['email']?.toString() ?? item.email,
@@ -412,7 +447,9 @@ class GroupStateService {
   Future<void> removeStudent(String groupId, String studentId) async {
     await initialize();
     final state = _ensureState(groupId);
-    state.students = state.students.where((student) => student.id != studentId).toList();
+    state.students = state.students
+        .where((student) => student.id != studentId)
+        .toList();
     await _saveState(groupId);
   }
 
@@ -422,7 +459,11 @@ class GroupStateService {
     return List<GroupTeacher>.from(state.teachers);
   }
 
-  Future<void> assignTeacher(String groupId, String teacherId, Map<String, dynamic> data) async {
+  Future<void> assignTeacher(
+    String groupId,
+    String teacherId,
+    Map<String, dynamic> data,
+  ) async {
     await initialize();
     final state = _ensureState(groupId);
     final item = GroupTeacher(
@@ -432,13 +473,17 @@ class GroupStateService {
       name: data['name']?.toString() ?? 'Teacher',
       subject: data['subject']?.toString() ?? '',
       role: data['role']?.toString() ?? 'Class Teacher',
-      imageUrl: data['imageUrl']?.toString().isEmpty == true ? null : data['imageUrl']?.toString(),
+      imageUrl: data['imageUrl']?.toString().isEmpty == true
+          ? null
+          : data['imageUrl']?.toString(),
       details: data['details']?.toString() ?? '',
       contact: data['contact']?.toString() ?? '',
       email: data['email']?.toString() ?? '',
     );
     state.teachers = [
-      ...state.teachers.where((teacher) => teacher.teacherId != teacherId && teacher.id != item.id),
+      ...state.teachers.where(
+        (teacher) => teacher.teacherId != teacherId && teacher.id != item.id,
+      ),
       item,
     ];
     await _saveState(groupId);
@@ -447,7 +492,9 @@ class GroupStateService {
   Future<void> removeTeacher(String groupId, String teacherId) async {
     await initialize();
     final state = _ensureState(groupId);
-    state.teachers = state.teachers.where((teacher) => teacher.teacherId != teacherId).toList();
+    state.teachers = state.teachers
+        .where((teacher) => teacher.teacherId != teacherId)
+        .toList();
     await _saveState(groupId);
   }
 
@@ -478,20 +525,32 @@ class GroupStateService {
       try {
         final decoded = jsonDecode(prev) as Map<String, dynamic>;
         final gid = (decoded['groupId'] ?? '').toString();
-        final groupJson = decoded['group'] as Map<String, dynamic>? ?? <String, dynamic>{};
+        final groupJson =
+            decoded['group'] as Map<String, dynamic>? ?? <String, dynamic>{};
         final group = Group.fromJson(groupJson);
         final state = GroupScopedData(
           groupId: gid,
           group: group,
           imageUrl: decoded['imageUrl']?.toString(),
           students: ((decoded['students'] as List?) ?? const [])
-              .map((item) => GroupStudent.fromJson(Map<String, dynamic>.from(item as Map)))
+              .map(
+                (item) => GroupStudent.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
               .toList(),
           teachers: ((decoded['teachers'] as List?) ?? const [])
-              .map((item) => GroupTeacher.fromJson(Map<String, dynamic>.from(item as Map)))
+              .map(
+                (item) => GroupTeacher.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
               .toList(),
           settings: decoded['settings'] != null
-              ? GroupSettings.fromJson(gid, Map<String, dynamic>.from(decoded['settings'] as Map))
+              ? GroupSettings.fromJson(
+                  gid,
+                  Map<String, dynamic>.from(decoded['settings'] as Map),
+                )
               : GroupSettings(
                   groupId: gid,
                   status: group.status,

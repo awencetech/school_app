@@ -51,7 +51,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     _nameController = TextEditingController(text: widget.group.name);
     _idController = TextEditingController(text: widget.group.id);
     _typeController = TextEditingController(text: widget.group.type);
-    _descriptionController = TextEditingController(text: widget.group.description);
+    _descriptionController = TextEditingController(
+      text: widget.group.description,
+    );
     _statusController = TextEditingController(text: widget.group.status);
     _yearController = TextEditingController(text: widget.group.year);
     _loadGroupData();
@@ -71,27 +73,59 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   Future<void> _loadGroupData() async {
     try {
       await _stateService.initialize();
-      final stored = _stateService.ensureStateForGroup(_groupId, seed: widget.group).group;
+      final stored = _stateService
+          .ensureStateForGroup(_groupId, seed: widget.group)
+          .group;
       final settings = await _stateService.getGroupSettings(_groupId);
       final students = await _stateService.getGroupStudents(_groupId);
       final teachers = await _stateService.getGroupTeachers(_groupId);
-      final imageUrl = _stateService.ensureStateForGroup(_groupId, seed: widget.group).imageUrl;
+      final imageUrl = _stateService
+          .ensureStateForGroup(_groupId, seed: widget.group)
+          .imageUrl;
+      var loadedStudents = students;
+      var loadedTeachers = teachers;
+      var loadedGroup = stored;
+      var shouldMigrateMembers = false;
+      if (widget.group.databaseId.isNotEmpty) {
+        try {
+          final remote = await _groupService.getGroupDetails(
+            widget.group.databaseId,
+          );
+          shouldMigrateMembers =
+              (remote.students.isEmpty && students.isNotEmpty) ||
+              (remote.teachers.isEmpty && teachers.isNotEmpty);
+          loadedStudents = remote.students.isEmpty && students.isNotEmpty
+              ? students
+              : remote.students;
+          loadedTeachers = remote.teachers.isEmpty && teachers.isNotEmpty
+              ? teachers
+              : remote.teachers;
+          loadedGroup = remote.group;
+        } catch (_) {
+          // Keep locally cached data when MongoDB is unavailable.
+        }
+      }
       if (!mounted) return;
       setState(() {
         _currentImageUrl = imageUrl;
-        _students = students;
-        _teachers = teachers;
-        _originalStudentIds = students.map((student) => student.id).toSet();
-        _originalTeacherIds = teachers.map((teacher) => teacher.teacherId).toSet();
+        _students = loadedStudents;
+        _teachers = loadedTeachers;
+        _originalStudentIds = loadedStudents
+            .map((student) => student.id)
+            .toSet();
+        _originalTeacherIds = loadedTeachers
+            .map((teacher) => teacher.teacherId)
+            .toSet();
         _settings = settings;
-        _nameController.text = stored.name;
-        _idController.text = stored.id;
-        _typeController.text = stored.type;
-        _descriptionController.text = stored.description;
-        _statusController.text = stored.status;
-        _yearController.text = stored.year;
+        _nameController.text = loadedGroup.name;
+        _idController.text = loadedGroup.id;
+        _typeController.text = loadedGroup.type;
+        _descriptionController.text = loadedGroup.description;
+        _statusController.text = loadedGroup.status;
+        _yearController.text = loadedGroup.year;
         _isLoading = false;
       });
+      if (shouldMigrateMembers) await _syncMembersToMongo();
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -113,9 +147,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         final files = (result as dynamic).files;
         if (files is List && files.isNotEmpty) file = files.first;
       } catch (_) {}
-      if (file == null && result is PlatformFile) {
-        file = result;
-      }
+      if (file == null && result is PlatformFile) file = result;
     }
 
     if (file == null) return;
@@ -130,6 +162,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
 
   Future<void> _removeImage() async {
     await _stateService.uploadGroupImage(_groupId, null);
+    if (!mounted) return;
     setState(() {
       _selectedImagePath = null;
       _currentImageUrl = null;
@@ -172,13 +205,18 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
           description: description.isEmpty ? name : description,
           status: status.isEmpty ? 'Active' : status,
           year: year,
+          students: _students,
+          teachers: _teachers,
         );
       }
 
       final currentGroupId = _groupId;
       await _stateService.updateGroup(currentGroupId, updatePayload);
       if (_selectedImagePath != null && _selectedImagePath!.isNotEmpty) {
-        await _stateService.uploadGroupImage(currentGroupId, _selectedImagePath);
+        await _stateService.uploadGroupImage(
+          currentGroupId,
+          _selectedImagePath,
+        );
       }
       for (final student in _students) {
         await _stateService.addStudent(currentGroupId, student);
@@ -199,7 +237,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
           'email': teacher.email,
         });
       }
-      final savedTeacherIds = _teachers.map((teacher) => teacher.teacherId).toSet();
+      final savedTeacherIds = _teachers
+          .map((teacher) => teacher.teacherId)
+          .toSet();
       for (final teacherId in _originalTeacherIds.difference(savedTeacherIds)) {
         await _stateService.removeTeacher(currentGroupId, teacherId);
       }
@@ -229,9 +269,55 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _syncMembersToMongo() async {
+    if (widget.group.databaseId.isEmpty) return;
+    try {
+      await _groupService.updateGroup(
+        widget.group.databaseId,
+        name: _nameController.text.trim(),
+        id: _idController.text.trim(),
+        type: _typeController.text.trim().isEmpty
+            ? 'Other'
+            : _typeController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? _nameController.text.trim()
+            : _descriptionController.text.trim(),
+        status: _statusController.text.trim().isEmpty
+            ? 'Active'
+            : _statusController.text.trim(),
+        year: _yearController.text.trim(),
+        students: _students,
+        teachers: _teachers,
+      );
+    } catch (error) {
+      _showSnackBar('Saved locally, but MongoDB sync failed: $error');
+    }
+  }
+
+  Future<bool> _confirmDelete(String name) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete member?'),
+        content: Text('Remove $name from this group?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
+    return result ?? false;
   }
 
   Future<void> _showAddStudentDialog() async {
@@ -243,194 +329,289 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Add Student'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'Student ID')),
-                  TextField(controller: classCtrl, decoration: const InputDecoration(labelText: 'Class')),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final dynamic result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result == null) return;
-                            dynamic file;
-                            if (result is List && result.isNotEmpty) {
-                              file = result.first;
-                            } else {
-                              try {
-                                final files = (result as dynamic).files;
-                                if (files is List && files.isNotEmpty) file = files.first;
-                              } catch (_) {}
-                              if (file == null && result is PlatformFile) {
-                                file = result;
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Add Student'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                    ),
+                    TextField(
+                      controller: idCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Student ID',
+                      ),
+                    ),
+                    TextField(
+                      controller: classCtrl,
+                      decoration: const InputDecoration(labelText: 'Class'),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final dynamic result = await FilePicker.pickFiles(
+                                type: FileType.image,
+                              );
+                              if (result == null) return;
+                              dynamic file;
+                              if (result is List && result.isNotEmpty) {
+                                file = result.first;
+                              } else {
+                                try {
+                                  final files = (result as dynamic).files;
+                                  if (files is List && files.isNotEmpty)
+                                    file = files.first;
+                                } catch (_) {}
+                                if (file == null && result is PlatformFile) {
+                                  file = result;
+                                }
                               }
-                            }
-                            if (file == null) return;
-                            final path = await _resolvePickedFilePath(file);
-                            if (path != null && path.isNotEmpty) {
-                              setStateDialog(() => pickedImage = path);
-                            }
-                          },
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Image'),
+                              if (file == null) return;
+                              final path = await _resolvePickedFilePath(file);
+                              if (path != null && path.isNotEmpty) {
+                                setStateDialog(() => pickedImage = path);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Upload Image'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (pickedImage != null) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 80,
+                        child: _previewImageWidget(
+                          pickedImage!,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ],
-                  ),
-                  if (pickedImage != null) ...[
-                    const SizedBox(height: 8),
-                    SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameCtrl.text.trim();
-                  final sid = idCtrl.text.trim();
-                  final cls = classCtrl.text.trim();
-                  if (name.isEmpty || sid.isEmpty) {
-                    _showSnackBar('Please enter name and student id.');
-                    return;
-                  }
-                  final student = GroupStudent(
-                    id: 'student-${DateTime.now().millisecondsSinceEpoch}',
-                    groupId: _groupId,
-                    name: name,
-                    admissionNo: sid,
-                    section: cls,
-                    imageUrl: pickedImage,
-                    details: '',
-                    contact: '',
-                    email: '',
-                  );
-                  await _stateService.addStudent(_groupId, student);
-                  if (!mounted) return;
-                  setState(() => _students = [..._students, student]);
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final sid = idCtrl.text.trim();
+                    final cls = classCtrl.text.trim();
+                    if (name.isEmpty || sid.isEmpty) {
+                      _showSnackBar('Please enter name and student id.');
+                      return;
+                    }
+                    final student = GroupStudent(
+                      id: 'student-${DateTime.now().millisecondsSinceEpoch}',
+                      groupId: _groupId,
+                      name: name,
+                      admissionNo: sid,
+                      section: cls,
+                      imageUrl: pickedImage,
+                      details: '',
+                      contact: '',
+                      email: '',
+                    );
+                    await _stateService.addStudent(_groupId, student);
+                    if (!mounted) return;
+                    setState(() => _students = [..._students, student]);
+                    await _syncMembersToMongo();
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
 
-  Future<void> _showAddTeacherDialog() async {
-    final nameCtrl = TextEditingController();
-    final teacherIdCtrl = TextEditingController();
-    final subjectCtrl = TextEditingController();
-    final roleCtrl = TextEditingController();
-    String? pickedImage;
+  Future<void> _showAddTeacherDialog({GroupTeacher? existing}) async {
+    final nameCtrl = TextEditingController(text: existing?.name);
+    final teacherIdCtrl = TextEditingController(text: existing?.teacherId);
+    final subjectCtrl = TextEditingController(text: existing?.subject);
+    final roleCtrl = TextEditingController(text: existing?.role);
+    String? pickedImage = existing?.imageUrl;
 
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Add Staff/Teacher'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: teacherIdCtrl, decoration: const InputDecoration(labelText: 'Teacher ID')),
-                  TextField(controller: subjectCtrl, decoration: const InputDecoration(labelText: 'Subject')),
-                  TextField(controller: roleCtrl, decoration: const InputDecoration(labelText: 'Role')),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final dynamic result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result == null) return;
-                            dynamic file;
-                            if (result is List && result.isNotEmpty) {
-                              file = result.first;
-                            } else {
-                              try {
-                                final files = (result as dynamic).files;
-                                if (files is List && files.isNotEmpty) file = files.first;
-                              } catch (_) {}
-                              if (file == null && result is PlatformFile) {
-                                file = result;
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(
+                existing == null ? 'Add Staff/Teacher' : 'Edit Staff/Teacher',
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                    ),
+                    TextField(
+                      controller: teacherIdCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Teacher ID',
+                      ),
+                    ),
+                    TextField(
+                      controller: subjectCtrl,
+                      decoration: const InputDecoration(labelText: 'Subject'),
+                    ),
+                    TextField(
+                      controller: roleCtrl,
+                      decoration: const InputDecoration(labelText: 'Role'),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final dynamic result = await FilePicker.pickFiles(
+                                type: FileType.image,
+                              );
+                              if (result == null) return;
+                              dynamic file;
+                              if (result is List && result.isNotEmpty) {
+                                file = result.first;
+                              } else {
+                                try {
+                                  final files = (result as dynamic).files;
+                                  if (files is List && files.isNotEmpty)
+                                    file = files.first;
+                                } catch (_) {}
+                                if (file == null && result is PlatformFile) {
+                                  file = result;
+                                }
                               }
-                            }
-                            if (file == null) return;
-                            final path = await _resolvePickedFilePath(file);
-                            if (path != null && path.isNotEmpty) {
-                              setStateDialog(() => pickedImage = path);
-                            }
-                          },
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Image'),
+                              if (file == null) return;
+                              final path = await _resolvePickedFilePath(file);
+                              if (path != null && path.isNotEmpty) {
+                                setStateDialog(() => pickedImage = path);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Upload Image'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (pickedImage != null) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 80,
+                        child: _previewImageWidget(
+                          pickedImage!,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ],
-                  ),
-                  if (pickedImage != null) ...[
-                    const SizedBox(height: 8),
-                                      SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameCtrl.text.trim();
-                  final tid = teacherIdCtrl.text.trim();
-                  final subject = subjectCtrl.text.trim();
-                  final role = roleCtrl.text.trim();
-                  if (name.isEmpty || tid.isEmpty) {
-                    _showSnackBar('Please enter name and teacher id.');
-                    return;
-                  }
-                  final teacher = GroupTeacher(
-                    id: 'teacher-${DateTime.now().millisecondsSinceEpoch}',
-                    groupId: _groupId,
-                    teacherId: tid,
-                    name: name,
-                    subject: subject,
-                    role: role.isEmpty ? 'Class Teacher' : role,
-                    imageUrl: pickedImage,
-                    details: '',
-                    contact: '',
-                    email: '',
-                  );
-                  await _stateService.assignTeacher(_groupId, teacher.teacherId, {
-                    'id': teacher.id,
-                    'name': teacher.name,
-                    'subject': teacher.subject,
-                    'role': teacher.role,
-                    'imageUrl': teacher.imageUrl ?? '',
-                    'details': teacher.details,
-                    'contact': teacher.contact,
-                    'email': teacher.email,
-                  });
-                  if (!mounted) return;
-                  setState(() => _teachers = [..._teachers, teacher]);
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+              actions: [
+                if (existing != null)
+                  TextButton(
+                    onPressed: () async {
+                      final confirmed = await _confirmDelete(existing.name);
+                      if (!confirmed) return;
+                      await _stateService.removeTeacher(
+                        _groupId,
+                        existing.teacherId,
+                      );
+                      if (!mounted) return;
+                      setState(
+                        () => _teachers = _teachers
+                            .where(
+                              (item) => item.teacherId != existing.teacherId,
+                            )
+                            .toList(),
+                      );
+                      await _syncMembersToMongo();
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final tid = teacherIdCtrl.text.trim();
+                    final subject = subjectCtrl.text.trim();
+                    final role = roleCtrl.text.trim();
+                    if (name.isEmpty || tid.isEmpty) {
+                      _showSnackBar('Please enter name and teacher id.');
+                      return;
+                    }
+                    final teacher = GroupTeacher(
+                      id:
+                          existing?.id ??
+                          'teacher-${DateTime.now().millisecondsSinceEpoch}',
+                      groupId: _groupId,
+                      teacherId: tid,
+                      name: name,
+                      subject: subject,
+                      role: role.isEmpty ? 'Class Teacher' : role,
+                      imageUrl: pickedImage,
+                      details: '',
+                      contact: '',
+                      email: '',
+                    );
+                    await _stateService
+                        .assignTeacher(_groupId, teacher.teacherId, {
+                          'id': teacher.id,
+                          'name': teacher.name,
+                          'subject': teacher.subject,
+                          'role': teacher.role,
+                          'imageUrl': teacher.imageUrl ?? '',
+                          'details': teacher.details,
+                          'contact': teacher.contact,
+                          'email': teacher.email,
+                        });
+                    if (!mounted) return;
+                    setState(() {
+                      _teachers = existing == null
+                          ? [..._teachers, teacher]
+                          : _teachers
+                                .map(
+                                  (item) => item.teacherId == existing.teacherId
+                                      ? teacher
+                                      : item,
+                                )
+                                .toList();
+                    });
+                    await _syncMembersToMongo();
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
@@ -456,7 +637,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       final bytes = (df as dynamic).bytes as List<int>?;
       if (bytes == null) return null;
       final ext = (df as dynamic).extension as String? ?? 'png';
-      final tmp = File('${Directory.systemTemp.path}/school_app_${DateTime.now().millisecondsSinceEpoch}.$ext');
+      final tmp = File(
+        '${Directory.systemTemp.path}/school_app_${DateTime.now().millisecondsSinceEpoch}.$ext',
+      );
       await tmp.writeAsBytes(bytes);
       return tmp.path;
     } catch (e) {
@@ -474,81 +657,129 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Edit Student'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: idCtrl, decoration: const InputDecoration(labelText: 'Student ID')),
-                  TextField(controller: sectionCtrl, decoration: const InputDecoration(labelText: 'Class')),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final dynamic result = await FilePicker.pickFiles(type: FileType.image);
-                            if (result == null) return;
-                            dynamic file;
-                            if (result is List && result.isNotEmpty) {
-                              file = result.first;
-                            } else {
-                              try {
-                                final files = (result as dynamic).files;
-                                if (files is List && files.isNotEmpty) file = files.first;
-                              } catch (_) {}
-                              if (file == null && result is PlatformFile) file = result;
-                            }
-                            if (file == null) return;
-                            final path = await _resolvePickedFilePath(file);
-                            if (path != null && path.isNotEmpty) {
-                              setStateDialog(() => pickedImage = path);
-                            }
-                          },
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Edit Student'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                    ),
+                    TextField(
+                      controller: idCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Student ID',
+                      ),
+                    ),
+                    TextField(
+                      controller: sectionCtrl,
+                      decoration: const InputDecoration(labelText: 'Class'),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final dynamic result = await FilePicker.pickFiles(
+                                type: FileType.image,
+                              );
+                              if (result == null) return;
+                              dynamic file;
+                              if (result is List && result.isNotEmpty) {
+                                file = result.first;
+                              } else {
+                                try {
+                                  final files = (result as dynamic).files;
+                                  if (files is List && files.isNotEmpty)
+                                    file = files.first;
+                                } catch (_) {}
+                                if (file == null && result is PlatformFile)
+                                  file = result;
+                              }
+                              if (file == null) return;
+                              final path = await _resolvePickedFilePath(file);
+                              if (path != null && path.isNotEmpty) {
+                                setStateDialog(() => pickedImage = path);
+                              }
+                            },
 
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Image'),
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Upload Image'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (pickedImage != null) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 80,
+                        child: _previewImageWidget(
+                          pickedImage!,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ],
-                  ),
-                  if (pickedImage != null) ...[
-                    const SizedBox(height: 8),
-                                SizedBox(height: 80, child: _previewImageWidget(pickedImage!, fit: BoxFit.cover)),
                   ],
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameCtrl.text.trim();
-                  final sid = idCtrl.text.trim();
-                  final cls = sectionCtrl.text.trim();
-                  if (name.isEmpty || sid.isEmpty) {
-                    _showSnackBar('Please enter name and student id.');
-                    return;
-                  }
-                  await _stateService.updateStudent(_groupId, student.id, {
-                    'name': name,
-                    'admissionNo': sid,
-                    'section': cls,
-                    'imageUrl': pickedImage ?? '',
-                  });
-                  final updated = await _stateService.getGroupStudents(_groupId);
-                  if (!mounted) return;
-                  setState(() => _students = updated);
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    final confirmed = await _confirmDelete(student.name);
+                    if (!confirmed) return;
+                    await _stateService.removeStudent(_groupId, student.id);
+                    if (!mounted) return;
+                    setState(
+                      () => _students = _students
+                          .where((item) => item.id != student.id)
+                          .toList(),
+                    );
+                    await _syncMembersToMongo();
+                    if (context.mounted) Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final sid = idCtrl.text.trim();
+                    final cls = sectionCtrl.text.trim();
+                    if (name.isEmpty || sid.isEmpty) {
+                      _showSnackBar('Please enter name and student id.');
+                      return;
+                    }
+                    await _stateService.updateStudent(_groupId, student.id, {
+                      'name': name,
+                      'admissionNo': sid,
+                      'section': cls,
+                      'imageUrl': pickedImage ?? '',
+                    });
+                    final updated = await _stateService.getGroupStudents(
+                      _groupId,
+                    );
+                    if (!mounted) return;
+                    setState(() => _students = updated);
+                    await _syncMembersToMongo();
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
@@ -570,13 +801,24 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     return '$base$p';
   }
 
-  Widget _previewImageWidget(String src, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+  Widget _previewImageWidget(
+    String src, {
+    BoxFit fit = BoxFit.cover,
+    double? width,
+    double? height,
+  }) {
     if (src.startsWith('data:')) {
       try {
         final comma = src.indexOf(',');
         final b64 = src.substring(comma + 1);
         final bytes = base64Decode(b64);
-        return Image.memory(bytes, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+        return Image.memory(
+          bytes,
+          fit: fit,
+          width: width,
+          height: height,
+          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        );
       } catch (e) {
         debugPrint('Failed to decode data URI: $e');
         return const Icon(Icons.broken_image);
@@ -584,22 +826,46 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     }
 
     if (src.startsWith('http://') || src.startsWith('https://')) {
-      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        src,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
 
     // For web, local file paths are not available; try resolving as backend-relative
     if (kIsWeb) {
       final abs = _toAbsoluteImageUrl(src);
-      return Image.network(abs, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        abs,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
 
     // Native: use file
     try {
-      return Image.file(File(src), fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+      return Image.file(
+        File(src),
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+      );
     } catch (e) {
       debugPrint('Error creating File image: $e');
       final abs = _toAbsoluteImageUrl(src);
-      return Image.network(abs, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        abs,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
   }
 
@@ -637,34 +903,52 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       onTap: () async {
         await _showEditStudentDialog(s);
       },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFE9EEF7),
-                image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
-              ),
-              child: imageProvider == null ? const Icon(Icons.person, size: 28, color: Color(0xFF5A6F92)) : null,
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
             ),
-            const SizedBox(height: 8),
-            Text(
-              s.name.toUpperCase(),
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFE9EEF7),
+                    image: imageProvider != null
+                        ? DecorationImage(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: imageProvider == null
+                      ? const Icon(
+                          Icons.person,
+                          size: 28,
+                          color: Color(0xFF5A6F92),
+                        )
+                      : null,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  s.name.toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -695,32 +979,68 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return InkWell(
+      onTap: () => _showAddTeacherDialog(existing: t),
+      child: Stack(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: imageProvider,
-            child: imageProvider == null ? const Icon(Icons.person, size: 28) : null,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            t.name.toUpperCase(),
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: const Color(0xFF00C853), borderRadius: BorderRadius.circular(10)),
-            child: const Text('100', style: TextStyle(color: Colors.white, fontSize: 11)),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage: imageProvider,
+                  child: imageProvider == null
+                      ? const Icon(Icons.person, size: 28)
+                      : null,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  t.name.toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'ID: ${t.teacherId}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    color: AppColors.secondaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  t.subject,
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    color: AppColors.secondaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  t.role,
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    color: AppColors.secondaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -730,20 +1050,30 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   @override
   Widget build(BuildContext context) {
     final imageWidget = _selectedImagePath != null
-            ? _previewImageWidget(_selectedImagePath!, fit: BoxFit.cover, width: double.infinity, height: 150)
-            : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty
-                ? Image.network(
-                    _currentImageUrl!,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 150,
-                    errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
-                  )
-                : Container(
-                    height: 150,
-                    color: const Color(0xffe9eef7),
-                    child: const Icon(Icons.image, size: 48, color: Color(0xff5a6f92)),
-                  ));
+        ? _previewImageWidget(
+            _selectedImagePath!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: 150,
+          )
+        : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty
+              ? Image.network(
+                  _currentImageUrl!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 150,
+                  errorBuilder: (_, _, _) =>
+                      const Icon(Icons.image_not_supported),
+                )
+              : Container(
+                  height: 150,
+                  color: const Color(0xffe9eef7),
+                  child: const Icon(
+                    Icons.image,
+                    size: 48,
+                    color: Color(0xff5a6f92),
+                  ),
+                ));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -757,7 +1087,10 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
             // Try root navigator maybePop first; fall back to replacing with Group Menu.
             // Using rootNavigator helps when the page is inside nested navigators.
             try {
-              final didPop = await Navigator.of(context, rootNavigator: true).maybePop();
+              final didPop = await Navigator.of(
+                context,
+                rootNavigator: true,
+              ).maybePop();
               if (!didPop) {
                 Navigator.of(context, rootNavigator: true).pushReplacementNamed(
                   AppRoutes.teacherGroupClasses,
@@ -790,17 +1123,26 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                     child: TabBar(
                       labelColor: AppColors.blueButton,
                       unselectedLabelColor: AppColors.hintText,
-                                          indicator: const UnderlineTabIndicator(
-                                            borderSide: BorderSide(color: AppColors.blueButton, width: 2),
-                                            insets: EdgeInsets.symmetric(horizontal: 28),
-                                          ),
-                                          labelStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-                                          unselectedLabelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w400),
-                                          tabs: const [
-                                            Tab(text: 'Students'),
-                                            Tab(text: 'Staff/Teachers'),
-                                          ],
-                                        ),
+                      indicator: const UnderlineTabIndicator(
+                        borderSide: BorderSide(
+                          color: AppColors.blueButton,
+                          width: 2,
+                        ),
+                        insets: EdgeInsets.symmetric(horizontal: 28),
+                      ),
+                      labelStyle: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Students'),
+                        Tab(text: 'Staff/Teachers'),
+                      ],
+                    ),
                     // subtle divider below tabs to match screenshot
                     // (keeps tabs visually separated from content)
                     // no extra height so the layout stays tight
@@ -822,7 +1164,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                     const Expanded(
                                       child: Text(
                                         'Students',
-                                        style: TextStyle(fontWeight: FontWeight.w600),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                     TextButton.icon(
@@ -837,7 +1181,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                   child: _students.isEmpty
                                       ? Center(
                                           child: Padding(
-                                            padding: const EdgeInsets.only(top: 40),
+                                            padding: const EdgeInsets.only(
+                                              top: 40,
+                                            ),
                                             child: Text(
                                               'No students found in this group.',
                                               textAlign: TextAlign.center,
@@ -854,7 +1200,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                           mainAxisSpacing: 12,
                                           crossAxisSpacing: 12,
                                           childAspectRatio: 0.9,
-                                          children: _students.map((s) => _buildStudentCard(s)).toList(),
+                                          children: _students
+                                              .map((s) => _buildStudentCard(s))
+                                              .toList(),
                                         ),
                                 ),
                               ],
@@ -876,7 +1224,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                     const Expanded(
                                       child: Text(
                                         'Staff/Teachers',
-                                        style: TextStyle(fontWeight: FontWeight.w600),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                     TextButton.icon(
@@ -891,7 +1241,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                   child: _teachers.isEmpty
                                       ? Center(
                                           child: Padding(
-                                            padding: const EdgeInsets.only(top: 40),
+                                            padding: const EdgeInsets.only(
+                                              top: 40,
+                                            ),
                                             child: Text(
                                               'No staff found in this group.',
                                               textAlign: TextAlign.center,
@@ -907,8 +1259,10 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                           crossAxisCount: 3,
                                           mainAxisSpacing: 12,
                                           crossAxisSpacing: 12,
-                                          childAspectRatio: 0.9,
-                                          children: _teachers.map((t) => _buildTeacherCard(t)).toList(),
+                                          childAspectRatio: 0.8,
+                                          children: _teachers
+                                              .map((t) => _buildTeacherCard(t))
+                                              .toList(),
                                         ),
                                 ),
                               ],
@@ -1001,9 +1355,14 @@ class _FieldRow extends StatelessWidget {
             maxLines: maxLines,
             keyboardType: keyboardType,
             decoration: InputDecoration(
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
           ),
         ],
@@ -1034,7 +1393,9 @@ class _StudentTileState extends State<_StudentTile> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.student.name);
-    _admissionController = TextEditingController(text: widget.student.admissionNo);
+    _admissionController = TextEditingController(
+      text: widget.student.admissionNo,
+    );
     _sectionController = TextEditingController(text: widget.student.section);
     _contactController = TextEditingController(text: widget.student.contact);
     _emailController = TextEditingController(text: widget.student.email);
@@ -1092,9 +1453,13 @@ class _StudentTileState extends State<_StudentTile> {
                   decoration: BoxDecoration(
                     color: const Color(0xffe8edf8),
                     borderRadius: BorderRadius.circular(27),
-                    border: Border.all(color: AppColors.blueButton.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: AppColors.blueButton.withValues(alpha: 0.2),
+                    ),
                   ),
-                  child: widget.student.imageUrl != null && widget.student.imageUrl!.isNotEmpty
+                  child:
+                      widget.student.imageUrl != null &&
+                          widget.student.imageUrl!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(27),
                           child: Image.file(
@@ -1102,7 +1467,11 @@ class _StudentTileState extends State<_StudentTile> {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : const Icon(Icons.person, color: Color(0xff4a5a7a), size: 28),
+                      : const Icon(
+                          Icons.person,
+                          color: Color(0xff4a5a7a),
+                          size: 28,
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1112,20 +1481,35 @@ class _StudentTileState extends State<_StudentTile> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Name'),
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Name',
+                      ),
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                       onChanged: (value) => widget.student.name = value,
                     ),
                     const SizedBox(height: 2),
                     TextField(
                       controller: _admissionController,
-                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Admission No'),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Admission No',
+                      ),
                       style: const TextStyle(fontSize: 12),
                       onChanged: (value) => widget.student.admissionNo = value,
                     ),
                     TextField(
                       controller: _sectionController,
-                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Section'),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Section',
+                      ),
                       style: const TextStyle(fontSize: 12),
                       onChanged: (value) => widget.student.section = value,
                     ),
@@ -1137,13 +1521,19 @@ class _StudentTileState extends State<_StudentTile> {
           const SizedBox(height: 8),
           TextField(
             controller: _contactController,
-            decoration: const InputDecoration(labelText: 'Contact', isDense: true),
+            decoration: const InputDecoration(
+              labelText: 'Contact',
+              isDense: true,
+            ),
             onChanged: (value) => widget.student.contact = value,
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _emailController,
-            decoration: const InputDecoration(labelText: 'Email', isDense: true),
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              isDense: true,
+            ),
             onChanged: (value) => widget.student.email = value,
           ),
           const SizedBox(height: 8),
@@ -1151,7 +1541,10 @@ class _StudentTileState extends State<_StudentTile> {
             controller: _detailsController,
             minLines: 2,
             maxLines: 3,
-            decoration: const InputDecoration(labelText: 'Details', isDense: true),
+            decoration: const InputDecoration(
+              labelText: 'Details',
+              isDense: true,
+            ),
             onChanged: (value) => widget.student.details = value,
           ),
           const SizedBox(height: 8),
@@ -1256,9 +1649,13 @@ class _TeacherTileState extends State<_TeacherTile> {
                   decoration: BoxDecoration(
                     color: const Color(0xffe8edf8),
                     borderRadius: BorderRadius.circular(27),
-                    border: Border.all(color: AppColors.blueButton.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: AppColors.blueButton.withValues(alpha: 0.2),
+                    ),
                   ),
-                  child: widget.teacher.imageUrl != null && widget.teacher.imageUrl!.isNotEmpty
+                  child:
+                      widget.teacher.imageUrl != null &&
+                          widget.teacher.imageUrl!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(27),
                           child: Image.file(
@@ -1266,7 +1663,11 @@ class _TeacherTileState extends State<_TeacherTile> {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : const Icon(Icons.person, color: Color(0xff4a5a7a), size: 28),
+                      : const Icon(
+                          Icons.person,
+                          color: Color(0xff4a5a7a),
+                          size: 28,
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1276,20 +1677,35 @@ class _TeacherTileState extends State<_TeacherTile> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Name'),
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Name',
+                      ),
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                       onChanged: (value) => widget.teacher.name = value,
                     ),
                     const SizedBox(height: 2),
                     TextField(
                       controller: _subjectController,
-                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Subject'),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Subject',
+                      ),
                       style: const TextStyle(fontSize: 12),
                       onChanged: (value) => widget.teacher.subject = value,
                     ),
                     TextField(
                       controller: _roleController,
-                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, hintText: 'Role'),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Role',
+                      ),
                       style: const TextStyle(fontSize: 12),
                       onChanged: (value) => widget.teacher.role = value,
                     ),
@@ -1301,13 +1717,19 @@ class _TeacherTileState extends State<_TeacherTile> {
           const SizedBox(height: 8),
           TextField(
             controller: _contactController,
-            decoration: const InputDecoration(labelText: 'Contact', isDense: true),
+            decoration: const InputDecoration(
+              labelText: 'Contact',
+              isDense: true,
+            ),
             onChanged: (value) => widget.teacher.contact = value,
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _emailController,
-            decoration: const InputDecoration(labelText: 'Email', isDense: true),
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              isDense: true,
+            ),
             onChanged: (value) => widget.teacher.email = value,
           ),
           const SizedBox(height: 8),
@@ -1315,7 +1737,10 @@ class _TeacherTileState extends State<_TeacherTile> {
             controller: _detailsController,
             minLines: 2,
             maxLines: 3,
-            decoration: const InputDecoration(labelText: 'Details', isDense: true),
+            decoration: const InputDecoration(
+              labelText: 'Details',
+              isDense: true,
+            ),
             onChanged: (value) => widget.teacher.details = value,
           ),
           const SizedBox(height: 8),

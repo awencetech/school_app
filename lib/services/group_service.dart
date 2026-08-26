@@ -5,6 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/group.dart';
+import 'group_state_service.dart';
+
+class GroupRemoteData {
+  const GroupRemoteData({
+    required this.group,
+    required this.students,
+    required this.teachers,
+  });
+
+  final Group group;
+  final List<GroupStudent> students;
+  final List<GroupTeacher> teachers;
+}
 
 class GroupService {
   GroupService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -24,9 +37,15 @@ class GroupService {
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Future<List<Group>> getGroups() async {
-    final resp = await http.get(_uri('/api/groups')).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(_uri('/api/groups'))
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
-      throw ApiException(resp.statusCode, 'Failed to load groups', _uri('/api/groups').toString());
+      throw ApiException(
+        resp.statusCode,
+        'Failed to load groups',
+        _uri('/api/groups').toString(),
+      );
     }
 
     final payload = jsonDecode(resp.body);
@@ -42,6 +61,34 @@ class GroupService {
     return groups;
   }
 
+  Future<GroupRemoteData> getGroupDetails(String groupId) async {
+    final resp = await http
+        .get(_uri('/api/groups/$groupId'))
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode != 200) {
+      throw ApiException(
+        resp.statusCode,
+        'Failed to load group details',
+        _uri('/api/groups/$groupId').toString(),
+      );
+    }
+
+    final payload = Map<String, dynamic>.from(jsonDecode(resp.body) as Map);
+    final students = (payload['students'] as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => GroupStudent.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+    final teachers = (payload['teachers'] as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => GroupTeacher.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+    return GroupRemoteData(
+      group: Group.fromJson(payload),
+      students: students,
+      teachers: teachers,
+    );
+  }
+
   Future<Group> createGroup({
     required String name,
     required String id,
@@ -53,14 +100,9 @@ class GroupService {
     // Log the outgoing request for local debugging (safe to remove in production)
     try {
       debugPrint('GroupService.createGroup -> POST ${_uri('/api/groups')}');
-      debugPrint('GroupService.createGroup -> body: ${jsonEncode({
-        'name': name.trim(),
-        'id': id.trim(),
-        'type': type.trim(),
-        'description': description.trim(),
-        'status': status,
-        'year': year.trim(),
-      })}');
+      debugPrint(
+        'GroupService.createGroup -> body: ${jsonEncode({'name': name.trim(), 'id': id.trim(), 'type': type.trim(), 'description': description.trim(), 'status': status, 'year': year.trim()})}',
+      );
     } catch (_) {}
 
     final resp = await http
@@ -80,7 +122,11 @@ class GroupService {
 
     if (resp.statusCode != 201) {
       final message = _errorMessage(resp.body);
-      throw ApiException(resp.statusCode, message, _uri('/api/groups').toString());
+      throw ApiException(
+        resp.statusCode,
+        message,
+        _uri('/api/groups').toString(),
+      );
     }
 
     final payload = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -95,6 +141,8 @@ class GroupService {
     required String description,
     required String status,
     required String year,
+    List<GroupStudent> students = const [],
+    List<GroupTeacher> teachers = const [],
   }) async {
     final resp = await http
         .put(
@@ -107,13 +155,19 @@ class GroupService {
             'description': description.trim(),
             'status': status,
             'year': year.trim(),
+            'students': students.map((student) => student.toJson()).toList(),
+            'teachers': teachers.map((teacher) => teacher.toJson()).toList(),
           }),
         )
         .timeout(const Duration(seconds: 20));
 
     if (resp.statusCode != 200) {
       final message = _errorMessage(resp.body);
-      throw ApiException(resp.statusCode, message, _uri('/api/groups/$databaseId').toString());
+      throw ApiException(
+        resp.statusCode,
+        message,
+        _uri('/api/groups/$databaseId').toString(),
+      );
     }
 
     final payload = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -121,10 +175,16 @@ class GroupService {
   }
 
   Future<void> deleteGroup(String databaseId) async {
-    final resp = await http.delete(_uri('/api/groups/$databaseId')).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .delete(_uri('/api/groups/$databaseId'))
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       final message = _errorMessage(resp.body);
-      throw ApiException(resp.statusCode, message, _uri('/api/groups/$databaseId').toString());
+      throw ApiException(
+        resp.statusCode,
+        message,
+        _uri('/api/groups/$databaseId').toString(),
+      );
     }
   }
 
@@ -138,7 +198,9 @@ class GroupService {
     } catch (_) {}
     // If backend returned an HTML error page (Express default), avoid showing raw HTML in UI
     final lower = body.toLowerCase();
-    if (body.trim().startsWith('<') || lower.contains('<!doctype') || lower.contains('<html')) {
+    if (body.trim().startsWith('<') ||
+        lower.contains('<!doctype') ||
+        lower.contains('<html')) {
       return 'Request failed';
     }
 

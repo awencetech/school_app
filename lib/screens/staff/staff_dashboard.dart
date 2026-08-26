@@ -70,7 +70,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                   if (config.posterDisplaySource != null &&
                       config.posterDisplaySource!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.zero,
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: () {
@@ -81,7 +81,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               (uri.scheme == 'http' || uri.scheme == 'https')) {
                             return CachedNetworkImage(
                               imageUrl: posterSource,
-                              fit: BoxFit.contain,
+                              fit: BoxFit.cover,
                               placeholder: (context, url) =>
                                   Container(color: AppColors.divider),
                               errorWidget: (context, url, error) {
@@ -100,7 +100,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           }
                           return Image.memory(
                             base64Decode(posterSource),
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                           );
                         }(),
                       ),
@@ -251,65 +251,65 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 icon: Icons.info,
                                 label: 'Staff\\ninfo',
                                 iconColor: Color(0xFF22C8C8),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffInfo,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffInfo),
                               ),
                               _InfoChip(
                                 icon: Icons.beach_access,
                                 label: 'Apply leave\\nManage Leave',
                                 iconColor: Color(0xFFF57C00),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffApplyLeave,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffApplyLeave),
                               ),
                               _InfoChip(
                                 icon: Icons.swipe,
                                 label: 'Swipe\\nAttendance',
                                 iconColor: Color(0xFF2E7D32),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffSwipeAttendance,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffSwipeAttendance),
                               ),
                               _InfoChip(
                                 icon: Icons.feedback,
                                 label: 'Management\\nFeedback',
                                 iconColor: Color(0xFF1E88E5),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffManagementFeedback,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffManagementFeedback),
                               ),
                               _InfoChip(
                                 icon: Icons.meeting_room,
                                 label: 'Meeting',
                                 iconColor: Color(0xFFD32F2F),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffMeeting,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffMeeting),
                               ),
                               _InfoChip(
                                 icon: Icons.folder,
                                 label: 'Staff\\nResources',
                                 iconColor: Color(0xFF8D6E63),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffResources,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffResources),
                               ),
                               _InfoChip(
                                 icon: Icons.menu_book,
                                 label: 'Staff\\nHandbag',
                                 iconColor: Color(0xFFF4B400),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffHandbook,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffHandbook),
                               ),
                               _InfoChip(
                                 icon: Icons.task,
                                 label: 'To Do\\nTasks',
                                 iconColor: Color(0xFF0288D1),
-                                onTap: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.staffTodoTasks,
-                                ),
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.staffTodoTasks),
                               ),
                             ],
                           ),
@@ -367,10 +367,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     color: Color(0xFFD32F2F),
                                   ),
                                   GestureDetector(
-                                    onTap: () =>
-                                        Navigator.of(context).pushNamed(
-                                          AppRoutes.studentMoreOptions,
-                                        ),
+                                    onTap: () => Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.studentMoreOptions),
                                     child: const _ClassAction(
                                       icon: Icons.more_horiz,
                                       label: 'More\\nOptions',

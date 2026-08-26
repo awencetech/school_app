@@ -38,7 +38,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
-        title: Text(context.watch<SchoolConfigService>().schoolName, style: AppTextStyles.appTitle),
+        title: Text(
+          context.watch<SchoolConfigService>().schoolName,
+          style: AppTextStyles.appTitle,
+        ),
         automaticallyImplyLeading: false,
       ),
       body: _selectedBottomIndex == 3
@@ -51,8 +54,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ? config.schoolName
                     : snapshot.data?.name ?? 'SCHOOL NAME';
                 final welcomeText = config.welcome.isNotEmpty
-                  ? config.welcome
-                  : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
+                    ? config.welcome
+                    : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
@@ -60,47 +63,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.only(top: 12, bottom: 12),
                         child: SizedBox(
                           width: double.infinity,
                           height: 220,
                           child: () {
-                              final posterSource = config.posterDisplaySource;
-                              if (posterSource != null && posterSource.isNotEmpty) {
-                                final uri = Uri.tryParse(posterSource);
-                                if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
-                                  return CachedNetworkImage(
-                                    imageUrl: posterSource,
-                                    fit: BoxFit.contain,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    placeholder: (context, url) => Container(color: const Color(0xFF1AA596)),
-                                    errorWidget: (context, url, error) {
-                                      debugPrint('School poster loading error: $error');
-                                      debugPrint('Poster URL: $posterSource');
-                                      return Container(
-                                        color: const Color(0xFF1AA596),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          'School Poster\n(W-1920 x H-1080)',
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.primaryText,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-
-                                return Image.memory(
-                                  base64Decode(posterSource),
-                                  fit: BoxFit.contain,
+                            final posterSource = config.posterDisplaySource;
+                            if (posterSource != null &&
+                                posterSource.isNotEmpty) {
+                              final uri = Uri.tryParse(posterSource);
+                              if (uri != null &&
+                                  uri.hasScheme &&
+                                  (uri.scheme == 'http' ||
+                                      uri.scheme == 'https')) {
+                                return CachedNetworkImage(
+                                  imageUrl: posterSource,
+                                  fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) {
+                                  placeholder: (context, url) =>
+                                      Container(color: const Color(0xFF1AA596)),
+                                  errorWidget: (context, url, error) {
+                                    debugPrint(
+                                      'School poster loading error: $error',
+                                    );
+                                    debugPrint('Poster URL: $posterSource');
                                     return Container(
                                       color: const Color(0xFF1AA596),
                                       alignment: Alignment.center,
@@ -118,23 +105,46 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 );
                               }
 
-                              return Container(
+                              return Image.memory(
+                                base64Decode(posterSource),
+                                fit: BoxFit.cover,
                                 width: double.infinity,
                                 height: double.infinity,
-                                color: const Color(0xFF1AA596),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'School Poster\n(W-1920 x H-1080)',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primaryText,
-                                  ),
-                                ),
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: const Color(0xFF1AA596),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'School Poster\n(W-1920 x H-1080)',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primaryText,
+                                      ),
+                                    ),
+                                  );
+                                },
                               );
-                            }(),
-                          ),
+                            }
+
+                            return Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              color: const Color(0xFF1AA596),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'School Poster\n(W-1920 x H-1080)',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
+                            );
+                          }(),
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -154,7 +164,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                       const SizedBox(height: 12),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.zero,
                         child: ImportantNewsMarquee(
                           items: config.runningItems
                               .map((t) => NewsItem(title: t, description: ''))
@@ -202,7 +212,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                             GestureDetector(
                               onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const MessagesPage()),
+                                MaterialPageRoute(
+                                  builder: (_) => const MessagesPage(),
+                                ),
                               ),
                               child: const _QuickAction(
                                 icon: Icons.edit,
@@ -295,7 +307,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.people,
                               label: 'Demography',
                               color: Color(0xFF388E3C),
-                              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ClassDemographyPage(group: Group(id: 'NCC2022', name: 'NCC2022', year: '2026')))),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ClassDemographyPage(
+                                    group: Group(
+                                      id: 'NCC2022',
+                                      name: 'NCC2022',
+                                      year: '2026',
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.camera_alt,
@@ -348,8 +370,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               label: 'Other\nMenu',
                               color: Color(0xFFB91C1C),
                               onTap: () {
-                                Navigator.of(context)
-                                    .pushNamed(AppRoutes.adminOtherOptions);
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.adminOtherOptions);
                               },
                             ),
                             _QuickAction(
@@ -372,8 +395,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               label: 'List Other\ngroups',
                               color: Color(0xFF7C3AED),
                               onTap: () {
-                                Navigator.of(context)
-                                    .pushNamed(AppRoutes.adminOtherGroups);
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.adminOtherGroups);
                               },
                             ),
                             _QuickAction(
@@ -437,10 +461,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Navigator.of(context).pushNamed(AppRoutes.supportQuery);
               break;
             case 4:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.main,
-                (route) => false,
-              );
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
               break;
           }
         },
@@ -467,36 +490,32 @@ class _QuickAction extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Icon(icon, size: 12, color: AppColors.white),
           ),
-          child: Icon(
-            icon,
-            size: 12,
-            color: AppColors.white,
+          const SizedBox(height: 3),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF222222),
+            ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          softWrap: true,
-          overflow: TextOverflow.visible,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF222222),
-          ),
-        ),
-      ],
-    ),
+        ],
+      ),
     );
   }
 }
@@ -521,31 +540,27 @@ class _SchoolLinkChip extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.white),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: AppColors.white,
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.visible,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF222222),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.visible,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF222222),
-          ),
-        ),
         ],
       ),
     );

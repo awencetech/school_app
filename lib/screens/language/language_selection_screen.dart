@@ -33,10 +33,12 @@ class LanguageSelectionScreen extends StatelessWidget {
   Widget _buildPoster(BuildContext context, String? posterSource) {
     if (posterSource != null && posterSource.isNotEmpty) {
       final uri = Uri.tryParse(posterSource);
-      if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      if (uri != null &&
+          uri.hasScheme &&
+          (uri.scheme == 'http' || uri.scheme == 'https')) {
         return CachedNetworkImage(
           imageUrl: posterSource,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
           placeholder: (context, url) => Container(color: AppColors.divider),
           errorWidget: (context, url, error) {
             debugPrint('School poster loading error: $error');
@@ -48,15 +50,17 @@ class LanguageSelectionScreen extends StatelessWidget {
 
       return Image.memory(
         base64Decode(posterSource),
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _languagePosterPlaceholder(context),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _languagePosterPlaceholder(context),
       );
     }
 
     return Image.asset(
       'assets/images/school_poster.png',
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => _languagePosterPlaceholder(context),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          _languagePosterPlaceholder(context),
     );
   }
 
@@ -86,13 +90,14 @@ class LanguageSelectionScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final bannerWidth = constraints.maxWidth * 0.9;
-
                           return Center(
                             child: SizedBox(
-                              width: bannerWidth,
+                              width: constraints.maxWidth,
                               height: 180,
-                              child: _buildPoster(context, config.posterDisplaySource),
+                              child: _buildPoster(
+                                context,
+                                config.posterDisplaySource,
+                              ),
                             ),
                           );
                         },
@@ -101,21 +106,24 @@ class LanguageSelectionScreen extends StatelessWidget {
                       LanguageCard(
                         label: LanguageOption.tamil.label,
                         iconColor: AppColors.tamilIcon,
-                        selected: state.selectedLanguage == LanguageOption.tamil,
+                        selected:
+                            state.selectedLanguage == LanguageOption.tamil,
                         onTap: () => state.setLanguage(LanguageOption.tamil),
                       ),
                       const SizedBox(height: 12),
                       LanguageCard(
                         label: LanguageOption.english.label,
                         iconColor: AppColors.englishIcon,
-                        selected: state.selectedLanguage == LanguageOption.english,
+                        selected:
+                            state.selectedLanguage == LanguageOption.english,
                         onTap: () => state.setLanguage(LanguageOption.english),
                       ),
                       const SizedBox(height: 12),
                       LanguageCard(
                         label: LanguageOption.hindi.label,
                         iconColor: AppColors.hindiIcon,
-                        selected: state.selectedLanguage == LanguageOption.hindi,
+                        selected:
+                            state.selectedLanguage == LanguageOption.hindi,
                         onTap: () => state.setLanguage(LanguageOption.hindi),
                       ),
                       const SizedBox(height: 20),
@@ -126,8 +134,9 @@ class LanguageSelectionScreen extends StatelessWidget {
                         height: 48,
                         borderRadius: 6,
                         onPressed: state.hasSelectedLanguage
-                            ? () => Navigator.of(context)
-                                .pushReplacementNamed(AppRoutes.main)
+                            ? () => Navigator.of(
+                                context,
+                              ).pushReplacementNamed(AppRoutes.main)
                             : null,
                       ),
                     ],
@@ -141,4 +150,3 @@ class LanguageSelectionScreen extends StatelessWidget {
     );
   }
 }
-

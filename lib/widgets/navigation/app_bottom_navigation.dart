@@ -22,7 +22,7 @@ class AppBottomNavigation extends StatelessWidget {
     final navItems = <BottomNavigationBarItem>[
       const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
       const BottomNavigationBarItem(icon: Icon(Icons.school), label: 'School'),
-      const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+      const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Exploit'),
       const BottomNavigationBarItem(
         icon: Icon(Icons.support_agent),
         label: 'Support',

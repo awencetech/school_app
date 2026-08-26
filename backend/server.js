@@ -123,6 +123,8 @@ function sanitizeGroupForResponse(doc) {
     order: Number.isFinite(doc.order) ? Number(doc.order) : 0,
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
+    students: Array.isArray(doc.students) ? doc.students : [],
+    teachers: Array.isArray(doc.teachers) ? doc.teachers : [],
   };
 }
 
@@ -224,6 +226,24 @@ app.get('/api/groups', async (req, res) => {
   } catch (error) {
     console.error('GET /api/groups failed:', error);
     return res.status(500).json({ message: 'Unable to load groups.' });
+  }
+});
+
+app.get('/api/groups/:groupId', async (req, res) => {
+  try {
+    await connectMongo();
+    const requestedId = (req.params.groupId || '').trim();
+    let group = null;
+    try {
+      group = await groupsCollection.findOne({ _id: new ObjectId(requestedId) });
+    } catch (_) {
+      group = await groupsCollection.findOne({ id: requestedId });
+    }
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+    return res.json(sanitizeGroupForResponse(group));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId failed:', error);
+    return res.status(500).json({ message: 'Unable to load group details.' });
   }
 });
 
@@ -471,6 +491,8 @@ app.post('/api/groups', async (req, res) => {
       order: totalCount + 1,
       createdAt,
       updatedAt: createdAt,
+      students: [],
+      teachers: [],
     };
 
     const result = await groupsCollection.insertOne(toSave);
@@ -524,6 +546,12 @@ app.put('/api/groups/:id', async (req, res) => {
       status,
       year,
       updatedAt,
+      students: Array.isArray(body.students)
+        ? body.students
+        : (Array.isArray(existing.students) ? existing.students : []),
+      teachers: Array.isArray(body.teachers)
+        ? body.teachers
+        : (Array.isArray(existing.teachers) ? existing.teachers : []),
     };
 
     await groupsCollection.updateOne({ _id: existing._id }, { $set: updatedDoc });

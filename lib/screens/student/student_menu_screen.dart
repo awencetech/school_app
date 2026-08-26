@@ -13,21 +13,40 @@ class StudentMenuScreen extends StatelessWidget {
   const StudentMenuScreen({
     super.key,
     this.name,
+    this.studentId,
     this.admissionNo,
+    this.grade,
+    this.year,
+    this.status,
     this.imageUrl,
   });
 
   final String? name;
+  final String? studentId;
   final String? admissionNo;
+  final String? grade;
+  final String? year;
+  final String? status;
   final String? imageUrl;
 
-  Widget _previewImageWidget(String src, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+  Widget _previewImageWidget(
+    String src, {
+    BoxFit fit = BoxFit.cover,
+    double? width,
+    double? height,
+  }) {
     if (src.startsWith('data:')) {
       try {
         final comma = src.indexOf(',');
         final b64 = src.substring(comma + 1);
         final bytes = base64Decode(b64);
-        return Image.memory(bytes, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+        return Image.memory(
+          bytes,
+          fit: fit,
+          width: width,
+          height: height,
+          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        );
       } catch (e) {
         debugPrint('Failed to decode data URI in StudentMenuScreen: $e');
         return const Icon(Icons.broken_image);
@@ -35,16 +54,34 @@ class StudentMenuScreen extends StatelessWidget {
     }
 
     if (src.startsWith('http://') || src.startsWith('https://')) {
-      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        src,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
 
     if (kIsWeb) {
       // On web, local file system paths are not accessible. Try to show as network resource.
-      return Image.network(src, fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported));
+      return Image.network(
+        src,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      );
     }
 
     try {
-      return Image.file(File(src), fit: fit, width: width, height: height, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image));
+      return Image.file(
+        File(src),
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+      );
     } catch (e) {
       debugPrint('Error creating File image in StudentMenuScreen: $e');
       return const Icon(Icons.broken_image);
@@ -87,11 +124,7 @@ class StudentMenuScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: Color(0xFFE5E7EB),
-              ),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 16),
               Text(
                 name ?? 'Student Name',
@@ -106,7 +139,10 @@ class StudentMenuScreen extends StatelessWidget {
                 SizedBox(
                   width: 72,
                   height: 72,
-                  child: ClipRRect(borderRadius: BorderRadius.circular(4), child: _previewImageWidget(imageUrl!)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: _previewImageWidget(imageUrl!),
+                  ),
                 ),
               ] else ...[
                 Container(
@@ -120,7 +156,7 @@ class StudentMenuScreen extends StatelessWidget {
               ],
               const SizedBox(height: 12),
               Text(
-                'Student ID :',
+                'Student ID : ${studentId ?? ''}',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -129,7 +165,7 @@ class StudentMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Admission No :',
+                'Admission No : ${admissionNo ?? ''}',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -138,7 +174,7 @@ class StudentMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Grade :',
+                'Grade : ${grade ?? ''}',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -147,7 +183,7 @@ class StudentMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Year :',
+                'Year : ${year ?? ''}',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -156,7 +192,7 @@ class StudentMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Status : Active',
+                'Status : ${status ?? 'Active'}',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -262,11 +298,7 @@ class _StudentMenuTile extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(2),
           ),
-          child: Icon(
-            icon,
-            size: 13,
-            color: Colors.white,
-          ),
+          child: Icon(icon, size: 13, color: Colors.white),
         ),
         const SizedBox(height: 3),
         Text(

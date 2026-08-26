@@ -49,8 +49,12 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
 
   void _start() {
     if (!mounted) return;
-    if (!_controller.hasClients) return;
-    if (widget.items.length <= 1) return;
+    if (widget.items.isEmpty) return;
+    if (_timer != null) return;
+    if (!_controller.hasClients) {
+      Future<void>.delayed(const Duration(milliseconds: 50), _start);
+      return;
+    }
     _lastTick = DateTime.now();
     _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
       if (!mounted) return;
@@ -121,7 +125,9 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
             child: ListView.separated(
               controller: _controller,
               scrollDirection: Axis.horizontal,
@@ -160,4 +166,3 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
     );
   }
 }
-

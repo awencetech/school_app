@@ -39,6 +39,7 @@ class SchoolApp extends StatelessWidget {
         // after the delay.
         initialRoute: AppRoutes.splash,
         onGenerateInitialRoutes: (initialRouteName) {
+          AppRouter.markSplashShown();
           return [
             PageRouteBuilder(
               settings: RouteSettings(name: initialRouteName),

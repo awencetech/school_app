@@ -84,6 +84,10 @@ class AppRouter {
   AppRouter._();
   static bool _splashShown = false;
 
+  static void markSplashShown() {
+    _splashShown = true;
+  }
+
   static Group _eventGroupFromArguments(Object? arguments) {
     if (arguments is Group) return arguments;
     if (arguments is Map) {
@@ -152,9 +156,12 @@ class AppRouter {
       AppRoutes.adminStudentOptions => const EmptyAdminOptionPage(title: 'Student'),
       AppRoutes.adminStaffOptions => const StaffManagementPage(),
       AppRoutes.adminListTeachers => const ListTeachersPage(),
-      AppRoutes.adminEmployeeInfo => StaffDetailsPage(
-        staff: settings.arguments as StaffInfo,
-      ),
+      AppRoutes.adminEmployeeInfo => (() {
+        final staff = settings.arguments;
+        return staff is StaffInfo
+            ? StaffDetailsPage(staff: staff)
+            : const ListTeachersPage();
+      })(),
       AppRoutes.adminAddStudent => const StudentCreateIdScreen(),
       AppRoutes.adminAddStaff => const StaffCreateIdScreen(),
       AppRoutes.adminAddAdmin => const AdminCreateIdScreen(),

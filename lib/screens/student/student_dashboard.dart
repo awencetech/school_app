@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/news_item.dart';
+import '../../models/group.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
@@ -30,6 +31,7 @@ import '../staff/staff_campaigns_page.dart';
 import '../staff/staff_request_message_page.dart';
 import '../staff/staff_write_message_page.dart';
 import '../admin/homework_today_in_class_page.dart';
+import '../admin/class_demography_page.dart';
 
 /// Student dashboard screen following the supplied school ERP design system.
 class StudentDashboard extends StatefulWidget {
@@ -486,25 +488,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             ),
                             _SchoolLinkTile(
                               icon: Icons.school,
-                              label: 'School Handbook',
+                              label: 'School handbook',
                               color: Color(0xFF1E4D8F),
                               routeName: AppRoutes.staffHandbook,
                             ),
                             _SchoolLinkTile(
                               icon: Icons.event,
-                              label: 'Events Celebration',
+                              label: 'Events Celebrations',
                               color: Color(0xFFD32F2F),
                               routeName: AppRoutes.staffEventsCelebration,
                             ),
                             _SchoolLinkTile(
-                              icon: Icons.menu_book,
-                              label: 'School Resources',
+                              icon: Icons.folder_copy_outlined,
+                              label: 'School Res.',
                               color: Color(0xFFB97A00),
                               routeName: AppRoutes.schoolResources,
                             ),
                             _SchoolLinkTile(
-                              icon: Icons.schedule,
-                              label: 'Exam Schedule',
+                              icon: Icons.newspaper,
+                              label: 'Newsletter',
                               color: Color(0xFF5C84C3),
                             ),
                             _SchoolLinkTile(
@@ -514,14 +516,46 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               routeName: AppRoutes.staffAnnouncements,
                             ),
                             _SchoolLinkTile(
-                              icon: Icons.photo,
-                              label: 'Monthly Topper',
+                              icon: Icons.people,
+                              label: 'Demography',
                               color: Color(0xFF6A1B9A),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ClassDemographyPage(
+                                    group: Group(
+                                      id: 'grade-10-c',
+                                      name: 'Grade 10 C',
+                                      year: '2026-27',
+                                    ),
+                                    isStaffView: true,
+                                  ),
+                                ),
+                              ),
                             ),
                             _SchoolLinkTile(
-                              icon: Icons.camera,
-                              label: 'Photography',
-                              color: Color(0xFF00897B),
+                              icon: Icons.facebook,
+                              label: 'Facebook',
+                              color: Color(0xFF3B5998),
+                            ),
+                            _SchoolLinkTile(
+                              icon: Icons.ondemand_video,
+                              label: 'Youtube',
+                              color: Color(0xFFD32F2F),
+                            ),
+                            _SchoolLinkTile(
+                              icon: Icons.chat,
+                              label: 'Whatsapp',
+                              color: Color(0xFF25D366),
+                            ),
+                            _SchoolLinkTile(
+                              icon: Icons.camera_alt,
+                              label: 'Instagram',
+                              color: Color(0xFFE1306C),
+                            ),
+                            _SchoolLinkTile(
+                              icon: Icons.library_books,
+                              label: 'Library',
+                              color: Color(0xFF795548),
                             ),
                           ],
                         ),
@@ -816,20 +850,24 @@ class _SchoolLinkTile extends StatelessWidget {
     required this.label,
     required this.color,
     this.routeName,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
   final String? routeName;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: routeName == null
-          ? null
-          : () => Navigator.of(context).pushNamed(routeName!),
+      onTap:
+          onTap ??
+          (routeName == null
+              ? null
+              : () => Navigator.of(context).pushNamed(routeName!)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

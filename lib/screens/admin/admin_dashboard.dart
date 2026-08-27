@@ -321,59 +321,57 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.school,
-                              label: 'School\nHandbag',
+                              label: 'School handbook',
                               color: Color(0xFFF59E0B),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.staffHandbook),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.event,
-                              label: 'Events\nCelebration',
+                              label: 'Events Celebrations',
                               color: Color(0xFFF44336),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.staffEventsCelebration),
                             ),
                             _SchoolLinkChip(
-                              icon: Icons.menu_book,
-                              label: 'School\nResources',
+                              icon: Icons.folder_copy_outlined,
+                              label: 'School Res.',
                               color: Color(0xFF8D6E63),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.schoolResources),
                             ),
                             _SchoolLinkChip(
-                              icon: Icons.schedule,
-                              label: 'Exam\nSchedule',
-                              color: Color(0xFF2563EB),
+                              icon: Icons.newspaper,
+                              label: 'Newsletter',
+                              color: Color(0xFF5C84C3),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.announcement,
                               label: 'Announcement',
                               color: Color(0xFF43A047),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.emoji_events,
-                              label: 'Monthly\nTopper',
-                              color: Color(0xFF6A1B9A),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.staffAnnouncements),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.people,
                               label: 'Demography',
-                              color: Color(0xFF388E3C),
+                              color: Color(0xFF6A1B9A),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => ClassDemographyPage(
                                     group: Group(
-                                      id: 'NCC2022',
-                                      name: 'NCC2022',
-                                      year: '2026',
+                                      id: 'grade-10-c',
+                                      name: 'Grade 10 C',
+                                      year: '2026-27',
                                     ),
+                                    isStaffView: true,
                                   ),
                                 ),
                               ),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.camera_alt,
-                              label: 'Instagram',
-                              color: Color(0xFFE1306C),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.ondemand_video,
-                              label: 'You tube',
-                              color: Color(0xFFD32F2F),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.facebook,
@@ -381,9 +379,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               color: Color(0xFF3B5998),
                             ),
                             _SchoolLinkChip(
+                              icon: Icons.ondemand_video,
+                              label: 'Youtube',
+                              color: Color(0xFFD32F2F),
+                            ),
+                            _SchoolLinkChip(
                               icon: Icons.chat,
-                              label: 'Watsapp',
+                              label: 'Whatsapp',
                               color: Color(0xFF25D366),
+                            ),
+                            _SchoolLinkChip(
+                              icon: Icons.camera_alt,
+                              label: 'Instagram',
+                              color: Color(0xFFE1306C),
+                            ),
+                            _SchoolLinkChip(
+                              icon: Icons.library_books,
+                              label: 'Library',
+                              color: Color(0xFF795548),
                             ),
                           ],
                         ),

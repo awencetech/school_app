@@ -478,21 +478,26 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.school,
-                              label: 'School Handbook',
+                              label: 'School handbook',
                               color: Color(0xFFFFC107),
                               routeName: AppRoutes.staffHandbook,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.event,
-                              label: 'Events Celebration',
+                              label: 'Events Celebrations',
                               color: Color(0xFFF44336),
                               routeName: AppRoutes.staffEventsCelebration,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.folder_copy_outlined,
-                              label: 'Resources',
+                              label: 'School Res.',
                               color: Color(0xFF8D6E63),
                               routeName: AppRoutes.schoolResources,
+                            ),
+                            _SchoolLinkChip(
+                              icon: Icons.newspaper,
+                              label: 'Newsletter',
+                              color: Color(0xFF5C84C3),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.announcement,
@@ -518,24 +523,29 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                             ),
                             _SchoolLinkChip(
-                              icon: Icons.camera_alt,
-                              label: 'Instagram',
-                              color: Color(0xFFE1306C),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.ondemand_video,
-                              label: 'You tube',
-                              color: Color(0xFFD32F2F),
-                            ),
-                            _SchoolLinkChip(
                               icon: Icons.facebook,
                               label: 'Facebook',
                               color: Color(0xFF3B5998),
                             ),
                             _SchoolLinkChip(
+                              icon: Icons.ondemand_video,
+                              label: 'Youtube',
+                              color: Color(0xFFD32F2F),
+                            ),
+                            _SchoolLinkChip(
                               icon: Icons.chat,
                               label: 'Whatsapp',
                               color: Color(0xFF25D366),
+                            ),
+                            _SchoolLinkChip(
+                              icon: Icons.camera_alt,
+                              label: 'Instagram',
+                              color: Color(0xFFE1306C),
+                            ),
+                            _SchoolLinkChip(
+                              icon: Icons.library_books,
+                              label: 'Library',
+                              color: Color(0xFF795548),
                             ),
                           ],
                         ),

@@ -44,6 +44,7 @@ let imageBucket;
 let usersCollection;
 let groupsCollection;
 let eventsCollection;
+let legacyEventsCollection;
 let todayInClassCollection;
 let groupMessagesCollection;
 
@@ -68,12 +69,22 @@ async function connectMongo() {
     usersCollection = db.collection('users');
     groupsCollection = db.collection('groups');
     eventsCollection = db.collection('future-events-calender');
+    legacyEventsCollection = db.collection('events');
     todayInClassCollection = db.collection('todayInClass');
     groupMessagesCollection = db.collection('groupMessages');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
+    await migrateLegacyEvents();
   }
 
   return mainPageInfoCollection;
+}
+
+async function migrateLegacyEvents() {
+  const legacyEvents = await legacyEventsCollection.find({}).toArray();
+  for (const event of legacyEvents) {
+    const exists = await eventsCollection.findOne({ _id: event._id });
+    if (!exists) await eventsCollection.insertOne(event);
+  }
 }
 
 async function ensureLegacyGroupsSeeded() {

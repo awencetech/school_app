@@ -32,6 +32,7 @@ import '../screens/admin/admin_detail_page.dart';
 import '../screens/admin/know_your_school_page.dart';
 import '../screens/admin/empty_admin_option_page.dart';
 import '../screens/admin/list_teachers_page.dart';
+import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/add_options.dart';
 import '../screens/admin/student_create_id_screen.dart';
 import '../screens/admin/staff_create_id_screen.dart';
@@ -148,7 +149,7 @@ class AppRouter {
       AppRoutes.adminAdd => const AddOptions(),
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),
       AppRoutes.adminStudentOptions => const EmptyAdminOptionPage(title: 'Student'),
-      AppRoutes.adminStaffOptions => const EmptyAdminOptionPage(title: 'Staff'),
+      AppRoutes.adminStaffOptions => const StaffManagementPage(),
       AppRoutes.adminListTeachers => const ListTeachersPage(),
       AppRoutes.adminAddStudent => const StudentCreateIdScreen(),
       AppRoutes.adminAddStaff => const StaffCreateIdScreen(),

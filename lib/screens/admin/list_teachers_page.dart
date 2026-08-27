@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../models/user.dart';
+import '../../models/staff_info.dart';
 import '../../routes/app_routes.dart';
-import '../../services/user_service.dart';
+import '../../services/staff_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -14,9 +14,9 @@ class ListTeachersPage extends StatefulWidget {
 }
 
 class _ListTeachersPageState extends State<ListTeachersPage> {
-  final UserService _userService = UserService();
+  final StaffService _staffService = StaffService();
   final TextEditingController _searchController = TextEditingController();
-  List<User> _teachers = [];
+  List<StaffInfo> _teachers = [];
   bool _includeInactive = false;
   bool _isLoading = true;
   String? _errorMessage;
@@ -39,7 +39,7 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
       _errorMessage = null;
     });
     try {
-      final teachers = await _userService.getUsers(role: 'staff');
+      final teachers = await _staffService.getStaff();
       if (!mounted) return;
       setState(() => _teachers = teachers);
     } catch (_) {
@@ -50,28 +50,18 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
     }
   }
 
-  List<User> get _filteredTeachers {
+  List<StaffInfo> get _filteredTeachers {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _teachers;
     return _teachers.where((teacher) {
-      return teacher.userId.toLowerCase().contains(query) ||
-          teacher.email.toLowerCase().contains(query);
+      return teacher.name.toLowerCase().contains(query) ||
+          teacher.designation.toLowerCase().contains(query) ||
+          teacher.employeeId.toLowerCase().contains(query);
     }).toList();
   }
 
-  String _displayName(User teacher) {
-    final value = teacher.userId.trim();
-    if (value.isEmpty) return 'Teacher';
-    return value
-        .replaceAll(RegExp(r'[_-]+'), ' ')
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
-        .join(' ');
-  }
-
-  String _initials(User teacher) {
-    final words = _displayName(teacher).split(' ');
+  String _initials(StaffInfo teacher) {
+    final words = teacher.name.trim().split(RegExp(r'\s+'));
     return words.take(2).map((word) => word[0]).join();
   }
 
@@ -175,7 +165,7 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
     );
   }
 
-  Widget _buildSummaryTable(List<User> teachers) {
+  Widget _buildSummaryTable(List<StaffInfo> teachers) {
     final preview = teachers.take(5).toList();
     return Container(
       decoration: BoxDecoration(
@@ -195,9 +185,9 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
             ...preview.asMap().entries.map((entry) {
               final teacher = entry.value;
               return _tableRow([
-                teacher.userId,
+                teacher.employeeId,
                 '${50 - entry.key * 5}',
-                _displayName(teacher),
+                teacher.name,
               ]);
             }),
         ],
@@ -231,50 +221,79 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
     );
   }
 
-  Widget _buildTeacherCard(User teacher) {
+  Widget _buildTeacherCard(StaffInfo teacher) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(2, 4, 2, 6),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0)))),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(teacher.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                Text('Designation: ${teacher.designation}', style: const TextStyle(fontSize: 9)),
+                Text('Employee Category: ${teacher.employeeCategory}', style: const TextStyle(fontSize: 9)),
+                Text('Employee Id: ${teacher.employeeId}', style: const TextStyle(fontSize: 9)),
+                const SizedBox(height: 3),
+                _detail('Teaches', teacher.teaches),
+                _detail('About', teacher.about),
+                _detail('Hobbies & Interest', teacher.hobbiesAndInterest),
+                _detail('Role', teacher.role),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _StaffImage(url: teacher.imageUrl, initials: _initials(teacher)),
+        ],
+      ),
+    );
+  }
+
+  Widget _detail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(_displayName(teacher), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-              CircleAvatar(
-                radius: 13,
-                backgroundColor: AppColors.blueButton,
-                child: Text(_initials(teacher), style: const TextStyle(color: Colors.white, fontSize: 9)),
-              ),
-            ],
-          ),
-          Text('Designation: ${teacher.role}', style: const TextStyle(fontSize: 9)),
-          Text('Employee Id: ${teacher.userId}', style: const TextStyle(fontSize: 9)),
-          const SizedBox(height: 2),
-          const Text('Teaches', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-          Text(teacher.email.isEmpty ? 'School subjects' : teacher.email, style: const TextStyle(fontSize: 9)),
-          const SizedBox(height: 2),
-          const Text('About', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-          const Text('Dedicated member of the school team.', style: TextStyle(fontSize: 9)),
-          const SizedBox(height: 2),
-          const Text('Hobbies & Interest', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-          const Text('Learning and helping students.', style: TextStyle(fontSize: 9)),
-          const SizedBox(height: 2),
-          const Text('Role', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-          const Text('School team member', style: TextStyle(fontSize: 9)),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.info, size: 13, color: Colors.grey),
-              label: const Text('Info', style: TextStyle(fontSize: 9, color: Colors.grey)),
-              style: TextButton.styleFrom(minimumSize: Size.zero, padding: EdgeInsets.zero),
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(value, style: const TextStyle(fontSize: 9)),
         ],
+      ),
+    );
+  }
+}
+
+class _StaffImage extends StatelessWidget {
+  const _StaffImage({required this.url, required this.initials});
+
+  final String url;
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.isEmpty) {
+      return CircleAvatar(
+        radius: 28,
+        backgroundColor: AppColors.blueButton,
+        child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 10)),
+      );
+    }
+    return SizedBox(
+      width: 56,
+      height: 70,
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => CircleAvatar(
+          backgroundColor: AppColors.blueButton,
+          child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 10)),
+        ),
       ),
     );
   }

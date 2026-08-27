@@ -59,6 +59,7 @@ let client;
 let mainPageInfoCollection;
 let imageBucket;
 let usersCollection;
+let staffInfoCollection;
 let groupsCollection;
 let eventsCollection;
 let legacyEventsCollection;
@@ -95,6 +96,7 @@ async function connectMongo() {
     const db = client.db('mainpage');
     mainPageInfoCollection = db.collection('mainPageInfo');
     usersCollection = db.collection('users');
+    staffInfoCollection = db.collection('staff-info');
     groupsCollection = db.collection('groups');
     eventsCollection = db.collection('future-events-calender');
     legacyEventsCollection = db.collection('events');
@@ -145,6 +147,24 @@ function sanitizeUserForResponse(doc) {
     userId: doc.userId || doc.userID || '',
     email: doc.email || '',
     role: doc.role || 'student',
+  };
+}
+
+function sanitizeStaffForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    name: doc.name || '',
+    designation: doc.designation || '',
+    employeeCategory: doc.employeeCategory || '',
+    employeeId: doc.employeeId || '',
+    teaches: doc.teaches || '',
+    about: doc.about || '',
+    hobbiesAndInterest: doc.hobbiesAndInterest || '',
+    role: doc.role || '',
+    imageUrl: doc.imageUrl || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
   };
 }
 
@@ -820,6 +840,101 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// Staff information CRUD
+app.get('/api/staff', async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await staffInfoCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(staff.map(sanitizeStaffForResponse));
+  } catch (error) {
+    console.error('GET /api/staff failed:', error);
+    return res.status(500).json({ message: 'Unable to load staff information.' });
+  }
+});
+
+app.get('/api/staff/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await staffInfoCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
+    return res.json(sanitizeStaffForResponse(staff));
+  } catch (error) {
+    console.error('GET /api/staff/:id failed:', error);
+    return res.status(404).json({ message: 'Staff member not found.' });
+  }
+});
+
+app.post('/api/staff', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const required = ['name', 'designation', 'employeeCategory', 'employeeId', 'teaches', 'role'];
+    const missing = required.find((field) => !String(body[field] || '').trim());
+    if (missing) return res.status(422).json({ message: `${missing} is required.` });
+
+    const now = new Date().toISOString();
+    const document = {
+      name: String(body.name).trim(),
+      designation: String(body.designation).trim(),
+      employeeCategory: String(body.employeeCategory).trim(),
+      employeeId: String(body.employeeId).trim(),
+      teaches: String(body.teaches).trim(),
+      about: String(body.about || '').trim(),
+      hobbiesAndInterest: String(body.hobbiesAndInterest || '').trim(),
+      role: String(body.role).trim(),
+      imageUrl: String(body.imageUrl || '').trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await staffInfoCollection.insertOne(document);
+    return res.status(201).json(sanitizeStaffForResponse(await staffInfoCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/staff failed:', error);
+    return res.status(500).json({ message: 'Unable to save staff information.' });
+  }
+});
+
+app.put('/api/staff/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const id = new ObjectId(req.params.id);
+    const body = req.body || {};
+    const required = ['name', 'designation', 'employeeCategory', 'employeeId', 'teaches', 'role'];
+    const missing = required.find((field) => !String(body[field] || '').trim());
+    if (missing) return res.status(422).json({ message: `${missing} is required.` });
+    const updates = {
+      name: String(body.name).trim(),
+      designation: String(body.designation).trim(),
+      employeeCategory: String(body.employeeCategory).trim(),
+      employeeId: String(body.employeeId).trim(),
+      teaches: String(body.teaches).trim(),
+      about: String(body.about || '').trim(),
+      hobbiesAndInterest: String(body.hobbiesAndInterest || '').trim(),
+      role: String(body.role).trim(),
+      imageUrl: String(body.imageUrl || '').trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    const result = await staffInfoCollection.updateOne({ _id: id }, { $set: updates });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Staff member not found.' });
+    return res.json(sanitizeStaffForResponse(await staffInfoCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PUT /api/staff/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update staff information.' });
+  }
+});
+
+app.delete('/api/staff/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await staffInfoCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Staff member not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/staff/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete staff information.' });
+  }
+});
+
 function safeUploadFilename(originalName) {
   const safeName = originalName.replace(/\s+/g, '_');
   return `${Date.now()}-${safeName}`;
@@ -975,6 +1090,21 @@ app.post('/api/upload/school-poster', upload.single('file'), async (req, res) =>
   } catch (error) {
     console.error('POST /api/upload/school-poster failed:', error);
     return res.status(500).json({ message: 'Unable to save the poster image.' });
+  }
+});
+
+app.post('/api/upload/staff-image', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No staff image was uploaded.' });
+  try {
+    const saved = await saveFileToGridFS(req.file);
+    return res.json({
+      url: `${req.protocol}://${req.get('host')}/api/images/${saved.id}`,
+      filename: saved.filename,
+      originalName: req.file.originalname,
+    });
+  } catch (error) {
+    console.error('POST /api/upload/staff-image failed:', error);
+    return res.status(500).json({ message: 'Unable to save the staff image.' });
   }
 });
 

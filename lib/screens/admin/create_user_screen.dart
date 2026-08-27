@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/textfields/custom_text_field.dart';
-import '../../models/user.dart';
 import '../../services/user_service.dart';
 
 class CreateUserScreen extends StatefulWidget {

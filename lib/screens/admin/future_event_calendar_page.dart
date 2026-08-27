@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import '../../widgets/dashboard_bottom_nav.dart';
 
 enum _CalendarView { month, week, day }
 
@@ -19,11 +20,13 @@ class FutureEventCalendarPage extends StatefulWidget {
     required this.groupId,
     required this.groupName,
     this.isEdit = false,
+    this.isStaffView = false,
   });
 
   final String groupId;
   final String groupName;
   final bool? isEdit;
+  final bool isStaffView;
 
   @override
   State<FutureEventCalendarPage> createState() =>
@@ -179,10 +182,31 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
           ],
         ),
       ),
-      bottomNavigationBar: AdminBottomNavigationBar(
-        currentIndex: _selectedBottomIndex,
-        onItemSelected: (index) => setState(() => _selectedBottomIndex = index),
-      ),
+      bottomNavigationBar: widget.isStaffView
+          ? ReusableBottomNavigationBar(
+              currentIndex: _selectedBottomIndex,
+              onItemSelected: (index) {
+                if (index == 4) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.main,
+                    (route) => false,
+                  );
+                  return;
+                }
+                setState(() => _selectedBottomIndex = index);
+              },
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
+                BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Dashboard'),
+                BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
+                BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+              ],
+            )
+          : AdminBottomNavigationBar(
+              currentIndex: _selectedBottomIndex,
+              onItemSelected: (index) => setState(() => _selectedBottomIndex = index),
+            ),
     );
   }
 

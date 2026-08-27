@@ -7,6 +7,18 @@ import '../screens/login/create_account_screen.dart';
 import '../screens/login/forgot_password_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/staff/staff_dashboard.dart';
+import '../screens/staff/staff_overview_dashboard_page.dart';
+import '../screens/admin/future_event_calendar_page.dart';
+import '../screens/messages/messages_page.dart';
+import '../screens/staff/staff_apply_leave_page.dart';
+import '../screens/staff/staff_info_page.dart';
+import '../screens/staff/staff_swipe_attendance_page.dart';
+import '../screens/staff/staff_meeting_page.dart';
+import '../screens/staff/staff_resources_page.dart';
+import '../screens/staff/school_resources_page.dart';
+import '../screens/staff/staff_handbook_page.dart';
+import '../screens/staff/staff_events_celebration_page.dart';
+import '../screens/staff/staff_todo_tasks_page.dart';
 import '../screens/staff/staff_placeholder_page.dart';
 import '../screens/student/student_dashboard.dart';
 import '../screens/student/student_info_screen.dart';
@@ -111,26 +123,25 @@ class AppRouter {
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),
       AppRoutes.studentMenu => const StudentMenuScreen(),
       AppRoutes.staffDashboard => const StaffDashboard(),
-      AppRoutes.staffInfo => const StaffPlaceholderPage(title: 'Staff Info'),
-      AppRoutes.staffApplyLeave => const StaffPlaceholderPage(
-        title: 'Apply Leave',
+      AppRoutes.staffOverviewDashboard => const StaffOverviewDashboardPage(),
+      AppRoutes.staffEventCalendar => const FutureEventCalendarPage(
+        groupId: 'grade-10-c',
+        groupName: 'Grade 10 C',
+        isStaffView: true,
       ),
-      AppRoutes.staffSwipeAttendance => const StaffPlaceholderPage(
-        title: 'Swipe Attendance',
-      ),
+      AppRoutes.staffInfo => const StaffInfoPage(),
+      AppRoutes.staffApplyLeave => const StaffApplyLeavePage(),
+      AppRoutes.staffSwipeAttendance => const StaffSwipeAttendancePage(),
       AppRoutes.staffManagementFeedback => const StaffPlaceholderPage(
         title: 'Management Feedback',
       ),
-      AppRoutes.staffMeeting => const StaffPlaceholderPage(title: 'Meeting'),
-      AppRoutes.staffResources => const StaffPlaceholderPage(
-        title: 'Staff Resources',
-      ),
-      AppRoutes.staffHandbook => const StaffPlaceholderPage(
-        title: 'Staff Handbook',
-      ),
-      AppRoutes.staffTodoTasks => const StaffPlaceholderPage(
-        title: 'To Do Tasks',
-      ),
+      AppRoutes.staffMeeting => const StaffMeetingPage(),
+      AppRoutes.staffAnnouncements => const MessagesPage(),
+      AppRoutes.staffResources => const StaffResourcesPage(),
+      AppRoutes.schoolResources => const SchoolResourcesPage(),
+      AppRoutes.staffHandbook => const StaffHandbookPage(),
+      AppRoutes.staffEventsCelebration => const StaffEventsCelebrationPage(),
+      AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
@@ -160,7 +171,9 @@ class AppRouter {
       })(),
       AppRoutes.teacherGroupInfo => (() {
         final group = settings.arguments as dynamic;
-        return GroupInfoPage(group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'));
+        return GroupInfoPage(
+          group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'),
+        );
       })(),
         AppRoutes.teacherFutureEventCalendar ||
           AppRoutes.teacherEditFutureEventCalendar => (() {
@@ -224,7 +237,9 @@ class AppRouter {
       ),
       AppRoutes.teacherGroupInfoEdit => (() {
         final group = settings.arguments as dynamic;
-        return GroupInfoEditPage(group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'));
+        return GroupInfoEditPage(
+          group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'),
+        );
       })(),
       AppRoutes.teacherGroupClassMenu => GroupMenuPage(
         group: settings.arguments as Group,

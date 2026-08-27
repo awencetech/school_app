@@ -4,13 +4,20 @@ import 'package:flutter_map/flutter_map.dart';
 import '../../models/class_demography.dart';
 import '../../models/group.dart';
 import '../../models/user.dart';
+import '../../routes/app_routes.dart';
 import '../../services/user_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import '../../widgets/dashboard_bottom_nav.dart';
 
 class ClassDemographyPage extends StatefulWidget {
-  const ClassDemographyPage({super.key, required this.group});
+  const ClassDemographyPage({
+    super.key,
+    required this.group,
+    this.isStaffView = false,
+  });
 
   final Group group;
+  final bool isStaffView;
 
   @override
   State<ClassDemographyPage> createState() => _ClassDemographyPageState();
@@ -109,10 +116,44 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
                 ? _ErrorState(message: _error!, onRetry: _loadDemography)
                 : _DemographyContent(demography: _demography!),
       ),
-      bottomNavigationBar: AdminBottomNavigationBar(
-        currentIndex: 2,
-        onItemSelected: (_) {},
-      ),
+      bottomNavigationBar: widget.isStaffView
+          ? ReusableBottomNavigationBar(
+              currentIndex: 0,
+              onItemSelected: (index) {
+                if (index == 4) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.main,
+                    (route) => false,
+                  );
+                }
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'User',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.info),
+                  label: 'Dashboard',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.help),
+                  label: 'Support',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.logout),
+                  label: 'Logout',
+                ),
+              ],
+            )
+          : AdminBottomNavigationBar(
+              currentIndex: 2,
+              onItemSelected: (_) {},
+            ),
     );
   }
 }

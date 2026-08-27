@@ -6,15 +6,21 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/news_item.dart';
+import '../../models/group.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/cards/important_news_marquee.dart';
-import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/staff_footer.dart';
 import '../support/support_screen.dart';
-import '../messages/messages_page.dart';
+import 'staff_write_message_page.dart';
+import 'staff_request_message_page.dart';
+import 'staff_campaigns_page.dart';
+import 'staff_group_messages_page.dart';
+import '../admin/homework_today_in_class_page.dart';
+import '../admin/class_demography_page.dart';
 
 /// Staff dashboard screen matching the supplied design.
 class StaffDashboard extends StatefulWidget {
@@ -138,25 +144,36 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       mainAxisSpacing: 8,
                       childAspectRatio: 0.95,
                       children: [
-                        const _QuickAction(
+                        _QuickAction(
                           icon: Icons.assessment,
                           label: 'Campaign\\nSurvey',
                           color: Color(0xFFFF7043),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StaffCampaignsPage(),
+                            ),
+                          ),
                         ),
                         _QuickAction(
                           icon: Icons.calendar_month,
                           label: 'Event\\nCalendar',
                           color: Color(0xFFE53935),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffEventCalendar),
                         ),
                         _QuickAction(
                           icon: Icons.dashboard,
                           label: 'Dashboard',
                           color: Color(0xFF1E4D8F),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffOverviewDashboard),
                         ),
                         GestureDetector(
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const MessagesPage(),
+                              builder: (_) => const StaffWriteMessagePage(),
                             ),
                           ),
                           child: const _QuickAction(
@@ -169,11 +186,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           icon: Icons.send,
                           label: 'Request\\nMessage',
                           color: Color(0xFFF4B400),
-                        ),
-                        _QuickAction(
-                          icon: Icons.table_chart,
-                          label: 'Staff\\nTime Table',
-                          color: Color(0xFF5C84C3),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StaffRequestMessagePage(),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -272,14 +289,6 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 ).pushNamed(AppRoutes.staffSwipeAttendance),
                               ),
                               _InfoChip(
-                                icon: Icons.feedback,
-                                label: 'Management\\nFeedback',
-                                iconColor: Color(0xFF1E88E5),
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.staffManagementFeedback),
-                              ),
-                              _InfoChip(
                                 icon: Icons.meeting_room,
                                 label: 'Meeting',
                                 iconColor: Color(0xFFD32F2F),
@@ -356,15 +365,32 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const _ClassAction(
+                                  _ClassAction(
                                     icon: Icons.message,
                                     label: 'Write Group\\nMessages',
                                     color: Color(0xFF4CAF50),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StaffGroupMessagesPage(),
+                                      ),
+                                    ),
                                   ),
-                                  const _ClassAction(
+                                  _ClassAction(
                                     icon: Icons.upload_file,
                                     label: 'Upload\\nHW,CW',
                                     color: Color(0xFFD32F2F),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const HomeworkTodayInClassPage(
+                                              groupId: 'grade-10-c',
+                                              groupName: '10 C',
+                                              groupYear: '2026-27',
+                                              initialTabIndex: 0,
+                                            ),
+                                      ),
+                                    ),
                                   ),
                                   GestureDetector(
                                     onTap: () => Navigator.of(
@@ -398,7 +424,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio: 0.95,
-                          children: const [
+                          children: [
                             _SchoolLinkChip(
                               icon: Icons.language,
                               label: 'Website',
@@ -408,36 +434,42 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               icon: Icons.school,
                               label: 'School\\nHandbag',
                               color: Color(0xFFFFC107),
+                              routeName: AppRoutes.staffHandbook,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.event,
                               label: 'Events\\nCelebration',
                               color: Color(0xFFF44336),
+                              routeName: AppRoutes.staffEventsCelebration,
                             ),
                             _SchoolLinkChip(
-                              icon: Icons.menu_book,
-                              label: 'School\\nResources',
+                              icon: Icons.folder_copy_outlined,
+                              label: 'Resources',
                               color: Color(0xFF8D6E63),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.schedule,
-                              label: 'Exam\\nSchedule',
-                              color: Color(0xFF1976D2),
+                              routeName: AppRoutes.schoolResources,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.announcement,
                               label: 'Announcement',
                               color: Color(0xFF43A047),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.emoji_events,
-                              label: 'Monthly\\nTopper',
-                              color: Color(0xFF6A1B9A),
+                              routeName: AppRoutes.staffAnnouncements,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.people,
                               label: 'Demography',
                               color: Color(0xFF388E3C),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ClassDemographyPage(
+                                    group: Group(
+                                      id: 'grade-10-c',
+                                      name: 'Grade 10 C',
+                                      year: '2026-27',
+                                    ),
+                                    isStaffView: true,
+                                  ),
+                                ),
+                              ),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.camera_alt,
@@ -467,7 +499,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                 ],
               ),
             ),
-      bottomNavigationBar: ReusableBottomNavigationBar(
+      bottomNavigationBar: StaffFooter(
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) {
           if (index == 4) {
@@ -481,13 +513,6 @@ class _StaffDashboardState extends State<StaffDashboard> {
             _selectedBottomIndex = index;
           });
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
-          BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
-        ],
       ),
     );
   }
@@ -498,40 +523,46 @@ class _QuickAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Icon(icon, size: 12, color: AppColors.white),
           ),
-          child: Icon(icon, size: 12, color: AppColors.white),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          softWrap: true,
-          overflow: TextOverflow.visible,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF222222),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF222222),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -588,39 +619,44 @@ class _ClassAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.white),
           ),
-          child: Icon(icon, size: 18, color: AppColors.white),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.visible,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF222222),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.visible,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF222222),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -630,39 +666,55 @@ class _SchoolLinkChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.routeName,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final String? routeName;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: AppColors.white),
+    return Semantics(
+      button: routeName != null || onTap != null,
+      label: label.replaceAll('\\n', ' '),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap:
+            onTap ??
+            (routeName == null
+                ? null
+                : () => Navigator.pushNamed(context, routeName!)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: AppColors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.visible,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF222222),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.visible,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF222222),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

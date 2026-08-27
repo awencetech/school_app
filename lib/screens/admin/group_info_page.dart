@@ -188,111 +188,6 @@ class _GroupInfoPageState extends State<GroupInfoPage>
     }
   }
 
-  Future<void> _showEditStudentDialog(GroupStudent student) async {
-    final nameCtrl = TextEditingController(text: student.name);
-    final idCtrl = TextEditingController(text: student.admissionNo);
-    final sectionCtrl = TextEditingController(text: student.section);
-    String? pickedImage = student.imageUrl;
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Edit Student'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Name'),
-                    ),
-                    TextField(
-                      controller: idCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Student ID',
-                      ),
-                    ),
-                    TextField(
-                      controller: sectionCtrl,
-                      decoration: const InputDecoration(labelText: 'Class'),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              final result = await FilePicker.pickFiles(
-                                type: FileType.image,
-                              );
-                              if (result.isEmpty) return;
-                              final file = result.first;
-                              if (file.path != null && file.path!.isNotEmpty) {
-                                setStateDialog(() => pickedImage = file.path);
-                              }
-                            },
-                            icon: const Icon(Icons.upload_file),
-                            label: const Text('Upload Image'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (pickedImage != null) ...[
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 80,
-                        child: _previewImageWidget(
-                          pickedImage!,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final name = nameCtrl.text.trim();
-                    final sid = idCtrl.text.trim();
-                    final cls = sectionCtrl.text.trim();
-                    if (name.isEmpty || sid.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter name and student id.'),
-                        ),
-                      );
-                      return;
-                    }
-                    await _stateService.updateStudent(_groupId, student.id, {
-                      'name': name,
-                      'admissionNo': sid,
-                      'section': cls,
-                      'imageUrl': pickedImage ?? '',
-                    });
-                    final updated = await _stateService.getGroupStudents(
-                      _groupId,
-                    );
-                    if (mounted) setState(() => _students = updated);
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tabTextStyle = GoogleFonts.poppins(
@@ -325,17 +220,15 @@ class _GroupInfoPageState extends State<GroupInfoPage>
               final ok = await _stateService.undoLastChange(_groupId);
               if (ok) {
                 await _loadMembers();
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Undo applied')));
-                }
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Undo applied')));
               } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Nothing to undo')),
-                  );
-                }
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nothing to undo')),
+                );
               }
             },
           ),

@@ -152,7 +152,7 @@ class _ContentEditScreenState extends State<ContentEditScreen> {
       for (var i = 0; i < finalItems.length; i++) {
         final it = finalItems[i];
         final id = it.id;
-        final image = (it.photoBase64 ?? '').trim();
+        final image = it.photoBase64.trim();
         String imageInfo;
         if (image.isEmpty) {
           imageInfo = 'empty';
@@ -172,11 +172,9 @@ class _ContentEditScreenState extends State<ContentEditScreen> {
     } catch (_) {}
 
     var success = false;
-    Object? lastError;
     try {
       success = await config.saveHomeContent(finalItems);
     } catch (error, stack) {
-      lastError = error;
       debugPrint('ContentEditScreen._saveContent error: $error\n$stack');
       success = false;
     }
@@ -206,7 +204,7 @@ class _ContentEditScreenState extends State<ContentEditScreen> {
 
   Future<void> _selectImage(int index) async {
     final repository = context.read<SchoolConfigService>().repository;
-    final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
+    final result = await FilePicker.pickFiles(type: FileType.image);
     if (result.isEmpty) return;
 
     final file = result.first;

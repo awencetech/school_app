@@ -90,6 +90,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
 
     setState(() => _isSaving = false);
 
+    if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Splash screen updated successfully.')));
       // Keep UI in sync with saved values
@@ -323,7 +324,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
   }
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
+    final result = await FilePicker.pickFiles(type: FileType.image);
     if (result.isEmpty) return;
     final file = result.first;
     // Use the selected file bytes without performing any cropping.

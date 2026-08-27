@@ -327,7 +327,7 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.pickFiles(withData: true);
+    final result = await FilePicker.pickFiles();
     final file = result.isEmpty ? null : result.single;
     if (file == null) {
       return;

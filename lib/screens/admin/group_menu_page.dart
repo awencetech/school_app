@@ -124,11 +124,13 @@ class GroupMenuPage extends StatelessWidget {
           onPressed: () async {
             try {
               final didPop = await Navigator.of(context, rootNavigator: true).maybePop();
+              if (!context.mounted) return;
               if (!didPop) {
                 Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRoutes.main);
               }
             } catch (e) {
               debugPrint('Back navigation failed on GroupMenuPage: $e');
+              if (!context.mounted) return;
               Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRoutes.main);
             }
           },

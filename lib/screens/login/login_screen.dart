@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final svc = UserService();
     svc.login(identifier: identifier, password: password).then((user) async {
-      if (!mounted) return;
+      if (!context.mounted) return;
       await context.read<AppState>().setAuthenticatedUser(
         userId: user.userId,
         email: user.email,

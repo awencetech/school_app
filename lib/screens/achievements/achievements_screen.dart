@@ -28,18 +28,6 @@ class AchievementsScreen extends StatelessWidget {
 class _AchievementsBody extends StatelessWidget {
   const _AchievementsBody();
 
-  BoxFit _boxFitForString(String imageFit) {
-    switch (imageFit) {
-      case 'contain':
-        return BoxFit.contain;
-      case 'fill':
-        return BoxFit.fill;
-      case 'cover':
-      default:
-        return BoxFit.cover;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final config = context.watch<SchoolConfigService>();

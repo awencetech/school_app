@@ -34,15 +34,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   late final TextEditingController _statusController;
   late final TextEditingController _yearController;
   late String _groupId;
-  String? _selectedImagePath;
-  String? _currentImageUrl;
   bool _isLoading = true;
-  bool _saving = false;
   List<GroupStudent> _students = <GroupStudent>[];
   List<GroupTeacher> _teachers = <GroupTeacher>[];
-  GroupSettings _settings = GroupSettings(groupId: '');
-  Set<String> _originalStudentIds = <String>{};
-  Set<String> _originalTeacherIds = <String>{};
 
   @override
   void initState() {
@@ -76,12 +70,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       final stored = _stateService
           .ensureStateForGroup(_groupId, seed: widget.group)
           .group;
-      final settings = await _stateService.getGroupSettings(_groupId);
       final students = await _stateService.getGroupStudents(_groupId);
       final teachers = await _stateService.getGroupTeachers(_groupId);
-      final imageUrl = _stateService
-          .ensureStateForGroup(_groupId, seed: widget.group)
-          .imageUrl;
       var loadedStudents = students;
       var loadedTeachers = teachers;
       var loadedGroup = stored;
@@ -107,16 +97,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       }
       if (!mounted) return;
       setState(() {
-        _currentImageUrl = imageUrl;
         _students = loadedStudents;
         _teachers = loadedTeachers;
-        _originalStudentIds = loadedStudents
-            .map((student) => student.id)
-            .toSet();
-        _originalTeacherIds = loadedTeachers
-            .map((teacher) => teacher.teacherId)
-            .toSet();
-        _settings = settings;
         _nameController.text = loadedGroup.name;
         _idController.text = loadedGroup.id;
         _typeController.text = loadedGroup.type;
@@ -129,142 +111,6 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final dynamic result = await FilePicker.pickFiles(type: FileType.image);
-    if (result == null) return;
-
-    // Normalize to a single file object (supports older API that returns List<PlatformFile>
-    // and newer FilePickerResult with .files)
-    dynamic file;
-    if (result is List && result.isNotEmpty) {
-      file = result.first;
-    } else {
-      // Try dynamic access to FilePickerResult.files for newer API versions
-      try {
-        final files = (result as dynamic).files;
-        if (files is List && files.isNotEmpty) file = files.first;
-      } catch (_) {}
-      if (file == null && result is PlatformFile) file = result;
-    }
-
-    if (file == null) return;
-    final path = await _resolvePickedFilePath(file);
-    if (path == null || path.isEmpty) return;
-
-    setState(() {
-      _selectedImagePath = path;
-      _currentImageUrl = null;
-    });
-  }
-
-  Future<void> _removeImage() async {
-    await _stateService.uploadGroupImage(_groupId, null);
-    if (!mounted) return;
-    setState(() {
-      _selectedImagePath = null;
-      _currentImageUrl = null;
-    });
-  }
-
-  String get _effectiveGroupName => _nameController.text.trim();
-
-  Future<void> _saveChanges() async {
-    final name = _nameController.text.trim();
-    final groupId = _idController.text.trim();
-    final type = _typeController.text.trim();
-    final description = _descriptionController.text.trim();
-    final status = _statusController.text.trim();
-    final year = _yearController.text.trim();
-
-    if (name.isEmpty || groupId.isEmpty || year.isEmpty) {
-      _showSnackBar('Please complete the required group fields.');
-      return;
-    }
-
-    setState(() => _saving = true);
-
-    try {
-      final updatePayload = {
-        'id': groupId,
-        'name': name,
-        'type': type.isEmpty ? 'Other' : type,
-        'description': description.isEmpty ? name : description,
-        'status': status.isEmpty ? 'Active' : status,
-        'year': year,
-      };
-
-      if (widget.group.databaseId.isNotEmpty) {
-        await _groupService.updateGroup(
-          widget.group.databaseId,
-          name: name,
-          id: groupId,
-          type: type.isEmpty ? 'Other' : type,
-          description: description.isEmpty ? name : description,
-          status: status.isEmpty ? 'Active' : status,
-          year: year,
-          students: _students,
-          teachers: _teachers,
-        );
-      }
-
-      final currentGroupId = _groupId;
-      await _stateService.updateGroup(currentGroupId, updatePayload);
-      if (_selectedImagePath != null && _selectedImagePath!.isNotEmpty) {
-        await _stateService.uploadGroupImage(
-          currentGroupId,
-          _selectedImagePath,
-        );
-      }
-      for (final student in _students) {
-        await _stateService.addStudent(currentGroupId, student);
-      }
-      final savedStudentIds = _students.map((student) => student.id).toSet();
-      for (final studentId in _originalStudentIds.difference(savedStudentIds)) {
-        await _stateService.removeStudent(currentGroupId, studentId);
-      }
-      for (final teacher in _teachers) {
-        await _stateService.assignTeacher(currentGroupId, teacher.teacherId, {
-          'id': teacher.id,
-          'name': teacher.name,
-          'subject': teacher.subject,
-          'role': teacher.role,
-          'imageUrl': teacher.imageUrl,
-          'details': teacher.details,
-          'contact': teacher.contact,
-          'email': teacher.email,
-        });
-      }
-      final savedTeacherIds = _teachers
-          .map((teacher) => teacher.teacherId)
-          .toSet();
-      for (final teacherId in _originalTeacherIds.difference(savedTeacherIds)) {
-        await _stateService.removeTeacher(currentGroupId, teacherId);
-      }
-      await _stateService.saveGroupSettings(
-        currentGroupId,
-        GroupSettings(
-          groupId: groupId,
-          section: _settings.section,
-          communicationPermissions: _settings.communicationPermissions,
-          studentPermissions: _settings.studentPermissions,
-          teacherPermissions: _settings.teacherPermissions,
-          description: description,
-          status: status,
-          academicYear: year,
-        ),
-      );
-
-      if (!mounted) return;
-      _showSnackBar('Group information updated successfully.');
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) return;
-      _showSnackBar(error.toString());
-    } finally {
-      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -429,6 +275,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                     if (!mounted) return;
                     setState(() => _students = [..._students, student]);
                     await _syncMembersToMongo();
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                   },
                   child: const Text('Save'),
@@ -606,6 +453,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                                 .toList();
                     });
                     await _syncMembersToMongo();
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                   },
                   child: const Text('Save'),
@@ -776,6 +624,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                     if (!mounted) return;
                     setState(() => _students = updated);
                     await _syncMembersToMongo();
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                   },
                   child: const Text('Save'),
@@ -1053,32 +902,6 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final imageWidget = _selectedImagePath != null
-        ? _previewImageWidget(
-            _selectedImagePath!,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: 150,
-          )
-        : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty
-              ? Image.network(
-                  _currentImageUrl!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 150,
-                  errorBuilder: (_, _, _) =>
-                      const Icon(Icons.image_not_supported),
-                )
-              : Container(
-                  height: 150,
-                  color: const Color(0xffe9eef7),
-                  child: const Icon(
-                    Icons.image,
-                    size: 48,
-                    color: Color(0xff5a6f92),
-                  ),
-                ));
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -1095,6 +918,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                 context,
                 rootNavigator: true,
               ).maybePop();
+              if (!context.mounted) return;
               if (!didPop) {
                 Navigator.of(context, rootNavigator: true).pushReplacementNamed(
                   AppRoutes.teacherGroupClasses,
@@ -1103,6 +927,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
               }
             } catch (e) {
               debugPrint('Back navigation failed: $e');
+              if (!context.mounted) return;
               Navigator.of(context, rootNavigator: true).pushReplacementNamed(
                 AppRoutes.teacherGroupClasses,
                 arguments: widget.group,

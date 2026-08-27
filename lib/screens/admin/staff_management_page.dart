@@ -166,7 +166,7 @@ class _StaffFormPageState extends State<StaffFormPage> {
   }
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
+    final result = await FilePicker.pickFiles(type: FileType.image);
     if (result.isEmpty) return;
     final file = result.first;
     final bytes = await file.readAsBytes();
@@ -204,7 +204,9 @@ class _StaffFormPageState extends State<StaffFormPage> {
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $error')));
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 
@@ -266,8 +268,11 @@ class _AdminStaffNav extends StatelessWidget {
         onItemSelected: (index) {
           if (index == 4) {
             Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
-          } else if (index == 3) Navigator.of(context).pushNamed(AppRoutes.supportQuery);
-          else Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
+          } else if (index == 3) {
+            Navigator.of(context).pushNamed(AppRoutes.supportQuery);
+          } else {
+            Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
+          }
         },
       );
 }

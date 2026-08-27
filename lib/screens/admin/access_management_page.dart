@@ -240,8 +240,16 @@ class _CreateIdsDialogState extends State<_CreateIdsDialog> {
                 style: TextStyle(fontSize: 9, color: Color(0xff555555)),
               ),
               const SizedBox(height: 9),
-              _radio(_AccessType.student),
-              _radio(_AccessType.parent),
+              RadioGroup<_AccessType>(
+                groupValue: _type,
+                onChanged: (selected) => setState(() => _type = selected),
+                child: Column(
+                  children: [
+                    _radio(_AccessType.student),
+                    _radio(_AccessType.parent),
+                  ],
+                ),
+              ),
               const Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -302,8 +310,6 @@ class _CreateIdsDialogState extends State<_CreateIdsDialog> {
       width: 90,
       child: RadioListTile<_AccessType>(
         value: value,
-        groupValue: _type,
-        onChanged: (selected) => setState(() => _type = selected),
         dense: true,
         contentPadding: EdgeInsets.zero,
         visualDensity: const VisualDensity(horizontal: -4, vertical: -4),

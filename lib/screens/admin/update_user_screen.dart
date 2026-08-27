@@ -185,7 +185,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                               final messenger = ScaffoldMessenger.of(context);
                               try {
                                 await _userService.deleteUser(widget.userId);
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 messenger.showSnackBar(const SnackBar(content: Text('User deleted successfully')));
                                 navigator.pop(true);
                               } catch (e) {

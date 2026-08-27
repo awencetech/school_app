@@ -229,13 +229,15 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
         color: Colors.white,
         border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 Text(teacher.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 Text('Designation: ${teacher.designation}', style: const TextStyle(fontSize: 9)),
                 Text('Employee Category: ${teacher.employeeCategory}', style: const TextStyle(fontSize: 9)),
@@ -245,11 +247,45 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
                 _detail('About', teacher.about),
                 _detail('Hobbies & Interest', teacher.hobbiesAndInterest),
                 _detail('Role', teacher.role),
-              ],
-            ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _StaffImage(url: teacher.imageUrl, initials: _initials(teacher)),
+            ],
           ),
-          const SizedBox(width: 8),
-          _StaffImage(url: teacher.imageUrl, initials: _initials(teacher)),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.person_outline, size: 13),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    tooltip: 'Staff action',
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.phone_outlined, size: 13),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    tooltip: 'Call',
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _compactAction(Icons.info_outline, 'Goto'),
+                  _compactAction(Icons.info_outline, 'Info'),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -264,6 +300,19 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
           Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
           Text(value, style: const TextStyle(fontSize: 9)),
         ],
+      ),
+    );
+  }
+
+  Widget _compactAction(IconData icon, String label) {
+    return TextButton.icon(
+      onPressed: () {},
+      icon: Icon(icon, size: 13, color: Colors.grey),
+      label: Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+      style: TextButton.styleFrom(
+        minimumSize: Size.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

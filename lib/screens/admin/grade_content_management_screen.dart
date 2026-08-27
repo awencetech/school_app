@@ -45,7 +45,7 @@ class _GradeContentManagementScreenState extends State<GradeContentManagementScr
   }
 
   Future<String?> _pickImage() async {
-    final result = await FilePicker.pickFiles(withData: true, type: FileType.image);
+    final result = await FilePicker.pickFiles(type: FileType.image);
     if (result.isEmpty) return null;
 
     final file = result.first;

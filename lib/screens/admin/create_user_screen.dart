@@ -21,7 +21,6 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final bool _obscurePassword = true;
   String _errorMessage = '';
   bool _isLoading = false;
 
@@ -186,7 +185,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final created = await _userService.createUser(
+      await _userService.createUser(
         userId: _userIdController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,

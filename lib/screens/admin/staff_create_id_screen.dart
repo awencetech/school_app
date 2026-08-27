@@ -142,7 +142,6 @@ class _StaffCreateIdScreenState extends State<StaffCreateIdScreen> {
                         itemCount: _staff.length,
                         itemBuilder: (context, index) {
                           final member = _staff[index];
-                          final isSelected = _selectedStaffId == member.id;
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: ListTile(

@@ -367,8 +367,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                               } else {
                                 try {
                                   final files = (result as dynamic).files;
-                                  if (files is List && files.isNotEmpty)
+                                  if (files is List && files.isNotEmpty) {
                                     file = files.first;
+                                  }
                                 } catch (_) {}
                                 if (file == null && result is PlatformFile) {
                                   file = result;
@@ -494,8 +495,9 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                               } else {
                                 try {
                                   final files = (result as dynamic).files;
-                                  if (files is List && files.isNotEmpty)
+                                  if (files is List && files.isNotEmpty) {
                                     file = files.first;
+                                  }
                                 } catch (_) {}
                                 if (file == null && result is PlatformFile) {
                                   file = result;
@@ -695,11 +697,13 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                               } else {
                                 try {
                                   final files = (result as dynamic).files;
-                                  if (files is List && files.isNotEmpty)
+                                  if (files is List && files.isNotEmpty) {
                                     file = files.first;
+                                  }
                                 } catch (_) {}
-                                if (file == null && result is PlatformFile)
+                                if (file == null && result is PlatformFile) {
                                   file = result;
+                                }
                               }
                               if (file == null) return;
                               final path = await _resolvePickedFilePath(file);
@@ -817,7 +821,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+          errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
         );
       } catch (e) {
         debugPrint('Failed to decode data URI: $e');
@@ -831,7 +835,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
 
@@ -843,7 +847,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
 
@@ -854,7 +858,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
       );
     } catch (e) {
       debugPrint('Error creating File image: $e');
@@ -864,7 +868,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
   }
@@ -1278,94 +1282,6 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: 2,
         onItemSelected: (_) {},
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.blueButton,
-            ),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _FieldRow extends StatelessWidget {
-  const _FieldRow({
-    required this.label,
-    required this.controller,
-    this.readOnly = false,
-    this.maxLines = 1,
-    this.keyboardType,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final bool readOnly;
-  final int maxLines;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: controller,
-            readOnly: readOnly,
-            maxLines: maxLines,
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

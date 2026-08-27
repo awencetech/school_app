@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -164,7 +163,7 @@ class _ContentEditScreenState extends State<ContentEditScreen> {
         } else {
           imageInfo = 'base64 (${image.length} chars)';
         }
-        debugPrint('\n[${i}]');
+        debugPrint('\n[$i]');
         debugPrint('id = $id');
         debugPrint('title = ${it.title}');
         debugPrint('description = ${it.description}');

@@ -1,9 +1,7 @@
 ﻿import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:provider/provider.dart';
 
 import '../../theme/app_colors.dart';
@@ -119,7 +117,6 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
     if (result.isEmpty) return;
     final file = result.first;
     final bytes = await file.readAsBytes();
-    if (bytes == null) return;
     updater(base64Encode(bytes));
   }
 

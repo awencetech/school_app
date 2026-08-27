@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
-import '../../screens/admin/grade_content_management_screen.dart';
-import 'content_edit_screen.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class AdminDetailPage extends StatelessWidget {
@@ -27,7 +25,7 @@ class AdminDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.adminSplashScreenEditor);
+                Navigator.of(context).pushNamed(AppRoutes.adminMainEditSplashScreen);
               },
               child: Row(
                 children: [
@@ -50,7 +48,7 @@ class AdminDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.adminSchoolSettings);
+                Navigator.of(context).pushNamed(AppRoutes.adminMainEditSchoolSettings);
               },
               child: Row(
                 children: [
@@ -73,7 +71,7 @@ class AdminDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.adminSchoolContentManagement);
+                Navigator.of(context).pushNamed(AppRoutes.adminMainEditSchoolContent);
               },
               child: Row(
                 children: [
@@ -96,11 +94,7 @@ class AdminDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const GradeContentManagementScreen(),
-                  ),
-                );
+                Navigator.of(context).pushNamed(AppRoutes.adminMainEditGradePage);
               },
               child: Row(
                 children: [
@@ -123,9 +117,7 @@ class AdminDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ContentEditScreen()),
-                );
+                Navigator.of(context).pushNamed(AppRoutes.adminMainEditContentEdit);
               },
               child: Row(
                 children: [

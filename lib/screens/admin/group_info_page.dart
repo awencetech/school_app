@@ -145,7 +145,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+          errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
         );
       } catch (e) {
         debugPrint('Failed to decode data URI: $e');
@@ -159,7 +159,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
 
@@ -170,7 +170,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
 
@@ -180,7 +180,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
       );
     } catch (e) {
       debugPrint('Error creating File image: $e');
@@ -325,15 +325,17 @@ class _GroupInfoPageState extends State<GroupInfoPage>
               final ok = await _stateService.undoLastChange(_groupId);
               if (ok) {
                 await _loadMembers();
-                if (mounted)
+                if (mounted) {
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(const SnackBar(content: Text('Undo applied')));
+                }
               } else {
-                if (mounted)
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Nothing to undo')),
                   );
+                }
               }
             },
           ),

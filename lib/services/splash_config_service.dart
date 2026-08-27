@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-import '../models/main_page_info.dart';
 import 'main_page_info_repository.dart';
 import 'preferences_service.dart';
 
@@ -67,29 +66,29 @@ class SplashConfigService extends ChangeNotifier {
       final saved = await _repository.getMainPageInfo();
 
       // Server authoritative: overwrite local splash values and persist
-      title = saved.splashScreen.title ?? '';
+      title = saved.splashScreen.title;
       await PreferencesService.setString(_titleKey, title);
 
-      subtitle = saved.splashScreen.subtitle ?? '';
+      subtitle = saved.splashScreen.subtitle;
       await PreferencesService.setString(_subtitleKey, subtitle);
 
-      since = saved.splashScreen.sinceYear ?? '';
+      since = saved.splashScreen.sinceYear;
       await PreferencesService.setString(_sinceKey, since);
 
-      quote = (saved.splashScreen.quote ?? '');
+      quote = saved.splashScreen.quote;
       await PreferencesService.setString(_quoteKey, quote);
 
       // image may be base64 or an HTTP/HTTPS URL - store as-is and let widgets choose how to render
-      imageBase64 = saved.splashScreen.image ?? '';
-      await PreferencesService.setString(_imageKey, imageBase64 ?? '');
+      imageBase64 = saved.splashScreen.image;
+      await PreferencesService.setString(_imageKey, imageBase64!);
 
-      imageScale = saved.splashScreen.imageScale is double ? saved.splashScreen.imageScale : (double.tryParse(saved.splashScreen.imageScale?.toString() ?? '') ?? imageScale);
+      imageScale = saved.splashScreen.imageScale;
       await PreferencesService.setString(_imageScaleKey, imageScale.toString());
 
-      imageOffsetX = saved.splashScreen.imageOffsetX is double ? saved.splashScreen.imageOffsetX : (double.tryParse(saved.splashScreen.imageOffsetX?.toString() ?? '') ?? imageOffsetX);
+      imageOffsetX = saved.splashScreen.imageOffsetX;
       await PreferencesService.setString(_imageOffsetXKey, imageOffsetX.toString());
 
-      imageOffsetY = saved.splashScreen.imageOffsetY is double ? saved.splashScreen.imageOffsetY : (double.tryParse(saved.splashScreen.imageOffsetY?.toString() ?? '') ?? imageOffsetY);
+      imageOffsetY = saved.splashScreen.imageOffsetY;
       await PreferencesService.setString(_imageOffsetYKey, imageOffsetY.toString());
     } catch (_) {
       // Keep the cached values if the server is temporarily unavailable.
@@ -139,12 +138,12 @@ class SplashConfigService extends ChangeNotifier {
       // Update local state and preferences only after successful backend save
       if (updated.splashScreen.title.isNotEmpty) this.title = updated.splashScreen.title;
       if (updated.splashScreen.subtitle.isNotEmpty) this.subtitle = updated.splashScreen.subtitle;
-      if ((updated.splashScreen.quote ?? '').isNotEmpty) this.quote = (updated.splashScreen.quote ?? '');
+      if (updated.splashScreen.quote.isNotEmpty) this.quote = updated.splashScreen.quote;
       if (updated.splashScreen.sinceYear.isNotEmpty) this.since = updated.splashScreen.sinceYear;
       if (updated.splashScreen.image.isNotEmpty) this.imageBase64 = updated.splashScreen.image;
-      imageScale = updated.splashScreen.imageScale is double ? updated.splashScreen.imageScale : (double.tryParse(updated.splashScreen.imageScale?.toString() ?? '') ?? imageScale);
-      imageOffsetX = updated.splashScreen.imageOffsetX is double ? updated.splashScreen.imageOffsetX : (double.tryParse(updated.splashScreen.imageOffsetX?.toString() ?? '') ?? imageOffsetX);
-      imageOffsetY = updated.splashScreen.imageOffsetY is double ? updated.splashScreen.imageOffsetY : (double.tryParse(updated.splashScreen.imageOffsetY?.toString() ?? '') ?? imageOffsetY);
+      imageScale = updated.splashScreen.imageScale;
+      imageOffsetX = updated.splashScreen.imageOffsetX;
+      imageOffsetY = updated.splashScreen.imageOffsetY;
 
       // Persist to preferences as a cache for offline fallback
       await PreferencesService.setString(_imageKey, this.imageBase64 ?? '');

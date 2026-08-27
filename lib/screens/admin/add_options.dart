@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../routes/app_routes.dart';
-import 'create_group_screen.dart';
-import 'student_create_id_screen.dart';
-import 'staff_create_id_screen.dart';
-import 'admin_create_id_screen.dart';
 
 class AddOptions extends StatefulWidget {
   const AddOptions({super.key});
@@ -35,11 +31,7 @@ class _AddOptionsState extends State<AddOptions> {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const StudentCreateIdScreen(),
-                  ),
-                );
+                Navigator.of(context).pushNamed(AppRoutes.adminAddStudent);
               },
               child: Row(
                 children: [
@@ -63,11 +55,7 @@ class _AddOptionsState extends State<AddOptions> {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const StaffCreateIdScreen(),
-                  ),
-                );
+                Navigator.of(context).pushNamed(AppRoutes.adminAddStaff);
               },
               child: Row(
                 children: [
@@ -91,11 +79,7 @@ class _AddOptionsState extends State<AddOptions> {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AdminCreateIdScreen(),
-                  ),
-                );
+                Navigator.of(context).pushNamed(AppRoutes.adminAddAdmin);
               },
               child: Row(
                 children: [
@@ -119,11 +103,7 @@ class _AddOptionsState extends State<AddOptions> {
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CreateGroupScreen(),
-                  ),
-                );
+                Navigator.of(context).pushNamed(AppRoutes.adminAddGroup);
               },
               child: Row(
                 children: [

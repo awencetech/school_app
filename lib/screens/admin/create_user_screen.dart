@@ -22,7 +22,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool? _obscurePassword = true;
+  final bool _obscurePassword = true;
   String _errorMessage = '';
   bool _isLoading = false;
 

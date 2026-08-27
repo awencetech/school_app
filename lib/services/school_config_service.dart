@@ -120,24 +120,6 @@ class SchoolConfigService extends ChangeNotifier {
 
   String? get posterDisplaySource => posterUrl ?? posterBase64;
 
-  Future<void> _refreshPosterFromServer() async {
-    try {
-      final saved = await _repository.getMainPageInfo();
-      final remotePoster = saved.schoolSettings.schoolPoster.trim();
-      if (remotePoster.isNotEmpty) {
-        posterUrl = remotePoster;
-        posterBase64 = null;
-        await PreferencesService.setString(_posterKey, remotePoster);
-      } else {
-        posterUrl = null;
-        posterBase64 = null;
-        await PreferencesService.setString(_posterKey, '');
-      }
-    } catch (_) {
-      // Keep the locally cached value if the backend is temporarily unavailable.
-    }
-  }
-
   Future<void> _load() async {
     final cached = await PreferencesService.getStrings([
       _nameKey,
@@ -292,23 +274,23 @@ class SchoolConfigService extends ChangeNotifier {
       final saved = await _repository.getMainPageInfo();
 
       // SERVER IS AUTHORITATIVE: apply server values and persist to SharedPreferences
-      schoolName = saved.schoolSettings.schoolName ?? '';
+      schoolName = saved.schoolSettings.schoolName;
       await PreferencesService.setString(_nameKey, schoolName);
 
-      quote = saved.schoolSettings.schoolQuote ?? '';
+      quote = saved.schoolSettings.schoolQuote;
       await PreferencesService.setString(_quoteKey, quote);
 
-      _welcome = saved.schoolSettings.welcomeText ?? '';
+      _welcome = saved.schoolSettings.welcomeText;
       await PreferencesService.setString(_welcomeKey, _welcome);
 
-      websiteUrl = saved.schoolSettings.schoolWebsite ?? '';
+      websiteUrl = saved.schoolSettings.schoolWebsite;
       await PreferencesService.setString(_websiteKey, websiteUrl);
 
-      runningItems = (saved.schoolSettings.runningContent ?? []).map((e) => e.toString()).toList(growable: false);
+      runningItems = saved.schoolSettings.runningContent.map((e) => e.toString()).toList(growable: false);
       await PreferencesService.setString(_runningItemsKey, jsonEncode(runningItems));
 
       // Poster: accept empty string as authoritative too (clears cache)
-      final remotePoster = saved.schoolSettings.schoolPoster ?? '';
+      final remotePoster = saved.schoolSettings.schoolPoster;
       if (remotePoster.isNotEmpty) {
         posterUrl = remotePoster;
         posterBase64 = null;
@@ -320,51 +302,51 @@ class SchoolConfigService extends ChangeNotifier {
       }
 
       // Founder / Secretary / Headmaster / Management members
-      founderPhotoBase64 = saved.schoolContent.founder.photo ?? '';
-      founderName = saved.schoolContent.founder.name ?? '';
-      founderDesignation = saved.schoolContent.founder.designation ?? '';
-      founderVisionTitle = saved.schoolContent.founder.visionTitle ?? '';
-      founderVisionDescription = saved.schoolContent.founder.visionDescription ?? '';
+      founderPhotoBase64 = saved.schoolContent.founder.photo;
+      founderName = saved.schoolContent.founder.name;
+      founderDesignation = saved.schoolContent.founder.designation;
+      founderVisionTitle = saved.schoolContent.founder.visionTitle;
+      founderVisionDescription = saved.schoolContent.founder.visionDescription;
       await PreferencesService.setString(_founderPhotoKey, founderPhotoBase64 ?? '');
       await PreferencesService.setString(_founderNameKey, founderName);
       await PreferencesService.setString(_founderDesignationKey, founderDesignation);
       await PreferencesService.setString(_founderVisionTitleKey, founderVisionTitle);
       await PreferencesService.setString(_founderVisionDescKey, founderVisionDescription);
 
-      secretaryPhotoBase64 = saved.schoolContent.secretary.photo ?? '';
-      secretaryName = saved.schoolContent.secretary.name ?? '';
-      secretaryDesignation = saved.schoolContent.secretary.designation ?? '';
-      secretaryWelcomeTitle = saved.schoolContent.secretary.welcomeTitle ?? '';
-      secretaryWelcomeMessage = saved.schoolContent.secretary.welcomeMessage ?? '';
+      secretaryPhotoBase64 = saved.schoolContent.secretary.photo;
+      secretaryName = saved.schoolContent.secretary.name;
+      secretaryDesignation = saved.schoolContent.secretary.designation;
+      secretaryWelcomeTitle = saved.schoolContent.secretary.welcomeTitle;
+      secretaryWelcomeMessage = saved.schoolContent.secretary.welcomeMessage;
       await PreferencesService.setString(_secretaryPhotoKey, secretaryPhotoBase64 ?? '');
       await PreferencesService.setString(_secretaryNameKey, secretaryName);
       await PreferencesService.setString(_secretaryDesignationKey, secretaryDesignation);
       await PreferencesService.setString(_secretaryWelcomeTitleKey, secretaryWelcomeTitle);
       await PreferencesService.setString(_secretaryWelcomeMessageKey, secretaryWelcomeMessage);
 
-      headmasterPhotoBase64 = saved.schoolContent.headmaster.photo ?? '';
-      headmasterName = saved.schoolContent.headmaster.name ?? '';
-      headmasterDesignation = saved.schoolContent.headmaster.designation ?? '';
-      headmasterMessageTitle = saved.schoolContent.headmaster.messageTitle ?? '';
-      headmasterMessage = saved.schoolContent.headmaster.message ?? '';
+      headmasterPhotoBase64 = saved.schoolContent.headmaster.photo;
+      headmasterName = saved.schoolContent.headmaster.name;
+      headmasterDesignation = saved.schoolContent.headmaster.designation;
+      headmasterMessageTitle = saved.schoolContent.headmaster.messageTitle;
+      headmasterMessage = saved.schoolContent.headmaster.message;
       await PreferencesService.setString(_headmasterPhotoKey, headmasterPhotoBase64 ?? '');
       await PreferencesService.setString(_headmasterNameKey, headmasterName);
       await PreferencesService.setString(_headmasterDesignationKey, headmasterDesignation);
       await PreferencesService.setString(_headmasterMessageTitleKey, headmasterMessageTitle);
       await PreferencesService.setString(_headmasterMessageKey, headmasterMessage);
 
-      managementMembers = (saved.schoolContent.members ?? []).map((member) => ManagementMember(
-        id: member.id ?? '',
-        photoBase64: member.photo ?? '',
-        name: member.name ?? '',
-        designation: member.designation ?? '',
-        title: member.title ?? '',
-        description: member.description ?? '',
+      managementMembers = saved.schoolContent.members.map((member) => ManagementMember(
+        id: member.id,
+        photoBase64: member.photo,
+        name: member.name,
+        designation: member.designation,
+        title: member.title,
+        description: member.description,
           )).toList();
       await PreferencesService.setString(_managementMembersKey, jsonEncode(managementMembers.map((e) => e.toJson()).toList()));
 
       // Home content (separate list). If backend provides homeContent, use it.
-      homeContent = (saved.homeContent ?? []).map((raw) {
+      homeContent = saved.homeContent.map((raw) {
         final item = raw as dynamic;
         if (item is Map<String, dynamic>) {
           return ManagementMember(
@@ -378,12 +360,12 @@ class SchoolConfigService extends ChangeNotifier {
         }
         if (item is ManagementMemberModel) {
           return ManagementMember(
-            id: item.id ?? '',
-            photoBase64: item.photo ?? '',
-            name: item.name ?? '',
-            designation: item.designation ?? '',
-            title: item.title ?? '',
-            description: item.description ?? '',
+            id: item.id,
+            photoBase64: item.photo,
+            name: item.name,
+            designation: item.designation,
+            title: item.title,
+            description: item.description,
           );
         }
         try {
@@ -396,29 +378,29 @@ class SchoolConfigService extends ChangeNotifier {
       await PreferencesService.setString(_homeContentKey, jsonEncode(homeContent.map((e) => e.toJson()).toList()));
 
       // Grades and sports
-      gradeXTopper = (saved.gradePage.grade10.students ?? []).map((student) => TopperEntry(
-            photoBase64: student.photo ?? '',
-            studentName: student.studentName ?? '',
-            marks: student.marks ?? '',
-            imageFit: student.imageFit ?? 'cover',
+      gradeXTopper = saved.gradePage.grade10.students.map((student) => TopperEntry(
+        photoBase64: student.photo,
+        studentName: student.studentName,
+        marks: student.marks,
+        imageFit: student.imageFit,
             cropData: student.cropData,
           )).toList();
       await PreferencesService.setString(_gradeXKey, jsonEncode(gradeXTopper.map((e) => e.toJson()).toList()));
 
-      gradeXIITopper = (saved.gradePage.grade12.students ?? []).map((student) => TopperEntry(
-            photoBase64: student.photo ?? '',
-            studentName: student.studentName ?? '',
-            marks: student.marks ?? '',
-            imageFit: student.imageFit ?? 'cover',
+      gradeXIITopper = saved.gradePage.grade12.students.map((student) => TopperEntry(
+        photoBase64: student.photo,
+        studentName: student.studentName,
+        marks: student.marks,
+        imageFit: student.imageFit,
             cropData: student.cropData,
           )).toList();
       await PreferencesService.setString(_gradeXIIKey, jsonEncode(gradeXIITopper.map((e) => e.toJson()).toList()));
 
-      sportsAchievements = (saved.gradePage.sportsAchievements ?? []).map((achievement) => SportsAchievementEntry(
-            imageBase64: achievement.image ?? '',
-            studentName: achievement.studentName ?? '',
+      sportsAchievements = saved.gradePage.sportsAchievements.map((achievement) => SportsAchievementEntry(
+        imageBase64: achievement.image,
+        studentName: achievement.studentName,
             achievementTitle: '',
-            description: achievement.achievementDescription ?? '',
+            description: achievement.achievementDescription,
           )).toList();
       await PreferencesService.setString(_sportsAchievementsKey, jsonEncode(sportsAchievements.map((e) => e.toJson()).toList()));
 
@@ -732,8 +714,8 @@ class SchoolConfigService extends ChangeNotifier {
           selectedLanguage: '',
           themeColor: '',
           schoolQuote: this.quote,
-          welcomeText: this._welcome,
-          schoolWebsite: this.websiteUrl,
+          welcomeText: _welcome,
+          schoolWebsite: websiteUrl,
           runningContent: this.runningItems,
         ),
         schoolContent: SchoolContentModel(
@@ -867,14 +849,14 @@ class SchoolConfigService extends ChangeNotifier {
 
       final updated = await _repository.updateSchoolContent(contentPayload.toJson());
 
-      managementMembers = (updated.schoolContent.members ?? [])
+      managementMembers = updated.schoolContent.members
           .map((member) => ManagementMember(
-                id: member.id ?? '',
-                photoBase64: member.photo ?? '',
-                name: member.name ?? '',
-                designation: member.designation ?? '',
-                title: member.title ?? '',
-                description: member.description ?? '',
+            id: member.id,
+            photoBase64: member.photo,
+            name: member.name,
+            designation: member.designation,
+            title: member.title,
+            description: member.description,
               ))
           .toList();
       await PreferencesService.setString(
@@ -892,21 +874,21 @@ class SchoolConfigService extends ChangeNotifier {
   Future<bool> saveHomeContent(List<ManagementMember> items) async {
     // Keep a snapshot of previously-cached in-memory items so we can detect
     // intentional deletions performed by the user in this session.
-    final previousLocal = List<ManagementMember>.from(this.homeContent);
+    final previousLocal = List<ManagementMember>.from(homeContent);
 
     // Update in-memory list immediately (UI already shows these items).
-    this.homeContent = List<ManagementMember>.from(items);
+    homeContent = List<ManagementMember>.from(items);
 
     try {
       // Compute a stable item identity: prefer explicit id, otherwise use title+description.
-      String _deriveId(ManagementMember m) {
+      String deriveId(ManagementMember m) {
         if (m.id.isNotEmpty) return m.id;
         final title = m.title.trim();
         final description = m.description.trim();
         return title.isNotEmpty || description.isNotEmpty ? '$title|$description' : DateTime.now().millisecondsSinceEpoch.toString();
       }
 
-      ManagementMember _ensureStableId(ManagementMember m) {
+      ManagementMember ensureStableId(ManagementMember m) {
         if (m.id.isNotEmpty) return m;
         return ManagementMember(
           id: '${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1000000)}',
@@ -918,7 +900,7 @@ class SchoolConfigService extends ChangeNotifier {
         );
       }
 
-      String _deriveIdFromMap(Map<String, dynamic> item) {
+      String deriveIdFromMap(Map<String, dynamic> item) {
         final id = (item['id'] ?? '').toString().trim();
         if (id.isNotEmpty) return id;
         final title = (item['title'] ?? '').toString().trim();
@@ -926,29 +908,29 @@ class SchoolConfigService extends ChangeNotifier {
         return title.isNotEmpty || description.isNotEmpty ? '$title|$description' : '';
       }
 
-      this.homeContent = this.homeContent.map(_ensureStableId).toList();
-      final localIds = this.homeContent.map(_deriveId).toSet();
-      final previousIds = previousLocal.map(_deriveId).toSet();
+      homeContent = homeContent.map(ensureStableId).toList();
+      final localIds = homeContent.map(deriveId).toSet();
+      final previousIds = previousLocal.map(deriveId).toSet();
       final deletedIds = previousIds.difference(localIds);
 
       // Fetch current server document so we can preserve any server-only items
       // the user didn't intentionally delete. This avoids destructive writes
       // when the UI list is incomplete for any reason.
       final serverDoc = await _repository.getMainPageInfo();
-      final serverHomeRaw = serverDoc.homeContent ?? [];
+      final serverHomeRaw = serverDoc.homeContent;
 
       // Normalize a server item to a Map<String,dynamic> with expected keys
       Map<String, dynamic> normalizeServerItem(dynamic raw) {
         if (raw is Map<String, dynamic>) return raw;
         if (raw is ManagementMemberModel) {
           return {
-            'id': raw.id ?? '',
-            'photo': raw.photo ?? '',
-            'name': raw.name ?? '',
-            'designation': raw.designation ?? '',
-            'title': raw.title ?? '',
-            'description': raw.description ?? '',
-            'order': raw.order ?? 0,
+            'id': raw.id,
+            'photo': raw.photo,
+            'name': raw.name,
+            'designation': raw.designation,
+            'title': raw.title,
+            'description': raw.description,
+            'order': raw.order,
           };
         }
         return {'id': raw.toString(), 'photo': '', 'name': raw.toString(), 'designation': '', 'title': raw.toString(), 'description': '', 'order': 0};
@@ -962,7 +944,7 @@ class SchoolConfigService extends ChangeNotifier {
       final List<Map<String, dynamic>> merged = [];
 
       // Add local items first (sanitizing photo values)
-      for (final member in this.homeContent) {
+      for (final member in homeContent) {
         String photoValue = member.photoBase64.trim();
         final shouldStrip = photoValue.startsWith('data:') || photoValue.length > 100000;
         if (shouldStrip) {
@@ -970,7 +952,7 @@ class SchoolConfigService extends ChangeNotifier {
           photoValue = '';
         }
         merged.add({
-          'id': _deriveId(member),
+          'id': deriveId(member),
           'photo': photoValue,
           'name': member.name,
           'designation': member.designation,
@@ -982,7 +964,7 @@ class SchoolConfigService extends ChangeNotifier {
 
       // Preserve server-only items that were not intentionally deleted
       for (final s in serverItems) {
-        final serverId = _deriveIdFromMap(s);
+        final serverId = deriveIdFromMap(s);
         if (serverId.isEmpty) continue;
         if (localIds.contains(serverId)) continue; // already present in local
         if (deletedIds.contains(serverId)) continue; // user deleted it
@@ -1010,7 +992,7 @@ class SchoolConfigService extends ChangeNotifier {
           } else {
             photoInfo = 'base64 (${photo.length} chars)';
           }
-          debugPrint('-> item[$i] id="$id" title="${title}" descLen=${desc.length} photo=$photoInfo');
+          debugPrint('-> item[$i] id="$id" title="$title" descLen=${desc.length} photo=$photoInfo');
         }
       } catch (_) {}
       final updated = await _repository.updateSchoolContent(payload);
@@ -1020,20 +1002,20 @@ class SchoolConfigService extends ChangeNotifier {
       // overwrite the editor state with stale cache.
       MainPageInfo authoritative = updated;
       try {
-        final returnedCount = (updated.homeContent ?? []).length;
+        final returnedCount = updated.homeContent.length;
         final expectedCount = merged.length;
         debugPrint('saveHomeContent: PUT returned homeContent count = $returnedCount, expected = $expectedCount');
         if (returnedCount != expectedCount) {
           debugPrint('saveHomeContent: PUT response count mismatch; performing GET fallback');
           authoritative = await _repository.getMainPageInfo();
-          debugPrint('saveHomeContent: GET returned homeContent count = ${authoritative.homeContent?.length ?? 0}');
+          debugPrint('saveHomeContent: GET returned homeContent count = ${authoritative.homeContent.length}');
         }
       } catch (e) {
         debugPrint('saveHomeContent: error inspecting PUT response: $e');
       }
 
       // Updated may include the new homeContent; sync it back from authoritative
-      homeContent = (authoritative.homeContent ?? []).map((raw) {
+      homeContent = authoritative.homeContent.map((raw) {
         final item = raw as dynamic;
         if (item is Map<String, dynamic>) {
           return ManagementMember(
@@ -1047,12 +1029,12 @@ class SchoolConfigService extends ChangeNotifier {
         }
         if (item is ManagementMemberModel) {
           return ManagementMember(
-            id: item.id ?? '',
-            photoBase64: item.photo ?? '',
-            name: item.name ?? '',
-            designation: item.designation ?? '',
-            title: item.title ?? '',
-            description: item.description ?? '',
+            id: item.id,
+            photoBase64: item.photo,
+            name: item.name,
+            designation: item.designation,
+            title: item.title,
+            description: item.description,
           );
         }
         try {

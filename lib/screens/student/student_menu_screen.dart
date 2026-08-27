@@ -45,7 +45,7 @@ class StudentMenuScreen extends StatelessWidget {
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+          errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
         );
       } catch (e) {
         debugPrint('Failed to decode data URI in StudentMenuScreen: $e');
@@ -59,7 +59,7 @@ class StudentMenuScreen extends StatelessWidget {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
 
@@ -70,7 +70,7 @@ class StudentMenuScreen extends StatelessWidget {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
       );
     }
 
@@ -80,7 +80,7 @@ class StudentMenuScreen extends StatelessWidget {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
       );
     } catch (e) {
       debugPrint('Error creating File image in StudentMenuScreen: $e');

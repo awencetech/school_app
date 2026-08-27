@@ -119,7 +119,7 @@ class HomeScreen extends StatelessWidget {
                           'Every student has the potential to achieve greatness through dedication, discipline, and continuous learning.');
                 final displayWelcome = config.welcome.isNotEmpty
                     ? config.welcome
-                    : 'Welcome To ${displayName}';
+                    : 'Welcome To $displayName';
                 final website = config.websiteUrl.isNotEmpty
                     ? config.websiteUrl
                     : (info?.websiteUrl ?? '');

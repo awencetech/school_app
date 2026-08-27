@@ -1,17 +1,16 @@
 // IO implementation using package:file_picker for native platforms.
 import 'dart:io';
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 
 Future<String?> pickImageAsDataUri() async {
   final result = await FilePicker.pickFiles(type: FileType.image);
-  if (result == null) return null;
   // result may be List<PlatformFile> or PlatformFile or FilePickerResult
   dynamic file;
-  if (result is List && result.isNotEmpty) file = result.first;
-  else if (result is PlatformFile) file = result;
+  if (result.isNotEmpty) {
+    file = result.first;
+  } else if (result is PlatformFile) file = result;
   else {
     try {
       final files = (result as dynamic).files;

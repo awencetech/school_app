@@ -142,7 +142,6 @@ class _AdminCreateIdScreenState extends State<AdminCreateIdScreen> {
                         itemCount: _admins.length,
                         itemBuilder: (context, index) {
                           final admin = _admins[index];
-                          final isSelected = _selectedAdminId == admin.id;
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: ListTile(

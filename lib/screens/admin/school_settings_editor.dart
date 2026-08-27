@@ -1,12 +1,9 @@
-import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/school_config_service.dart';

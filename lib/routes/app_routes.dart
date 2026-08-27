@@ -24,7 +24,23 @@ class AppRoutes {
   static const staffTodoTasks = '/staff-dashboard/to-do-tasks';
   static const adminDashboard = '/admin-dashboard';
   static const adminOtherOptions = '/admin/other-options';
-  static const adminOtherGroups = '/admin/other-groups';
+  static const adminMainEdit = '$adminOtherOptions/main-edit';
+  static const adminAdd = '$adminOtherOptions/add';
+  static const adminKnowYourSchool = '$adminOtherOptions/know-your-school';
+  static const adminStudentOptions = '$adminOtherOptions/student';
+  static const adminStaffOptions = '$adminOtherOptions/staff';
+  static const adminListTeachers = '$adminOtherOptions/list-teachers';
+  static const adminMainEditSplashScreen = '$adminMainEdit/splash-screen';
+  static const adminMainEditSchoolSettings = '$adminMainEdit/school-settings';
+  static const adminMainEditSchoolContent = '$adminMainEdit/school-content-management';
+  static const adminMainEditGradePage = '$adminMainEdit/grade-page';
+  static const adminMainEditContentEdit = '$adminMainEdit/content-edit';
+  static const adminAddStudent = '$adminAdd/student-create-id';
+  static const adminAddStaff = '$adminAdd/staff-create-id';
+  static const adminAddAdmin = '$adminAdd/admin-create-id';
+  static const adminAddGroup = '$adminAdd/create-group';
+  static const adminOtherGroups = '/admin/other-groups/list-other-groups';
+  static const adminOtherGroupDetails = '$adminOtherGroups/';
   static const adminGroupDetails = '/admin/group-details';
   static const teacherGroupClasses = '/teacher/group-classes';
     static const teacherGroupInfo = '$teacherGroupClasses/group-info';
@@ -92,12 +108,12 @@ class AppRoutes {
         '$teacherGroupClasses/access-management';
       static const teacherClassFeeDetails =
         '$teacherGroupClasses/class-fee-details';
-  static const adminSplashScreenEditor = '/admin/splash-screen';
+  static const adminSplashScreenEditor = adminMainEditSplashScreen;
   static const adminHomeScreen = '/admin/home-screen';
   static const adminSection = '/admin/section';
-  static const adminSchoolSettings = '/admin/school-settings';
+    static const adminSchoolSettings = adminMainEditSchoolSettings;
   static const adminSchoolContentManagement =
-      '/admin/school-content-management';
+      adminMainEditSchoolContent;
   static const supportQuery = '/support-query';
   static const privacyPolicy = '/privacy-policy';
 }

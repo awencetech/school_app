@@ -50,10 +50,10 @@ class UserService {
           final decoded = jsonDecode(resp.body);
           bodySnippet = jsonEncode(decoded);
         } else {
-          bodySnippet = resp.body.length > 300 ? resp.body.substring(0, 300) + '...' : resp.body;
+          bodySnippet = resp.body.length > 300 ? '${resp.body.substring(0, 300)}...' : resp.body;
         }
       } catch (_) {
-        bodySnippet = resp.body.length > 300 ? resp.body.substring(0, 300) + '...' : resp.body;
+        bodySnippet = resp.body.length > 300 ? '${resp.body.substring(0, 300)}...' : resp.body;
       }
 
       // If the response is JSON and contains a message, surface it via ApiException.

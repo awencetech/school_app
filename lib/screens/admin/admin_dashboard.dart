@@ -190,7 +190,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         child: GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
+                          crossAxisCount: 5,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 8,
                           childAspectRatio: 0.95,
@@ -263,7 +263,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         child: GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
+                          crossAxisCount: 5,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio: 0.95,
@@ -360,7 +360,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         child: GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
+                          crossAxisCount: 5,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio: 0.95,
@@ -384,6 +384,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.person,
                               label: 'List\nTeachers',
                               color: Color(0xFFF43F5E),
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminListTeachers,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.class_,
@@ -492,14 +497,14 @@ class _QuickAction extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 22,
-            height: 22,
+            Container(
+              width: 32,
+              height: 32,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 12, color: AppColors.white),
+            child: Icon(icon, size: 16, color: AppColors.white),
           ),
           const SizedBox(height: 3),
           Text(
@@ -547,7 +552,7 @@ class _SchoolLinkChip extends StatelessWidget {
               color: color,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 18, color: AppColors.white),
+            child: Icon(icon, size: 16, color: AppColors.white),
           ),
           const SizedBox(height: 8),
           Text(

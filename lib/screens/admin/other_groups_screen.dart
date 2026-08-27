@@ -6,8 +6,8 @@ import '../../routes/app_routes.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
-import 'group_details_page.dart';
 
 /// Other Groups page showing a list of groups with search and pagination.
 class OtherGroupsScreen extends StatefulWidget {
@@ -112,9 +112,11 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
   }
 
   void _goToGroupDetails(Group group) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => GroupDetailsPage(group: group)));
+    final groupSlug = generateGroupSlug(group.name);
+    Navigator.of(context).pushNamed(
+      '${AppRoutes.adminOtherGroupDetails}$groupSlug',
+      arguments: group,
+    );
   }
 
   @override
@@ -126,7 +128,7 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
-        title: Text('Other Groups', style: AppTextStyles.appTitle),
+        title: Text('List Groups', style: AppTextStyles.appTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),

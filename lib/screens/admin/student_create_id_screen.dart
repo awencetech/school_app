@@ -144,7 +144,6 @@ class _StudentCreateIdScreenState extends State<StudentCreateIdScreen> {
                         itemCount: _students.length,
                         itemBuilder: (context, index) {
                           final student = _students[index];
-                          final isSelected = _selectedStudentId == student.id;
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: ListTile(

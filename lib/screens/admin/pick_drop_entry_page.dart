@@ -320,7 +320,7 @@ class _PickDropFormState extends State<_PickDropForm> {
                   ),
                   const SizedBox(height: 5),
                   DropdownButtonFormField<String>(
-                    value: _pickDropType,
+                    initialValue: _pickDropType,
                     isDense: true,
                     decoration: _inputDecoration(),
                     items: const [

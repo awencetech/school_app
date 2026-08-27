@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
-import 'admin_detail_page.dart';
-import 'content_edit_screen.dart';
-import 'add_options.dart';
 // kept minimal: no direct screen imports required for this page
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -37,6 +34,18 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                 'label': 'Add',
                 'icon': Icons.add_circle_outline,
               },
+              {
+                'label': 'Know Your School',
+                'icon': Icons.school_outlined,
+              },
+              {
+                'label': 'Student',
+                'icon': Icons.people_outline,
+              },
+              {
+                'label': 'Staff',
+                'icon': Icons.badge_outlined,
+              },
             ];
 
             return GridView.builder(
@@ -52,14 +61,20 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                 return InkWell(
                   onTap: () {
                     if (index == 0) {
-                      // Main Edit
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AdminDetailPage()),
-                      );
+                      Navigator.of(context).pushNamed(AppRoutes.adminMainEdit);
                     } else if (index == 1) {
-                      // Add - opens Add Options Screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AddOptions()),
+                      Navigator.of(context).pushNamed(AppRoutes.adminAdd);
+                    } else if (index == 2) {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.adminKnowYourSchool,
+                      );
+                    } else if (index == 3) {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.adminStudentOptions,
+                      );
+                    } else if (index == 4) {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.adminStaffOptions,
                       );
                     }
                   },

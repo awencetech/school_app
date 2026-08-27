@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
               final titleText = splashConfig.title.isNotEmpty ? splashConfig.title : (info?.name ?? 'SCHOOL NAME');
               final subtitleText = splashConfig.subtitle.isNotEmpty ? splashConfig.subtitle : (info?.motto ?? 'Motto goes here');
-              final sinceText = 'Since ${splashConfig.since ?? info?.since ?? '1987'}';
+              final sinceText = 'Since ${splashConfig.since.isNotEmpty ? splashConfig.since : (info?.since ?? '1987')}';
 
               return Center(
                 child: ConstrainedBox(
@@ -119,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen> {
                             color: AppColors.white.withValues(alpha: 0.85),
                           ),
                         ),
-                        if ((splashConfig.quote ?? '').trim().isNotEmpty) ...[
+                        if (splashConfig.quote.trim().isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
                             '"${splashConfig.quote}"',

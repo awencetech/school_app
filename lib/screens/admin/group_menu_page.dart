@@ -94,12 +94,6 @@ class GroupMenuPage extends StatelessWidget {
       Color(0xff6366f1),
       AppRoutes.teacherEditOnlineAssessment,
     ),
-    _GroupMenuItem(
-      'Group Info Edit',
-      Icons.edit_note,
-      Color(0xff4f46e5),
-      AppRoutes.teacherEditGroupInfoEdit,
-    ),
   ];
 
   Future<void> _openItem(BuildContext context, _GroupMenuItem item) async {

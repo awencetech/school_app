@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../models/group.dart';
 import '../../models/group_event.dart';
+import '../../routes/app_routes.dart';
 import '../../services/group_event_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 enum _CalendarView { month, week, day }
@@ -15,10 +18,12 @@ class FutureEventCalendarPage extends StatefulWidget {
     super.key,
     required this.groupId,
     required this.groupName,
+    this.isEdit = false,
   });
 
   final String groupId;
   final String groupName;
+  final bool? isEdit;
 
   @override
   State<FutureEventCalendarPage> createState() =>
@@ -34,6 +39,15 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   bool _isLoading = true;
   String? _errorMessage;
   int _selectedBottomIndex = 2;
+
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(AppRoutes.main);
+    }
+  }
 
   @override
   void initState() {
@@ -125,7 +139,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
         title: Text('Future Events', style: AppTextStyles.appTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goBack,
         ),
       ),
       body: SingleChildScrollView(
@@ -133,16 +147,18 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '${widget.groupName} Upcoming Events!',
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primaryText,
+            if (widget.isEdit != true) ...[
+              Text(
+                '${widget.groupName} Upcoming Events!',
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primaryText,
+                ),
               ),
-            ),
-            const SizedBox(height: 5),
-            _buildCalendarToolbar(),
+              const SizedBox(height: 5),
+              _buildCalendarToolbar(),
+            ],
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 48),
@@ -150,6 +166,8 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
               )
             else if (_errorMessage != null)
               _buildErrorState()
+            else if (widget.isEdit == true)
+              _buildEditContent()
             else if (_view == _CalendarView.day)
               _buildDayView()
             else ...[
@@ -314,7 +332,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
       margin: const EdgeInsets.only(top: 2),
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
       decoration: BoxDecoration(
-        color: AppColors.yellowButton.withValues(alpha: 0.28),
+          color: _eventColor(event).withValues(alpha: 0.28),
         borderRadius: BorderRadius.circular(2),
       ),
       child: Text(
@@ -323,8 +341,9 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
         overflow: TextOverflow.ellipsis,
         style: GoogleFonts.poppins(
           fontSize: 7,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primaryText,
+            fontWeight: FontWeight.w600,
+            color: _eventTextColor(event),
+            backgroundColor: _eventColor(event),
         ),
       ),
     );
@@ -355,6 +374,119 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
           ),
       ],
     );
+  }
+
+  Color _eventColor(GroupEvent event) {
+    final value = event.color.replaceFirst('#', '');
+    final parsed = int.tryParse(value, radix: 16);
+    return parsed == null ? AppColors.yellowButton : Color(0xFF000000 | parsed);
+  }
+
+  Color _eventTextColor(GroupEvent event) {
+    final color = _eventColor(event);
+    final brightness = ThemeData.estimateBrightnessForColor(color);
+    return brightness == Brightness.dark ? Colors.white : Colors.black;
+  }
+
+  Widget _buildEditContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.icon(
+            onPressed: () => _openEventForm(),
+            icon: const Icon(Icons.add, size: 17),
+            label: const Text('Add event'),
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (_events.isEmpty) _buildMessage('No upcoming events'),
+        ..._events.map(
+          (event) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: Border(left: BorderSide(color: _eventColor(event), width: 4)),
+            child: ListTile(
+              title: Text(
+                event.title,
+                style: TextStyle(
+                  color: _eventTextColor(event),
+                  backgroundColor: _eventColor(event),
+                ),
+              ),
+              subtitle: Text(
+                '${_dateTitle(event.startDate)}\n${_eventDetails(event)}',
+              ),
+              isThreeLine: true,
+              trailing: Wrap(
+                children: [
+                  IconButton(
+                    tooltip: 'Edit event',
+                    onPressed: () => _openEventForm(event),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete event',
+                    onPressed: () => _deleteEvent(event),
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openEventForm([GroupEvent? event]) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _GroupEventForm(
+          service: _eventService,
+          groupId: widget.groupId,
+          groupName: widget.groupName,
+          event: event,
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      Navigator.of(context).pushReplacementNamed(
+        AppRoutes.teacherFutureEventCalendar,
+        arguments: Group(id: widget.groupId, name: widget.groupName),
+      );
+    }
+  }
+
+  Future<void> _deleteEvent(GroupEvent event) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete event?'),
+        content: Text('Delete "${event.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _eventService.deleteEvent(event);
+      if (mounted) _loadEvents();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to delete event: $error')),
+        );
+      }
+    }
   }
 
   Widget _buildMessage(String message, {bool isError = false}) {
@@ -437,6 +569,286 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     'October',
     'November',
     'December',
+  ];
+}
+
+class _GroupEventForm extends StatefulWidget {
+  const _GroupEventForm({
+    required this.service,
+    required this.groupId,
+    required this.groupName,
+    this.event,
+  });
+
+  final GroupEventService service;
+  final String groupId;
+  final String groupName;
+  final GroupEvent? event;
+
+  @override
+  State<_GroupEventForm> createState() => _GroupEventFormState();
+}
+
+class _GroupEventFormState extends State<_GroupEventForm> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _startTimeController;
+  late final TextEditingController _endTimeController;
+  late DateTime _date;
+  late String _color;
+  String? _selectedGroupId;
+  List<Group> _groups = [];
+  bool _groupsLoading = true;
+  bool _saving = false;
+  String? _error;
+
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(AppRoutes.main);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final event = widget.event;
+    _titleController = TextEditingController(text: event?.title ?? '');
+    _descriptionController = TextEditingController(text: event?.description ?? '');
+    _startTimeController = TextEditingController(text: event?.startTime ?? '');
+    _endTimeController = TextEditingController(text: event?.endTime ?? '');
+    _date = event?.startDate ?? DateUtils.dateOnly(DateTime.now());
+    _color = event?.color ?? '#FF9800';
+    _selectedGroupId = widget.groupId;
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    try {
+      final groups = await GroupService().getGroups();
+      if (!mounted) return;
+      Group? matchingGroup;
+      for (final group in groups) {
+        final groupEventId = group.id.toUpperCase().startsWith('SAMUNI-2022-')
+            ? group.id
+            : generateGroupDatabaseId(group.name);
+        if (groupEventId == widget.groupId ||
+          group.id == widget.groupId ||
+            group.name.trim() == widget.groupName.trim()) {
+          matchingGroup = group;
+          break;
+        }
+      }
+      setState(() {
+        _groups = groups;
+        _selectedGroupId = matchingGroup == null
+            ? _selectedGroupId
+            : _eventGroupId(matchingGroup);
+        _groupsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _groupsLoading = false);
+    }
+  }
+
+  String _eventGroupId(Group group) {
+    final id = group.id.trim();
+    if (id.toUpperCase().startsWith('SAMUNI-2022-')) return id;
+    return generateGroupDatabaseId(group.name.isEmpty ? id : group.name);
+  }
+
+  String? _dropdownGroupId() {
+    for (final group in _groups) {
+      if (_eventGroupId(group) == _selectedGroupId) return _selectedGroupId;
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (selected != null) setState(() => _date = DateUtils.dateOnly(selected));
+  }
+
+  Future<void> _save() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _error = 'Title is required.');
+      return;
+    }
+    final groupId = _selectedGroupId;
+    if (groupId == null || groupId.isEmpty || groupId == 'SAMUNI-2022-Unknown') {
+      setState(() => _error = 'Select a group before saving the event.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final event = GroupEvent(
+      id: widget.event?.id ?? '',
+      groupId: groupId,
+      title: title,
+      startDate: _date,
+      endDate: _date,
+      startTime: _emptyToNull(_startTimeController.text),
+      endTime: _emptyToNull(_endTimeController.text),
+      description: _descriptionController.text.trim(),
+      createdBy: widget.event?.createdBy ?? '',
+      color: _color,
+    );
+    try {
+      if (widget.event == null) {
+        await widget.service.createEvent(event);
+      } else {
+        await widget.service.updateEvent(event);
+      }
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = 'Unable to save event: $error';
+        });
+      }
+    }
+  }
+
+  String? _emptyToNull(String value) {
+    final text = value.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.event != null;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        centerTitle: true,
+        title: Text(isEditing ? 'Edit Event' : 'Add Event', style: AppTextStyles.appTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: _goBack,
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _dropdownGroupId(),
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Select group'),
+              items: _groups
+                  .map(
+                    (group) => DropdownMenuItem<String>(
+                      value: _eventGroupId(group),
+                      child: Text(group.name),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _groupsLoading
+                  ? null
+                  : (value) => setState(() => _selectedGroupId = value),
+            ),
+            const SizedBox(height: 12),
+            TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Title')),
+            const SizedBox(height: 12),
+            TextField(
+              readOnly: true,
+              controller: TextEditingController(text: _formatDate(_date)),
+              onTap: _pickDate,
+              decoration: const InputDecoration(labelText: 'Date', suffixIcon: Icon(Icons.calendar_month)),
+            ),
+            const SizedBox(height: 12),
+            TextField(controller: _descriptionController, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: TextField(controller: _startTimeController, decoration: const InputDecoration(labelText: 'Start time'))),
+                const SizedBox(width: 12),
+                Expanded(child: TextField(controller: _endTimeController, decoration: const InputDecoration(labelText: 'End time'))),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('Event Color', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              children: _colorOptions.map((color) {
+                final selected = _color == color;
+                return GestureDetector(
+                  onTap: () => setState(() => _color = color),
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: _parseColor(color),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected ? AppColors.primaryText : Colors.transparent,
+                        width: 3,
+                      ),
+                    ),
+                    child: selected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+                  ),
+                );
+              }).toList(),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+            ],
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: const Icon(Icons.save_outlined),
+              label: Text(_saving ? 'Saving...' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: AdminBottomNavigationBar(
+        currentIndex: 2,
+        onItemSelected: (_) {},
+      ),
+    );
+  }
+
+  Color _parseColor(String value) {
+    final parsed = int.tryParse(value.replaceFirst('#', ''), radix: 16);
+    return parsed == null ? AppColors.yellowButton : Color(0xFF000000 | parsed);
+  }
+
+  static const _colorOptions = [
+    '#FF9800',
+    '#2196F3',
+    '#4CAF50',
+    '#E91E63',
+    '#9C27B0',
+    '#607D8B',
   ];
 }
 

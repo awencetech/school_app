@@ -59,6 +59,28 @@ class AppRouter {
   AppRouter._();
   static bool _splashShown = false;
 
+  static Group _eventGroupFromArguments(Object? arguments) {
+    if (arguments is Group) return arguments;
+    if (arguments is Map) {
+      final values = Map<String, dynamic>.from(arguments);
+      final name = values['name']?.toString().trim() ?? '';
+      final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
+      if (name.isNotEmpty || id.isNotEmpty) {
+        return Group(id: id.isEmpty ? name : id, name: name.isEmpty ? id : name);
+      }
+    }
+    return Group(id: 'unknown', name: 'Unknown');
+  }
+
+  static String _eventGroupId(Group group) {
+    final id = group.id.trim();
+    if (id.isNotEmpty && id.toLowerCase() != 'unknown') {
+      if (id.toUpperCase().startsWith('SAMUNI-2022-')) return id;
+      return generateGroupDatabaseId(group.name.isEmpty ? id : group.name);
+    }
+    return generateGroupDatabaseId(group.name);
+  }
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final page = switch (settings.name) {
       // On first route resolution in this app session, show splash first so
@@ -115,10 +137,11 @@ class AppRouter {
       })(),
         AppRoutes.teacherFutureEventCalendar ||
           AppRoutes.teacherEditFutureEventCalendar => (() {
-        final group = settings.arguments as Group;
+        final group = _eventGroupFromArguments(settings.arguments);
         return FutureEventCalendarPage(
-          groupId: generateGroupDatabaseId(group.name),
+          groupId: _eventGroupId(group),
           groupName: group.name,
+          isEdit: settings.name == AppRoutes.teacherEditFutureEventCalendar,
         );
       })(),
       AppRoutes.teacherHomeworkToday || AppRoutes.teacherEditHomeworkToday => (() {

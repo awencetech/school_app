@@ -23,7 +23,9 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final groupDatabaseId = generateGroupDatabaseId(widget.group.name);
+    final groupDatabaseId = widget.group.id.trim().isNotEmpty
+        ? widget.group.id.trim()
+        : generateGroupDatabaseId(widget.group.name);
 
     return Scaffold(
       backgroundColor: AppColors.background,

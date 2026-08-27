@@ -10,6 +10,7 @@ class GroupEvent {
     this.endTime,
     this.description = '',
     this.createdBy = '',
+    this.color = '#FF9800',
   });
 
   final String id;
@@ -21,6 +22,7 @@ class GroupEvent {
   final String? endTime;
   final String description;
   final String createdBy;
+  final String color;
 
   factory GroupEvent.fromJson(Map<String, dynamic> json) {
     final startDate = _parseDate(
@@ -43,8 +45,25 @@ class GroupEvent {
       endTime: _optionalString(json['endTime'] ?? json['end_time']),
       description: (json['description'] ?? '').toString(),
       createdBy: (json['createdBy'] ?? '').toString(),
+      color: (json['color'] ?? '#FF9800').toString(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'groupId': groupId,
+    'title': title,
+    'startDate': _dateOnly(startDate),
+    'endDate': endDate == null ? null : _dateOnly(endDate!),
+    'startTime': startTime,
+    'endTime': endTime,
+    'description': description,
+    'createdBy': createdBy,
+    'color': color,
+  };
+
+  static String _dateOnly(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   static DateTime? _parseDate(dynamic value) {
     if (value is DateTime) return value;

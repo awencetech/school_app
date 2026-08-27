@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/group.dart';
 import 'group_state_service.dart';
+import 'preferences_service.dart';
 
 class GroupRemoteData {
   const GroupRemoteData({
@@ -23,6 +24,8 @@ class GroupService {
   GroupService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
+  static const _groupsCacheKey = 'api_groups_cache_v1';
+  static Future<List<Group>>? _groupsRequest;
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
@@ -36,7 +39,49 @@ class GroupService {
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
-  Future<List<Group>> getGroups() async {
+  Future<List<Group>> getGroups({
+    bool refresh = false,
+    void Function(List<Group>)? onRefresh,
+  }) async {
+    final cached = await _readCachedGroups();
+    if (cached != null && !refresh) {
+      if (onRefresh != null) _refreshGroups(onRefresh);
+      return cached;
+    }
+
+    return _fetchGroups();
+  }
+
+  Future<void> _refreshGroups(void Function(List<Group>) onRefresh) async {
+    try {
+      onRefresh(await _fetchGroups());
+    } catch (_) {
+      // Keep cached data when the background refresh fails.
+    }
+  }
+
+  Future<List<Group>> _fetchGroups() {
+    if (_groupsRequest != null) return _groupsRequest!;
+    _groupsRequest = _requestGroups().whenComplete(() => _groupsRequest = null);
+    return _groupsRequest!;
+  }
+
+  Future<List<Group>?> _readCachedGroups() async {
+    final raw = await PreferencesService.getString(_groupsCacheKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final payload = jsonDecode(raw);
+      if (payload is! List) return null;
+      return payload
+          .whereType<Map>()
+          .map((item) => Group.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<Group>> _requestGroups() async {
     final resp = await http
         .get(_uri('/api/groups'))
         .timeout(const Duration(seconds: 15));
@@ -58,6 +103,10 @@ class GroupService {
         .toList();
 
     groups.sort((a, b) => a.order.compareTo(b.order));
+    await PreferencesService.setString(
+      _groupsCacheKey,
+      jsonEncode(groups.map((group) => group.toJson()).toList()),
+    );
     return groups;
   }
 

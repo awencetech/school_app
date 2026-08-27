@@ -48,10 +48,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     super.dispose();
   }
 
-  Future<void> _loadGroups() async {
+  Future<void> _loadGroups({bool refresh = false}) async {
     setState(() => _isLoading = true);
     try {
-      final groups = await _groupService.getGroups();
+      final groups = await _groupService.getGroups(refresh: refresh);
       if (!mounted) return;
       setState(() {
         _groups = groups..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -123,7 +123,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         );
       }
 
-      await _loadGroups();
+      await _loadGroups(refresh: true);
       _resetForm();
       if (mounted) Navigator.of(context).pop(true);
     } on ApiException catch (error) {
@@ -170,7 +170,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Group deleted successfully')),
       );
-      await _loadGroups();
+      await _loadGroups(refresh: true);
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;

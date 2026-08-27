@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
@@ -18,6 +19,7 @@ const uploadDirectory = path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadDirectory, { recursive: true });
 
 app.use(express.json({ limit: '10mb' }));
+app.use(compression());
 app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin === '*' ? '*' : origin);
@@ -31,7 +33,22 @@ app.use((req, res, next) => {
 
   return next();
 });
-app.use('/uploads', express.static(uploadDirectory));
+app.use('/uploads', express.static(uploadDirectory, {
+  maxAge: '7d',
+  immutable: true,
+}));
+app.use('/api/mainpage-info', (req, res, next) => {
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+  }
+  next();
+});
+app.use('/api/groups', (req, res, next) => {
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'private, max-age=15, stale-while-revalidate=60');
+  }
+  next();
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -47,6 +64,17 @@ let eventsCollection;
 let legacyEventsCollection;
 let todayInClassCollection;
 let groupMessagesCollection;
+
+async function ensureIndexes(db) {
+  await Promise.all([
+    groupsCollection.createIndex({ id: 1 }, { sparse: true }),
+    usersCollection.createIndex({ userId: 1 }, { sparse: true }),
+    usersCollection.createIndex({ email: 1 }, { sparse: true }),
+    eventsCollection.createIndex({ groupId: 1, startDate: 1 }),
+    todayInClassCollection.createIndex({ groupId: 1, date: 1 }),
+    groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
+  ]);
+}
 
 const legacyGroupSeed = [
   { name: 'NCC2022', id: 'NCC2022', type: 'Other', description: 'NCC2022', code: 'NCC2022', status: 'Active', year: '2022' },
@@ -73,6 +101,7 @@ async function connectMongo() {
     todayInClassCollection = db.collection('todayInClass');
     groupMessagesCollection = db.collection('groupMessages');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
+    await ensureIndexes(db);
     await migrateLegacyEvents();
   }
 
@@ -1139,6 +1168,9 @@ app.get('/api/images/:id', async (req, res) => {
     downloadStream.on('file', (file) => {
       fileFound = true;
       const contentType = file.metadata?.contentType || 'application/octet-stream';
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      const uploadedAt = file.uploadDate ? file.uploadDate.getTime() : 0;
+      res.setHeader('ETag', `"${file._id.toString()}-${file.length}-${uploadedAt}"`);
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Length', file.length);
     });
@@ -1179,6 +1211,9 @@ app.get('/uploads/:filename', async (req, res) => {
     const downloadStream = imageBucket.openDownloadStream(fileDoc._id);
     const contentType = fileDoc.metadata?.contentType || fileDoc.contentType || 'application/octet-stream';
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    const uploadedAt = fileDoc.uploadDate ? fileDoc.uploadDate.getTime() : 0;
+    res.setHeader('ETag', `"${fileDoc._id.toString()}-${fileDoc.length}-${uploadedAt}"`);
     res.setHeader('Content-Length', fileDoc.length);
     downloadStream.pipe(res);
   } catch (error) {

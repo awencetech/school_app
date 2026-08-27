@@ -51,15 +51,12 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
     });
 
     try {
-      final groups = await _groupService.getGroups();
+      final groups = await _groupService.getGroups(
+        onRefresh: _applyGroups,
+      );
       if (!mounted) return;
 
-      final ordered = [...groups]..sort((a, b) => a.order.compareTo(b.order));
-      setState(() {
-        allGroups = ordered;
-        filteredGroups = ordered;
-        _isLoading = false;
-      });
+      _applyGroups(groups);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -69,6 +66,16 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
             : 'Unable to load groups.';
       });
     }
+  }
+
+  void _applyGroups(List<Group> groups) {
+    if (!mounted) return;
+    final ordered = [...groups]..sort((a, b) => a.order.compareTo(b.order));
+    setState(() {
+      allGroups = ordered;
+      filteredGroups = ordered;
+      _isLoading = false;
+    });
   }
 
   void _onSearchChanged(String query) {

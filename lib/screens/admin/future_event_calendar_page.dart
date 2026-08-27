@@ -41,12 +41,10 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   int _selectedBottomIndex = 2;
 
   void _goBack() {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    } else {
-      navigator.pushReplacementNamed(AppRoutes.main);
-    }
+    Navigator.of(context).pushReplacementNamed(
+      AppRoutes.teacherGroupClasses,
+      arguments: Group(id: widget.groupId, name: widget.groupName),
+    );
   }
 
   @override
@@ -328,26 +326,100 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   }
 
   Widget _eventChip(GroupEvent event) {
-    return Container(
-      margin: const EdgeInsets.only(top: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      decoration: BoxDecoration(
+    return InkWell(
+      onTap: () => _showEventDetails(event),
+      borderRadius: BorderRadius.circular(2),
+      child: Container(
+        margin: const EdgeInsets.only(top: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+        decoration: BoxDecoration(
           color: _eventColor(event).withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: Text(
-        event.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.poppins(
-          fontSize: 7,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Text(
+          event.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(
+            fontSize: 7,
             fontWeight: FontWeight.w600,
             color: _eventTextColor(event),
             backgroundColor: _eventColor(event),
+          ),
         ),
       ),
     );
   }
+
+  Future<void> _showEventDetails(GroupEvent event) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        title: Row(
+          children: [
+            const Expanded(child: Text('Calendar Event Detail')),
+            IconButton(
+              tooltip: 'Close',
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                event.title,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: _eventTextColor(event),
+                  backgroundColor: _eventColor(event),
+                ),
+              ),
+              if (event.description.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text('Description:'),
+                const SizedBox(height: 3),
+                Text(event.description),
+              ],
+              const SizedBox(height: 12),
+              _detailRow('Start Date', _formatEventDate(event.startDate)),
+              _detailRow(
+                'End Date',
+                _formatEventDate(event.endDate ?? event.startDate),
+              ),
+              if (event.startTime != null)
+                _detailRow('Start Time', event.startTime!),
+              if (event.endTime != null)
+                _detailRow('End Time', event.endTime!),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text('$label: $value'),
+    );
+  }
+
+  String _formatEventDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   Widget _buildDayView() {
     final events = _eventsForDate(_selectedDate);

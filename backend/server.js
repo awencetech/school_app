@@ -1023,7 +1023,10 @@ app.put('/api/mainpage-info/splash', async (req, res) => {
     const current = (await getMainPageDocument()) || buildDefaultDocument();
     const updated = await upsertMainPageDocument({
       ...current,
-      splashScreen: req.body || current.splashScreen,
+      splashScreen: {
+        ...(current.splashScreen || {}),
+        ...(req.body || {}),
+      },
     });
     return res.json(updated);
   } catch (error) {

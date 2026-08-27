@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/staff_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/staff_service.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -134,10 +135,14 @@ class StaffFormPage extends StatefulWidget {
 class _StaffFormPageState extends State<StaffFormPage> {
   final _formKey = GlobalKey<FormState>();
   final StaffService _service = StaffService();
+  final UserService _userService = UserService();
   late final Map<String, TextEditingController> _controllers;
   Uint8List? _imageBytes;
   String _imageName = '';
   String _imageUrl = '';
+  List<String> _availableEmployeeIds = [];
+  bool _loadingEmployeeIds = true;
+  String? _employeeIdLoadError;
   bool _saving = false;
 
   @override
@@ -155,6 +160,39 @@ class _StaffFormPageState extends State<StaffFormPage> {
       'Role': TextEditingController(text: staff?.role ?? ''),
     };
     _imageUrl = staff?.imageUrl ?? '';
+    _loadAvailableEmployeeIds();
+  }
+
+  Future<void> _loadAvailableEmployeeIds() async {
+    try {
+      final users = await _userService.getUsers(role: 'staff');
+      final staff = await _service.getStaff();
+      final usedIds = staff
+          .where((item) => item.id != widget.staff?.id)
+          .map((item) => item.employeeId.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final ids = users
+          .map((user) => user.userId.trim())
+          .where((id) => id.isNotEmpty && !usedIds.contains(id))
+          .toSet()
+          .toList();
+      final currentId = widget.staff?.employeeId.trim();
+      if (currentId != null && currentId.isNotEmpty && !ids.contains(currentId)) {
+        ids.insert(0, currentId);
+      }
+      if (!mounted) return;
+      setState(() {
+        _availableEmployeeIds = ids;
+        _loadingEmployeeIds = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingEmployeeIds = false;
+        _employeeIdLoadError = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   @override
@@ -225,12 +263,33 @@ class _StaffFormPageState extends State<StaffFormPage> {
           children: [
             for (final entry in _controllers.entries) Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: TextFormField(
-                controller: entry.value,
-                validator: ['About', 'Hobbies & Interest'].contains(entry.key) ? null : _required,
-                maxLines: ['About', 'Hobbies & Interest'].contains(entry.key) ? 4 : 1,
-                decoration: InputDecoration(labelText: entry.key, border: const OutlineInputBorder()),
-              ),
+              child: entry.key == 'Employee ID'
+                  ? DropdownButtonFormField<String>(
+                      key: ValueKey(_loadingEmployeeIds),
+                      initialValue: _controllers['Employee ID']!.text.isEmpty ||
+                          !_availableEmployeeIds.contains(_controllers['Employee ID']!.text)
+                          ? null
+                          : _controllers['Employee ID']!.text,
+                      items: _availableEmployeeIds
+                          .map((id) => DropdownMenuItem(value: id, child: Text(id)))
+                          .toList(),
+                      onChanged: _loadingEmployeeIds
+                          ? null
+                          : (value) => setState(() => _controllers['Employee ID']!.text = value ?? ''),
+                      validator: _required,
+                      decoration: InputDecoration(
+                        labelText: 'Employee ID',
+                        border: const OutlineInputBorder(),
+                        helperText: _employeeIdLoadError,
+                        helperStyle: const TextStyle(color: Colors.red),
+                      ),
+                    )
+                  : TextFormField(
+                      controller: entry.value,
+                      validator: ['About', 'Hobbies & Interest'].contains(entry.key) ? null : _required,
+                      maxLines: ['About', 'Hobbies & Interest'].contains(entry.key) ? 4 : 1,
+                      decoration: InputDecoration(labelText: entry.key, border: const OutlineInputBorder()),
+                    ),
             ),
             Row(
               children: [

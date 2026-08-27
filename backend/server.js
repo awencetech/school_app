@@ -163,6 +163,19 @@ function sanitizeStaffForResponse(doc) {
     hobbiesAndInterest: doc.hobbiesAndInterest || '',
     role: doc.role || '',
     imageUrl: doc.imageUrl || '',
+    mobileNo: doc.mobileNo || '',
+    shareableContactNo: doc.shareableContactNo || '',
+    mailId: doc.mailId || '',
+    address: doc.address || '',
+    briefIntroduction: doc.briefIntroduction || '',
+    sports: doc.sports || '',
+    sportsTrainingDetails: doc.sportsTrainingDetails || '',
+    sportsTeamClub: doc.sportsTeamClub || '',
+    achievements: doc.achievements || '',
+    extraCurricularActivities: doc.extraCurricularActivities || '',
+    extraCurricularTeamClub: doc.extraCurricularTeamClub || '',
+    professionalBodyAssociation: doc.professionalBodyAssociation || '',
+    whatYouDo: doc.whatYouDo || '',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -871,18 +884,36 @@ app.post('/api/staff', async (req, res) => {
     const required = ['name', 'designation', 'employeeCategory', 'employeeId', 'teaches', 'role'];
     const missing = required.find((field) => !String(body[field] || '').trim());
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
+    const employeeId = String(body.employeeId).trim();
+    const staffUser = await usersCollection.findOne({ userId: employeeId, role: 'staff' });
+    if (!staffUser) return res.status(422).json({ message: 'Employee ID must belong to a staff user.' });
+    const existingStaff = await staffInfoCollection.findOne({ employeeId });
+    if (existingStaff) return res.status(409).json({ message: 'This Employee ID is already assigned.' });
 
     const now = new Date().toISOString();
     const document = {
       name: String(body.name).trim(),
       designation: String(body.designation).trim(),
       employeeCategory: String(body.employeeCategory).trim(),
-      employeeId: String(body.employeeId).trim(),
+      employeeId,
       teaches: String(body.teaches).trim(),
       about: String(body.about || '').trim(),
       hobbiesAndInterest: String(body.hobbiesAndInterest || '').trim(),
       role: String(body.role).trim(),
       imageUrl: String(body.imageUrl || '').trim(),
+      mobileNo: String(body.mobileNo || '').trim(),
+      shareableContactNo: String(body.shareableContactNo || '').trim(),
+      mailId: String(body.mailId || '').trim(),
+      address: String(body.address || '').trim(),
+      briefIntroduction: String(body.briefIntroduction || '').trim(),
+      sports: String(body.sports || '').trim(),
+      sportsTrainingDetails: String(body.sportsTrainingDetails || '').trim(),
+      sportsTeamClub: String(body.sportsTeamClub || '').trim(),
+      achievements: String(body.achievements || '').trim(),
+      extraCurricularActivities: String(body.extraCurricularActivities || '').trim(),
+      extraCurricularTeamClub: String(body.extraCurricularTeamClub || '').trim(),
+      professionalBodyAssociation: String(body.professionalBodyAssociation || '').trim(),
+      whatYouDo: String(body.whatYouDo || '').trim(),
       createdAt: now,
       updatedAt: now,
     };
@@ -902,16 +933,34 @@ app.put('/api/staff/:id', async (req, res) => {
     const required = ['name', 'designation', 'employeeCategory', 'employeeId', 'teaches', 'role'];
     const missing = required.find((field) => !String(body[field] || '').trim());
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
+    const employeeId = String(body.employeeId).trim();
+    const staffUser = await usersCollection.findOne({ userId: employeeId, role: 'staff' });
+    if (!staffUser) return res.status(422).json({ message: 'Employee ID must belong to a staff user.' });
+    const existingStaff = await staffInfoCollection.findOne({ employeeId, _id: { $ne: id } });
+    if (existingStaff) return res.status(409).json({ message: 'This Employee ID is already assigned.' });
     const updates = {
       name: String(body.name).trim(),
       designation: String(body.designation).trim(),
       employeeCategory: String(body.employeeCategory).trim(),
-      employeeId: String(body.employeeId).trim(),
+      employeeId,
       teaches: String(body.teaches).trim(),
       about: String(body.about || '').trim(),
       hobbiesAndInterest: String(body.hobbiesAndInterest || '').trim(),
       role: String(body.role).trim(),
       imageUrl: String(body.imageUrl || '').trim(),
+      mobileNo: String(body.mobileNo || '').trim(),
+      shareableContactNo: String(body.shareableContactNo || '').trim(),
+      mailId: String(body.mailId || '').trim(),
+      address: String(body.address || '').trim(),
+      briefIntroduction: String(body.briefIntroduction || '').trim(),
+      sports: String(body.sports || '').trim(),
+      sportsTrainingDetails: String(body.sportsTrainingDetails || '').trim(),
+      sportsTeamClub: String(body.sportsTeamClub || '').trim(),
+      achievements: String(body.achievements || '').trim(),
+      extraCurricularActivities: String(body.extraCurricularActivities || '').trim(),
+      extraCurricularTeamClub: String(body.extraCurricularTeamClub || '').trim(),
+      professionalBodyAssociation: String(body.professionalBodyAssociation || '').trim(),
+      whatYouDo: String(body.whatYouDo || '').trim(),
       updatedAt: new Date().toISOString(),
     };
     const result = await staffInfoCollection.updateOne({ _id: id }, { $set: updates });

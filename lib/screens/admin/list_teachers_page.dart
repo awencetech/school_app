@@ -280,7 +280,14 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _compactAction(Icons.info_outline, 'Goto'),
+                  _compactAction(
+                    Icons.info_outline,
+                    'Goto',
+                    () => Navigator.of(context).pushNamed(
+                      AppRoutes.adminEmployeeInfo,
+                      arguments: teacher,
+                    ),
+                  ),
                   _compactAction(Icons.info_outline, 'Info'),
                 ],
               ),
@@ -304,9 +311,9 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
     );
   }
 
-  Widget _compactAction(IconData icon, String label) {
+  Widget _compactAction(IconData icon, String label, [VoidCallback? onPressed]) {
     return TextButton.icon(
-      onPressed: () {},
+      onPressed: onPressed ?? () {},
       icon: Icon(icon, size: 13, color: Colors.grey),
       label: Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
       style: TextButton.styleFrom(

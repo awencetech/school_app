@@ -16,8 +16,17 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/cards/important_news_marquee.dart';
+import '../../widgets/dashboard_extra_quick_access.dart';
+import '../../widgets/dashboard_icon_grid.dart';
 import '../support/support_screen.dart';
 import '../messages/messages_page.dart';
+import '../staff/staff_campaigns_page.dart';
+import '../staff/staff_request_message_page.dart';
+import '../staff/staff_write_message_page.dart';
+import '../student/student_check_approve_page.dart';
+import '../student/student_group_class_bus_page.dart';
+import '../student/student_ptm_page.dart';
+import '../student/student_uni_route_page.dart';
 import 'class_demography_page.dart';
 
 /// Admin dashboard page matching the requested layout.
@@ -92,7 +101,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       color: const Color(0xFF1AA596),
                                       alignment: Alignment.center,
                                       child: Text(
-                                        'School Poster\n(W-1920 x H-1080)',
+                                        'School Poster\\n(W-1920 x H-1080)',
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.poppins(
                                           fontSize: 22,
@@ -115,7 +124,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     color: const Color(0xFF1AA596),
                                     alignment: Alignment.center,
                                     child: Text(
-                                      'School Poster\n(W-1920 x H-1080)',
+                                      'School Poster\\n(W-1920 x H-1080)',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.poppins(
                                         fontSize: 22,
@@ -134,7 +143,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               color: const Color(0xFF1AA596),
                               alignment: Alignment.center,
                               child: Text(
-                                'School Poster\n(W-1920 x H-1080)',
+                                'School Poster\\n(W-1920 x H-1080)',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.poppins(
                                   fontSize: 22,
@@ -187,62 +196,105 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
+                        child: DashboardExtraQuickAccess(
                           crossAxisCount: 5,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 0.95,
-                          children: [
-                            const _QuickAction(
-                              icon: Icons.visibility,
-                              label: 'HW/CW\nView',
-                              color: Color(0xFFEF4444),
-                            ),
-                            const _QuickAction(
-                              icon: Icons.calendar_month,
-                              label: 'Event\nCalendar',
-                              color: Color(0xFFF97316),
-                            ),
-                            const _QuickAction(
-                              icon: Icons.dashboard,
-                              label: 'Dashboard',
-                              color: Color(0xFF1E40AF),
-                            ),
-                            GestureDetector(
+                          leadingItems: [
+                            _QuickAction(
+                              icon: Icons.message,
+                              label: 'Messages HW, CW',
+                              color: Color(0xFFFF7043),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => const MessagesPage(),
                                 ),
                               ),
-                              child: const _QuickAction(
-                                icon: Icons.edit,
-                                label: 'Write\nMessage',
-                                color: Color(0xFFDC2626),
+                            ),
+                            _QuickAction(
+                              icon: Icons.calendar_month,
+                              label: 'Calendar',
+                              color: Color(0xFFE53935),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.staffEventCalendar),
+                            ),
+                            _QuickAction(
+                              icon: Icons.dashboard,
+                              label: 'Dashboard Summary Info',
+                              color: Color(0xFF1E4D8F),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.staffOverviewDashboard),
+                            ),
+                            _QuickAction(
+                              icon: Icons.edit,
+                              label: 'Write Message',
+                              color: Color(0xFFBF360C),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const StaffWriteMessagePage(),
+                                ),
                               ),
                             ),
-                            const _QuickAction(
-                              icon: Icons.send,
-                              label: 'Emp Req\nMessage',
-                              color: Color(0xFFF59E0B),
+                            _QuickAction(
+                              icon: Icons.assignment,
+                              label: 'Request',
+                              color: Color(0xFFF4B400),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const StaffRequestMessagePage(),
+                                ),
+                              ),
                             ),
-                            const _QuickAction(
-                              icon: Icons.meeting_room,
-                              label: 'Meeting',
-                              color: Color(0xFF9333EA),
+                            _QuickAction(
+                              icon: Icons.fact_check,
+                              label: 'Campaign Survey',
+                              color: Color(0xFF8D6E63),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const StaffCampaignsPage(),
+                                ),
+                              ),
                             ),
-                            const _QuickAction(
-                              icon: Icons.task_alt,
-                              label: 'Staff To Do\nTasks',
-                              color: Color(0xFF2563EB),
-                            ),
-                            const _QuickAction(
-                              icon: Icons.event_available,
-                              label: 'PTM\nStatus',
-                              color: Color(0xFF15803D),
+                            _QuickAction(
+                              icon: Icons.assignment_turned_in,
+                              label: 'PTM',
+                              color: Color(0xFF5E7D1F),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const StudentPtmPage(),
+                                ),
+                              ),
                             ),
                           ],
+                          onGroupClassBusTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StudentGroupClassBusPage(),
+                            ),
+                          ),
+                          onCheckApproveTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StudentCheckApprovePage(),
+                            ),
+                          ),
+                          onUniRouteZ2Tap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StudentUniRoutePage(),
+                            ),
+                          ),
+                          onSp7Tap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StudentUniRoutePage(
+                                routeName: 'UNI-Route-SP7',
+                              ),
+                            ),
+                          ),
+                          onTrackTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const StudentUniRoutePage(routeName: 'Track'),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -260,13 +312,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       const SizedBox(height: 10),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 5,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.95,
+                        child: DashboardIconGrid(
                           children: [
                             _SchoolLinkChip(
                               icon: Icons.language,
@@ -357,13 +403,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       const SizedBox(height: 10),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 5,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.95,
+                        child: DashboardIconGrid(
                           children: [
                             _QuickAction(
                               icon: Icons.menu,
@@ -385,9 +425,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               label: 'List\nTeachers',
                               color: Color(0xFFF43F5E),
                               onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminListTeachers,
-                                );
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.adminListTeachers);
                               },
                             ),
                             _QuickAction(
@@ -497,12 +537,12 @@ class _QuickAction extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-            Container(
-              width: 32,
-              height: 32,
+          Container(
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: color,
-                borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 16, color: AppColors.white),
           ),
@@ -510,7 +550,7 @@ class _QuickAction extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 3,
             softWrap: true,
             overflow: TextOverflow.visible,
             style: GoogleFonts.poppins(
@@ -554,15 +594,15 @@ class _SchoolLinkChip extends StatelessWidget {
             ),
             child: Icon(icon, size: 16, color: AppColors.white),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.visible,
             style: GoogleFonts.poppins(
               fontSize: 10,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
               color: const Color(0xFF222222),
             ),
           ),

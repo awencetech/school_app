@@ -14,7 +14,14 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/staff_footer.dart';
+import '../../widgets/dashboard_extra_quick_access.dart';
+import '../../widgets/dashboard_icon_grid.dart';
 import '../support/support_screen.dart';
+import '../messages/messages_page.dart';
+import '../student/student_check_approve_page.dart';
+import '../student/student_group_class_bus_page.dart';
+import '../student/student_ptm_page.dart';
+import '../student/student_uni_route_page.dart';
 import 'staff_write_message_page.dart';
 import 'staff_request_message_page.dart';
 import 'staff_campaigns_page.dart';
@@ -122,41 +129,46 @@ class _StaffDashboardState extends State<StaffDashboard> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                    child: Text(
-                      'Quick Access',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF222222),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Quick Access',
+                            textAlign: TextAlign.left,
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF222222),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 0),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                    child: GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 0.95,
-                      children: [
+                    child: DashboardExtraQuickAccess(
+                      crossAxisCount: 5,
+                      leadingItems: [
                         _QuickAction(
-                          icon: Icons.assessment,
-                          label: 'Campaign\\nSurvey',
+                          icon: Icons.message,
+                          label: 'Messages HW, CW',
                           color: Color(0xFFFF7043),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const StaffCampaignsPage(),
+                              builder: (_) => const MessagesPage(),
                             ),
                           ),
                         ),
                         _QuickAction(
                           icon: Icons.calendar_month,
-                          label: 'Event\\nCalendar',
+                          label: 'Calendar',
                           color: Color(0xFFE53935),
                           onTap: () => Navigator.of(
                             context,
@@ -164,7 +176,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         ),
                         _QuickAction(
                           icon: Icons.dashboard,
-                          label: 'Dashboard',
+                          label: 'Dashboard Summary Info',
                           color: Color(0xFF1E4D8F),
                           onTap: () => Navigator.of(
                             context,
@@ -178,13 +190,13 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           ),
                           child: const _QuickAction(
                             icon: Icons.edit,
-                            label: 'Write\\nMessage',
+                            label: 'Write Message',
                             color: Color(0xFFBF360C),
                           ),
                         ),
                         _QuickAction(
-                          icon: Icons.send,
-                          label: 'Request\\nMessage',
+                          icon: Icons.assignment,
+                          label: 'Request',
                           color: Color(0xFFF4B400),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -192,7 +204,55 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                           ),
                         ),
+                        _QuickAction(
+                          icon: Icons.fact_check,
+                          label: 'Campaign Survey',
+                          color: Color(0xFF8D6E63),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StaffCampaignsPage(),
+                            ),
+                          ),
+                        ),
+                        _QuickAction(
+                          icon: Icons.assignment_turned_in,
+                          label: 'PTM',
+                          color: Color(0xFF5E7D1F),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StudentPtmPage(),
+                            ),
+                          ),
+                        ),
                       ],
+                      onGroupClassBusTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentGroupClassBusPage(),
+                        ),
+                      ),
+                      onCheckApproveTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentCheckApprovePage(),
+                        ),
+                      ),
+                      onUniRouteZ2Tap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentUniRoutePage(),
+                        ),
+                      ),
+                      onSp7Tap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentUniRoutePage(
+                            routeName: 'UNI-Route-SP7',
+                          ),
+                        ),
+                      ),
+                      onTrackTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const StudentUniRoutePage(routeName: 'Track'),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -256,17 +316,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 18,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.82,
+                          child: DashboardIconGrid(
                             children: [
                               _InfoChip(
                                 icon: Icons.info,
-                                label: 'Staff\\ninfo',
+                                label: 'Staff Info',
                                 iconColor: Color(0xFF22C8C8),
                                 onTap: () => Navigator.of(
                                   context,
@@ -274,7 +328,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               _InfoChip(
                                 icon: Icons.beach_access,
-                                label: 'Apply leave\\nManage Leave',
+                                label: 'Apply Leave',
                                 iconColor: Color(0xFFF57C00),
                                 onTap: () => Navigator.of(
                                   context,
@@ -282,7 +336,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               _InfoChip(
                                 icon: Icons.swipe,
-                                label: 'Swipe\\nAttendance',
+                                label: 'SwipeAttendance',
                                 iconColor: Color(0xFF2E7D32),
                                 onTap: () => Navigator.of(
                                   context,
@@ -298,7 +352,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               _InfoChip(
                                 icon: Icons.folder,
-                                label: 'Staff\\nResources',
+                                label: 'Staff Resources',
                                 iconColor: Color(0xFF8D6E63),
                                 onTap: () => Navigator.of(
                                   context,
@@ -306,7 +360,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               _InfoChip(
                                 icon: Icons.menu_book,
-                                label: 'Staff\\nHandbag',
+                                label: 'Staff Handbook',
                                 iconColor: Color(0xFFF4B400),
                                 onTap: () => Navigator.of(
                                   context,
@@ -314,7 +368,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               _InfoChip(
                                 icon: Icons.task,
-                                label: 'To Do\\nTasks',
+                                label: 'To Do Tasks',
                                 iconColor: Color(0xFF0288D1),
                                 onTap: () => Navigator.of(
                                   context,
@@ -361,13 +415,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              DashboardIconGrid(
                                 children: [
                                   _ClassAction(
                                     icon: Icons.message,
-                                    label: 'Write Group\\nMessages',
+                                    label: 'Write Group\Messages',
                                     color: Color(0xFF4CAF50),
                                     onTap: () => Navigator.of(context).push(
                                       MaterialPageRoute(
@@ -378,7 +430,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                   ),
                                   _ClassAction(
                                     icon: Icons.upload_file,
-                                    label: 'Upload\\nHW,CW',
+                                    label: 'Upload\HW,CW',
                                     color: Color(0xFFD32F2F),
                                     onTap: () => Navigator.of(context).push(
                                       MaterialPageRoute(
@@ -398,7 +450,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     ).pushNamed(AppRoutes.studentMoreOptions),
                                     child: const _ClassAction(
                                       icon: Icons.more_horiz,
-                                      label: 'More\\nOptions',
+                                      label: 'More Options',
                                       color: Color(0xFF1976D2),
                                     ),
                                   ),
@@ -417,13 +469,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.95,
+                        DashboardIconGrid(
                           children: [
                             _SchoolLinkChip(
                               icon: Icons.language,
@@ -432,13 +478,13 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.school,
-                              label: 'School\\nHandbag',
+                              label: 'School Handbook',
                               color: Color(0xFFFFC107),
                               routeName: AppRoutes.staffHandbook,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.event,
-                              label: 'Events\\nCelebration',
+                              label: 'Events Celebration',
                               color: Color(0xFFF44336),
                               routeName: AppRoutes.staffEventsCelebration,
                             ),
@@ -488,7 +534,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.chat,
-                              label: 'Watsapp',
+                              label: 'Whatsapp',
                               color: Color(0xFF25D366),
                             ),
                           ],
@@ -540,19 +586,19 @@ class _QuickAction extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 22,
-            height: 22,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 12, color: AppColors.white),
+            child: Icon(icon, size: 16, color: AppColors.white),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 3,
             softWrap: true,
             overflow: TextOverflow.visible,
             style: GoogleFonts.poppins(
@@ -588,23 +634,23 @@ class _InfoChip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 22,
-            height: 22,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: iconColor,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 13, color: AppColors.white),
+            child: Icon(icon, size: 16, color: AppColors.white),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
               fontSize: 10,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
               color: const Color(0xFF222222),
             ),
           ),
@@ -641,17 +687,17 @@ class _ClassAction extends StatelessWidget {
               color: color,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 18, color: AppColors.white),
+            child: Icon(icon, size: 16, color: AppColors.white),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.visible,
             style: GoogleFonts.poppins(
               fontSize: 11,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
               color: const Color(0xFF222222),
             ),
           ),
@@ -698,17 +744,17 @@ class _SchoolLinkChip extends StatelessWidget {
                 color: color,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 18, color: AppColors.white),
+              child: Icon(icon, size: 16, color: AppColors.white),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.visible,
               style: GoogleFonts.poppins(
                 fontSize: 10,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
                 color: const Color(0xFF222222),
               ),
             ),

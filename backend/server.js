@@ -67,7 +67,7 @@ async function connectMongo() {
     mainPageInfoCollection = db.collection('mainPageInfo');
     usersCollection = db.collection('users');
     groupsCollection = db.collection('groups');
-    eventsCollection = db.collection('events');
+    eventsCollection = db.collection('future-events-calender');
     todayInClassCollection = db.collection('todayInClass');
     groupMessagesCollection = db.collection('groupMessages');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
@@ -141,6 +141,9 @@ function sanitizeEventForResponse(doc) {
     endTime: doc.endTime || null,
     description: doc.description || '',
     createdBy: doc.createdBy || '',
+    color: doc.color || '#FF9800',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
   };
 }
 
@@ -183,10 +186,17 @@ function sanitizeGroupMessageForResponse(doc) {
 
 function groupIdVariants(groupId) {
   const variants = [groupId];
+  const singleSeparatorId = groupId.replace(/^SAMUNI-2022--/i, 'SAMUNI-2022-');
+  if (!variants.includes(singleSeparatorId)) {
+    variants.push(singleSeparatorId);
+  }
   if (groupId.startsWith('SAMUNI-2022-')) {
     variants.push(groupId.substring('SAMUNI-2022-'.length));
+    if (singleSeparatorId !== groupId) {
+      variants.push(singleSeparatorId.substring('SAMUNI-2022-'.length));
+    }
   }
-  return variants;
+  return [...new Set(variants)];
 }
 
 function groupReferenceSlug(value) {
@@ -251,12 +261,8 @@ app.get('/api/groups/:groupId/events', async (req, res) => {
   try {
     await connectMongo();
     const groupId = (req.params.groupId || '').trim();
-    const groupIds = [groupId];
-    if (groupId.startsWith('SAMUNI-2022-')) {
-      groupIds.push(groupId.substring('SAMUNI-2022-'.length));
-    }
     const events = await eventsCollection
-      .find({ groupId: { $in: groupIds } })
+      .find({ groupId: { $in: groupIdVariants(groupId) } })
       .sort({ startDate: 1, startTime: 1, createdAt: 1 })
       .toArray();
     return res.json(events.map(sanitizeEventForResponse));
@@ -279,12 +285,7 @@ app.post('/api/groups/:groupId/events', async (req, res) => {
       return res.status(422).json({ message: 'groupId, title, and a valid startDate are required.' });
     }
 
-    const legacyGroupId = groupId.startsWith('SAMUNI-2022-')
-      ? groupId.substring('SAMUNI-2022-'.length)
-      : groupId;
-    const group = await groupsCollection.findOne({
-      id: { $in: [groupId, legacyGroupId] },
-    });
+    const group = await findGroupByReference(groupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
 
     const now = new Date().toISOString();
@@ -297,6 +298,7 @@ app.post('/api/groups/:groupId/events', async (req, res) => {
       endTime: body.endTime ? body.endTime.toString().trim() : null,
       description: body.description ? body.description.toString().trim() : '',
       createdBy: body.createdBy ? body.createdBy.toString().trim() : '',
+      color: body.color ? body.color.toString().trim() : '#FF9800',
       createdAt: now,
       updatedAt: now,
     };
@@ -307,6 +309,65 @@ app.post('/api/groups/:groupId/events', async (req, res) => {
   } catch (error) {
     console.error('POST /api/groups/:groupId/events failed:', error);
     return res.status(500).json({ message: 'Unable to create group event.' });
+  }
+});
+
+app.put('/api/groups/:groupId/events/:eventId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const eventId = (req.params.eventId || '').trim();
+    const body = req.body || {};
+    const title = (body.title || '').toString().trim();
+    const startDate = (body.startDate || '').toString().trim();
+    if (!groupId || !eventId || !title || !startDate || Number.isNaN(Date.parse(startDate))) {
+      return res.status(422).json({ message: 'groupId, title, and a valid startDate are required.' });
+    }
+
+    const selector = { groupId: { $in: groupIdVariants(groupId) } };
+    try {
+      selector._id = new ObjectId(eventId);
+    } catch (_) {
+      selector.id = eventId;
+    }
+    const now = new Date().toISOString();
+    const update = {
+      title,
+      startDate,
+      endDate: body.endDate ? body.endDate.toString().trim() : startDate,
+      startTime: body.startTime ? body.startTime.toString().trim() : null,
+      endTime: body.endTime ? body.endTime.toString().trim() : null,
+      description: body.description ? body.description.toString().trim() : '',
+      color: body.color ? body.color.toString().trim() : '#FF9800',
+      updatedAt: now,
+    };
+    const result = await eventsCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Event not found.' });
+    const saved = await eventsCollection.findOne(selector);
+    return res.json(sanitizeEventForResponse(saved));
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/events/:eventId failed:', error);
+    return res.status(500).json({ message: 'Unable to update group event.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/events/:eventId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const eventId = (req.params.eventId || '').trim();
+    const selector = { groupId: { $in: groupIdVariants(groupId) } };
+    try {
+      selector._id = new ObjectId(eventId);
+    } catch (_) {
+      selector.id = eventId;
+    }
+    const result = await eventsCollection.deleteOne(selector);
+    if (!result.deletedCount) return res.status(404).json({ message: 'Event not found.' });
+    return res.sendStatus(204);
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/events/:eventId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete group event.' });
   }
 });
 

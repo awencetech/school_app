@@ -38,7 +38,8 @@ class AppRoutes {
   static const adminEmployeeInfo = '$adminListTeachers/employee-info';
   static const adminMainEditSplashScreen = '$adminMainEdit/splash-screen';
   static const adminMainEditSchoolSettings = '$adminMainEdit/school-settings';
-  static const adminMainEditSchoolContent = '$adminMainEdit/school-content-management';
+  static const adminMainEditSchoolContent =
+      '$adminMainEdit/school-content-management';
   static const adminMainEditGradePage = '$adminMainEdit/grade-page';
   static const adminMainEditContentEdit = '$adminMainEdit/content-edit';
   static const adminAddStudent = '$adminAdd/student-create-id';
@@ -49,81 +50,76 @@ class AppRoutes {
   static const adminOtherGroupDetails = '$adminOtherGroups/';
   static const adminGroupDetails = '/admin/group-details';
   static const teacherGroupClasses = '/teacher/group-classes';
-    static const teacherGroupInfo = '$teacherGroupClasses/group-info';
-    static const teacherFutureEventCalendar =
+  static const teacherGroupInfo = '$teacherGroupClasses/group-info';
+  static const teacherFutureEventCalendar =
       '$teacherGroupClasses/future-event-calendar';
-    static const teacherHomeworkToday = '$teacherGroupClasses/homework-today';
-    static const teacherGroupMessages = '$teacherGroupClasses/group-messages';
-    static const teacherWriteMessage = '$teacherGroupClasses/write-message';
-    static const teacherClassDemography =
-      '$teacherGroupClasses/class-demography';
-    static const teacherClassResources = '$teacherGroupClasses/class-resources';
-    static const teacherPhotosNews = '$teacherGroupClasses/photos-news';
-    static const teacherClassTimetable = '$teacherGroupClasses/class-timetable';
-    static const teacherClassPlanner = '$teacherGroupClasses/class-planner';
-    static const teacherVideoConference =
-      '$teacherGroupClasses/video-conference';
-    static const teacherClassFilePlan = '$teacherGroupClasses/class-file-plan';
-    static const teacherOnlineAssignment =
+  static const teacherHomeworkToday = '$teacherGroupClasses/homework-today';
+  static const teacherGroupMessages = '$teacherGroupClasses/group-messages';
+  static const teacherWriteMessage = '$teacherGroupClasses/write-message';
+  static const teacherClassDemography = '$teacherGroupClasses/class-demography';
+  static const teacherClassResources = '$teacherGroupClasses/class-resources';
+  static const teacherPhotosNews = '$teacherGroupClasses/photos-news';
+  static const teacherClassTimetable = '$teacherGroupClasses/class-timetable';
+  static const teacherClassTimetableAdd =
+      '$teacherGroupClasses/class-timetable-add';
+  static const teacherClassPlanner = '$teacherGroupClasses/class-planner';
+  static const teacherVideoConference = '$teacherGroupClasses/video-conference';
+  static const teacherClassFilePlan = '$teacherGroupClasses/class-file-plan';
+  static const teacherOnlineAssignment =
       '$teacherGroupClasses/online-assignment';
-    static const teacherOnlineAssessment =
+  static const teacherOnlineAssessment =
       '$teacherGroupClasses/online-assessment';
-    static const teacherGroupInfoEdit = '$teacherGroupClasses/group-info-edit';
-        static const teacherEditGroupInfo = teacherGroupInfoEdit;
-        static const teacherEditFutureEventCalendar =
-          '$teacherGroupClasses/future-event-calendar-edit';
-        static const teacherEditHomeworkToday =
-          '$teacherGroupClasses/homework-today-edit';
-        static const teacherHomeworkAdd =
-          '$teacherEditHomeworkToday/homework-add';
-        static const teacherTodayClassAdd =
-          '$teacherEditHomeworkToday/today-class';
-        static const teacherEditGroupMessages =
-          '$teacherGroupClasses/group-messages-edit';
-        static const teacherEditWriteMessage =
-          '$teacherGroupClasses/write-message-edit';
-        static const teacherEditClassDemography =
-          '$teacherGroupClasses/class-demography-edit';
-        static const teacherEditClassResources =
-          '$teacherGroupClasses/class-resources-edit';
-        static const teacherEditPhotosNews = '$teacherGroupClasses/photos-news-edit';
-        static const teacherEditClassTimetable =
-          '$teacherGroupClasses/class-timetable-edit';
-        static const teacherEditClassPlanner =
-          '$teacherGroupClasses/class-planner-edit';
-        static const teacherEditVideoConference =
-          '$teacherGroupClasses/video-conference-edit';
-        static const teacherEditClassFilePlan =
-          '$teacherGroupClasses/class-file-plan-edit';
-        static const teacherEditOnlineAssignment =
-          '$teacherGroupClasses/online-assignment-edit';
-        static const teacherEditOnlineAssessment =
-          '$teacherGroupClasses/online-assessment-edit';
-        static const teacherEditGroupInfoEdit = teacherGroupInfoEdit;
-      static const teacherGroupClassMenu = '$teacherGroupClasses/group-class-menu';
-      static const teacherGroupDashboard = '$teacherGroupClasses/group-dashboard';
-      static const teacherDiarySummary = '$teacherGroupClasses/diary-summary';
-      static const teacherTakeAttendance = '$teacherGroupClasses/take-attendance';
-      static const teacherAppreciateAward =
-        '$teacherGroupClasses/appreciate-award';
-      static const teacherLeaveApproval = '$teacherGroupClasses/leave-approval';
-      static const teacherMedicalEventList =
-        '$teacherGroupClasses/medical-event-list';
-      static const teacherHappinessReport =
-        '$teacherGroupClasses/happiness-report';
-      static const teacherOneOnOneMeeting =
-        '$teacherGroupClasses/one-on-one-meeting';
-      static const teacherPickDropEntry = '$teacherGroupClasses/pick-drop-entry';
-      static const teacherAccessManagement =
-        '$teacherGroupClasses/access-management';
-      static const teacherClassFeeDetails =
-        '$teacherGroupClasses/class-fee-details';
+  static const teacherGroupInfoEdit = '$teacherGroupClasses/group-info-edit';
+  static const teacherEditGroupInfo = teacherGroupInfoEdit;
+  static const teacherEditFutureEventCalendar =
+      '$teacherGroupClasses/future-event-calendar-edit';
+  static const teacherEditHomeworkToday =
+      '$teacherGroupClasses/homework-today-edit';
+  static const teacherHomeworkAdd = '$teacherEditHomeworkToday/homework-add';
+  static const teacherTodayClassAdd = '$teacherEditHomeworkToday/today-class';
+  static const teacherEditGroupMessages =
+      '$teacherGroupClasses/group-messages-edit';
+  static const teacherEditWriteMessage =
+      '$teacherGroupClasses/write-message-edit';
+  static const teacherEditClassDemography =
+      '$teacherGroupClasses/class-demography-edit';
+  static const teacherEditClassResources =
+      '$teacherGroupClasses/class-resources-edit';
+  static const teacherEditPhotosNews = '$teacherGroupClasses/photos-news-edit';
+  static const teacherEditClassTimetable =
+      '$teacherGroupClasses/class-timetable-edit';
+  static const teacherEditClassPlanner =
+      '$teacherGroupClasses/class-planner-edit';
+  static const teacherEditVideoConference =
+      '$teacherGroupClasses/video-conference-edit';
+  static const teacherEditClassFilePlan =
+      '$teacherGroupClasses/class-file-plan-edit';
+  static const teacherEditOnlineAssignment =
+      '$teacherGroupClasses/online-assignment-edit';
+  static const teacherEditOnlineAssessment =
+      '$teacherGroupClasses/online-assessment-edit';
+  static const teacherEditGroupInfoEdit = teacherGroupInfoEdit;
+  static const teacherGroupClassMenu = '$teacherGroupClasses/group-class-menu';
+  static const teacherGroupDashboard = '$teacherGroupClasses/group-dashboard';
+  static const teacherDiarySummary = '$teacherGroupClasses/diary-summary';
+  static const teacherTakeAttendance = '$teacherGroupClasses/take-attendance';
+  static const teacherAppreciateAward = '$teacherGroupClasses/appreciate-award';
+  static const teacherLeaveApproval = '$teacherGroupClasses/leave-approval';
+  static const teacherMedicalEventList =
+      '$teacherGroupClasses/medical-event-list';
+  static const teacherHappinessReport = '$teacherGroupClasses/happiness-report';
+  static const teacherOneOnOneMeeting =
+      '$teacherGroupClasses/one-on-one-meeting';
+  static const teacherPickDropEntry = '$teacherGroupClasses/pick-drop-entry';
+  static const teacherAccessManagement =
+      '$teacherGroupClasses/access-management';
+  static const teacherClassFeeDetails =
+      '$teacherGroupClasses/class-fee-details';
   static const adminSplashScreenEditor = adminMainEditSplashScreen;
   static const adminHomeScreen = '/admin/home-screen';
   static const adminSection = '/admin/section';
-    static const adminSchoolSettings = adminMainEditSchoolSettings;
-  static const adminSchoolContentManagement =
-      adminMainEditSchoolContent;
+  static const adminSchoolSettings = adminMainEditSchoolSettings;
+  static const adminSchoolContentManagement = adminMainEditSchoolContent;
   static const supportQuery = '/support-query';
   static const privacyPolicy = '/privacy-policy';
 }

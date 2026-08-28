@@ -67,6 +67,7 @@ let legacyEventsCollection;
 let todayInClassCollection;
 let homeworkCollection;
 let groupMessagesCollection;
+let classTimetableCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -77,6 +78,7 @@ async function ensureIndexes(db) {
     todayInClassCollection.createIndex({ groupId: 1, date: 1 }),
     homeworkCollection.createIndex({ groupId: 1, date: 1 }),
     groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
+    classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
   ]);
 }
 
@@ -107,6 +109,7 @@ async function connectMongo() {
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
     groupMessagesCollection = db.collection('groupMessages');
+    classTimetableCollection = db.collection('class-timetable');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -497,6 +500,80 @@ app.get('/api/groups/:groupId/homework', async (req, res) => {
   } catch (error) {
     console.error('GET /api/groups/:groupId/homework failed:', error);
     return res.status(500).json({ message: 'Unable to load Homework.' });
+  }
+});
+
+function sanitizeClassTimetableForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    groupId: doc.groupId || '', day: doc.day || '', startTime: doc.startTime || '', endTime: doc.endTime || '',
+    subject: doc.subject || '', teacher: doc.teacher || '', room: doc.room || '', notes: doc.notes || '',
+    createdAt: doc.createdAt || '', updatedAt: doc.updatedAt || '',
+  };
+}
+
+function timetableSelector(groupId, entryId) {
+  return { groupId: { $in: groupIdVariants(groupId) }, ...recordIdSelector(entryId) };
+}
+
+app.get('/api/groups/:groupId/class-timetable', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const entries = await classTimetableCollection.find({ groupId: { $in: groupIdVariants(groupId) } }).toArray();
+    return res.json(entries.map(sanitizeClassTimetableForResponse));
+  } catch (error) {
+    console.error('GET class timetable failed:', error);
+    return res.status(500).json({ message: 'Unable to load class timetable.' });
+  }
+});
+
+app.post('/api/groups/:groupId/class-timetable', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const body = req.body || {};
+    const values = ['day', 'startTime', 'endTime', 'subject', 'teacher'];
+    const entry = Object.fromEntries([...values, 'room', 'notes'].map((field) => [field, (body[field] || '').toString().trim()]));
+    if (!groupId || values.some((field) => !entry[field])) return res.status(422).json({ message: 'Day, start time, end time, subject, and teacher are required.' });
+    const now = new Date().toISOString();
+    const result = await classTimetableCollection.insertOne({ groupId, ...entry, createdAt: now, updatedAt: now });
+    return res.status(201).json(sanitizeClassTimetableForResponse(await classTimetableCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST class timetable failed:', error);
+    return res.status(500).json({ message: 'Unable to save class timetable.' });
+  }
+});
+
+app.put('/api/groups/:groupId/class-timetable/:entryId', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const values = ['day', 'startTime', 'endTime', 'subject', 'teacher'];
+    const update = Object.fromEntries([...values, 'room', 'notes'].map((field) => [field, (body[field] || '').toString().trim()]));
+    if (values.some((field) => !update[field])) return res.status(422).json({ message: 'Day, start time, end time, subject, and teacher are required.' });
+    update.updatedAt = new Date().toISOString();
+    const selector = timetableSelector((req.params.groupId || '').trim(), req.params.entryId);
+    const result = await classTimetableCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Timetable entry not found.' });
+    return res.json(sanitizeClassTimetableForResponse(await classTimetableCollection.findOne(selector)));
+  } catch (error) {
+    console.error('PUT class timetable failed:', error);
+    return res.status(500).json({ message: 'Unable to update class timetable.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/class-timetable/:entryId', async (req, res) => {
+  try {
+    await connectMongo();
+    const selector = timetableSelector((req.params.groupId || '').trim(), req.params.entryId);
+    const result = await classTimetableCollection.deleteOne(selector);
+    if (!result.deletedCount) return res.status(404).json({ message: 'Timetable entry not found.' });
+    return res.sendStatus(204);
+  } catch (error) {
+    console.error('DELETE class timetable failed:', error);
+    return res.status(500).json({ message: 'Unable to delete class timetable.' });
   }
 });
 

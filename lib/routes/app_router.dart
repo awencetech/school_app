@@ -45,6 +45,7 @@ import '../screens/admin/school_content_management.dart';
 import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../models/group.dart';
+import '../models/class_timetable.dart';
 import '../screens/admin/admin_section_page.dart';
 import '../screens/admin/school_settings_editor.dart';
 import '../screens/admin/other_groups_screen.dart';
@@ -58,6 +59,7 @@ import '../screens/admin/class_news_page.dart';
 import '../screens/admin/class_planner_page.dart';
 import '../screens/admin/class_resources_page.dart';
 import '../screens/admin/class_timetable_page.dart';
+import '../screens/admin/class_timetable_form_page.dart';
 import '../screens/admin/group_messages_page.dart';
 import '../screens/admin/homework_today_in_class_page.dart';
 import '../screens/admin/future_event_calendar_page.dart';
@@ -95,7 +97,10 @@ class AppRouter {
       final name = values['name']?.toString().trim() ?? '';
       final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
       if (name.isNotEmpty || id.isNotEmpty) {
-        return Group(id: id.isEmpty ? name : id, name: name.isEmpty ? id : name);
+        return Group(
+          id: id.isEmpty ? name : id,
+          name: name.isEmpty ? id : name,
+        );
       }
     }
     return Group(id: 'unknown', name: 'Unknown');
@@ -164,7 +169,9 @@ class AppRouter {
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),
-      AppRoutes.adminStudentOptions => const EmptyAdminOptionPage(title: 'Student'),
+      AppRoutes.adminStudentOptions => const EmptyAdminOptionPage(
+        title: 'Student',
+      ),
       AppRoutes.adminStaffOptions => const StaffManagementPage(),
       AppRoutes.adminListTeachers => const ListTeachersPage(),
       AppRoutes.adminEmployeeInfo => (() {
@@ -179,10 +186,13 @@ class AppRouter {
       AppRoutes.adminAddGroup => const CreateGroupScreen(),
       AppRoutes.adminMainEditGradePage => const GradeContentManagementScreen(),
       AppRoutes.adminMainEditContentEdit => const ContentEditScreen(),
-      _ when settings.name?.startsWith(AppRoutes.adminOtherGroupDetails) == true => (() {
-        final group = settings.arguments as Group;
-        return GroupDetailsPage(group: group);
-      })(),
+      _
+          when settings.name?.startsWith(AppRoutes.adminOtherGroupDetails) ==
+              true =>
+        (() {
+          final group = settings.arguments as Group;
+          return GroupDetailsPage(group: group);
+        })(),
       AppRoutes.adminOtherGroups => const OtherGroupsScreen(),
       AppRoutes.adminGroupDetails => (() {
         final group = settings.arguments as dynamic;
@@ -198,8 +208,8 @@ class AppRouter {
           group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'),
         );
       })(),
-        AppRoutes.teacherFutureEventCalendar ||
-          AppRoutes.teacherEditFutureEventCalendar => (() {
+      AppRoutes.teacherFutureEventCalendar ||
+      AppRoutes.teacherEditFutureEventCalendar => (() {
         final group = _eventGroupFromArguments(settings.arguments);
         return FutureEventCalendarPage(
           groupId: _eventGroupId(group),
@@ -207,7 +217,8 @@ class AppRouter {
           isEdit: settings.name == AppRoutes.teacherEditFutureEventCalendar,
         );
       })(),
-      AppRoutes.teacherHomeworkToday || AppRoutes.teacherEditHomeworkToday => (() {
+      AppRoutes.teacherHomeworkToday ||
+      AppRoutes.teacherEditHomeworkToday => (() {
         final group = _eventGroupFromArguments(settings.arguments);
         return HomeworkTodayInClassPage(
           groupId: _eventGroupId(group),
@@ -230,7 +241,8 @@ class AppRouter {
           groupName: group.name,
         );
       })(),
-      AppRoutes.teacherGroupMessages || AppRoutes.teacherEditGroupMessages => (() {
+      AppRoutes.teacherGroupMessages ||
+      AppRoutes.teacherEditGroupMessages => (() {
         final group = settings.arguments as Group;
         return GroupMessagesPage(
           groupId: generateGroupDatabaseId(group.name),
@@ -238,7 +250,8 @@ class AppRouter {
           groupYear: group.year,
         );
       })(),
-      AppRoutes.teacherWriteMessage || AppRoutes.teacherEditWriteMessage => (() {
+      AppRoutes.teacherWriteMessage ||
+      AppRoutes.teacherEditWriteMessage => (() {
         final group = settings.arguments as Group;
         return WriteMessagePage(
           groupId: generateGroupDatabaseId(group.name),
@@ -246,31 +259,44 @@ class AppRouter {
           groupYear: group.year,
         );
       })(),
-      AppRoutes.teacherClassDemography || AppRoutes.teacherEditClassDemography => ClassDemographyPage(
+      AppRoutes.teacherClassDemography ||
+      AppRoutes.teacherEditClassDemography => ClassDemographyPage(
         group: settings.arguments as Group,
       ),
-      AppRoutes.teacherClassResources || AppRoutes.teacherEditClassResources => ClassResourcesPage(
+      AppRoutes.teacherClassResources || AppRoutes.teacherEditClassResources =>
+        ClassResourcesPage(group: settings.arguments as Group),
+      AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews =>
+        ClassNewsPage(group: settings.arguments as Group),
+      AppRoutes.teacherClassTimetable => ClassTimetablePage(
         group: settings.arguments as Group,
       ),
-      AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews => ClassNewsPage(
+      AppRoutes.teacherEditClassTimetable => ClassTimetablePage(
+        group: settings.arguments as Group,
+        isEdit: true,
+      ),
+      AppRoutes.teacherClassTimetableAdd => (() {
+        final arguments = settings.arguments;
+        if (arguments is Group) return ClassTimetableFormPage(group: arguments);
+        final values = arguments as Map;
+        return ClassTimetableFormPage(
+          group: values['group'] as Group,
+          entry: values['entry'] as ClassTimetableEntry,
+        );
+      })(),
+      AppRoutes.teacherClassPlanner || AppRoutes.teacherEditClassPlanner =>
+        ClassPlannerPage(group: settings.arguments as Group),
+      AppRoutes.teacherVideoConference ||
+      AppRoutes.teacherEditVideoConference => OnlineClassMeetingPage(
         group: settings.arguments as Group,
       ),
-      AppRoutes.teacherClassTimetable || AppRoutes.teacherEditClassTimetable => ClassTimetablePage(
+      AppRoutes.teacherClassFilePlan || AppRoutes.teacherEditClassFilePlan =>
+        ClassFileplanPage(group: settings.arguments as Group),
+      AppRoutes.teacherOnlineAssignment ||
+      AppRoutes.teacherEditOnlineAssignment => OnlineAssignmentPage(
         group: settings.arguments as Group,
       ),
-      AppRoutes.teacherClassPlanner || AppRoutes.teacherEditClassPlanner => ClassPlannerPage(
-        group: settings.arguments as Group,
-      ),
-      AppRoutes.teacherVideoConference || AppRoutes.teacherEditVideoConference => OnlineClassMeetingPage(
-        group: settings.arguments as Group,
-      ),
-      AppRoutes.teacherClassFilePlan || AppRoutes.teacherEditClassFilePlan => ClassFileplanPage(
-        group: settings.arguments as Group,
-      ),
-      AppRoutes.teacherOnlineAssignment || AppRoutes.teacherEditOnlineAssignment => OnlineAssignmentPage(
-        group: settings.arguments as Group,
-      ),
-      AppRoutes.teacherOnlineAssessment || AppRoutes.teacherEditOnlineAssessment => OnlineAssessmentPage(
+      AppRoutes.teacherOnlineAssessment ||
+      AppRoutes.teacherEditOnlineAssessment => OnlineAssessmentPage(
         group: settings.arguments as Group,
       ),
       AppRoutes.teacherGroupInfoEdit => (() {
@@ -341,5 +367,4 @@ class AppRouter {
       },
     );
   }
-
 }

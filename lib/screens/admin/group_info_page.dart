@@ -14,6 +14,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import 'package:file_picker/file_picker.dart';
 import '../student/student_menu_screen.dart';
+import '../../routes/app_routes.dart';
 
 class GroupInfoPage extends StatefulWidget {
   const GroupInfoPage({super.key, required this.group});
@@ -36,6 +37,18 @@ class _GroupInfoPageState extends State<GroupInfoPage>
   List<GroupStudent> _students = [];
   List<GroupTeacher> _staff = [];
   StreamSubscription<String>? _groupChangeSub;
+
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(
+        AppRoutes.teacherGroupClasses,
+        arguments: widget.group,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -210,7 +223,7 @@ class _GroupInfoPageState extends State<GroupInfoPage>
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goBack,
         ),
         actions: [
           IconButton(

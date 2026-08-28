@@ -496,6 +496,45 @@ app.post('/api/groups/:groupId/today-in-class', async (req, res) => {
   }
 });
 
+app.put('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const recordId = (req.params.recordId || '').trim();
+    const body = req.body || {};
+    const date = (body.date || '').toString().trim();
+    const subject = (body.subject || '').toString().trim();
+    const message = (body.message || '').toString().trim();
+    if (!groupId || !recordId || !date || Number.isNaN(Date.parse(date)) || !subject || !message) {
+      return res.status(422).json({ message: 'Date, subject, and message are required.' });
+    }
+
+    const selector = { groupId: { $in: groupIdVariants(groupId) } };
+    try {
+      selector._id = new ObjectId(recordId);
+    } catch (_) {
+      selector.id = recordId;
+    }
+    const update = {
+      date,
+      subject,
+      message,
+      sendToStudents: body.sendToStudents === true,
+      sendToTeachers: body.sendToTeachers === true,
+      commentsAllowed: body.commentsAllowed !== false,
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      updatedAt: new Date().toISOString(),
+    };
+    const result = await todayInClassCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Today in Class record not found.' });
+    const saved = await todayInClassCollection.findOne(selector);
+    return res.json(sanitizeTodayInClassForResponse(saved));
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/today-in-class/:recordId failed:', error);
+    return res.status(500).json({ message: 'Unable to update Today in Class.' });
+  }
+});
+
 app.delete('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => {
   try {
     await connectMongo();

@@ -1,14 +1,21 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http_parser/http_parser.dart';
 
+import '../../models/group.dart';
 import '../../models/today_in_class.dart';
+import '../../routes/app_routes.dart';
 import '../../services/today_in_class_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class HomeworkTodayInClassPage extends StatefulWidget {
@@ -17,12 +24,14 @@ class HomeworkTodayInClassPage extends StatefulWidget {
     required this.groupId,
     required this.groupName,
     required this.groupYear,
+    this.isEdit = false,
     this.initialTabIndex = 1,
   });
 
   final String groupId;
   final String groupName;
   final String groupYear;
+  final bool isEdit;
   final int initialTabIndex;
 
   @override
@@ -38,6 +47,26 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
   late int _tabIndex;
   int _selectedBottomIndex = 2;
 
+  String get _effectiveGroupId {
+    if (widget.groupId.trim().isNotEmpty &&
+        widget.groupId.toLowerCase() != 'samuni-2022-unknown') {
+      return widget.groupId.trim();
+    }
+    return generateGroupDatabaseId(widget.groupName);
+  }
+
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(
+        AppRoutes.teacherGroupClasses,
+        arguments: Group(id: widget.groupId, name: widget.groupName),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +80,7 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
       _hasError = false;
     });
     try {
-      final records = await _service.getRecords(widget.groupId);
+      final records = await _service.getRecords(_effectiveGroupId);
       if (!mounted) return;
       setState(() {
         _records = records;
@@ -70,7 +99,25 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) =>
-            _TodayInClassForm(service: _service, groupId: widget.groupId),
+            _TodayInClassForm(
+              service: _service,
+              groupId: _effectiveGroupId,
+              isHomework: _tabIndex == 0,
+            ),
+      ),
+    );
+    if (saved == true) _loadRecords();
+  }
+
+  Future<void> _openEditForm(TodayInClassRecord record) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _TodayInClassForm(
+          service: _service,
+          groupId: _effectiveGroupId,
+          record: record,
+          isHomework: _tabIndex == 0,
+        ),
       ),
     );
     if (saved == true) _loadRecords();
@@ -109,7 +156,7 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goBack,
         ),
       ),
       body: SafeArea(
@@ -139,11 +186,12 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  FilledButton.icon(
-                    onPressed: _openAddForm,
-                    icon: const Icon(Icons.add, size: 17),
-                    label: const Text('Add'),
-                  ),
+                  if (widget.isEdit)
+                    FilledButton.icon(
+                      onPressed: _openAddForm,
+                      icon: const Icon(Icons.add, size: 17),
+                      label: const Text('Add'),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -206,21 +254,53 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(0xffeeeeee),
+                  child: Icon(Icons.school, size: 20, color: Color(0xff9e9e9e)),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    _formatDate(record.date),
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppColors.secondaryText,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning, size: 14, color: Colors.red),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Homework: ${record.subject}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'For: ${_formatDate(record.date)}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 9,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                if (widget.isEdit)
+                  IconButton(
+                    tooltip: 'Edit',
+                    onPressed: () => _openEditForm(record),
+                    icon: const Icon(Icons.edit_outlined, size: 19),
+                  ),
                 IconButton(
                   onPressed: () => _deleteRecord(record),
                   icon: const Icon(
@@ -231,24 +311,90 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 6),
             Text(
-              record.subject,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              'Message for: ${_recipients(record)}',
+              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 4),
             Text(
               record.message,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppColors.secondaryText,
+                color: AppColors.primaryText,
+              ),
+            ),
+            if (record.attachments.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Column(
+                children: record.attachments
+                    .map(
+                      (attachment) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _ResponsiveAttachmentPreview(
+                          url: attachment,
+                          onTap: () => _showAttachment(attachment),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+            const SizedBox(height: 6),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    record.commentsAllowed ? Icons.comment_outlined : Icons.comments_disabled_outlined,
+                    size: 15,
+                    color: record.commentsAllowed ? Colors.green : AppColors.secondaryText,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    record.commentsAllowed ? 'Comments allowed' : 'Comments not allowed',
+                    style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.visibility_outlined, size: 14, color: AppColors.secondaryText),
+                  const SizedBox(width: 3),
+                  Text('Viewed', style: GoogleFonts.poppins(fontSize: 9, color: AppColors.secondaryText)),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  String _recipients(TodayInClassRecord record) {
+    if (record.sendToStudents && record.sendToTeachers) return 'Students, Teachers';
+    if (record.sendToStudents) return 'Students';
+    if (record.sendToTeachers) return 'Teachers';
+    return 'None selected';
+  }
+
+  Future<void> _showAttachment(String url) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4,
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.contain,
+            placeholder: (_, imageUrl) => const SizedBox(
+              height: 240,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            errorWidget: (_, imageUrl, error) => const SizedBox(
+              height: 160,
+              child: Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+            ),
+          ),
         ),
       ),
     );
@@ -285,11 +431,90 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
       '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
 }
 
+class _ResponsiveAttachmentPreview extends StatefulWidget {
+  const _ResponsiveAttachmentPreview({required this.url, required this.onTap});
+
+  final String url;
+  final VoidCallback onTap;
+
+  @override
+  State<_ResponsiveAttachmentPreview> createState() =>
+      _ResponsiveAttachmentPreviewState();
+}
+
+class _ResponsiveAttachmentPreviewState
+    extends State<_ResponsiveAttachmentPreview> {
+  double _aspectRatio = 1.5;
+
+  @override
+  void initState() {
+    super.initState();
+    final stream = CachedNetworkImageProvider(widget.url).resolve(
+      const ImageConfiguration(),
+    );
+    stream.addListener(
+      ImageStreamListener((imageInfo, synchronousCall) {
+        final image = imageInfo.image;
+        if (!mounted || image.width == 0 || image.height == 0) return;
+        setState(() => _aspectRatio = image.width / image.height);
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 240.0;
+        const maxHeight = 360.0;
+        final width = maxWidth < maxHeight * _aspectRatio
+            ? maxWidth
+            : maxHeight * _aspectRatio;
+        final height = width / _aspectRatio;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: GestureDetector(
+                onTap: widget.onTap,
+                child: CachedNetworkImage(
+                  imageUrl: widget.url,
+                  width: width,
+                  height: height,
+                  fit: BoxFit.contain,
+                  placeholder: (_, url) => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  errorWidget: (_, url, error) => const Center(
+                    child: Icon(Icons.attach_file, size: 22),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _TodayInClassForm extends StatefulWidget {
-  const _TodayInClassForm({required this.service, required this.groupId});
+  const _TodayInClassForm({
+    required this.service,
+    required this.groupId,
+    this.record,
+    this.isHomework = false,
+  });
 
   final TodayInClassService service;
   final String groupId;
+  final TodayInClassRecord? record;
+  final bool isHomework;
 
   @override
   State<_TodayInClassForm> createState() => _TodayInClassFormState();
@@ -297,7 +522,7 @@ class _TodayInClassForm extends StatefulWidget {
 
 class _TodayInClassFormState extends State<_TodayInClassForm> {
   final _subjectController = TextEditingController();
-  final _messageController = QuillController.basic();
+  late final QuillController _messageController;
   DateTime _date = DateTime.now();
   bool _sendStudents = false;
   bool _sendTeachers = false;
@@ -308,6 +533,22 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
   String? _selectedFileName;
   List<int>? _selectedFileBytes;
   final List<String> _attachments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _messageController = QuillController.basic();
+    final record = widget.record;
+    if (record != null) {
+      _subjectController.text = record.subject;
+      _messageController.document.insert(0, record.message);
+      _date = record.date;
+      _sendStudents = record.sendToStudents;
+      _sendTeachers = record.sendToTeachers;
+      _commentsAllowed = record.commentsAllowed;
+      _attachments.addAll(record.attachments);
+    }
+  }
 
   @override
   void dispose() {
@@ -339,6 +580,18 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
     });
   }
 
+  MediaType? _contentTypeFor(String fileName) {
+    final extension = fileName.toLowerCase().split('.').last;
+    final types = {
+      'jpg': MediaType('image', 'jpeg'),
+      'jpeg': MediaType('image', 'jpeg'),
+      'png': MediaType('image', 'png'),
+      'webp': MediaType('image', 'webp'),
+      'gif': MediaType('image', 'gif'),
+    };
+    return types[extension];
+  }
+
   Future<void> _save() async {
     final subject = _subjectController.text.trim();
     final message = _messageController.document.toPlainText().trim();
@@ -360,19 +613,34 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
           await widget.service.uploadAttachment(
             _selectedFileName!,
             _selectedFileBytes!,
+            contentType: _contentTypeFor(_selectedFileName!),
           ),
         );
       }
-      await widget.service.createRecord(
-        groupId: widget.groupId,
-        date: _date,
-        subject: subject,
-        message: message,
-        sendToStudents: _sendStudents,
-        sendToTeachers: _sendTeachers,
-        commentsAllowed: _commentsAllowed,
-        attachments: _attachments,
-      );
+      if (widget.record == null) {
+        await widget.service.createRecord(
+          groupId: widget.groupId,
+          date: _date,
+          subject: subject,
+          message: message,
+          sendToStudents: _sendStudents,
+          sendToTeachers: _sendTeachers,
+          commentsAllowed: _commentsAllowed,
+          attachments: _attachments,
+        );
+      } else {
+        await widget.service.updateRecord(
+          groupId: widget.groupId,
+          recordId: widget.record!.id,
+          date: _date,
+          subject: subject,
+          message: message,
+          sendToStudents: _sendStudents,
+          sendToTeachers: _sendTeachers,
+          commentsAllowed: _commentsAllowed,
+          attachments: _attachments,
+        );
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
@@ -396,6 +664,7 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
       final url = await widget.service.uploadAttachment(
         _selectedFileName!,
         _selectedFileBytes!,
+        contentType: _contentTypeFor(_selectedFileName!),
       );
       if (!mounted) return;
       setState(() {
@@ -420,7 +689,7 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
         backgroundColor: AppColors.topBar,
         centerTitle: true,
         title: Text(
-          'Today in Class',
+          widget.isHomework ? 'Homework' : 'Classwork',
           style: AppTextStyles.appTitle.copyWith(fontSize: 16),
         ),
         actions: [
@@ -511,6 +780,17 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
                   ),
                 ],
               ),
+              if (_selectedFileBytes != null) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 180,
+                  child: Image.memory(
+                    Uint8List.fromList(_selectedFileBytes!),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
               if (_selectedFileName != null)
                 Text(
                   'Selected: $_selectedFileName',
@@ -520,12 +800,34 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
                   ),
                 ),
               if (_attachments.isNotEmpty)
-                Text(
-                  '${_attachments.length} file(s) uploaded',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: AppColors.secondaryText,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_attachments.length} file(s) uploaded',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 180,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _attachments.length,
+                        separatorBuilder: (_, index) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) => SizedBox(
+                          width: 240,
+                          child: CachedNetworkImage(
+                            imageUrl: _attachments[index],
+                            fit: BoxFit.contain,
+                            errorWidget: (_, url, error) => const Icon(Icons.attach_file),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               const SizedBox(height: 12),
               Row(
@@ -582,38 +884,15 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
         border: Border.all(color: AppColors.border),
         color: AppColors.white,
       ),
-      child: Column(
-        children: [
-          QuillSimpleToolbar(
-            controller: _messageController,
-            config: const QuillSimpleToolbarConfig(
-              showFontFamily: true,
-              showFontSize: true,
-              showBoldButton: true,
-              showItalicButton: true,
-              showUnderLineButton: true,
-              showColorButton: true,
-              showBackgroundColorButton: true,
-              showAlignmentButtons: true,
-              showListBullets: true,
-              showListNumbers: true,
-              showLink: true,
-              showCodeBlock: true,
-              showQuote: true,
-              showClearFormat: true,
-            ),
+      child: SizedBox(
+        height: 190,
+        child: QuillEditor.basic(
+          controller: _messageController,
+          config: const QuillEditorConfig(
+            placeholder: 'Type your message...',
+            padding: EdgeInsets.all(10),
           ),
-          SizedBox(
-            height: 190,
-            child: QuillEditor.basic(
-              controller: _messageController,
-              config: const QuillEditorConfig(
-                placeholder: 'Type your message...',
-                padding: EdgeInsets.all(10),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

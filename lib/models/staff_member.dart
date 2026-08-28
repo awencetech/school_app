@@ -25,7 +25,7 @@ class StaffMember {
       description: json['description'] as String? ?? '',
       image: (json['image'] as String?) ??
           (json['imageUrl'] as String? ?? ''),
-      imageOnLeft: json['imageOnLeft'] as bool? ?? true,
+      imageOnLeft: json['imageOnLeft'] != false,
     );
   }
 }

@@ -29,6 +29,15 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
   int currentPage = 1;
   static const int itemsPerPage = 5;
 
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(AppRoutes.adminDashboard);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -138,7 +147,7 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
         title: Text('List Groups', style: AppTextStyles.appTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goBack,
         ),
       ),
       body: SingleChildScrollView(

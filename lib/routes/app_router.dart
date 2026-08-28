@@ -58,7 +58,6 @@ import '../screens/admin/class_news_page.dart';
 import '../screens/admin/class_planner_page.dart';
 import '../screens/admin/class_resources_page.dart';
 import '../screens/admin/class_timetable_page.dart';
-import '../screens/admin/future_event_calendar_page.dart';
 import '../screens/admin/group_messages_page.dart';
 import '../screens/admin/homework_today_in_class_page.dart';
 import '../screens/admin/online_assignment_page.dart';
@@ -197,11 +196,12 @@ class AppRouter {
         );
       })(),
       AppRoutes.teacherHomeworkToday || AppRoutes.teacherEditHomeworkToday => (() {
-        final group = settings.arguments as Group;
+        final group = _eventGroupFromArguments(settings.arguments);
         return HomeworkTodayInClassPage(
-          groupId: generateGroupDatabaseId(group.name),
+          groupId: _eventGroupId(group),
           groupName: group.name,
           groupYear: group.year,
+          isEdit: settings.name == AppRoutes.teacherEditHomeworkToday,
         );
       })(),
       AppRoutes.teacherGroupMessages || AppRoutes.teacherEditGroupMessages => (() {
@@ -300,7 +300,7 @@ class AppRouter {
       AppRoutes.adminSplashScreenEditor => const SplashScreenEditor(),
       AppRoutes.supportQuery => const SupportQueryScreen(),
       AppRoutes.privacyPolicy => const PrivacyPolicyScreen(),
-      _ => const SplashScreen(),
+      _ => const MainShell(),
     };
 
     return PageRouteBuilder(

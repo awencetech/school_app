@@ -21,6 +21,15 @@ class GroupDetailsPage extends StatefulWidget {
 class _GroupDetailsPageState extends State<GroupDetailsPage> {
   int _selectedBottomIndex = 2;
 
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacementNamed(AppRoutes.adminOtherGroups);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupDatabaseId = widget.group.id.trim().isNotEmpty
@@ -35,7 +44,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
         title: Text('Menu', style: AppTextStyles.appTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goBack,
         ),
       ),
       body: SingleChildScrollView(

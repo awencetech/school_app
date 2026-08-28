@@ -25,7 +25,7 @@ class FutureEventCalendarPage extends StatefulWidget {
 
   final String groupId;
   final String groupName;
-  final bool? isEdit;
+  final bool isEdit;
   final bool isStaffView;
 
   @override
@@ -148,7 +148,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (widget.isEdit != true) ...[
+            if (!widget.isEdit) ...[
               Text(
                 '${widget.groupName} Upcoming Events!',
                 style: GoogleFonts.poppins(
@@ -167,7 +167,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
               )
             else if (_errorMessage != null)
               _buildErrorState()
-            else if (widget.isEdit == true)
+            else if (widget.isEdit)
               _buildEditContent()
             else if (_view == _CalendarView.day)
               _buildDayView()

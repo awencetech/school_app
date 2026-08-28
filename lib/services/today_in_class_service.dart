@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../models/today_in_class.dart';
 import 'group_service.dart';
@@ -76,9 +77,49 @@ class TodayInClassService {
     }
   }
 
-  Future<String> uploadAttachment(String fileName, List<int> bytes) async {
+  Future<TodayInClassRecord> updateRecord({
+    required String groupId,
+    required String recordId,
+    required DateTime date,
+    required String subject,
+    required String message,
+    required bool sendToStudents,
+    required bool sendToTeachers,
+    required bool commentsAllowed,
+    required List<String> attachments,
+  }) async {
+    final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class/${Uri.encodeComponent(recordId)}');
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'date': date.toIso8601String(),
+        'subject': subject,
+        'message': message,
+        'sendToStudents': sendToStudents,
+        'sendToTeachers': sendToTeachers,
+        'commentsAllowed': commentsAllowed,
+        'attachments': attachments,
+      }),
+    ).timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      throw ApiException(response.statusCode, _message(response.body, 'Unable to update Today in Class.'), uri.toString());
+    }
+    return TodayInClassRecord.fromJson(Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+  }
+
+  Future<String> uploadAttachment(
+    String fileName,
+    List<int> bytes, {
+    MediaType? contentType,
+  }) async {
     final request = http.MultipartRequest('POST', _uri('/api/upload/attachment'));
-    request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: fileName,
+      contentType: contentType,
+    ));
     final response = await request.send().timeout(const Duration(seconds: 30));
     final body = await response.stream.bytesToString();
     if (response.statusCode != 200) throw Exception('Unable to upload attachment.');

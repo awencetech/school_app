@@ -292,7 +292,7 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
                     Icons.info_outline,
                     'Info',
                     () => Navigator.of(context).pushNamed(
-                      AppRoutes.adminEmployeeInfo,
+                      AppRoutes.staffInfo,
                       arguments: teacher,
                     ),
                   ),

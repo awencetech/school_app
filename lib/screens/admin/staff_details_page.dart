@@ -209,6 +209,11 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
                 ],
               ),
               const SizedBox(height: 4),
+              const _SectionTitle('Contact Details'),
+              _detailValue('Mobile No', staff.mobileNo),
+              _detailValue('Shareable Contact No', staff.shareableContactNo),
+              _detailValue('Mail Id', staff.mailId),
+              _detailValue('Address', staff.address),
               _section('Teaches', staff.teaches),
               _section('About', staff.about),
               _section('Hobbies & Interest', staff.hobbiesAndInterest),
@@ -258,6 +263,16 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           Text(value, style: const TextStyle(fontSize: 10, color: Color(0xFF444444))),
         ],
+      ),
+    );
+  }
+
+  Widget _detailValue(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        '$label : ${value.isEmpty ? 'Not provided' : value}',
+        style: const TextStyle(fontSize: 11, color: Color(0xFF333333)),
       ),
     );
   }

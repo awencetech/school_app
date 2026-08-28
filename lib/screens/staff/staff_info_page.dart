@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/staff_info.dart';
 import '../../routes/app_routes.dart';
+import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
 import '../../services/staff_service.dart';
 import '../../theme/app_colors.dart';
@@ -24,12 +25,31 @@ class StaffInfoPage extends StatefulWidget {
 class _StaffInfoPageState extends State<StaffInfoPage> {
   late bool _isEditing;
   StaffInfo? _staff;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _isEditing = widget.initialEditing;
     _staff = widget.staff;
+    if (_staff == null) _loadStaff();
+  }
+
+  Future<void> _loadStaff() async {
+    setState(() => _loading = true);
+    try {
+      final staffList = await StaffService().getStaff();
+      if (!mounted || staffList.isEmpty) return;
+      final currentUserId = context.read<AppState>().currentUserId?.trim().toLowerCase();
+      final matchingStaff = currentUserId == null || currentUserId.isEmpty
+          ? null
+          : staffList.where((item) => item.employeeId.trim().toLowerCase() == currentUserId).firstOrNull;
+      setState(() => _staff = matchingStaff ?? staffList.first);
+    } catch (_) {
+      // Keep the legacy fallback content when the service is unavailable.
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -52,7 +72,9 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: _isEditing
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _isEditing
             ? _StaffEditForm(
                 staff: staff,
                 onClose: () => setState(() => _isEditing = false),
@@ -157,23 +179,24 @@ class _StaffEditFormState extends State<_StaffEditForm> {
   void initState() {
     super.initState();
     final staff = widget.staff;
+    String value(String? current, String fallback) => current ?? fallback;
     _controllers = {
-      'Employee Name': TextEditingController(text: staff?.name ?? ''),
-      'Mobile No': TextEditingController(text: staff?.mobileNo ?? ''),
-      'Shareable Contact No': TextEditingController(text: staff?.shareableContactNo ?? ''),
-      'Mail Id': TextEditingController(text: staff?.mailId ?? ''),
-      'Address': TextEditingController(text: staff?.address ?? ''),
-      'Brief Introduction - Something about yourself': TextEditingController(text: staff?.briefIntroduction ?? ''),
-      'Hobbies and Interest': TextEditingController(text: staff?.hobbiesAndInterest ?? ''),
-      'Sport/s you actively participate': TextEditingController(text: staff?.sports ?? ''),
-      'Sports - Training School/Trained by details': TextEditingController(text: staff?.sportsTrainingDetails ?? ''),
-      'Sports - Name the Team/s or Club/s you are associated with': TextEditingController(text: staff?.sportsTeamClub ?? ''),
-      'Achievements- Academic or Non-Academic outside of School': TextEditingController(text: staff?.achievements ?? ''),
-      'Extra-Curricular activity/s that you actively participate': TextEditingController(text: staff?.extraCurricularActivities ?? ''),
-      'Extra-Curricular - Training School/Trained by details': TextEditingController(),
-      'Extra-Curricular - Name the Team/s or Club/s you are associated with': TextEditingController(text: staff?.extraCurricularTeamClub ?? ''),
-      'Professional Body Association': TextEditingController(text: staff?.professionalBodyAssociation ?? ''),
-      'What you do': TextEditingController(text: staff?.whatYouDo ?? ''),
+      'Employee Name': TextEditingController(text: value(staff?.name, 'MOHAMED TADJHEEN R')),
+      'Mobile No': TextEditingController(text: value(staff?.mobileNo, '9500468146')),
+      'Shareable Contact No': TextEditingController(text: value(staff?.shareableContactNo, '9500468146')),
+      'Mail Id': TextEditingController(text: value(staff?.mailId, 'secretary.pr.universals@sriaurobindomira.org')),
+      'Address': TextEditingController(text: value(staff?.address, '36, Palani Andavar Kovil Street, Thiruparankundram, Madurai-05.')),
+      'Brief Introduction - Something about yourself': TextEditingController(text: value(staff?.briefIntroduction, 'This is R. Mohamed Tadjheen, working as Designer & Secretary to principal at Sri Aurobindo Mira Universal School, Keelamathur, Madurai.')),
+      'Hobbies and Interest': TextEditingController(text: value(staff?.hobbiesAndInterest, 'My hobbies is to Watch Movies & Playing Games. Interest in Taking Photography.')),
+      'Sport/s you actively participate': TextEditingController(text: value(staff?.sports, 'Cricket, Football, Carrom, kho-kho and chess.')),
+      'Sports - Training School/Trained by details': TextEditingController(text: value(staff?.sportsTrainingDetails, 'Football and kho-kho')),
+      'Sports - Name the Team/s or Club/s you are associated with': TextEditingController(text: value(staff?.sportsTeamClub, 'No team')),
+      'Achievements- Academic or Non-Academic outside of School': TextEditingController(text: value(staff?.achievements, 'Zonal Level Runner in kho-kho.')),
+      'Extra-Curricular activity/s that you actively participate': TextEditingController(text: value(staff?.extraCurricularActivities, 'Photography, Art & Craft and Dancing')),
+      'Extra-Curricular - Training School/Trained by details': TextEditingController(text: 'No team'),
+      'Extra-Curricular - Name the Team/s or Club/s you are associated with': TextEditingController(text: value(staff?.extraCurricularTeamClub, 'No team')),
+      'Professional Body Association': TextEditingController(text: value(staff?.professionalBodyAssociation, 'No Professional body association')),
+      'What you do': TextEditingController(text: value(staff?.whatYouDo, 'I am Designer & Secretary to principal in SAM Universal, Photographer and System Admin work.')),
     };
   }
 
@@ -227,7 +250,10 @@ class _StaffEditFormState extends State<_StaffEditForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Employee information saved.')),
       );
-      Navigator.of(context).pop(saved);
+      Navigator.of(context).pushReplacementNamed(
+        AppRoutes.staffInfo,
+        arguments: saved,
+      );
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

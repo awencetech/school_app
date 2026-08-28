@@ -109,7 +109,7 @@ async function connectMongo() {
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
     groupMessagesCollection = db.collection('groupMessages');
-    classTimetableCollection = db.collection('class-timetable');
+    classTimetableCollection = db.collection('class-timetables');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();

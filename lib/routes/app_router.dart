@@ -60,6 +60,7 @@ import '../screens/admin/class_resources_page.dart';
 import '../screens/admin/class_timetable_page.dart';
 import '../screens/admin/group_messages_page.dart';
 import '../screens/admin/homework_today_in_class_page.dart';
+import '../screens/admin/future_event_calendar_page.dart';
 import '../screens/admin/online_assignment_page.dart';
 import '../screens/admin/online_assessment_page.dart';
 import '../screens/admin/online_class_meeting_page.dart';

@@ -18,13 +18,15 @@ class StaffDetailsPage extends StatefulWidget {
 class _StaffDetailsPageState extends State<StaffDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   late final Map<String, TextEditingController> _fields;
+  late StaffInfo _staff;
   bool _editing = false;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    final staff = widget.staff;
+    _staff = widget.staff;
+    final staff = _staff;
     _fields = {
       'Employee Name': TextEditingController(text: staff.name),
       'Mobile No': TextEditingController(text: staff.mobileNo),
@@ -53,19 +55,19 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || widget.staff.id == null) return;
+    if (!_formKey.currentState!.validate() || _staff.id == null) return;
     setState(() => _saving = true);
     final staff = StaffInfo(
-      id: widget.staff.id,
+      id: _staff.id,
       name: _value('Employee Name'),
-      designation: widget.staff.designation,
-      employeeCategory: widget.staff.employeeCategory,
-      employeeId: widget.staff.employeeId,
-      teaches: widget.staff.teaches,
-      about: widget.staff.about,
+      designation: _staff.designation,
+      employeeCategory: _staff.employeeCategory,
+      employeeId: _staff.employeeId,
+      teaches: _staff.teaches,
+      about: _staff.about,
       hobbiesAndInterest: _value('Hobbies and Interest'),
-      role: widget.staff.role,
-      imageUrl: widget.staff.imageUrl,
+      role: _staff.role,
+      imageUrl: _staff.imageUrl,
       mobileNo: _value('Mobile No'),
       shareableContactNo: _value('Shareable Contact No'),
       mailId: _value('Mail Id'),
@@ -81,10 +83,13 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
       whatYouDo: _value('What you do'),
     );
     try {
-      await StaffService().updateStaff(staff);
+      final savedStaff = await StaffService().updateStaff(staff);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Employee information saved.')));
-      setState(() => _editing = false);
+      setState(() {
+        _staff = savedStaff;
+        _editing = false;
+      });
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $error')));
     } finally {
@@ -139,7 +144,7 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
   }
 
   Widget _viewBody() {
-    final staff = widget.staff;
+    final staff = _staff;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -147,7 +152,6 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
         foregroundColor: Colors.white,
         title: const Text('Employee Info'),
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).pop()),
-        actions: [IconButton(icon: const Icon(Icons.edit_outlined), tooltip: 'Edit', onPressed: () => setState(() => _editing = true))],
       ),
       body: _editing ? _editBody() : SafeArea(
         child: SingleChildScrollView(
@@ -190,6 +194,25 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
                   ),
                   const SizedBox(width: 8),
                   _StaffPhoto(url: staff.imageUrl),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _StaffShortcut(
+                    icon: Icons.info,
+                    label: 'Staff Info',
+                    color: const Color(0xFF22C8C8),
+                    onTap: () => setState(() => _editing = false),
+                  ),
+                  const SizedBox(width: 28),
+                  _StaffShortcut(
+                    icon: Icons.folder,
+                    label: 'Staff Resources',
+                    color: const Color(0xFF8D6E63),
+                    onTap: () => Navigator.of(context).pushNamed(AppRoutes.staffResources),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -242,6 +265,51 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           Text(value, style: const TextStyle(fontSize: 10, color: Color(0xFF444444))),
         ],
+      ),
+    );
+  }
+}
+
+class _StaffShortcut extends StatelessWidget {
+  const _StaffShortcut({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 56,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 18, color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 9, color: Color(0xFF444444)),
+            ),
+          ],
+        ),
       ),
     );
   }

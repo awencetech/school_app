@@ -59,7 +59,8 @@ let client;
 let mainPageInfoCollection;
 let imageBucket;
 let usersCollection;
-let staffInfoCollection;
+let employeeInfoCollection;
+let legacyStaffInfoCollection;
 let groupsCollection;
 let eventsCollection;
 let legacyEventsCollection;
@@ -96,7 +97,8 @@ async function connectMongo() {
     const db = client.db('mainpage');
     mainPageInfoCollection = db.collection('mainPageInfo');
     usersCollection = db.collection('users');
-    staffInfoCollection = db.collection('staff-info');
+    employeeInfoCollection = db.collection('employee-info');
+    legacyStaffInfoCollection = db.collection('staff-info');
     groupsCollection = db.collection('groups');
     eventsCollection = db.collection('future-events-calender');
     legacyEventsCollection = db.collection('events');
@@ -104,10 +106,19 @@ async function connectMongo() {
     groupMessagesCollection = db.collection('groupMessages');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
+    await migrateLegacyStaffInfo();
     await migrateLegacyEvents();
   }
 
   return mainPageInfoCollection;
+}
+
+async function migrateLegacyStaffInfo() {
+  const employeeCount = await employeeInfoCollection.countDocuments();
+  if (employeeCount > 0) return;
+
+  const legacyStaff = await legacyStaffInfoCollection.find({}).toArray();
+  if (legacyStaff.length > 0) await employeeInfoCollection.insertMany(legacyStaff);
 }
 
 async function migrateLegacyEvents() {
@@ -896,7 +907,7 @@ app.delete('/api/users/:id', async (req, res) => {
 app.get('/api/staff', async (req, res) => {
   try {
     await connectMongo();
-    const staff = await staffInfoCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    const staff = await employeeInfoCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
     return res.json(staff.map(sanitizeStaffForResponse));
   } catch (error) {
     console.error('GET /api/staff failed:', error);
@@ -907,7 +918,7 @@ app.get('/api/staff', async (req, res) => {
 app.get('/api/staff/:id', async (req, res) => {
   try {
     await connectMongo();
-    const staff = await staffInfoCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const staff = await employeeInfoCollection.findOne({ _id: new ObjectId(req.params.id) });
     if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
     return res.json(sanitizeStaffForResponse(staff));
   } catch (error) {
@@ -926,7 +937,7 @@ app.post('/api/staff', async (req, res) => {
     const employeeId = String(body.employeeId).trim();
     const staffUser = await usersCollection.findOne({ userId: employeeId, role: 'staff' });
     if (!staffUser) return res.status(422).json({ message: 'Employee ID must belong to a staff user.' });
-    const existingStaff = await staffInfoCollection.findOne({ employeeId });
+    const existingStaff = await employeeInfoCollection.findOne({ employeeId });
     if (existingStaff) return res.status(409).json({ message: 'This Employee ID is already assigned.' });
 
     const now = new Date().toISOString();
@@ -956,8 +967,8 @@ app.post('/api/staff', async (req, res) => {
       createdAt: now,
       updatedAt: now,
     };
-    const result = await staffInfoCollection.insertOne(document);
-    return res.status(201).json(sanitizeStaffForResponse(await staffInfoCollection.findOne({ _id: result.insertedId })));
+    const result = await employeeInfoCollection.insertOne(document);
+    return res.status(201).json(sanitizeStaffForResponse(await employeeInfoCollection.findOne({ _id: result.insertedId })));
   } catch (error) {
     console.error('POST /api/staff failed:', error);
     return res.status(500).json({ message: 'Unable to save staff information.' });
@@ -975,7 +986,7 @@ app.put('/api/staff/:id', async (req, res) => {
     const employeeId = String(body.employeeId).trim();
     const staffUser = await usersCollection.findOne({ userId: employeeId, role: 'staff' });
     if (!staffUser) return res.status(422).json({ message: 'Employee ID must belong to a staff user.' });
-    const existingStaff = await staffInfoCollection.findOne({ employeeId, _id: { $ne: id } });
+    const existingStaff = await employeeInfoCollection.findOne({ employeeId, _id: { $ne: id } });
     if (existingStaff) return res.status(409).json({ message: 'This Employee ID is already assigned.' });
     const updates = {
       name: String(body.name).trim(),
@@ -1002,9 +1013,9 @@ app.put('/api/staff/:id', async (req, res) => {
       whatYouDo: String(body.whatYouDo || '').trim(),
       updatedAt: new Date().toISOString(),
     };
-    const result = await staffInfoCollection.updateOne({ _id: id }, { $set: updates });
+    const result = await employeeInfoCollection.updateOne({ _id: id }, { $set: updates });
     if (result.matchedCount === 0) return res.status(404).json({ message: 'Staff member not found.' });
-    return res.json(sanitizeStaffForResponse(await staffInfoCollection.findOne({ _id: id })));
+    return res.json(sanitizeStaffForResponse(await employeeInfoCollection.findOne({ _id: id })));
   } catch (error) {
     console.error('PUT /api/staff/:id failed:', error);
     return res.status(500).json({ message: 'Unable to update staff information.' });
@@ -1014,7 +1025,7 @@ app.put('/api/staff/:id', async (req, res) => {
 app.delete('/api/staff/:id', async (req, res) => {
   try {
     await connectMongo();
-    const result = await staffInfoCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    const result = await employeeInfoCollection.deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ message: 'Staff member not found.' });
     return res.json({ success: true });
   } catch (error) {

@@ -288,7 +288,14 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
                       arguments: teacher,
                     ),
                   ),
-                  _compactAction(Icons.info_outline, 'Info'),
+                  _compactAction(
+                    Icons.info_outline,
+                    'Info',
+                    () => Navigator.of(context).pushNamed(
+                      AppRoutes.adminEmployeeInfo,
+                      arguments: teacher,
+                    ),
+                  ),
                 ],
               ),
             ],

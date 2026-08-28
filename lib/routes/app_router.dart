@@ -135,7 +135,18 @@ class AppRouter {
         groupName: 'Grade 10 C',
         isStaffView: true,
       ),
-      AppRoutes.staffInfo => const StaffInfoPage(),
+      AppRoutes.staffInfo => (() {
+        final staff = settings.arguments;
+        return staff is StaffInfo
+        ? StaffInfoPage(staff: staff)
+        : const StaffInfoPage();
+      })(),
+      AppRoutes.staffInfoEdit => (() {
+        final staff = settings.arguments;
+        return staff is StaffInfo
+            ? StaffInfoPage(staff: staff, initialEditing: true)
+            : const StaffInfoPage(initialEditing: true);
+      })(),
       AppRoutes.staffApplyLeave => const StaffApplyLeavePage(),
       AppRoutes.staffSwipeAttendance => const StaffSwipeAttendancePage(),
       AppRoutes.staffManagementFeedback => const StaffPlaceholderPage(

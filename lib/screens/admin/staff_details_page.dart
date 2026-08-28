@@ -160,18 +160,8 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Employee Info', style: TextStyle(fontSize: 12, color: Colors.black87)),
-                  TextButton(
-                    onPressed: () => setState(() => _editing = true),
-                    style: TextButton.styleFrom(
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Edit', style: TextStyle(fontSize: 10, color: AppColors.blueButton)),
-                  ),
                 ],
               ),
               const Divider(height: 8, color: Color(0xFFE5E5E5)),
@@ -204,7 +194,10 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
                     icon: Icons.info,
                     label: 'Staff Info',
                     color: const Color(0xFF22C8C8),
-                    onTap: () => setState(() => _editing = false),
+                    onTap: () => Navigator.of(context).pushNamed(
+                      AppRoutes.staffInfo,
+                      arguments: staff,
+                    ),
                   ),
                   const SizedBox(width: 28),
                   _StaffShortcut(

@@ -16,6 +16,7 @@ class AppRoutes {
   static const staffOverviewDashboard = '/staff-dashboard/overview';
   static const staffEventCalendar = '/staff-dashboard/event-calendar';
   static const staffInfo = '/staff-dashboard/staff-info';
+  static const staffInfoEdit = '$staffInfo/edit';
   static const staffApplyLeave = '/staff-dashboard/apply-leave';
   static const staffSwipeAttendance = '/staff-dashboard/swipe-attendance';
   static const staffManagementFeedback = '/staff-dashboard/management-feedback';

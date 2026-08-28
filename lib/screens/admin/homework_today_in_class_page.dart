@@ -312,14 +312,15 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                     onPressed: () => _openEditForm(record),
                     icon: const Icon(Icons.edit_outlined, size: 19),
                   ),
-                IconButton(
-                  onPressed: () => _deleteRecord(record),
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.red,
-                    size: 20,
+                if (widget.isEdit)
+                  IconButton(
+                    onPressed: () => _deleteRecord(record),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 6),

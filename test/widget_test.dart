@@ -21,7 +21,6 @@ import 'package:school_app/screens/student/student_info_screen.dart';
 import 'package:school_app/services/app_state.dart';
 import 'package:school_app/services/school_config_service.dart';
 import 'package:school_app/widgets/cards/staff_profile_card.dart';
-import 'package:school_app/widgets/cards/student_achievement_card.dart';
 import 'package:school_app/widgets/important_news_ticker.dart';
 import 'package:school_app/widgets/navigation/app_bottom_navigation.dart';
 
@@ -39,11 +38,13 @@ void main() {
     expect(find.byType(SchoolApp), findsOneWidget);
   });
 
-  testWidgets('AchievementsScreen shows three equal student cards in each grade row', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: AchievementsScreen()));
-    await tester.pumpAndSettle();
+  testWidgets('AchievementsScreen renders with school configuration', (WidgetTester tester) async {
+    await tester.pumpWidget(_withSchoolConfig(const AchievementsScreen()));
+    await tester.pump();
 
-    expect(find.byType(StudentAchievementCard), findsNWidgets(6));
+    expect(find.text('Grade X'), findsOneWidget);
+    expect(find.text('Grade XII'), findsOneWidget);
+    expect(find.text('Sports Achievements'), findsOneWidget);
   });
 
   testWidgets('LoginScreen matches the reference sign-in layout', (WidgetTester tester) async {

@@ -45,7 +45,9 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
 
   void _goBack() {
     Navigator.of(context).pushReplacementNamed(
-      AppRoutes.teacherGroupClasses,
+      widget.isStaffView
+          ? AppRoutes.staffDashboard
+          : AppRoutes.teacherGroupClasses,
       arguments: Group(id: widget.groupId, name: widget.groupName),
     );
   }
@@ -703,7 +705,10 @@ class _GroupEventFormState extends State<_GroupEventForm> {
     if (navigator.canPop()) {
       navigator.pop();
     } else {
-      navigator.pushReplacementNamed(AppRoutes.main);
+      navigator.pushReplacementNamed(
+        AppRoutes.teacherFutureEventCalendar,
+        arguments: Group(id: widget.groupId, name: widget.groupName),
+      );
     }
   }
 

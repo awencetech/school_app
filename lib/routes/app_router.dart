@@ -205,6 +205,20 @@ class AppRouter {
           isEdit: settings.name == AppRoutes.teacherEditHomeworkToday,
         );
       })(),
+      AppRoutes.teacherHomeworkAdd => (() {
+        final group = _eventGroupFromArguments(settings.arguments);
+        return HomeworkAddPage(
+          groupId: _eventGroupId(group),
+          groupName: group.name,
+        );
+      })(),
+      AppRoutes.teacherTodayClassAdd => (() {
+        final group = _eventGroupFromArguments(settings.arguments);
+        return TodayClassAddPage(
+          groupId: _eventGroupId(group),
+          groupName: group.name,
+        );
+      })(),
       AppRoutes.teacherGroupMessages || AppRoutes.teacherEditGroupMessages => (() {
         final group = settings.arguments as Group;
         return GroupMessagesPage(

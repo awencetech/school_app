@@ -41,14 +41,11 @@ class AppBottomNavigation extends StatelessWidget {
       selectedFontSize: 10,
       unselectedFontSize: 10,
       currentIndex: state?.bottomNavIndex ?? 0,
-      onTap: (index) {
+      onTap: (index) async {
         if (index == 4 && isLoggedIn) {
-          state?.setLoggedIn(false);
-          state?.setBottomNavIndex(0);
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRoutes.main,
-            (route) => false,
-          );
+          await state?.logout();
+          if (!context.mounted) return;
+          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
           return;
         }
 

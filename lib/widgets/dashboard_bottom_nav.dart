@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../routes/app_routes.dart';
+import '../services/app_state.dart';
 
 /// Reusable bottom navigation used inside the dashboard sections only.
 class ReusableBottomNavigationBar extends StatelessWidget {
@@ -33,7 +37,18 @@ class ReusableBottomNavigationBar extends StatelessWidget {
       ),
       elevation: 0,
       currentIndex: currentIndex,
-      onTap: onItemSelected,
+      onTap: (index) async {
+        if (index == 4) {
+          await context.read<AppState>().logout();
+          if (!context.mounted) return;
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.main,
+            (route) => false,
+          );
+          return;
+        }
+        onItemSelected(index);
+      },
       items: items,
     );
   }

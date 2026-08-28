@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../routes/app_routes.dart';
+import '../services/app_state.dart';
 
 class StaffFooter extends StatelessWidget {
   const StaffFooter({super.key, this.currentIndex = 2, this.onItemSelected});
@@ -19,15 +21,18 @@ class StaffFooter extends StatelessWidget {
       unselectedFontSize: 9,
       elevation: 0,
       currentIndex: currentIndex,
-      onTap: (index) {
+      onTap: (index) async {
         if (onItemSelected != null) {
           onItemSelected!(index);
           return;
         }
         if (index == 4) {
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+          await context.read<AppState>().logout();
+          if (!context.mounted) return;
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.main,
+            (route) => false,
+          );
         }
       },
       items: const [

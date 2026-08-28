@@ -8,6 +8,7 @@ class TodayInClassRecord {
     required this.sendToStudents,
     required this.sendToTeachers,
     required this.commentsAllowed,
+    this.isHomework = false,
     this.attachments = const [],
   });
 
@@ -19,6 +20,7 @@ class TodayInClassRecord {
   final bool sendToStudents;
   final bool sendToTeachers;
   final bool commentsAllowed;
+  final bool isHomework;
   final List<String> attachments;
 
   factory TodayInClassRecord.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class TodayInClassRecord {
       sendToStudents: json['sendToStudents'] == true,
       sendToTeachers: json['sendToTeachers'] == true,
       commentsAllowed: json['commentsAllowed'] != false,
+      isHomework: json['isHomework'] == true,
       attachments: (json['attachments'] is List)
           ? (json['attachments'] as List).map((item) => item.toString()).toList()
           : const [],

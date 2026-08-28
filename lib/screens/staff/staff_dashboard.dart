@@ -557,11 +557,14 @@ class _StaffDashboardState extends State<StaffDashboard> {
             ),
       bottomNavigationBar: StaffFooter(
         currentIndex: _selectedBottomIndex,
-        onItemSelected: (index) {
+        onItemSelected: (index) async {
           if (index == 4) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+            await context.read<AppState>().logout();
+            if (!context.mounted) return;
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.main,
+              (route) => false,
+            );
             return;
           }
 

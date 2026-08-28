@@ -13,6 +13,7 @@ import '../../models/group.dart';
 import '../../models/today_in_class.dart';
 import '../../routes/app_routes.dart';
 import '../../services/today_in_class_service.dart';
+import '../../services/homework_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/slug_generator.dart';
@@ -41,7 +42,9 @@ class HomeworkTodayInClassPage extends StatefulWidget {
 
 class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
   final TodayInClassService _service = TodayInClassService();
+  final HomeworkService _homeworkService = HomeworkService();
   List<TodayInClassRecord> _records = [];
+  List<TodayInClassRecord> _homeworkRecords = [];
   bool _isLoading = true;
   bool _hasError = false;
   late int _tabIndex;
@@ -54,6 +57,9 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
     }
     return generateGroupDatabaseId(widget.groupName);
   }
+
+    List<TodayInClassRecord> get _visibleRecords =>
+      _tabIndex == 0 ? _homeworkRecords : _records;
 
   void _goBack() {
     final navigator = Navigator.of(context);
@@ -81,9 +87,11 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
     });
     try {
       final records = await _service.getRecords(_effectiveGroupId);
+      final homework = await _homeworkService.getRecords(_effectiveGroupId);
       if (!mounted) return;
       setState(() {
-        _records = records;
+        _records = records.where((record) => !record.isHomework).toList();
+        _homeworkRecords = homework;
         _isLoading = false;
       });
     } catch (_) {
@@ -96,14 +104,14 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
   }
 
   Future<void> _openAddForm() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) =>
-            _TodayInClassForm(
-              service: _service,
-              groupId: _effectiveGroupId,
-              isHomework: _tabIndex == 0,
-            ),
+    final saved = await Navigator.of(context).pushNamed<bool>(
+      _tabIndex == 0
+          ? AppRoutes.teacherHomeworkAdd
+          : AppRoutes.teacherTodayClassAdd,
+      arguments: Group(
+        id: _effectiveGroupId,
+        name: widget.groupName,
+        year: widget.groupYear,
       ),
     );
     if (saved == true) _loadRecords();
@@ -114,6 +122,7 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
       MaterialPageRoute(
         builder: (_) => _TodayInClassForm(
           service: _service,
+          homeworkService: record.isHomework ? _homeworkService : null,
           groupId: _effectiveGroupId,
           record: record,
           isHomework: _tabIndex == 0,
@@ -125,7 +134,11 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
 
   Future<void> _deleteRecord(TodayInClassRecord record) async {
     try {
-      await _service.deleteRecord(widget.groupId, record.id);
+      if (record.isHomework) {
+        await _homeworkService.deleteRecord(_effectiveGroupId, record.id);
+      } else {
+        await _service.deleteRecord(_effectiveGroupId, record.id);
+      }
       if (mounted) {
         setState(() => _records.removeWhere((item) => item.id == record.id));
         ScaffoldMessenger.of(
@@ -202,12 +215,10 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                 )
               else if (_hasError)
                 _errorState()
-              else if (_tabIndex == 0)
-                _emptyState('No Data available')
-              else if (_records.isEmpty)
+              else if (_visibleRecords.isEmpty)
                 _emptyState('No Data available')
               else
-                ..._records.map(_recordCard),
+                ..._visibleRecords.map(_recordCard),
             ],
           ),
         ),
@@ -276,7 +287,7 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'Homework: ${record.subject}',
+                              '${record.isHomework ? 'Homework' : 'Today in Class'}: ${record.subject}',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -431,6 +442,35 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
       '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
 }
 
+class HomeworkAddPage extends StatelessWidget {
+  const HomeworkAddPage({super.key, required this.groupId, required this.groupName});
+
+  final String groupId;
+  final String groupName;
+
+  @override
+  Widget build(BuildContext context) => _TodayInClassForm(
+        service: TodayInClassService(),
+        homeworkService: HomeworkService(),
+        groupId: groupId,
+        isHomework: true,
+      );
+}
+
+class TodayClassAddPage extends StatelessWidget {
+  const TodayClassAddPage({super.key, required this.groupId, required this.groupName});
+
+  final String groupId;
+  final String groupName;
+
+  @override
+  Widget build(BuildContext context) => _TodayInClassForm(
+        service: TodayInClassService(),
+        groupId: groupId,
+        isHomework: false,
+      );
+}
+
 class _ResponsiveAttachmentPreview extends StatefulWidget {
   const _ResponsiveAttachmentPreview({required this.url, required this.onTap});
 
@@ -506,12 +546,14 @@ class _ResponsiveAttachmentPreviewState
 class _TodayInClassForm extends StatefulWidget {
   const _TodayInClassForm({
     required this.service,
+    this.homeworkService,
     required this.groupId,
     this.record,
     this.isHomework = false,
   });
 
   final TodayInClassService service;
+  final HomeworkService? homeworkService;
   final String groupId;
   final TodayInClassRecord? record;
   final bool isHomework;
@@ -610,36 +652,71 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
     try {
       if (_selectedFileBytes != null && _selectedFileName != null) {
         _attachments.add(
-          await widget.service.uploadAttachment(
-            _selectedFileName!,
-            _selectedFileBytes!,
-            contentType: _contentTypeFor(_selectedFileName!),
-          ),
+          await (widget.homeworkService != null
+              ? widget.homeworkService!.uploadAttachment(
+                  _selectedFileName!,
+                  _selectedFileBytes!,
+                  contentType: _contentTypeFor(_selectedFileName!),
+                )
+              : widget.service.uploadAttachment(
+                  _selectedFileName!,
+                  _selectedFileBytes!,
+                  contentType: _contentTypeFor(_selectedFileName!),
+                )),
         );
       }
       if (widget.record == null) {
-        await widget.service.createRecord(
-          groupId: widget.groupId,
-          date: _date,
-          subject: subject,
-          message: message,
-          sendToStudents: _sendStudents,
-          sendToTeachers: _sendTeachers,
-          commentsAllowed: _commentsAllowed,
-          attachments: _attachments,
-        );
+        if (widget.homeworkService != null) {
+          await widget.homeworkService!.createRecord(
+            groupId: widget.groupId,
+            date: _date,
+            subject: subject,
+            message: message,
+            sendToStudents: _sendStudents,
+            sendToTeachers: _sendTeachers,
+            commentsAllowed: _commentsAllowed,
+            attachments: _attachments,
+          );
+        } else {
+          await widget.service.createRecord(
+            groupId: widget.groupId,
+            date: _date,
+            subject: subject,
+            message: message,
+            sendToStudents: _sendStudents,
+            sendToTeachers: _sendTeachers,
+            commentsAllowed: _commentsAllowed,
+            isHomework: false,
+            attachments: _attachments,
+          );
+        }
       } else {
-        await widget.service.updateRecord(
-          groupId: widget.groupId,
-          recordId: widget.record!.id,
-          date: _date,
-          subject: subject,
-          message: message,
-          sendToStudents: _sendStudents,
-          sendToTeachers: _sendTeachers,
-          commentsAllowed: _commentsAllowed,
-          attachments: _attachments,
-        );
+        if (widget.homeworkService != null) {
+          await widget.homeworkService!.updateRecord(
+            groupId: widget.groupId,
+            recordId: widget.record!.id,
+            date: _date,
+            subject: subject,
+            message: message,
+            sendToStudents: _sendStudents,
+            sendToTeachers: _sendTeachers,
+            commentsAllowed: _commentsAllowed,
+            attachments: _attachments,
+          );
+        } else {
+          await widget.service.updateRecord(
+            groupId: widget.groupId,
+            recordId: widget.record!.id,
+            date: _date,
+            subject: subject,
+            message: message,
+            sendToStudents: _sendStudents,
+            sendToTeachers: _sendTeachers,
+            commentsAllowed: _commentsAllowed,
+            isHomework: false,
+            attachments: _attachments,
+          );
+        }
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -661,11 +738,17 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
       _error = null;
     });
     try {
-      final url = await widget.service.uploadAttachment(
-        _selectedFileName!,
-        _selectedFileBytes!,
-        contentType: _contentTypeFor(_selectedFileName!),
-      );
+      final url = await (widget.homeworkService != null
+          ? widget.homeworkService!.uploadAttachment(
+              _selectedFileName!,
+              _selectedFileBytes!,
+              contentType: _contentTypeFor(_selectedFileName!),
+            )
+          : widget.service.uploadAttachment(
+              _selectedFileName!,
+              _selectedFileBytes!,
+              contentType: _contentTypeFor(_selectedFileName!),
+            ));
       if (!mounted) return;
       setState(() {
         _attachments.add(url);

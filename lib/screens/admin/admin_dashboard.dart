@@ -498,7 +498,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: _selectedBottomIndex,
-        onItemSelected: (index) {
+        onItemSelected: (index) async {
           switch (index) {
             case 0:
               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -519,9 +519,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Navigator.of(context).pushNamed(AppRoutes.supportQuery);
               break;
             case 4:
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+              await context.read<AppState>().logout();
+              if (!context.mounted) return;
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.main,
+                (route) => false,
+              );
               break;
           }
         },

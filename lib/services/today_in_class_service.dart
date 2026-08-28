@@ -47,6 +47,7 @@ class TodayInClassService {
     required bool sendToStudents,
     required bool sendToTeachers,
     required bool commentsAllowed,
+    required bool isHomework,
     required List<String> attachments,
   }) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class');
@@ -60,6 +61,7 @@ class TodayInClassService {
         'sendToStudents': sendToStudents,
         'sendToTeachers': sendToTeachers,
         'commentsAllowed': commentsAllowed,
+        'isHomework': isHomework,
         'attachments': attachments,
       }),
     ).timeout(const Duration(seconds: 20));
@@ -86,6 +88,7 @@ class TodayInClassService {
     required bool sendToStudents,
     required bool sendToTeachers,
     required bool commentsAllowed,
+    required bool isHomework,
     required List<String> attachments,
   }) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class/${Uri.encodeComponent(recordId)}');
@@ -99,6 +102,7 @@ class TodayInClassService {
         'sendToStudents': sendToStudents,
         'sendToTeachers': sendToTeachers,
         'commentsAllowed': commentsAllowed,
+        'isHomework': isHomework,
         'attachments': attachments,
       }),
     ).timeout(const Duration(seconds: 20));

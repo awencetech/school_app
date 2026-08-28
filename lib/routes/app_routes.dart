@@ -73,6 +73,10 @@ class AppRoutes {
           '$teacherGroupClasses/future-event-calendar-edit';
         static const teacherEditHomeworkToday =
           '$teacherGroupClasses/homework-today-edit';
+        static const teacherHomeworkAdd =
+          '$teacherEditHomeworkToday/homework-add';
+        static const teacherTodayClassAdd =
+          '$teacherEditHomeworkToday/today-class';
         static const teacherEditGroupMessages =
           '$teacherGroupClasses/group-messages-edit';
         static const teacherEditWriteMessage =

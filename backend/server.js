@@ -65,6 +65,7 @@ let groupsCollection;
 let eventsCollection;
 let legacyEventsCollection;
 let todayInClassCollection;
+let homeworkCollection;
 let groupMessagesCollection;
 
 async function ensureIndexes(db) {
@@ -74,6 +75,7 @@ async function ensureIndexes(db) {
     usersCollection.createIndex({ email: 1 }, { sparse: true }),
     eventsCollection.createIndex({ groupId: 1, startDate: 1 }),
     todayInClassCollection.createIndex({ groupId: 1, date: 1 }),
+    homeworkCollection.createIndex({ groupId: 1, date: 1 }),
     groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
   ]);
 }
@@ -103,6 +105,7 @@ async function connectMongo() {
     eventsCollection = db.collection('future-events-calender');
     legacyEventsCollection = db.collection('events');
     todayInClassCollection = db.collection('todayInClass');
+    homeworkCollection = db.collection('home-work');
     groupMessagesCollection = db.collection('groupMessages');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
@@ -243,6 +246,7 @@ function sanitizeTodayInClassForResponse(doc) {
     sendToStudents: doc.sendToStudents === true,
     sendToTeachers: doc.sendToTeachers === true,
     commentsAllowed: doc.commentsAllowed !== false,
+    isHomework: doc.isHomework === true,
     attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
@@ -470,6 +474,108 @@ app.get('/api/groups/:groupId/today-in-class', async (req, res) => {
   }
 });
 
+app.get('/api/groups/:groupId/homework', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const records = await homeworkCollection
+      .find({ groupId: { $in: groupIdVariants(groupId) } })
+      .sort({ date: -1, createdAt: -1 })
+      .toArray();
+    return res.json(records.map((record) => ({
+      ...sanitizeTodayInClassForResponse(record),
+      isHomework: true,
+    })));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/homework failed:', error);
+    return res.status(500).json({ message: 'Unable to load Homework.' });
+  }
+});
+
+app.post('/api/groups/:groupId/homework', async (req, res) => {
+  try {
+    await connectMongo();
+    const requestedGroupId = (req.params.groupId || '').trim();
+    const group = await findGroupByReference(requestedGroupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+    const body = req.body || {};
+    const subject = (body.subject || '').toString().trim();
+    const message = (body.message || '').toString().trim();
+    const date = (body.date || '').toString().trim();
+    if (!subject || !message || !date || Number.isNaN(Date.parse(date))) {
+      return res.status(422).json({ message: 'Date, subject, and message are required.' });
+    }
+    const now = new Date().toISOString();
+    const record = {
+      groupId: requestedGroupId,
+      date,
+      subject,
+      message,
+      sendToStudents: body.sendToStudents === true,
+      sendToTeachers: body.sendToTeachers === true,
+      commentsAllowed: body.commentsAllowed !== false,
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await homeworkCollection.insertOne(record);
+    const saved = await homeworkCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({ ...sanitizeTodayInClassForResponse(saved), isHomework: true });
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/homework failed:', error);
+    return res.status(500).json({ message: 'Unable to save Homework.' });
+  }
+});
+
+app.put('/api/groups/:groupId/homework/:recordId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const recordId = (req.params.recordId || '').trim();
+    const body = req.body || {};
+    const date = (body.date || '').toString().trim();
+    const subject = (body.subject || '').toString().trim();
+    const message = (body.message || '').toString().trim();
+    if (!groupId || !recordId || !date || Number.isNaN(Date.parse(date)) || !subject || !message) {
+      return res.status(422).json({ message: 'Date, subject, and message are required.' });
+    }
+    const selector = { groupId: { $in: groupIdVariants(groupId) } };
+    try { selector._id = new ObjectId(recordId); } catch (_) { selector.id = recordId; }
+    const update = {
+      date,
+      subject,
+      message,
+      sendToStudents: body.sendToStudents === true,
+      sendToTeachers: body.sendToTeachers === true,
+      commentsAllowed: body.commentsAllowed !== false,
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      updatedAt: new Date().toISOString(),
+    };
+    const result = await homeworkCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Homework record not found.' });
+    const saved = await homeworkCollection.findOne(selector);
+    return res.json({ ...sanitizeTodayInClassForResponse(saved), isHomework: true });
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/homework/:recordId failed:', error);
+    return res.status(500).json({ message: 'Unable to update Homework.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/homework/:recordId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const selector = { groupId: { $in: groupIdVariants(groupId) } };
+    try { selector._id = new ObjectId(req.params.recordId); } catch (_) { selector.id = req.params.recordId; }
+    const result = await homeworkCollection.deleteOne(selector);
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Homework record not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/homework/:recordId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete Homework.' });
+  }
+});
+
 app.post('/api/groups/:groupId/today-in-class', async (req, res) => {
   try {
     await connectMongo();
@@ -494,6 +600,7 @@ app.post('/api/groups/:groupId/today-in-class', async (req, res) => {
       sendToStudents: body.sendToStudents === true,
       sendToTeachers: body.sendToTeachers === true,
       commentsAllowed: body.commentsAllowed !== false,
+      isHomework: body.isHomework === true,
       attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
       createdAt: now,
       updatedAt: now,
@@ -533,6 +640,7 @@ app.put('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => {
       sendToStudents: body.sendToStudents === true,
       sendToTeachers: body.sendToTeachers === true,
       commentsAllowed: body.commentsAllowed !== false,
+      isHomework: body.isHomework === true,
       attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
       updatedAt: new Date().toISOString(),
     };

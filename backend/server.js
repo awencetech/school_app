@@ -287,6 +287,14 @@ function groupIdVariants(groupId) {
   return [...new Set(variants)];
 }
 
+function recordIdSelector(recordId) {
+  try {
+    return { $or: [{ _id: new ObjectId(recordId) }, { id: recordId }] };
+  } catch (_) {
+    return { id: recordId };
+  }
+}
+
 function groupReferenceSlug(value) {
   return value.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -539,8 +547,10 @@ app.put('/api/groups/:groupId/homework/:recordId', async (req, res) => {
     if (!groupId || !recordId || !date || Number.isNaN(Date.parse(date)) || !subject || !message) {
       return res.status(422).json({ message: 'Date, subject, and message are required.' });
     }
-    const selector = { groupId: { $in: groupIdVariants(groupId) } };
-    try { selector._id = new ObjectId(recordId); } catch (_) { selector.id = recordId; }
+    const selector = {
+      groupId: { $in: groupIdVariants(groupId) },
+      ...recordIdSelector(recordId),
+    };
     const update = {
       date,
       subject,
@@ -565,8 +575,10 @@ app.delete('/api/groups/:groupId/homework/:recordId', async (req, res) => {
   try {
     await connectMongo();
     const groupId = (req.params.groupId || '').trim();
-    const selector = { groupId: { $in: groupIdVariants(groupId) } };
-    try { selector._id = new ObjectId(req.params.recordId); } catch (_) { selector.id = req.params.recordId; }
+    const selector = {
+      groupId: { $in: groupIdVariants(groupId) },
+      ...recordIdSelector(req.params.recordId),
+    };
     const result = await homeworkCollection.deleteOne(selector);
     if (result.deletedCount === 0) return res.status(404).json({ message: 'Homework record not found.' });
     return res.json({ success: true });
@@ -627,12 +639,10 @@ app.put('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => {
       return res.status(422).json({ message: 'Date, subject, and message are required.' });
     }
 
-    const selector = { groupId: { $in: groupIdVariants(groupId) } };
-    try {
-      selector._id = new ObjectId(recordId);
-    } catch (_) {
-      selector.id = recordId;
-    }
+    const selector = {
+      groupId: { $in: groupIdVariants(groupId) },
+      ...recordIdSelector(recordId),
+    };
     const update = {
       date,
       subject,
@@ -658,12 +668,10 @@ app.delete('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => 
   try {
     await connectMongo();
     const groupId = (req.params.groupId || '').trim();
-    let result;
-    try {
-      result = await todayInClassCollection.deleteOne({ _id: new ObjectId(req.params.recordId), groupId: { $in: groupIdVariants(groupId) } });
-    } catch (_) {
-      result = await todayInClassCollection.deleteOne({ id: req.params.recordId, groupId: { $in: groupIdVariants(groupId) } });
-    }
+    const result = await todayInClassCollection.deleteOne({
+      groupId: { $in: groupIdVariants(groupId) },
+      ...recordIdSelector(req.params.recordId),
+    });
     if (result.deletedCount === 0) return res.status(404).json({ message: 'Today in Class record not found.' });
     return res.json({ success: true });
   } catch (error) {

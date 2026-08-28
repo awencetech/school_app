@@ -104,7 +104,7 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
   }
 
   Future<void> _openAddForm() async {
-    final saved = await Navigator.of(context).pushNamed<bool>(
+    final saved = await Navigator.of(context).pushNamed(
       _tabIndex == 0
           ? AppRoutes.teacherHomeworkAdd
           : AppRoutes.teacherTodayClassAdd,

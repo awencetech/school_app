@@ -68,6 +68,7 @@ let todayInClassCollection;
 let homeworkCollection;
 let groupMessagesCollection;
 let classTimetableCollection;
+let legacyClassTimetableCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -110,10 +111,12 @@ async function connectMongo() {
     homeworkCollection = db.collection('home-work');
     groupMessagesCollection = db.collection('groupMessages');
     classTimetableCollection = db.collection('class-timetables');
+    legacyClassTimetableCollection = db.collection('class-timetable');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
     await migrateLegacyEvents();
+    await migrateLegacyClassTimetable();
   }
 
   return mainPageInfoCollection;
@@ -132,6 +135,14 @@ async function migrateLegacyEvents() {
   for (const event of legacyEvents) {
     const exists = await eventsCollection.findOne({ _id: event._id });
     if (!exists) await eventsCollection.insertOne(event);
+  }
+}
+
+async function migrateLegacyClassTimetable() {
+  const legacyEntries = await legacyClassTimetableCollection.find({}).toArray();
+  for (const entry of legacyEntries) {
+    const exists = await classTimetableCollection.findOne({ _id: entry._id });
+    if (!exists) await classTimetableCollection.insertOne(entry);
   }
 }
 

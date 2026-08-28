@@ -143,8 +143,8 @@ class AppRouter {
       AppRoutes.staffInfo => (() {
         final staff = settings.arguments;
         return staff is StaffInfo
-        ? StaffInfoPage(staff: staff)
-        : const StaffInfoPage();
+            ? StaffInfoPage(staff: staff)
+            : const StaffInfoPage();
       })(),
       AppRoutes.staffInfoEdit => (() {
         final staff = settings.arguments;
@@ -268,19 +268,25 @@ class AppRouter {
       AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews =>
         ClassNewsPage(group: settings.arguments as Group),
       AppRoutes.teacherClassTimetable => ClassTimetablePage(
-        group: settings.arguments as Group,
+        group: _eventGroupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherEditClassTimetable => ClassTimetablePage(
-        group: settings.arguments as Group,
+        group: _eventGroupFromArguments(settings.arguments),
         isEdit: true,
       ),
       AppRoutes.teacherClassTimetableAdd => (() {
         final arguments = settings.arguments;
         if (arguments is Group) return ClassTimetableFormPage(group: arguments);
-        final values = arguments as Map;
+        final values = arguments is Map
+            ? Map<String, dynamic>.from(arguments)
+            : <String, dynamic>{};
         return ClassTimetableFormPage(
-          group: values['group'] as Group,
-          entry: values['entry'] as ClassTimetableEntry,
+          group: values['group'] is Group
+              ? values['group'] as Group
+              : _eventGroupFromArguments(null),
+          entry: values['entry'] is ClassTimetableEntry
+              ? values['entry'] as ClassTimetableEntry
+              : null,
         );
       })(),
       AppRoutes.teacherClassPlanner || AppRoutes.teacherEditClassPlanner =>

@@ -163,11 +163,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
                         style: TextStyle(fontSize: 10),
                       ),
                     )
-                  : widget.isEdit
-                  ? _buildWeeklyGrid()
-                  : ListView(
-                      children: [for (final day in _days) ..._daySection(day)],
-                    ),
+                  : _buildWeeklyGrid(),
             ),
           ],
         ),
@@ -177,50 +173,6 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
         onItemSelected: (_) {},
       ),
     );
-  }
-
-  List<Widget> _daySection(String day) {
-    final entries = _entries.where((entry) => entry.day == day).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
-    if (entries.isEmpty) return [];
-    return [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(10, 12, 10, 5),
-        child: Text(
-          day,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
-      ...entries.map(
-        (entry) => Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          elevation: 0,
-          color: const Color(0xfff4f5f8),
-          child: ListTile(
-            title: Text(
-              '${entry.startTime} - ${entry.endTime}\n${entry.subject}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              'Teacher: ${entry.teacher}${entry.room.isEmpty ? '' : '\nRoom: ${entry.room}'}${entry.notes.isEmpty ? '' : '\n${entry.notes}'}',
-            ),
-            trailing: widget.isEdit
-                ? PopupMenuButton<String>(
-                    onSelected: (value) =>
-                        value == 'edit' ? _open(entry) : _delete(entry),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
-                  )
-                : null,
-          ),
-        ),
-      ),
-    ];
   }
 
   Widget _buildWeeklyGrid() {
@@ -350,14 +302,16 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Close'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, 'delete'),
-            child: const Text('Delete'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, 'edit'),
-            child: const Text('Edit'),
-          ),
+          if (widget.isEdit) ...[
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, 'delete'),
+              child: const Text('Delete'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, 'edit'),
+              child: const Text('Edit'),
+            ),
+          ],
         ],
       ),
     );

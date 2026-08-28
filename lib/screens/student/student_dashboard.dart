@@ -16,6 +16,7 @@ import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
+import '../../widgets/help_menu_screen.dart';
 import '../support/support_screen.dart';
 import '../messages/messages_page.dart';
 import 'student_info_screen.dart';
@@ -85,32 +86,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ),
         automaticallyImplyLeading: false,
       ),
-      body: _selectedBottomIndex == 3
+      body: _selectedBottomIndex == 2
+          ? const HelpMenuScreen()
+          : _selectedBottomIndex == 3
           ? const SupportScreen()
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 10),
-                  Text(
-                    context.watch<SchoolConfigService>().schoolName,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Welcome ${context.watch<AppState>().currentUserId ?? 'Student'}',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   // Poster from school config (if set)
                   if (config.posterDisplaySource != null &&
                       config.posterDisplaySource!.isNotEmpty)
@@ -123,6 +106,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     )
                   else
                     const SizedBox.shrink(),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.watch<SchoolConfigService>().schoolName,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Welcome ${context.watch<AppState>().currentUserId ?? 'Student'}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -585,7 +588,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
           BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
           BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
         ],

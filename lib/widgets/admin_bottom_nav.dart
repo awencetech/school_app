@@ -51,7 +51,7 @@ class AdminBottomNavigationBar extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-        BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Dashboard'),
+        BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
         BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
         BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
       ],

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/help_menu_screen.dart';
 
 /// Support tab screen with help/contact details and clickable links.
 class SupportScreen extends StatelessWidget {
@@ -113,9 +114,8 @@ class SupportScreen extends StatelessWidget {
                     style: AppTextStyles.body,
                   ),
                   InkWell(
-                    onTap: () => Navigator.of(context).pushNamed(
-                      AppRoutes.supportQuery,
-                    ),
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRoutes.supportQuery),
                     child: Text(
                       'Click here to send query',
                       style: AppTextStyles.body.copyWith(
@@ -126,10 +126,7 @@ class SupportScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              Divider(
-                color: AppColors.divider,
-                thickness: 1,
-              ),
+              Divider(color: AppColors.divider, thickness: 1),
               const SizedBox(height: 20),
               Text(
                 'Learn more about our data practices',
@@ -138,9 +135,8 @@ class SupportScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               InkWell(
-                onTap: () => Navigator.of(context).pushNamed(
-                  AppRoutes.privacyPolicy,
-                ),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.privacyPolicy),
                 child: Text(
                   'Read our Privacy Policy',
                   style: AppTextStyles.body.copyWith(
@@ -149,6 +145,10 @@ class SupportScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              const Divider(color: AppColors.divider, thickness: 1),
+              const SizedBox(height: 20),
+              const HelpContentScreen(),
             ],
           ),
         ),
@@ -156,4 +156,3 @@ class SupportScreen extends StatelessWidget {
     );
   }
 }
-

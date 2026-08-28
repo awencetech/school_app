@@ -18,8 +18,10 @@ import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
-import '../support/support_screen.dart';
+import '../../widgets/user_action_popup.dart';
+import '../../widgets/help_menu_screen.dart';
 import '../messages/messages_page.dart';
+import '../support/support_screen.dart';
 import '../staff/staff_campaigns_page.dart';
 import '../staff/staff_request_message_page.dart';
 import '../staff/staff_write_message_page.dart';
@@ -38,7 +40,7 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  final int _selectedBottomIndex = 0;
+  int _selectedBottomIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +55,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         automaticallyImplyLeading: false,
       ),
-      body: _selectedBottomIndex == 3
+        body: _selectedBottomIndex == 2
+          ? const HelpMenuScreen()
+          : _selectedBottomIndex == 3
           ? const SupportScreen()
           : FutureBuilder<SchoolInfo>(
               future: DummyDataService.getSchoolInfo(),
@@ -499,6 +503,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) async {
+          if (index == 1 && context.read<AppState>().isLoggedIn) {
+            showUserActionPopup(context);
+            return;
+          }
+
           switch (index) {
             case 0:
               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -510,13 +519,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Navigator.of(context).pushNamed(AppRoutes.adminDashboard);
               break;
             case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.adminDashboard,
-                (route) => false,
-              );
+              setState(() => _selectedBottomIndex = 2);
               break;
             case 3:
-              Navigator.of(context).pushNamed(AppRoutes.supportQuery);
+              setState(() => _selectedBottomIndex = 3);
               break;
             case 4:
               await context.read<AppState>().logout();

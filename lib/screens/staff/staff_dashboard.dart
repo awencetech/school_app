@@ -16,8 +16,10 @@ import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/staff_footer.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
-import '../support/support_screen.dart';
+import '../../widgets/user_action_popup.dart';
+import '../../widgets/help_menu_screen.dart';
 import '../messages/messages_page.dart';
+import '../support/support_screen.dart';
 import '../student/student_check_approve_page.dart';
 import '../student/student_group_class_bus_page.dart';
 import '../student/student_ptm_page.dart';
@@ -54,32 +56,14 @@ class _StaffDashboardState extends State<StaffDashboard> {
         ),
         automaticallyImplyLeading: false,
       ),
-      body: _selectedBottomIndex == 3
+        body: _selectedBottomIndex == 2
+          ? const HelpMenuScreen()
+          : _selectedBottomIndex == 3
           ? const SupportScreen()
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 10),
-                  Text(
-                    context.watch<SchoolConfigService>().schoolName,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Welcome ${context.watch<AppState>().currentUserId ?? 'Staff'}',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   if (config.posterDisplaySource != null &&
                       config.posterDisplaySource!.isNotEmpty)
                     Padding(
@@ -118,6 +102,26 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         }(),
                       ),
                     ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.watch<SchoolConfigService>().schoolName,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Welcome ${context.watch<AppState>().currentUserId ?? 'Staff'}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -558,6 +562,16 @@ class _StaffDashboardState extends State<StaffDashboard> {
       bottomNavigationBar: StaffFooter(
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) async {
+          if (index == 1 && context.read<AppState>().isLoggedIn) {
+            showUserActionPopup(context);
+            return;
+          }
+
+          if (index == 2) {
+            setState(() => _selectedBottomIndex = 2);
+            return;
+          }
+
           if (index == 4) {
             await context.read<AppState>().logout();
             if (!context.mounted) return;

@@ -177,17 +177,21 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                 ),
                               );
 
-                              if (!mounted) return;
-                              if (should != true) return;
+                              if (!mounted || should != true) return;
 
                               setState(() => _isDeleting = true);
-                              final navigator = Navigator.of(context);
-                              final messenger = ScaffoldMessenger.of(context);
+
                               try {
                                 await _userService.deleteUser(widget.userId);
-                                if (!context.mounted) return;
-                                messenger.showSnackBar(const SnackBar(content: Text('User deleted successfully')));
-                                navigator.pop(true);
+                                if (!mounted) return;
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('User deleted successfully')),
+                                  );
+                                  if (Navigator.of(context).canPop()) {
+                                    Navigator.of(context).pop(true);
+                                  }
+                                }
                               } catch (e) {
                                 if (mounted) _showError('Failed to delete user: ${e.toString()}');
                               } finally {

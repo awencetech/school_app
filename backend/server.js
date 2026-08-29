@@ -70,6 +70,7 @@ let groupMessagesCollection;
 let groupMessageCommentsCollection;
 let classTimetableCollection;
 let legacyClassTimetableCollection;
+let studentInfoCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -82,6 +83,8 @@ async function ensureIndexes(db) {
     groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
     groupMessageCommentsCollection.createIndex({ groupId: 1, messageId: 1, createdAt: 1 }),
     classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
+    studentInfoCollection.createIndex({ studentId: 1 }, { sparse: true }),
+    studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
   ]);
 }
 
@@ -115,6 +118,7 @@ async function connectMongo() {
     groupMessageCommentsCollection = db.collection('groupMessageComments');
     classTimetableCollection = db.collection('class-timetables');
     legacyClassTimetableCollection = db.collection('class-timetable');
+    studentInfoCollection = db.collection('stud-in');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -207,6 +211,27 @@ function sanitizeStaffForResponse(doc) {
     extraCurricularTeamClub: doc.extraCurricularTeamClub || '',
     professionalBodyAssociation: doc.professionalBodyAssociation || '',
     whatYouDo: doc.whatYouDo || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeStudentForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    name: doc.name || '',
+    className: doc.className || '',
+    section: doc.section || '',
+    studentId: doc.studentId || '',
+    admissionNumber: doc.admissionNumber || '',
+    parentName: doc.parentName || '',
+    mobileNumber: doc.mobileNumber || '',
+    address: doc.address || '',
+    about: doc.about || '',
+    hobbies: doc.hobbies || '',
+    role: doc.role || '',
+    imageUrl: doc.imageUrl || '',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1537,6 +1562,117 @@ app.delete('/api/staff/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/staff/:id failed:', error);
     return res.status(500).json({ message: 'Unable to delete staff information.' });
+  }
+});
+
+app.get('/api/students', async (req, res) => {
+  try {
+    await connectMongo();
+    const students = await studentInfoCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(students.map(sanitizeStudentForResponse));
+  } catch (error) {
+    console.error('GET /api/students failed:', error);
+    return res.status(500).json({ message: 'Unable to load student information.' });
+  }
+});
+
+app.get('/api/students/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const student = await studentInfoCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!student) return res.status(404).json({ message: 'Student not found.' });
+    return res.json(sanitizeStudentForResponse(student));
+  } catch (error) {
+    console.error('GET /api/students/:id failed:', error);
+    return res.status(404).json({ message: 'Student not found.' });
+  }
+});
+
+app.post('/api/students', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const required = ['name', 'className', 'studentId'];
+    const missing = required.find((field) => !String(body[field] || '').trim());
+    if (missing) return res.status(422).json({ message: `${missing} is required.` });
+
+    const studentId = String(body.studentId).trim();
+    const existing = await studentInfoCollection.findOne({ studentId });
+    if (existing) return res.status(409).json({ message: 'This student ID is already assigned.' });
+
+    const now = new Date().toISOString();
+    const document = {
+      name: String(body.name || '').trim(),
+      className: String(body.className || '').trim(),
+      section: String(body.section || '').trim(),
+      studentId,
+      admissionNumber: String(body.admissionNumber || '').trim(),
+      parentName: String(body.parentName || '').trim(),
+      mobileNumber: String(body.mobileNumber || '').trim(),
+      address: String(body.address || '').trim(),
+      about: String(body.about || '').trim(),
+      hobbies: String(body.hobbies || '').trim(),
+      role: String(body.role || '').trim(),
+      imageUrl: String(body.imageUrl || '').trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await studentInfoCollection.insertOne(document);
+    const saved = await studentInfoCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeStudentForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/students failed:', error);
+    return res.status(500).json({ message: 'Unable to save student information.' });
+  }
+});
+
+app.put('/api/students/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const id = new ObjectId(req.params.id);
+    const body = req.body || {};
+    const required = ['name', 'className', 'studentId'];
+    const missing = required.find((field) => !String(body[field] || '').trim());
+    if (missing) return res.status(422).json({ message: `${missing} is required.` });
+
+    const nextStudentId = String(body.studentId).trim();
+    const existing = await studentInfoCollection.findOne({ studentId: nextStudentId, _id: { $ne: id } });
+    if (existing) return res.status(409).json({ message: 'This student ID is already assigned.' });
+
+    const updates = {
+      name: String(body.name || '').trim(),
+      className: String(body.className || '').trim(),
+      section: String(body.section || '').trim(),
+      studentId: nextStudentId,
+      admissionNumber: String(body.admissionNumber || '').trim(),
+      parentName: String(body.parentName || '').trim(),
+      mobileNumber: String(body.mobileNumber || '').trim(),
+      address: String(body.address || '').trim(),
+      about: String(body.about || '').trim(),
+      hobbies: String(body.hobbies || '').trim(),
+      role: String(body.role || '').trim(),
+      imageUrl: String(body.imageUrl || '').trim(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await studentInfoCollection.updateOne({ _id: id }, { $set: updates });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Student not found.' });
+    return res.json(sanitizeStudentForResponse(await studentInfoCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PUT /api/students/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update student information.' });
+  }
+});
+
+app.delete('/api/students/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await studentInfoCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Student not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/students/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete student information.' });
   }
 });
 

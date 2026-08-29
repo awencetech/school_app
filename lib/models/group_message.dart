@@ -5,6 +5,9 @@ class GroupMessageComment {
     required this.studentName,
     required this.text,
     required this.createdAt,
+    this.messageId = '',
+    this.groupId = '',
+    this.studentProfileImage,
   });
 
   final String id;
@@ -12,6 +15,9 @@ class GroupMessageComment {
   final String studentName;
   final String text;
   final DateTime createdAt;
+  final String messageId;
+  final String groupId;
+  final String? studentProfileImage;
 
   static GroupMessageComment fromJson(Map<String, dynamic> json) {
     return GroupMessageComment(
@@ -20,13 +26,19 @@ class GroupMessageComment {
       studentName: (json['studentName'] ?? json['name'] ?? 'Student').toString(),
       text: (json['text'] ?? json['comment'] ?? '').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      messageId: (json['messageId'] ?? '').toString(),
+      groupId: (json['groupId'] ?? '').toString(),
+      studentProfileImage: (json['studentProfileImage'] ?? json['profileImage'] ?? json['imageUrl'] ?? json['photoUrl'])?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'messageId': messageId,
+    'groupId': groupId,
     'studentId': studentId,
     'studentName': studentName,
+    'studentProfileImage': studentProfileImage,
     'text': text,
     'createdAt': createdAt.toIso8601String(),
   };

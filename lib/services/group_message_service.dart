@@ -119,13 +119,19 @@ class GroupMessageService {
     required String studentName,
     required String comment,
   }) async {
+    final normalizedRole = userRole.trim().toLowerCase();
+    if (normalizedRole != 'student' && normalizedRole != 'students') {
+      throw ApiException(403, 'Only students can comment on group messages.',
+          '$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}/comments');
+    }
+
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}/comments');
     final response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'userId': userId,
-        'userRole': userRole,
+        'userRole': normalizedRole,
         'studentId': userId,
         'studentName': studentName,
         'comment': comment,

@@ -35,6 +35,7 @@ import '../screens/admin/staff_details_page.dart';
 import '../screens/admin/student_management_page.dart';
 import '../screens/admin/list_students_page.dart';
 import '../screens/admin/admin_student_menu_page.dart';
+import '../screens/admin/student_info_page.dart';
 import '../models/staff_info.dart';
 import '../services/student_service.dart';
 import '../screens/admin/add_options.dart';
@@ -199,6 +200,12 @@ class AppRouter {
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
+      AppRoutes.adminStudentInfo => (() {
+        final student = settings.arguments;
+        return student is StudentRecord
+            ? StudentInfoPage(student: student)
+            : const ListStudentsPage();
+      })(),
       AppRoutes.adminStudentMenu => (() {
         final student = settings.arguments;
         return student is StudentRecord

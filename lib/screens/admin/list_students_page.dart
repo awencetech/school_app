@@ -226,7 +226,12 @@ class _ListStudentsPageState extends State<ListStudentsPage> {
                   arguments: student,
                 );
               }),
-              _compactAction(Icons.info_outline, 'Info', () {}),
+              _compactAction(Icons.info_outline, 'Info', () {
+                Navigator.of(context).pushNamed(
+                  AppRoutes.adminStudentInfo,
+                  arguments: student,
+                );
+              }),
             ],
           ),
         ],

@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/group.dart';
 import '../../models/group_message.dart';
 import '../../services/app_state.dart';
 import '../../services/group_message_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import '../../routes/app_routes.dart';
 
 class GroupMessagesPage extends StatefulWidget {
   const GroupMessagesPage({
@@ -29,26 +31,21 @@ class GroupMessagesPage extends StatefulWidget {
 
 class _GroupMessagesPageState extends State<GroupMessagesPage> {
   final GroupMessageService _service = GroupMessageService();
-  List<GroupMessage> _allMessages = [];
-  List<GroupMessage> _visibleMessages = [];
+  List<GroupMessage> _messages = [];
   bool _isLoading = true;
   String? _errorMessage;
-  String _selectedFilter = 'Clear Filters';
-  String _searchText = '';
   int _selectedBottomIndex = 2;
+  final Map<String, TextEditingController> _commentControllers = {};
+  final Set<String> _expandedCommentSections = {};
 
-  static const _filters = [
-    'Clear Filters',
-    'School',
-    'My Posts',
-    'Student',
-    'Class/Group',
-    'Approved by me',
-    'Msg for Management',
-    'Msg from Parents',
-    'Msg for Students',
-    'Search String',
-  ];
+  bool get _currentUserIsStudent {
+    final role = context.read<AppState>().currentUserRole?.trim().toLowerCase() ?? '';
+    return role == 'student' || role == 'students';
+  }
+
+  String? get _currentUserId => context.read<AppState>().currentUserId;
+
+  String get _currentUserRole => context.read<AppState>().currentUserRole?.trim() ?? '';
 
   @override
   void initState() {
@@ -65,11 +62,14 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
       final messages = await _service.getMessages(widget.groupId);
       if (!mounted) return;
       setState(() {
-        _allMessages = messages;
+        _messages = messages;
         _isLoading = false;
       });
-      _applyFilter();
-    } catch (_) {
+      _commentControllers.clear();
+      for (final message in _messages) {
+        _commentControllers[message.id] = TextEditingController();
+      }
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -78,108 +78,417 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
     }
   }
 
-  void _applyFilter() {
-    final currentUserId = context.read<AppState>().currentUserId ?? '';
-    final query = _searchText.trim().toLowerCase();
-    final filtered = _allMessages.where((message) {
-      final role = message.authorRole.toLowerCase();
-      final category = message.category.toLowerCase();
-      final target = message.target.toLowerCase();
-      switch (_selectedFilter) {
-        case 'School':
-          return category.contains('school');
-        case 'My Posts':
-          return message.authorId == currentUserId;
-        case 'Student':
-          return role.contains('student') || category.contains('student');
-        case 'Class/Group':
-          return message.groupId == widget.groupId || category.contains('class') || category.contains('group');
-        case 'Approved by me':
-          return message.approved && message.approvedById == currentUserId;
-        case 'Msg for Management':
-          return target.contains('management') || category.contains('management');
-        case 'Msg from Parents':
-          return role.contains('parent') || category.contains('parent');
-        case 'Msg for Students':
-          return target.contains('student') || category.contains('student');
-        case 'Search String':
-          return query.isEmpty || _searchableText(message).contains(query);
-        default:
-          return true;
-      }
-    }).toList();
-    if (mounted) setState(() => _visibleMessages = filtered);
+  Future<void> _toggleLike(GroupMessage message) async {
+    final userId = _currentUserId;
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to like messages.')),
+      );
+      return;
+    }
+
+    final index = _messages.indexWhere((item) => item.id == message.id);
+    if (index == -1) return;
+
+    final previous = _messages[index];
+    final likedBy = Set<String>.from(previous.likedBy ?? []);
+    final willLike = !likedBy.contains(userId);
+    if (willLike) {
+      likedBy.add(userId);
+    } else {
+      likedBy.remove(userId);
+    }
+
+    setState(() {
+      _messages[index] = previous.copyWith(likedBy: likedBy.toList()..sort());
+    });
+
+    try {
+      final result = await _service.toggleLike(
+        groupId: widget.groupId,
+        messageId: message.id,
+        userId: userId,
+      );
+      final count = (result['likeCount'] is int) ? result['likeCount'] as int : likedBy.length;
+      if (!mounted) return;
+      setState(() {
+        _messages[index] = previous.copyWith(
+          likedBy: List<String>.from((result['likedBy'] is List) ? result['likedBy'] as List : likedBy.toList()),
+        );
+        if (count >= 0) {
+          _messages[index] = _messages[index].copyWith(
+            likedBy: List<String>.generate(count, (i) => (result['likedBy'] is List && i < (result['likedBy'] as List).length)
+                ? (result['likedBy'] as List)[i].toString()
+                : userId),
+          );
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _messages[index] = previous;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update like. Please try again.')),
+      );
+    }
   }
 
-  String _searchableText(GroupMessage message) => [
-        message.title,
-        message.content,
-        message.authorId,
-        message.authorRole,
-        message.category,
-        message.target,
-      ].join(' ').toLowerCase();
+  Future<void> _addComment(GroupMessage message) async {
+    if (!_currentUserIsStudent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only students can add comments to this message.')),
+      );
+      return;
+    }
 
-  Future<void> _openFilter() async {
-    var selected = _selectedFilter;
-    var search = _searchText;
-    final searchController = TextEditingController(text: search);
-    final result = await showDialog<_MessageFilterResult>(
+    final userId = _currentUserId;
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to add a comment.')),
+      );
+      return;
+    }
+
+    final controller = _commentControllers[message.id];
+    final input = (controller?.text ?? '').trim();
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please write a comment first.')),
+      );
+      return;
+    }
+
+    final previous = message;
+    final previousComments = List<GroupMessageComment>.from(message.comments);
+    final optimisticComment = GroupMessageComment(
+      id: 'pending-${DateTime.now().millisecondsSinceEpoch}',
+      studentId: userId,
+      studentName: context.read<AppState>().currentUserEmail ?? 'Student',
+      text: input,
+      createdAt: DateTime.now(),
+    );
+
+    setState(() {
+      final index = _messages.indexWhere((item) => item.id == message.id);
+      if (index != -1) {
+        _messages[index] = previous.copyWith(
+          comments: [...previousComments, optimisticComment],
+        );
+      }
+      controller?.clear();
+    });
+
+    try {
+      final comment = await _service.addComment(
+        groupId: widget.groupId,
+        messageId: message.id,
+        userId: userId,
+        userRole: _currentUserRole,
+        studentName: context.read<AppState>().currentUserEmail ?? 'Student',
+        comment: input,
+      );
+      if (!mounted) return;
+      setState(() {
+        final index = _messages.indexWhere((item) => item.id == message.id);
+        if (index != -1) {
+          final updated = List<GroupMessageComment>.from(_messages[index].comments)
+            ..removeWhere((item) => item.id == optimisticComment.id);
+          updated.add(comment);
+          _messages[index] = _messages[index].copyWith(comments: updated);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        final index = _messages.indexWhere((item) => item.id == message.id);
+        if (index != -1) {
+          _messages[index] = previous.copyWith(comments: previousComments);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to add comment. Please try again.')),
+      );
+    }
+  }
+
+  void _navigateToCreate() async {
+    final group = Group(
+      id: widget.groupId,
+      name: widget.groupName,
+      year: widget.groupYear,
+    );
+    final result = await Navigator.of(context).pushNamed(
+      AppRoutes.teacherEditGroupMessages,
+      arguments: group,
+    );
+    if (result == true) {
+      _loadMessages();
+    }
+  }
+
+  void _navigateToEdit(GroupMessage message) async {
+    final group = Group(
+      id: widget.groupId,
+      name: widget.groupName,
+      year: widget.groupYear,
+    );
+    final result = await Navigator.of(context).pushNamed(
+      AppRoutes.teacherEditGroupMessages,
+      arguments: {
+        'group': group,
+        'message': message,
+      },
+    );
+    if (result == true) {
+      _loadMessages();
+    }
+  }
+
+  void _showMessageDetail(GroupMessage message) {
+    showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-            titlePadding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
-            contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            title: Row(children: [
-              Expanded(child: Text('Filter Message', style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w600))),
-              IconButton(onPressed: () => Navigator.of(dialogContext).pop(), icon: const Icon(Icons.close)),
-            ]),
-            content: SingleChildScrollView(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Filter by', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                ..._filters.map((filter) => RadioListTile<String>(
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                      title: Text(filter, style: GoogleFonts.poppins(fontSize: 12)),
-                      value: filter,
-                      groupValue: selected,
-                      onChanged: (value) => setDialogState(() => selected = value ?? 'Clear Filters'),
-                    )),
-                if (selected == 'Search String') ...[
-                  const SizedBox(height: 4),
-                  TextField(
-                    autofocus: true,
-                    controller: searchController,
-                    onChanged: (value) => search = value,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Search messages...'),
-                  ),
-                ],
-              ]),
-            ),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(_MessageFilterResult(selected, search)),
-                  child: const Text('Filter'),
+      builder: (context) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message.title,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          (message.likedBy?.contains(_currentUserId ?? '') ?? false) ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Like ${message.likedBy?.length ?? 0}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Comments (${message.comments.length})',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Message Type and Priority
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Type',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            message.messageType.isEmpty ? message.category : message.messageType,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Priority',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getPriorityColor(message.priority).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            message.priority,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _getPriorityColor(message.priority),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Message Content
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Message',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message.content,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Audience
+              if (message.audience.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Visible To',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: message.audience
+                          .map((audience) => Chip(
+                                label: Text(audience),
+                                labelStyle: GoogleFonts.poppins(fontSize: 11),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              // Dates
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Created',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatDate(message.createdAt),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppColors.primaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (message.expiryDate != null)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Expires',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            message.expiryDate!,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: AppColors.primaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ],
-          );
-        },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
-    searchController.dispose();
-    if (!mounted || result == null) return;
-    setState(() {
-      _selectedFilter = result.filter;
-      _searchText = result.filter == 'Clear Filters' ? '' : result.search;
-    });
-    _applyFilter();
   }
 
   @override
@@ -189,31 +498,42 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
-        title: Text('Messages', style: AppTextStyles.appTitle.copyWith(fontSize: 16)),
+        title: Text('Group Messages', style: AppTextStyles.appTitle.copyWith(fontSize: 16)),
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Filter messages',
-            onPressed: _openFilter,
-            icon: const Icon(Icons.filter_list, color: AppColors.white),
-          ),
-        ],
       ),
       body: SafeArea(
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('${widget.groupName} - ${widget.groupYear}', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 10),
-              const Divider(height: 1),
-            ]),
-          ),
-          Expanded(child: _content()),
-        ]),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Group Message Details',
+                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.groupName,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(height: 1),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _content(),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: _selectedBottomIndex,
@@ -223,40 +543,340 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
   }
 
   Widget _content() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(_errorMessage!, style: GoogleFonts.poppins(color: Colors.red)),
-        TextButton.icon(onPressed: _loadMessages, icon: const Icon(Icons.refresh), label: const Text('Retry')),
-      ]));
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
     }
-    if (_visibleMessages.isEmpty) return Center(child: Text('No Data available', style: GoogleFonts.poppins(color: AppColors.secondaryText)));
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 2, 14, 20),
-      itemCount: _visibleMessages.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (_, index) => _messageTile(_visibleMessages[index]),
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _errorMessage!,
+              style: GoogleFonts.poppins(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadMessages,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_messages.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'No group messages available',
+              style: GoogleFonts.poppins(color: AppColors.secondaryText),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _navigateToCreate,
+              icon: const Icon(Icons.add),
+              label: const Text('Create Message'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
+      itemCount: _messages.length,
+      itemBuilder: (context, index) => _buildMessageCard(_messages[index]),
     );
   }
 
-  Widget _messageTile(GroupMessage message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(message.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        Text(message.content, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.secondaryText)),
-        const SizedBox(height: 5),
-        Text('${message.authorId}  |  ${_formatDate(message.createdAt)}', style: GoogleFonts.poppins(fontSize: 10, color: AppColors.hintText)),
-      ]),
+  Widget _buildMessageCard(GroupMessage message) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    message.messageType.isEmpty ? message.category : message.messageType,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (message.priority != 'Normal')
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getPriorityColor(message.priority).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      message.priority,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: _getPriorityColor(message.priority),
+                      ),
+                    ),
+                  ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Title
+            Text(
+              message.title,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryText,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Message preview
+            Text(
+              message.content,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => _toggleLike(message),
+                  child: Row(
+                    children: [
+                      Icon(
+                        (message.likedBy?.contains(_currentUserId ?? '') ?? false) ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                        size: 18,
+                        color: (message.likedBy?.contains(_currentUserId ?? '') ?? false) ? AppColors.primary : AppColors.secondaryText,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Like',
+                        style: GoogleFonts.poppins(fontSize: 11, color: AppColors.secondaryText),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${message.likedBy?.length ?? 0}',
+                        style: GoogleFonts.poppins(fontSize: 11, color: AppColors.secondaryText),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  _formatDate(message.createdAt),
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    color: AppColors.hintText,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () => _showMessageDetail(message),
+                  child: Text(
+                    'View Details',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
+                setState(() {
+                  if (_expandedCommentSections.contains(message.id)) {
+                    _expandedCommentSections.remove(message.id);
+                  } else {
+                    _expandedCommentSections.add(message.id);
+                  }
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  '💬 Comments (${message.comments.length})',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+            if (_expandedCommentSections.contains(message.id)) ...[
+              const SizedBox(height: 8),
+              if (message.comments.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'No comments yet',
+                    style: GoogleFonts.poppins(fontSize: 11, color: AppColors.secondaryText),
+                  ),
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: message.comments.map((comment) {
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.person_outline, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  comment.studentName,
+                                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  comment.text,
+                                  style: GoogleFonts.poppins(fontSize: 11, color: AppColors.primaryText),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              if (message.commentsAllowed && _currentUserIsStudent) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _commentControllers[message.id],
+                        decoration: InputDecoration(
+                          hintText: 'Write a comment...',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => _addComment(message),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      child: const Text('Send'),
+                    ),
+                  ],
+                ),
+              ] else if (!message.commentsAllowed && _currentUserIsStudent) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Only students can comment on this message.',
+                    style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  String _formatDate(DateTime date) => '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-}
+  Future<void> _deleteMessage(GroupMessage message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: Text('Are you sure you want to delete "${message.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
 
-class _MessageFilterResult {
-  const _MessageFilterResult(this.filter, this.search);
-  final String filter;
-  final String search;
+    if (confirmed != true) return;
+
+    try {
+      await _service.deleteMessage(
+        groupId: widget.groupId,
+        messageId: message.id,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message deleted successfully.')),
+      );
+      _loadMessages();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to delete message: $e')),
+      );
+    }
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'Normal':
+        return Colors.grey;
+      case 'Important':
+        return Colors.orange;
+      case 'Urgent':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
 }

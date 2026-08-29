@@ -29,6 +29,7 @@ import '../screens/support/privacy_policy_screen.dart';
 import '../screens/admin/admin_other_options.dart';
 import '../screens/admin/admin_detail_page.dart';
 import '../screens/admin/know_your_school_page.dart';
+import '../screens/admin/know_your_school_detail_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/staff_details_page.dart';
@@ -198,6 +199,18 @@ class AppRouter {
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),
+      AppRoutes.adminKnowYourSchoolWebsiteEdit => const KnowYourSchoolDetailPage(title: 'Website', icon: Icons.language),
+      AppRoutes.adminKnowYourSchoolSchoolHandbookEdit => const KnowYourSchoolDetailPage(title: 'School Handbook', icon: Icons.school),
+      AppRoutes.adminKnowYourSchoolEventsCelebrationEdit => const KnowYourSchoolDetailPage(title: 'Events Celebrations', icon: Icons.event),
+      AppRoutes.adminKnowYourSchoolSchoolResourcesEdit => const KnowYourSchoolDetailPage(title: 'School Resources', icon: Icons.folder_copy_outlined),
+      AppRoutes.adminKnowYourSchoolNewsletterEdit => const KnowYourSchoolDetailPage(title: 'Newsletter', icon: Icons.newspaper),
+      AppRoutes.adminKnowYourSchoolAnnouncementEdit => const KnowYourSchoolDetailPage(title: 'Announcement', icon: Icons.announcement),
+      AppRoutes.adminKnowYourSchoolDemographyEdit => const KnowYourSchoolDetailPage(title: 'Demography', icon: Icons.people),
+      AppRoutes.adminKnowYourSchoolFacebookEdit => const KnowYourSchoolDetailPage(title: 'Facebook', icon: Icons.facebook),
+      AppRoutes.adminKnowYourSchoolYoutubeEdit => const KnowYourSchoolDetailPage(title: 'Youtube', icon: Icons.ondemand_video),
+      AppRoutes.adminKnowYourSchoolWhatsappEdit => const KnowYourSchoolDetailPage(title: 'WhatsApp', icon: Icons.chat),
+      AppRoutes.adminKnowYourSchoolInstagramEdit => const KnowYourSchoolDetailPage(title: 'Instagram', icon: Icons.camera_alt),
+      AppRoutes.adminKnowYourSchoolLibraryEdit => const KnowYourSchoolDetailPage(title: 'Library', icon: Icons.library_books),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
       AppRoutes.adminStudentInfo => (() {

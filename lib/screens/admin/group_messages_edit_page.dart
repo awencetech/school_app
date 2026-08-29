@@ -10,7 +10,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class GroupMessagesEditPage extends StatefulWidget {
-  GroupMessagesEditPage({
+  const GroupMessagesEditPage({
     super.key,
     required this.groupId,
     required this.groupName,
@@ -183,7 +183,7 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -200,7 +200,7 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getPriorityColor(message.priority).withOpacity(0.1),
+                    color: _getPriorityColor(message.priority).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -614,7 +614,7 @@ class _AddGroupMessagePageState extends State<_AddGroupMessagePage> {
                   Switch(
                     value: _allowComments,
                     onChanged: (value) => setState(() => _allowComments = value),
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                 ],
               ),

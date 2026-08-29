@@ -77,7 +77,6 @@ class _KnowYourSchoolDetailPageState extends State<KnowYourSchoolDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isWebsitePage = widget.title.toLowerCase() == 'website';
-    final config = context.watch<SchoolConfigService>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -104,7 +103,7 @@ class _KnowYourSchoolDetailPageState extends State<KnowYourSchoolDetailPage> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.12),
+                            color: AppColors.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(widget.icon, color: AppColors.primary, size: 22),
@@ -188,7 +187,7 @@ class _KnowYourSchoolDetailPageState extends State<KnowYourSchoolDetailPage> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.12),
+                            color: AppColors.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(widget.icon, color: AppColors.primary, size: 22),

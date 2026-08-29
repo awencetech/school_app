@@ -50,7 +50,6 @@ import '../screens/admin/school_content_management.dart';
 import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../models/group.dart';
-import '../models/group_message.dart';
 import '../models/class_timetable.dart';
 import '../screens/admin/admin_section_page.dart';
 import '../screens/admin/school_settings_editor.dart';
@@ -130,22 +129,6 @@ class AppRouter {
       }
     }
     return Group(id: 'unknown', name: 'Unknown');
-  }
-
-  static GroupMessage? _messageFromArguments(Object? arguments) {
-    if (arguments is Map) {
-      try {
-        final values = Map<String, dynamic>.from(arguments);
-        final message = values['message'];
-        if (message is GroupMessage) return message;
-        if (message is Map) {
-          return GroupMessage.fromJson(Map<String, dynamic>.from(message));
-        }
-      } catch (e) {
-        debugPrint('WARNING: Failed to extract GroupMessage from arguments: $e');
-      }
-    }
-    return null;
   }
 
   static Group _eventGroupFromArguments(Object? arguments) {

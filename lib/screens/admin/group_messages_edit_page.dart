@@ -228,9 +228,21 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
           style: AppTextStyles.appTitle.copyWith(fontSize: 16),
         ),
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),
+        actions: [
+          if (!_isEdit)
+            IconButton(
+              onPressed: _isSaving ? null : _validateAndSave,
+              icon: const Icon(Icons.add, color: AppColors.white),
+              tooltip: 'Add message',
+            ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -497,7 +509,7 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                           ),
                         )
                       : Text(
-                          _isEdit ? 'Update Message' : 'Save Message',
+                          _isEdit ? 'Update Message' : 'Add Message',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

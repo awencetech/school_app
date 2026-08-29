@@ -169,9 +169,9 @@ class GroupMessage {
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0),
       target: (json['target'] ?? '').toString(),
       imageUrl: json['imageUrl'] as String?,
-      expiryDate: json['expiryDate'] as String?,
+      expiryDate: (json['expiryDate'] ?? json['expiry'] ?? '').toString().isEmpty ? null : (json['expiryDate'] ?? json['expiry'] ?? '').toString(),
       createdBy: (json['createdBy'] ?? json['authorId'] ?? '').toString(),
-      commentsAllowed: json['commentsAllowed'] != false,
+      commentsAllowed: json['commentsAllowed'] != false && json['allowComments'] != false,
       likedBy: likedBy,
       comments: commentsJson is List
           ? List<GroupMessageComment>.from(

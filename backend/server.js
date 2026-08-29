@@ -1066,6 +1066,7 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       return res.status(422).json({ message: 'Title, message, and message type are required.' });
     }
 
+    const allowComments = body.allowComments !== undefined ? body.allowComments !== false : body.commentsAllowed !== false;
     const now = new Date().toISOString();
     const message = {
       groupId: requestedGroupId,
@@ -1086,7 +1087,8 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       expiryDate: (body.expiryDate || null),
       approved: body.approved === true,
       approvedById: (body.approvedById || '').toString().trim(),
-      commentsAllowed: body.commentsAllowed !== false,
+      commentsAllowed: allowComments,
+      allowComments,
       likedBy: [],
       comments: [],
       createdAt: now,
@@ -1115,6 +1117,7 @@ app.put('/api/groups/:groupId/messages/:messageId', async (req, res) => {
       return res.status(422).json({ message: 'Title, message, and message type are required.' });
     }
 
+    const allowComments = body.allowComments !== undefined ? body.allowComments !== false : body.commentsAllowed !== false;
     const selector = { groupId: { $in: groupIdVariants(groupId) } };
     try {
       selector._id = new ObjectId(messageId);
@@ -1134,7 +1137,8 @@ app.put('/api/groups/:groupId/messages/:messageId', async (req, res) => {
       target: (body.target || '').toString().trim(),
       imageUrl: (body.imageUrl || null),
       expiryDate: (body.expiryDate || null),
-      commentsAllowed: body.commentsAllowed !== false,
+      commentsAllowed: allowComments,
+      allowComments,
       updatedAt: now,
     };
     

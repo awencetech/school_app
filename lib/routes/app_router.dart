@@ -50,6 +50,7 @@ import '../screens/admin/school_content_management.dart';
 import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../models/group.dart';
+import '../models/group_message.dart';
 import '../models/class_timetable.dart';
 import '../screens/admin/admin_section_page.dart';
 import '../screens/admin/school_settings_editor.dart';
@@ -66,6 +67,7 @@ import '../screens/admin/class_resources_page.dart';
 import '../screens/admin/class_timetable_page.dart';
 import '../screens/admin/class_timetable_form_page.dart';
 import '../screens/admin/group_messages_page.dart';
+import '../screens/admin/group_messages_edit_page.dart';
 import '../screens/admin/homework_today_in_class_page.dart';
 import '../screens/admin/future_event_calendar_page.dart';
 import '../screens/admin/online_assignment_page.dart';
@@ -105,6 +107,16 @@ class AppRouter {
     if (arguments is Map) {
       try {
         final values = Map<String, dynamic>.from(arguments);
+        final nestedGroup = values['group'];
+        if (nestedGroup is Group) return nestedGroup;
+        if (nestedGroup is Map) {
+          final name = (nestedGroup['name'] ?? '').toString().trim();
+          final id = (nestedGroup['id'] ?? nestedGroup['groupId'] ?? '').toString().trim();
+          if (name.isNotEmpty || id.isNotEmpty) {
+            return Group(id: id.isEmpty ? name : id, name: name.isEmpty ? id : name);
+          }
+        }
+
         final name = values['name']?.toString().trim() ?? '';
         final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
         if (name.isNotEmpty || id.isNotEmpty) {
@@ -118,6 +130,22 @@ class AppRouter {
       }
     }
     return Group(id: 'unknown', name: 'Unknown');
+  }
+
+  static GroupMessage? _messageFromArguments(Object? arguments) {
+    if (arguments is Map) {
+      try {
+        final values = Map<String, dynamic>.from(arguments);
+        final message = values['message'];
+        if (message is GroupMessage) return message;
+        if (message is Map) {
+          return GroupMessage.fromJson(Map<String, dynamic>.from(message));
+        }
+      } catch (e) {
+        debugPrint('WARNING: Failed to extract GroupMessage from arguments: $e');
+      }
+    }
+    return null;
   }
 
   static Group _eventGroupFromArguments(Object? arguments) {
@@ -294,13 +322,22 @@ class AppRouter {
           groupName: group.name,
         );
       })(),
-      AppRoutes.teacherGroupMessages ||
-      AppRoutes.teacherEditGroupMessages => (() {
+      AppRoutes.teacherGroupMessages => (() {
         final group = _groupFromArguments(settings.arguments);
         return GroupMessagesPage(
           groupId: generateGroupDatabaseId(group.name),
           groupName: group.name,
           groupYear: group.year,
+        );
+      })(),
+      AppRoutes.teacherEditGroupMessages => (() {
+        final group = _groupFromArguments(settings.arguments);
+        final message = _messageFromArguments(settings.arguments);
+        return GroupMessagesEditPage(
+          groupId: generateGroupDatabaseId(group.name),
+          groupName: group.name,
+          groupYear: group.year,
+          message: message,
         );
       })(),
       AppRoutes.teacherWriteMessage ||

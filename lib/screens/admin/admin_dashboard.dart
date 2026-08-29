@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/group.dart';
@@ -41,6 +42,23 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedBottomIndex = 0;
+
+  Future<void> _openWebsite(BuildContext context) async {
+    final url = context.read<SchoolConfigService>().websiteUrl.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No website link has been added yet.')),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(url);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the website link.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +340,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.language,
                               label: 'Website',
                               color: Color(0xFF4CAF50),
+                              onTap: () => _openWebsite(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.school,

@@ -833,15 +833,6 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToCreate,
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add),
-        label: Text(
-          'Add',
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      ),
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) => setState(() => _selectedBottomIndex = index),

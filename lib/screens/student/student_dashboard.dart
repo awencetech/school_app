@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/group.dart';
@@ -44,6 +45,10 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedBottomIndex = 0;
+
+  Future<void> _openWebsite(BuildContext context) async {
+    Navigator.of(context).pushNamed(AppRoutes.adminKnowYourSchoolWebsiteEdit);
+  }
 
   Widget _studentQuickAction(
     BuildContext context, {
@@ -488,6 +493,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               icon: Icons.language,
                               label: 'Website',
                               color: Color(0xFF2E7D32),
+                              onTap: () => _openWebsite(context),
                             ),
                             _SchoolLinkTile(
                               icon: Icons.school,

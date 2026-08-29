@@ -50,6 +50,7 @@ class GroupMessageService {
     String priority = 'Normal',
     List<String> audience = const [],
     String? expiryDate,
+    bool allowComments = true,
   }) async {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages');
     final response = await http.post(
@@ -59,6 +60,7 @@ class GroupMessageService {
         'groupId': groupId,
         'groupName': groupName,
         'category': messageType,
+        'messageType': messageType,
         'title': (title.isEmpty ? messageType : title).trim(),
         'content': message,
         'message': message,
@@ -69,6 +71,8 @@ class GroupMessageService {
         'senderName': senderName,
         'priority': priority,
         'audience': audience,
+        'allowComments': allowComments,
+        'commentsAllowed': allowComments,
         if (expiryDate != null && expiryDate.trim().isNotEmpty) 'expiryDate': expiryDate.trim(),
       }),
     ).timeout(const Duration(seconds: 20));
@@ -87,6 +91,7 @@ class GroupMessageService {
     String priority = 'Normal',
     List<String> audience = const [],
     String? expiryDate,
+    bool allowComments = true,
   }) async {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}');
     final response = await http.put(
@@ -100,6 +105,8 @@ class GroupMessageService {
         'message': message,
         'priority': priority,
         'audience': audience,
+        'allowComments': allowComments,
+        'commentsAllowed': allowComments,
         if (expiryDate != null && expiryDate.trim().isNotEmpty) 'expiryDate': expiryDate.trim(),
       }),
     ).timeout(const Duration(seconds: 20));

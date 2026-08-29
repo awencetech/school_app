@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:school_app/models/group_message.dart';
+import 'package:school_app/screens/admin/know_your_school_detail_page.dart';
 
 void main() {
   test('GroupMessage parses like and comment metadata from JSON', () {
@@ -42,5 +43,20 @@ void main() {
     expect(message.comments.first.groupId, 'NCC2022');
     expect(message.comments.first.studentProfileImage, 'https://example.com/alice.png');
     expect(message.comments.first.text, 'Noted');
+  });
+
+  test('Website URLs are normalized before saving', () {
+    expect(
+      KnowYourSchoolDetailPage.normalizeWebsiteUrl('example.com'),
+      'https://example.com',
+    );
+    expect(
+      KnowYourSchoolDetailPage.normalizeWebsiteUrl('https://example.com'),
+      'https://example.com',
+    );
+    expect(
+      KnowYourSchoolDetailPage.normalizeWebsiteUrl('   '),
+      '',
+    );
   });
 }

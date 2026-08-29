@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/group.dart';
@@ -41,6 +42,10 @@ class StaffDashboard extends StatefulWidget {
 
 class _StaffDashboardState extends State<StaffDashboard> {
   int _selectedBottomIndex = 0;
+
+  Future<void> _openWebsite(BuildContext context) async {
+    Navigator.of(context).pushNamed(AppRoutes.adminKnowYourSchoolWebsiteEdit);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -479,6 +484,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               icon: Icons.language,
                               label: 'Website',
                               color: Color(0xFF4CAF50),
+                              onTap: () => _openWebsite(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.school,

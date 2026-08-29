@@ -503,6 +503,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
           maxChildSize: 0.95,
           builder: (context, scrollController) => Column(
             children: [
+              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                 child: Row(
@@ -526,205 +527,204 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
                 ),
               ),
               const Divider(height: 1),
+              // Comments Count
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  'Comments (${message.comments.length})',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+              ),
+              // Scrollable Comments List
               Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text(
-                        'Comments (${message.comments.length})',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryText,
-                        ),
-                      ),
-                    ),
-                    if (message.comments.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                        child: Center(
-                          child: Text(
-                            'No comments yet',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppColors.secondaryText,
-                            ),
+                child: message.comments.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No comments yet',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppColors.secondaryText,
                           ),
                         ),
                       )
-                    else
-                      ...message.comments.map((comment) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: AppColors.primary.withOpacity(0.2),
-                              child: Text(
-                                comment.studentName.isNotEmpty 
-                                    ? comment.studentName[0].toUpperCase() 
-                                    : '👤',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
+                    : ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: message.comments.length,
+                        separatorBuilder: (context, index) => const Divider(height: 20),
+                        itemBuilder: (context, index) {
+                          final comment = message.comments[index];
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: AppColors.primary.withOpacity(0.2),
+                                child: Text(
+                                  comment.studentName.isNotEmpty 
+                                      ? comment.studentName[0].toUpperCase() 
+                                      : '👤',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    comment.studentName,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primaryText,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      comment.studentName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primaryText,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    comment.text,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: AppColors.primaryText,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      comment.text,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: AppColors.primaryText,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _formatDateWithTime(comment.createdAt),
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      color: AppColors.secondaryText,
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _formatDateWithTime(comment.createdAt),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppColors.secondaryText,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                            ],
+                          );
+                        },
+                      ),
+              ),
+              // Fixed Bottom Input Area
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: AppColors.border, width: 1),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      12,
+                      16,
+                      12,
+                    ),
+                    child: _currentUserIsStudent
+                        ? Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: AppColors.primary.withOpacity(0.2),
+                                child: Text(
+                                  '👤',
+                                  style: GoogleFonts.poppins(fontSize: 12),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  controller: _commentControllers[message.id] ??= TextEditingController(),
+                                  decoration: InputDecoration(
+                                    hintText: 'Write a comment...',
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: const BorderSide(color: AppColors.border),
+                                    ),
+                                  ),
+                                  style: GoogleFonts.poppins(fontSize: 12),
+                                  maxLines: 1,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () async {
+                                  final input = (_commentControllers[message.id]?.text ?? '').trim();
+                                  if (input.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please write a comment first.')),
+                                    );
+                                    return;
+                                  }
+
+                                  final userId = _currentUserId;
+                                  if (userId == null || userId.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please log in to add a comment.')),
+                                    );
+                                    return;
+                                  }
+
+                                  try {
+                                    final comment = await _service.addComment(
+                                      groupId: widget.groupId,
+                                      messageId: message.id,
+                                      userId: userId,
+                                      userRole: _currentUserRole,
+                                      studentName: _currentUserName ?? 'Student',
+                                      comment: input,
+                                    );
+
+                                    if (!mounted) return;
+
+                                    final index = _messages.indexWhere((item) => item.id == message.id);
+                                    if (index != -1) {
+                                      setModalState(() {
+                                        _messages[index] = _messages[index].copyWith(
+                                          comments: [..._messages[index].comments, comment],
+                                        );
+                                        _commentControllers[message.id]?.clear();
+                                      });
+                                    }
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error adding comment: $e')),
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Icon(Icons.send, color: Colors.white, size: 18),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            'Only students can comment on this message.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppColors.secondaryText,
                             ),
-                          ],
-                        ),
-                      )),
-                  ],
+                            textAlign: TextAlign.center,
+                          ),
+                  ),
                 ),
               ),
-              if (_currentUserIsStudent)
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: AppColors.border, width: 1),
-                    ),
-                  ),
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    12,
-                    16,
-                    12 + MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _commentControllers[message.id] ??= TextEditingController(),
-                          decoration: InputDecoration(
-                            hintText: 'Write a comment...',
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: const BorderSide(color: AppColors.border),
-                            ),
-                          ),
-                          style: GoogleFonts.poppins(fontSize: 12),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: () async {
-                          final input = (_commentControllers[message.id]?.text ?? '').trim();
-                          if (input.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please write a comment first.')),
-                            );
-                            return;
-                          }
-
-                          if (!_currentUserIsStudent) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Only students can add comments.')),
-                            );
-                            return;
-                          }
-
-                          final userId = _currentUserId;
-                          if (userId == null || userId.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please log in to add a comment.')),
-                            );
-                            return;
-                          }
-
-                          try {
-                            final comment = await _service.addComment(
-                              groupId: widget.groupId,
-                              messageId: message.id,
-                              userId: userId,
-                              userRole: _currentUserRole,
-                              studentName: _currentUserName ?? 'Student',
-                              comment: input,
-                            );
-
-                            if (!mounted) return;
-
-                            final index = _messages.indexWhere((item) => item.id == message.id);
-                            if (index != -1) {
-                              setModalState(() {
-                                _messages[index] = _messages[index].copyWith(
-                                  comments: [..._messages[index].comments, comment],
-                                );
-                                _commentControllers[message.id]?.clear();
-                              });
-                            }
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Comment added successfully.')),
-                            );
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(Icons.send, color: Colors.white, size: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Text(
-                    'Only students can comment on this message.',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppColors.secondaryText,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
             ],
           ),
         ),

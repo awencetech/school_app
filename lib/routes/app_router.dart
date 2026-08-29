@@ -90,6 +90,31 @@ class AppRouter {
     _splashShown = true;
   }
 
+  /// Safely extract Group from arguments, with fallback to unknown group.
+  /// This prevents TypeError: null crashes when arguments are missing or wrong type.
+  static Group _groupFromArguments(Object? arguments) {
+    if (arguments == null) {
+      return Group(id: 'unknown', name: 'Unknown');
+    }
+    if (arguments is Group) return arguments;
+    if (arguments is Map) {
+      try {
+        final values = Map<String, dynamic>.from(arguments);
+        final name = values['name']?.toString().trim() ?? '';
+        final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
+        if (name.isNotEmpty || id.isNotEmpty) {
+          return Group(
+            id: id.isEmpty ? name : id,
+            name: name.isEmpty ? id : name,
+          );
+        }
+      } catch (e) {
+        debugPrint('WARNING: Failed to extract Group from arguments: $e');
+      }
+    }
+    return Group(id: 'unknown', name: 'Unknown');
+  }
+
   static Group _eventGroupFromArguments(Object? arguments) {
     if (arguments is Group) return arguments;
     if (arguments is Map) {
@@ -193,17 +218,17 @@ class AppRouter {
         })(),
       AppRoutes.adminOtherGroups => const OtherGroupsScreen(),
       AppRoutes.adminGroupDetails => (() {
-        final group = settings.arguments as dynamic;
+        final group = _groupFromArguments(settings.arguments);
         return GroupDetailsPage(group: group);
       })(),
       AppRoutes.teacherGroupClasses => (() {
-        final group = settings.arguments as dynamic;
+        final group = _groupFromArguments(settings.arguments);
         return GroupMenuPage(group: group);
       })(),
       AppRoutes.teacherGroupInfo => (() {
-        final group = settings.arguments as dynamic;
+        final group = _groupFromArguments(settings.arguments);
         return GroupInfoPage(
-          group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'),
+          group: group,
         );
       })(),
       AppRoutes.teacherFutureEventCalendar ||
@@ -241,7 +266,7 @@ class AppRouter {
       })(),
       AppRoutes.teacherGroupMessages ||
       AppRoutes.teacherEditGroupMessages => (() {
-        final group = settings.arguments as Group;
+        final group = _groupFromArguments(settings.arguments);
         return GroupMessagesPage(
           groupId: generateGroupDatabaseId(group.name),
           groupName: group.name,
@@ -250,7 +275,7 @@ class AppRouter {
       })(),
       AppRoutes.teacherWriteMessage ||
       AppRoutes.teacherEditWriteMessage => (() {
-        final group = settings.arguments as Group;
+        final group = _groupFromArguments(settings.arguments);
         return WriteMessagePage(
           groupId: generateGroupDatabaseId(group.name),
           groupName: group.name,
@@ -259,12 +284,12 @@ class AppRouter {
       })(),
       AppRoutes.teacherClassDemography ||
       AppRoutes.teacherEditClassDemography => ClassDemographyPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherClassResources || AppRoutes.teacherEditClassResources =>
-        ClassResourcesPage(group: settings.arguments as Group),
+        ClassResourcesPage(group: _groupFromArguments(settings.arguments)),
       AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews =>
-        ClassNewsPage(group: settings.arguments as Group),
+        ClassNewsPage(group: _groupFromArguments(settings.arguments)),
       AppRoutes.teacherClassTimetable => ClassTimetablePage(
         group: _eventGroupFromArguments(settings.arguments),
       ),
@@ -288,62 +313,62 @@ class AppRouter {
         );
       })(),
       AppRoutes.teacherClassPlanner || AppRoutes.teacherEditClassPlanner =>
-        ClassPlannerPage(group: settings.arguments as Group),
+        ClassPlannerPage(group: _groupFromArguments(settings.arguments)),
       AppRoutes.teacherVideoConference ||
       AppRoutes.teacherEditVideoConference => OnlineClassMeetingPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherClassFilePlan || AppRoutes.teacherEditClassFilePlan =>
-        ClassFileplanPage(group: settings.arguments as Group),
+        ClassFileplanPage(group: _groupFromArguments(settings.arguments)),
       AppRoutes.teacherOnlineAssignment ||
       AppRoutes.teacherEditOnlineAssignment => OnlineAssignmentPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherOnlineAssessment ||
       AppRoutes.teacherEditOnlineAssessment => OnlineAssessmentPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherGroupInfoEdit => (() {
-        final group = settings.arguments as dynamic;
+        final group = _groupFromArguments(settings.arguments);
         return GroupInfoEditPage(
-          group: group is Group ? group : Group(id: 'unknown', name: 'Unknown'),
+          group: group,
         );
       })(),
       AppRoutes.teacherGroupClassMenu => GroupMenuPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherGroupDashboard => GroupDashboardPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherDiarySummary => DiarySummaryPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherTakeAttendance => AbsencePage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherAppreciateAward => GroupAchievementAwardPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherLeaveApproval => LeaveApprovalPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherMedicalEventList => MedicalEventListPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherHappinessReport => HappinessReportPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherOneOnOneMeeting => OneOnOneMeetingPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherPickDropEntry => PickDropEntryPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherAccessManagement => AccessManagementPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.teacherClassFeeDetails => ClassFeeDetailsPage(
-        group: settings.arguments as Group,
+        group: _groupFromArguments(settings.arguments),
       ),
       AppRoutes.adminHomeScreen => const AdminHomeScreen(),
       AppRoutes.adminSchoolSettings => const SchoolSettingsEditor(),

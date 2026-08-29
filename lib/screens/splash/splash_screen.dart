@@ -21,6 +21,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _hasNavigated = false;
+
   @override
   void initState() {
     super.initState();
@@ -30,20 +32,55 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateNext() async {
-    if (!mounted) return;
+    // Prevent duplicate navigation calls
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    
+    // If a specific target route was requested, navigate there directly
     if (widget.targetRoute != null && widget.targetRoute != AppRoutes.splash) {
       Navigator.of(context).pushReplacementNamed(widget.targetRoute!);
       return;
     }
 
     final appState = context.read<AppState>();
-    await appState.initialization;
+    
+    // Wait for initialization with timeout protection
+    try {
+      await appState.initialization.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('WARNING: AppState initialization timeout. Proceeding with available data.');
+        },
+      );
+    } catch (e) {
+      debugPrint('ERROR: Initialization error: $e. Proceeding with available data.');
+    }
+    
     if (!mounted) return;
 
+    // Navigation logic based on authentication and language state:
+    // 1. If not logged in AND no language selected -> go to language selection
+    // 2. If not logged in AND language selected -> go to login/main page
+    // 3. If logged in AND no language selected -> go to language selection
+    // 4. If logged in AND language selected -> go to main/dashboard
+    
     final hasLanguage = appState.hasSelectedLanguage;
-    Navigator.of(context).pushReplacementNamed(
-      hasLanguage ? AppRoutes.main : AppRoutes.language,
-    );
+    final isLoggedIn = appState.isLoggedIn;
+    
+    late String nextRoute;
+    if (!hasLanguage) {
+      // User must select language first
+      nextRoute = AppRoutes.language;
+    } else if (!isLoggedIn) {
+      // User is logged out, go to login/main page
+      nextRoute = AppRoutes.main;
+    } else {
+      // User is logged in with language selected, go to main (which handles the dashboard routing)
+      nextRoute = AppRoutes.main;
+    }
+    
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed(nextRoute);
   }
 
   @override

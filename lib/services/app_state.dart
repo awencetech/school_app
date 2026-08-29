@@ -40,18 +40,45 @@ class AppState extends ChangeNotifier {
   bool get hasSelectedLanguage => _selectedLanguage != null;
 
   Future<void> _loadInitialState() async {
-    final savedLanguageCode = await PreferencesService.getString(_languageKey);
-    final savedLoggedInState = await PreferencesService.getBool(_loggedInKey);
-    final savedUserId = await PreferencesService.getString(_authUserIdKey);
-    final savedEmail = await PreferencesService.getString(_authEmailKey);
-    final savedRole = await PreferencesService.getString(_authRoleKey);
-    _selectedLanguage = LanguageOptionX.fromCode(savedLanguageCode);
-    _isLoggedIn = savedLoggedInState ?? false;
-    _currentUserId = savedUserId;
-    _currentUserEmail = savedEmail;
-    _currentUserRole = savedRole;
-    _isInitialized = true;
-    notifyListeners();
+    try {
+      // Add timeout protection to prevent splash screen from hanging indefinitely
+      // if SharedPreferences or any other startup operation is slow
+      await Future.wait([
+        PreferencesService.getString(_languageKey),
+        PreferencesService.getBool(_loggedInKey),
+        PreferencesService.getString(_authUserIdKey),
+        PreferencesService.getString(_authEmailKey),
+        PreferencesService.getString(_authRoleKey),
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          // If loading takes too long, proceed with defaults
+          debugPrint('WARNING: AppState initialization timeout after 5 seconds. Using default values.');
+          return <dynamic>[null, null, null, null, null];
+        },
+      ).then((results) {
+        if (results.isEmpty || results.length < 5) return;
+        final savedLanguageCode = results[0] as String?;
+        final savedLoggedInState = results[1] as bool?;
+        final savedUserId = results[2] as String?;
+        final savedEmail = results[3] as String?;
+        final savedRole = results[4] as String?;
+        
+        _selectedLanguage = LanguageOptionX.fromCode(savedLanguageCode);
+        _isLoggedIn = savedLoggedInState ?? false;
+        _currentUserId = savedUserId;
+        _currentUserEmail = savedEmail;
+        _currentUserRole = savedRole;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('ERROR: Failed to load initial app state: $e\n$stackTrace');
+      // Do NOT crash on startup error. Proceed with default values.
+      _isLoggedIn = false;
+      _selectedLanguage = null;
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
+    }
   }
 
   Future<void> setLanguage(LanguageOption language) async {

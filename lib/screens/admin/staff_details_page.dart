@@ -151,7 +151,10 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         title: const Text('Employee Info'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).pop()),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
       ),
       body: _editing ? _editBody() : SafeArea(
         child: SingleChildScrollView(

@@ -741,7 +741,12 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
         centerTitle: true,
         title: Text('Group Messages', style: AppTextStyles.appTitle.copyWith(fontSize: 16)),
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // Use maybePop() to safely navigate back
+            // If no previous route exists, this will keep the current page visible
+            // instead of showing a blank screen
+            Navigator.of(context).maybePop();
+          },
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),
       ),

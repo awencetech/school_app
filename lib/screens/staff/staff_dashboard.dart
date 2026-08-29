@@ -423,7 +423,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 children: [
                                   _ClassAction(
                                     icon: Icons.message,
-                                    label: 'Write Group\Messages',
+                                    label: 'Write Group\nMessages',
                                     color: Color(0xFF4CAF50),
                                     onTap: () => Navigator.of(context).push(
                                       MaterialPageRoute(
@@ -434,7 +434,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                   ),
                                   _ClassAction(
                                     icon: Icons.upload_file,
-                                    label: 'Upload\HW,CW',
+                                    label: 'Upload\nHW,CW',
                                     color: Color(0xFFD32F2F),
                                     onTap: () => Navigator.of(context).push(
                                       MaterialPageRoute(

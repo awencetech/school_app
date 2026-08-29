@@ -510,7 +510,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
         radius: 16,
         backgroundColor: AppColors.primary.withOpacity(0.12),
         backgroundImage: NetworkImage(safeImage),
-        onBackgroundImageError: (_, __) {},
+        onBackgroundImageError: (_, _) {},
       );
     }
 

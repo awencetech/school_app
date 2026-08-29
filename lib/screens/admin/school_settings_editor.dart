@@ -78,17 +78,18 @@ class _SchoolSettingsEditorState extends State<SchoolSettingsEditor> {
   }
 
   Future<void> _pickPoster() async {
+    final config = context.read<SchoolConfigService>();
     final result = await FilePicker.pickFiles(type: FileType.image);
     if (result.isEmpty) return;
     final file = result.first;
     final bytes = await file.readAsBytes();
 
     try {
-      final uploadedUrl = await context.read<SchoolConfigService>().repository.uploadPoster(
+      final uploadedUrl = await config.repository.uploadPoster(
         fileName: file.name,
         bytes: bytes,
       );
-      if (!context.mounted) return;
+      if (!mounted) return;
       setState(() {
         _posterUrl = uploadedUrl;
       });

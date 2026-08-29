@@ -128,10 +128,10 @@ class MainPageInfoRepository {
       // ignore and continue
     }
 
-    print('Loaded school poster URL: ${normalizedPayload['schoolSettings']?['schoolPoster'] ?? 'empty'}');
+    debugPrint('Loaded school poster URL: ${normalizedPayload['schoolSettings']?['schoolPoster'] ?? 'empty'}');
     try {
       final loadedQuote = normalizedPayload['splashScreen']?['quote'] ?? '';
-      print('Loaded splash quote: $loadedQuote');
+      debugPrint('Loaded splash quote: $loadedQuote');
     } catch (_) {}
     return MainPageInfo.fromJson(normalizedPayload);
   }

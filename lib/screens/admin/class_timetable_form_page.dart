@@ -122,13 +122,15 @@ class _ClassTimetableFormPageState extends State<ClassTimetableFormPage> {
         });
         return;
       }
-      final navigator = Navigator.of(context);
+      if (!mounted) return;
+      final startTimeLabel = _start!.format(context);
+      final endTimeLabel = _end!.format(context);
       final entryToSave = ClassTimetableEntry(
         id: widget.entry?.id ?? '',
         groupId: _groupId,
         day: _day!,
-        startTime: _start!.format(context),
-        endTime: _end!.format(context),
+        startTime: startTimeLabel,
+        endTime: endTimeLabel,
         subject: _subject.text.trim(),
         teacher: _teacher.text.trim(),
         room: _room.text.trim(),
@@ -136,9 +138,8 @@ class _ClassTimetableFormPageState extends State<ClassTimetableFormPage> {
       );
 
       await _service.save(_groupId, entryToSave);
-      if (mounted) {
-        navigator.pop(true);
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
         setState(() {

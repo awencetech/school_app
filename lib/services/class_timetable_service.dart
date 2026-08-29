@@ -25,12 +25,13 @@ class ClassTimetableService {
   Future<List<ClassTimetableEntry>> getForGroup(String groupId) async {
     final uri = _uri(groupId);
     final response = await http.get(uri).timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw ApiException(
         response.statusCode,
         'Unable to load class timetable.',
         uri.toString(),
       );
+    }
     final data = jsonDecode(response.body) as List;
     return data
         .map(
@@ -56,12 +57,13 @@ class ClassTimetableService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(entry.toJson()),
           );
-    if (response.statusCode != (entry.id.isEmpty ? 201 : 200))
+    if (response.statusCode != (entry.id.isEmpty ? 201 : 200)) {
       throw ApiException(
         response.statusCode,
         _message(response.body),
         uri.toString(),
       );
+    }
     return ClassTimetableEntry.fromJson(
       Map<String, dynamic>.from(jsonDecode(response.body)),
     );
@@ -70,19 +72,21 @@ class ClassTimetableService {
   Future<void> delete(String groupId, String id) async {
     final uri = _uri(groupId, id);
     final response = await http.delete(uri);
-    if (response.statusCode != 204)
+    if (response.statusCode != 204) {
       throw ApiException(
         response.statusCode,
         'Unable to delete timetable entry.',
         uri.toString(),
       );
+    }
   }
 
   String _message(String body) {
     try {
       final value = jsonDecode(body);
-      if (value is Map && value['message'] is String)
+      if (value is Map && value['message'] is String) {
         return value['message'] as String;
+      }
     } catch (_) {}
     return 'Unable to save class timetable.';
   }

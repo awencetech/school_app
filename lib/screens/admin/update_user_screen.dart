@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
@@ -177,25 +179,28 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                 ),
                               );
 
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.maybeOf(context);
+
                               if (!mounted || should != true) return;
 
                               setState(() => _isDeleting = true);
 
                               try {
                                 await _userService.deleteUser(widget.userId);
-                                if (!mounted) return;
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('User deleted successfully')),
-                                  );
-                                  if (Navigator.of(context).canPop()) {
-                                    Navigator.of(context).pop(true);
-                                  }
+                                if (!mounted || messenger == null) return;
+                                messenger.showSnackBar(
+                                  const SnackBar(content: Text('User deleted successfully')),
+                                );
+                                if (navigator.canPop()) {
+                                  navigator.pop(true);
                                 }
                               } catch (e) {
                                 if (mounted) _showError('Failed to delete user: ${e.toString()}');
                               } finally {
-                                if (mounted) setState(() => _isDeleting = false);
+                                if (mounted) {
+                                  setState(() => _isDeleting = false);
+                                }
                               }
                             },
                       child: _isDeleting ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Delete User'),

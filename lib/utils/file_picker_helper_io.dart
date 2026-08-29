@@ -10,11 +10,14 @@ Future<String?> pickImageAsDataUri() async {
   dynamic file;
   if (result.isNotEmpty) {
     file = result.first;
-  } else if (result is PlatformFile) file = result;
-  else {
+  } else if (result is PlatformFile) {
+    file = result;
+  } else {
     try {
       final files = (result as dynamic).files;
-      if (files is List && files.isNotEmpty) file = files.first;
+      if (files is List && files.isNotEmpty) {
+        file = files.first;
+      }
     } catch (_) {}
   }
   if (file == null) return null;

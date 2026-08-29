@@ -350,7 +350,7 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                       });
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                     labelStyle: TextStyle(
                       color: isSelected ? AppColors.primary : AppColors.secondaryText,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -385,7 +385,7 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                       });
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: _getPriorityColor(priority).withOpacity(0.2),
+                    selectedColor: _getPriorityColor(priority).withValues(alpha: 0.2),
                     labelStyle: TextStyle(
                       color: isSelected ? _getPriorityColor(priority) : AppColors.secondaryText,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -423,7 +423,7 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
                 );
-              }).toList(),
+              }),
               const SizedBox(height: 16),
               // Expiry Date
               Text(
@@ -464,9 +464,9 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       _submitError!,

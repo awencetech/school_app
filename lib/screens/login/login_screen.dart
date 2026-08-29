@@ -41,22 +41,26 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final svc = UserService();
     svc.login(identifier: identifier, password: password).then((user) async {
-      if (!context.mounted) return;
+      if (!mounted) return;
       await context.read<AppState>().setAuthenticatedUser(
         userId: user.userId,
         email: user.email,
         role: user.role,
       );
 
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+
       // route based on authoritative backend role
       if (user.role == 'student') {
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.studentDashboard, (route) => false);
+        navigator.pushNamedAndRemoveUntil(AppRoutes.studentDashboard, (route) => false);
       } else if (user.role == 'staff') {
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.staffDashboard, (route) => false);
+        navigator.pushNamedAndRemoveUntil(AppRoutes.staffDashboard, (route) => false);
       } else if (user.role == 'admin') {
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
+        navigator.pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid user role')));
+        messenger.showSnackBar(const SnackBar(content: Text('Invalid user role')));
       }
     }).catchError((e) {
       if (!mounted) return;
@@ -68,7 +72,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }).whenComplete(() {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     });
   }
 

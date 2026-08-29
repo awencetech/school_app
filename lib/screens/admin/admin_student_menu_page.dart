@@ -302,9 +302,7 @@ class _StudentMenuTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Implement navigation to respective menu items
-      },
+      onTap: () {},
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

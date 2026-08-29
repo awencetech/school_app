@@ -90,7 +90,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
 
     setState(() => _isSaving = false);
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Splash screen updated successfully.')));
       // Keep UI in sync with saved values
@@ -115,7 +115,9 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
       if (!mounted) return;
       try {
         final ctx = _previewKey.currentContext;
-        if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+        if (ctx != null) {
+          Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+        }
       } catch (_) {}
     });
   }

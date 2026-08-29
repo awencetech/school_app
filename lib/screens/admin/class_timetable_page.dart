@@ -44,17 +44,19 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
   Future<void> _load() async {
     try {
       final entries = await _service.getForGroup(_groupId);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _entries = entries;
           _loading = false;
         });
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -89,12 +91,15 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
     if (confirmed != true) return;
     try {
       await _service.delete(_groupId, entry.id);
-      if (mounted) setState(() => _entries.remove(entry));
+      if (mounted) {
+        setState(() => _entries.remove(entry));
+      }
     } catch (error) {
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
     }
   }
 

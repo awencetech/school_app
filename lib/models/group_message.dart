@@ -1,5 +1,5 @@
 class GroupMessageComment {
-  const GroupMessageComment({
+  GroupMessageComment({
     required this.id,
     required this.studentId,
     required this.studentName,
@@ -45,7 +45,7 @@ class GroupMessageComment {
 }
 
 class GroupMessage {
-  const GroupMessage({
+  GroupMessage({
     required this.id,
     required this.groupId,
     required this.groupName,

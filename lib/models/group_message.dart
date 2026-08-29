@@ -175,7 +175,7 @@ class GroupMessage {
       likedBy: likedBy,
       comments: commentsJson is List
           ? List<GroupMessageComment>.from(
-              (commentsJson as List).map((item) => GroupMessageComment.fromJson(Map<String, dynamic>.from(item as Map))),
+              commentsJson.map((item) => GroupMessageComment.fromJson(Map<String, dynamic>.from(item as Map))),
             )
           : const <GroupMessageComment>[],
     );

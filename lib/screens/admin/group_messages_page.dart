@@ -51,7 +51,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
 
   String get _currentUserRole => context.read<AppState>().currentUserRole?.trim() ?? '';
 
-  String? get _currentUserName => context.read<AppState>().currentUserEmail;
+  String get _currentUserName => context.read<AppState>().currentUserEmail ?? 'Student';
   @override
   void initState() {
     super.initState();
@@ -96,7 +96,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
     if (index == -1) return;
 
     final previous = _messages[index];
-    final likedBy = Set<String>.from(previous.likedBy ?? []);
+    final likedBy = Set<String>.from(previous.likedBy);
     final willLike = !likedBy.contains(userId);
     if (willLike) {
       likedBy.add(userId);
@@ -114,19 +114,12 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
         messageId: message.id,
         userId: userId,
       );
-      final count = (result['likeCount'] is int) ? result['likeCount'] as int : likedBy.length;
+      final serverLikedBy = (result['likedBy'] is List)
+          ? List<String>.from((result['likedBy'] as List).map((item) => item.toString()))
+          : likedBy.toList();
       if (!mounted) return;
       setState(() {
-        _messages[index] = previous.copyWith(
-          likedBy: List<String>.from((result['likedBy'] is List) ? result['likedBy'] as List : likedBy.toList()),
-        );
-        if (count >= 0) {
-          _messages[index] = _messages[index].copyWith(
-            likedBy: List<String>.generate(count, (i) => (result['likedBy'] is List && i < (result['likedBy'] as List).length)
-                ? (result['likedBy'] as List)[i].toString()
-                : userId),
-          );
-        }
+        _messages[index] = previous.copyWith(likedBy: serverLikedBy);
       });
     } catch (_) {
       if (!mounted) return;
@@ -169,7 +162,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
     final optimisticComment = GroupMessageComment(
       id: 'pending-${DateTime.now().millisecondsSinceEpoch}',
       studentId: userId,
-      studentName: context.read<AppState>().currentUserEmail ?? 'Student',
+      studentName: _currentUserName,
       text: input,
       createdAt: DateTime.now(),
     );
@@ -190,7 +183,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
         messageId: message.id,
         userId: userId,
         userRole: _currentUserRole,
-        studentName: context.read<AppState>().currentUserEmail ?? 'Student',
+        studentName: _currentUserName,
         comment: input,
       );
       if (!mounted) return;
@@ -283,13 +276,13 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
                     child: Row(
                       children: [
                         Icon(
-                          (message.likedBy?.contains(_currentUserId ?? '') ?? false) ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                          message.likedBy.contains(_currentUserId ?? '') ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
                           size: 16,
                           color: AppColors.primary,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Like ${message.likedBy?.length ?? 0}',
+                          'Like ${message.likedBy.length}',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -984,9 +977,9 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
                   child: Row(
                     children: [
                       Icon(
-                        (message.likedBy?.contains(_currentUserId ?? '') ?? false) ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                        message.likedBy.contains(_currentUserId ?? '') ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
                         size: 18,
-                        color: (message.likedBy?.contains(_currentUserId ?? '') ?? false) ? AppColors.primary : AppColors.secondaryText,
+                        color: message.likedBy.contains(_currentUserId ?? '') ? AppColors.primary : AppColors.secondaryText,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -995,7 +988,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${message.likedBy?.length ?? 0}',
+                        '${message.likedBy.length}',
                         style: GoogleFonts.poppins(fontSize: 11, color: AppColors.secondaryText),
                       ),
                     ],

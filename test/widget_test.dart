@@ -155,11 +155,10 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Mobile Number'), '9876543210');
     await tester.enterText(find.widgetWithText(TextFormField, 'Address'), 'Street 1');
 
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       find.text('Save Student'),
-      find.byType(ListView),
-      scrollDirection: Axis.vertical,
-      alignment: 0.5,
+      find.byType(Scrollable),
+      const Offset(0, -300),
     );
     await tester.tap(find.text('Save Student'));
     await tester.pumpAndSettle();

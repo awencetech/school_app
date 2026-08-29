@@ -46,6 +46,10 @@ class GroupMessageService {
     required String senderId,
     required String senderName,
     required String senderRole,
+    String title = '',
+    String priority = 'Normal',
+    List<String> audience = const [],
+    String? expiryDate,
   }) async {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages');
     final response = await http.post(
@@ -55,7 +59,7 @@ class GroupMessageService {
         'groupId': groupId,
         'groupName': groupName,
         'category': messageType,
-        'title': messageType,
+        'title': (title.isEmpty ? messageType : title).trim(),
         'content': message,
         'message': message,
         'authorId': senderId,
@@ -63,9 +67,43 @@ class GroupMessageService {
         'authorRole': senderRole,
         'senderRole': senderRole,
         'senderName': senderName,
+        'priority': priority,
+        'audience': audience,
+        if (expiryDate != null && expiryDate.trim().isNotEmpty) 'expiryDate': expiryDate.trim(),
       }),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != 201) {
+      throw ApiException(response.statusCode, _errorMessage(response.body), uri.toString());
+    }
+    return GroupMessage.fromJson(Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+  }
+
+  Future<GroupMessage> updateMessage({
+    required String groupId,
+    required String messageId,
+    required String title,
+    required String messageType,
+    required String message,
+    String priority = 'Normal',
+    List<String> audience = const [],
+    String? expiryDate,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}');
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'title': title.trim(),
+        'category': messageType,
+        'messageType': messageType,
+        'content': message,
+        'message': message,
+        'priority': priority,
+        'audience': audience,
+        if (expiryDate != null && expiryDate.trim().isNotEmpty) 'expiryDate': expiryDate.trim(),
+      }),
+    ).timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
       throw ApiException(response.statusCode, _errorMessage(response.body), uri.toString());
     }
     return GroupMessage.fromJson(Map<String, dynamic>.from(jsonDecode(response.body) as Map));

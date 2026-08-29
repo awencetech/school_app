@@ -13,6 +13,7 @@ import 'package:school_app/app.dart';
 import 'package:school_app/models/group.dart';
 import 'package:school_app/screens/achievements/achievements_screen.dart';
 import 'package:school_app/screens/admin/group_info_edit_page.dart';
+import 'package:school_app/screens/admin/student_management_page.dart';
 import 'package:school_app/screens/login/create_account_screen.dart';
 import 'package:school_app/screens/login/forgot_password_screen.dart';
 import 'package:school_app/screens/login/login_screen.dart';
@@ -129,6 +130,44 @@ void main() {
     expect(find.text('Groups and Classes of Student name'), findsOneWidget);
     expect(find.text('Your Location'), findsOneWidget);
     expect(find.text('Parent Details'), findsOneWidget);
+  });
+
+  testWidgets('StudentManagementPage exposes the Add Student button', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Student'), findsOneWidget);
+    expect(find.text('Add Student'), findsOneWidget);
+  });
+
+  testWidgets('StudentManagementPage shows saved students with edit and delete actions', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add Student'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Naveen');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Class'), 'Grade 10');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Section'), 'A');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Student ID'), 'STU-101');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Parent Name'), 'Ravi');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Mobile Number'), '9876543210');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Address'), 'Street 1');
+
+    await tester.scrollUntilVisible(
+      find.text('Save Student'),
+      find.byType(ListView),
+      scrollDirection: Axis.vertical,
+      alignment: 0.5,
+    );
+    await tester.tap(find.text('Save Student'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Naveen'), findsOneWidget);
+    expect(find.text('Grade 10'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
   });
 
   testWidgets('GroupInfoEditPage shows the selected group and edit fields', (WidgetTester tester) async {

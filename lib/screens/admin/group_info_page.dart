@@ -12,7 +12,6 @@ import '../../services/group_service.dart';
 import '../../services/app_route_observer.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
-import 'package:file_picker/file_picker.dart';
 import '../student/student_menu_screen.dart';
 import '../../routes/app_routes.dart';
 
@@ -139,65 +138,6 @@ class _GroupInfoPageState extends State<GroupInfoPage>
       setState(() {
         _isLoading = false;
       });
-    }
-  }
-
-  Widget _previewImageWidget(
-    String src, {
-    BoxFit fit = BoxFit.cover,
-    double? width,
-    double? height,
-  }) {
-    if (src.startsWith('data:')) {
-      try {
-        final comma = src.indexOf(',');
-        final b64 = src.substring(comma + 1);
-        final bytes = base64Decode(b64);
-        return Image.memory(
-          bytes,
-          fit: fit,
-          width: width,
-          height: height,
-          errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
-        );
-      } catch (e) {
-        debugPrint('Failed to decode data URI: $e');
-        return const Icon(Icons.broken_image);
-      }
-    }
-
-    if (src.startsWith('http://') || src.startsWith('https://')) {
-      return Image.network(
-        src,
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
-      );
-    }
-
-    if (kIsWeb) {
-      // On web, local file system paths are not accessible. Try to show as network resource.
-      return Image.network(
-        src,
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported),
-      );
-    }
-
-    try {
-      return Image.file(
-        File(src),
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
-      );
-    } catch (e) {
-      debugPrint('Error creating File image: $e');
-      return const Icon(Icons.broken_image);
     }
   }
 

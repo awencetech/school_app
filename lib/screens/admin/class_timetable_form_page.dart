@@ -122,27 +122,30 @@ class _ClassTimetableFormPageState extends State<ClassTimetableFormPage> {
         });
         return;
       }
-      await _service.save(
-        _groupId,
-        ClassTimetableEntry(
-          id: widget.entry?.id ?? '',
-          groupId: _groupId,
-          day: _day!,
-          startTime: _start!.format(context),
-          endTime: _end!.format(context),
-          subject: _subject.text.trim(),
-          teacher: _teacher.text.trim(),
-          room: _room.text.trim(),
-          notes: _notes.text.trim(),
-        ),
+      final navigator = Navigator.of(context);
+      final entryToSave = ClassTimetableEntry(
+        id: widget.entry?.id ?? '',
+        groupId: _groupId,
+        day: _day!,
+        startTime: _start!.format(context),
+        endTime: _end!.format(context),
+        subject: _subject.text.trim(),
+        teacher: _teacher.text.trim(),
+        room: _room.text.trim(),
+        notes: _notes.text.trim(),
       );
-      if (mounted) Navigator.of(context).pop(true);
+
+      await _service.save(_groupId, entryToSave);
+      if (mounted) {
+        navigator.pop(true);
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _saving = false;
           _error = error.toString();
         });
+      }
     }
   }
 
@@ -174,7 +177,7 @@ class _ClassTimetableFormPageState extends State<ClassTimetableFormPage> {
         padding: const EdgeInsets.all(12),
         children: [
           DropdownButtonFormField<String>(
-            value: _day,
+            initialValue: _day,
             decoration: _decoration('Day'),
             items: _days
                 .map((day) => DropdownMenuItem(value: day, child: Text(day)))

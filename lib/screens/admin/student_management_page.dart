@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -148,6 +149,8 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
   Future<void> _saveStudent() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final imageUrl = _imageBytes != null ? 'data:image/png;base64,${base64Encode(_imageBytes!)}' : '';
+
     final student = StudentRecord(
       id: _editingStudentIndex != null && _editingStudentIndex! < _students.length ? _students[_editingStudentIndex!].id : null,
       name: _controllers['Name']!.text.trim(),
@@ -161,6 +164,7 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
       about: _controllers['About']!.text.trim(),
       hobbies: _controllers['Hobbies & Interest']!.text.trim(),
       role: _controllers['Role']!.text.trim(),
+      imageUrl: imageUrl,
     );
 
     try {
@@ -207,7 +211,20 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
     ];
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: AppColors.topBar, title: const Text('Student')),
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        title: const Text('Student'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.adminOtherOptions, (route) => false);
+            }
+          },
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -305,11 +322,19 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: const Color(0xFF7A7A7A),
-                      child: const Icon(Icons.person_outline, color: Colors.white),
-                    ),
+                    if (student.imageUrl.isEmpty)
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: const Color(0xFF7A7A7A),
+                        child: const Icon(Icons.person_outline, color: Colors.white),
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundImage: NetworkImage(student.imageUrl),
+                        backgroundColor: const Color(0xFF7A7A7A),
+                        child: const Icon(Icons.person_outline, color: Colors.white),
+                      ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

@@ -436,6 +436,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.group,
                               label: 'List\nStudents',
                               color: Color(0xFFF59E0B),
+                              onTap: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.adminListStudents);
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.person,

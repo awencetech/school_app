@@ -33,6 +33,8 @@ class AppRoutes {
   static const adminAdd = '$adminOtherOptions/add';
   static const adminKnowYourSchool = '$adminOtherOptions/know-your-school';
   static const adminStudentOptions = '$adminOtherOptions/student';
+  static const adminListStudents = '$adminOtherOptions/list-students';
+  static const adminStudentMenu = '$adminListStudents/student-menu';
   static const adminStaffOptions = '$adminOtherOptions/staff';
   static const adminListTeachers = '$adminOtherOptions/list-teachers';
   static const adminEmployeeInfo = '$adminListTeachers/employee-info';

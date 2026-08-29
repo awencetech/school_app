@@ -63,7 +63,7 @@ class _StudentInfoPageState extends State<StudentInfoPage> {
             width: 90,
             height: 90,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _fallbackAvatar(name),
+            errorBuilder: (_, _, _) => _fallbackAvatar(name),
           ),
         );
       } catch (_) {
@@ -79,7 +79,7 @@ class _StudentInfoPageState extends State<StudentInfoPage> {
           width: 90,
           height: 90,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallbackAvatar(name),
+          errorBuilder: (_, _, _) => _fallbackAvatar(name),
         ),
       );
     }
@@ -91,7 +91,7 @@ class _StudentInfoPageState extends State<StudentInfoPage> {
         width: 90,
         height: 90,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallbackAvatar(name),
+        errorBuilder: (_, _, _) => _fallbackAvatar(name),
       ),
     );
   }

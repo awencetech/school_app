@@ -44,18 +44,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedBottomIndex = 0;
 
   Future<void> _openWebsite(BuildContext context) async {
-    final url = context.read<SchoolConfigService>().websiteUrl.trim();
-    if (url.isEmpty) {
+    final websiteUrl = context.read<SchoolConfigService>().websiteUrl.trim();
+    if (websiteUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No website link has been added yet.')),
+        const SnackBar(content: Text('School website is not configured yet.')),
       );
       return;
     }
 
-    final uri = Uri.tryParse(url);
-    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    final uri = Uri.tryParse(websiteUrl);
+    if (uri == null || !uri.hasScheme) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open the website link.')),
+        const SnackBar(content: Text('School website URL is invalid.')),
+      );
+      return;
+    }
+
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the website right now.')),
       );
     }
   }

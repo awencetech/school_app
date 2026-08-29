@@ -47,7 +47,28 @@ class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedBottomIndex = 0;
 
   Future<void> _openWebsite(BuildContext context) async {
-    Navigator.of(context).pushNamed(AppRoutes.adminKnowYourSchoolWebsiteEdit);
+    final websiteUrl = context.read<SchoolConfigService>().websiteUrl.trim();
+    if (websiteUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('School website is not configured yet.')),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(websiteUrl);
+    if (uri == null || !uri.hasScheme) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('School website URL is invalid.')),
+      );
+      return;
+    }
+
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the website right now.')),
+      );
+    }
   }
 
   Widget _studentQuickAction(

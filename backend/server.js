@@ -67,6 +67,7 @@ let legacyEventsCollection;
 let todayInClassCollection;
 let homeworkCollection;
 let groupMessagesCollection;
+let groupMessageCommentsCollection;
 let classTimetableCollection;
 let legacyClassTimetableCollection;
 
@@ -79,6 +80,7 @@ async function ensureIndexes(db) {
     todayInClassCollection.createIndex({ groupId: 1, date: 1 }),
     homeworkCollection.createIndex({ groupId: 1, date: 1 }),
     groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
+    groupMessageCommentsCollection.createIndex({ groupId: 1, messageId: 1, createdAt: 1 }),
     classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
   ]);
 }
@@ -110,6 +112,7 @@ async function connectMongo() {
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
     groupMessagesCollection = db.collection('groupMessages');
+    groupMessageCommentsCollection = db.collection('groupMessageComments');
     classTimetableCollection = db.collection('class-timetables');
     legacyClassTimetableCollection = db.collection('class-timetable');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
@@ -273,14 +276,32 @@ function sanitizeGroupMessageForResponse(doc) {
     _id: doc._id ? doc._id.toString() : null,
     id: doc.id || (doc._id ? doc._id.toString() : ''),
     groupId: doc.groupId || '',
+    groupName: doc.groupName || '',
     title: doc.title || '',
     content: doc.content || doc.message || '',
+    message: doc.content || doc.message || '',
     authorId: doc.authorId || '',
     authorRole: doc.authorRole || '',
+    senderName: doc.senderName || '',
     category: doc.category || '',
+    messageType: doc.messageType || doc.category || '',
+    priority: doc.priority || 'Normal',
+    audience: Array.isArray(doc.audience) ? doc.audience : [],
     target: doc.target || '',
     approved: doc.approved === true,
     approvedById: doc.approvedById || '',
+    imageUrl: doc.imageUrl || null,
+    expiryDate: doc.expiryDate || null,
+    createdBy: doc.createdBy || doc.authorId || '',
+    commentsAllowed: doc.commentsAllowed !== false,
+    likedBy: Array.isArray(doc.likedBy) ? doc.likedBy : [],
+    comments: Array.isArray(doc.comments) ? doc.comments.map((comment) => ({
+      id: comment.id || comment._id || null,
+      studentId: comment.studentId || comment.userId || '',
+      studentName: comment.studentName || comment.name || 'Student',
+      text: comment.text || comment.comment || '',
+      createdAt: comment.createdAt || new Date().toISOString(),
+    })) : [],
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -776,10 +797,232 @@ app.get('/api/groups/:groupId/messages', async (req, res) => {
       .find({ groupId: { $in: groupIdVariants(groupId) } })
       .sort({ createdAt: -1 })
       .toArray();
-    return res.json(messages.map(sanitizeGroupMessageForResponse));
+
+    const hydrated = await Promise.all(messages.map(async (message) => {
+      const messageKey = message.id || (message._id ? message._id.toString() : '');
+      const comments = await groupMessageCommentsCollection
+        .find({ groupId: { $in: groupIdVariants(groupId) }, messageId: messageKey || (message._id ? message._id.toString() : '') })
+        .sort({ createdAt: 1 })
+        .toArray();
+
+      return {
+        ...message,
+        likedBy: Array.isArray(message.likedBy) ? message.likedBy : [],
+        comments: comments.map((comment) => ({
+          id: comment._id ? comment._id.toString() : comment.id || null,
+          studentId: comment.studentId || '',
+          studentName: comment.studentName || 'Student',
+          text: comment.text || comment.comment || '',
+          createdAt: comment.createdAt || new Date().toISOString(),
+        })),
+      };
+    }));
+
+    return res.json(hydrated.map(sanitizeGroupMessageForResponse));
   } catch (error) {
     console.error('GET /api/groups/:groupId/messages failed:', error);
     return res.status(500).json({ message: 'Unable to load messages.' });
+  }
+});
+
+app.post('/api/groups/:groupId/messages/:messageId/like', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messageId = (req.params.messageId || '').trim();
+    const userId = (req.body.userId || '').toString().trim();
+
+    if (!groupId || !messageId || !userId) {
+      return res.status(422).json({ message: 'groupId, messageId, and userId are required.' });
+    }
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(messageId), groupId: { $in: groupIdVariants(groupId) } };
+    } catch (_) {
+      selector = { id: messageId, groupId: { $in: groupIdVariants(groupId) } };
+    }
+
+    const message = await groupMessagesCollection.findOne(selector);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found.' });
+    }
+
+    const likedBy = Array.isArray(message.likedBy) ? message.likedBy.filter((entry) => entry && entry.toString().trim()) : [];
+    const alreadyLiked = likedBy.some((entry) => entry.toString() === userId);
+    const nextLikedBy = alreadyLiked
+      ? likedBy.filter((entry) => entry.toString() !== userId)
+      : [...new Set([...likedBy, userId])];
+
+    const result = await groupMessagesCollection.updateOne(selector, {
+      $set: { likedBy: nextLikedBy, updatedAt: new Date().toISOString() },
+    });
+
+    if (!result.matchedCount) {
+      return res.status(404).json({ message: 'Message not found.' });
+    }
+
+    return res.json({
+      liked: !alreadyLiked,
+      likeCount: nextLikedBy.length,
+      likedBy: nextLikedBy,
+    });
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/messages/:messageId/like failed:', error);
+    return res.status(500).json({ message: 'Unable to toggle like.' });
+  }
+});
+
+app.get('/api/groups/:groupId/messages/:messageId/comments', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messageId = (req.params.messageId || '').trim();
+
+    const comments = await groupMessageCommentsCollection
+      .find({ groupId: { $in: groupIdVariants(groupId) }, messageId })
+      .sort({ createdAt: 1 })
+      .toArray();
+
+    return res.json(comments.map((comment) => ({
+      id: comment._id ? comment._id.toString() : comment.id || null,
+      messageId: comment.messageId || messageId,
+      groupId: comment.groupId || groupId,
+      studentId: comment.studentId || '',
+      studentName: comment.studentName || 'Student',
+      comment: comment.comment || '',
+      text: comment.comment || comment.text || '',
+      createdAt: comment.createdAt || null,
+      updatedAt: comment.updatedAt || comment.createdAt || null,
+    })));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/messages/:messageId/comments failed:', error);
+    return res.status(500).json({ message: 'Unable to load comments.' });
+  }
+});
+
+app.post('/api/groups/:groupId/messages/:messageId/comments', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messageId = (req.params.messageId || '').trim();
+    const userRole = (req.body.userRole || '').toString().trim().toLowerCase();
+    const userId = (req.body.userId || req.body.studentId || '').toString().trim();
+    const studentName = (req.body.studentName || '').toString().trim();
+    const text = (req.body.comment || req.body.text || '').toString().trim();
+
+    if (!groupId || !messageId || !userId || !text) {
+      return res.status(422).json({ message: 'messageId, userId, and comment text are required.' });
+    }
+    if (userRole !== 'student') {
+      return res.status(403).json({ message: 'Only students can comment on group messages.' });
+    }
+
+    const saved = await groupMessageCommentsCollection.insertOne({
+      messageId,
+      groupId,
+      studentId: userId,
+      studentName: studentName || 'Student',
+      comment: text,
+      text,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const created = await groupMessageCommentsCollection.findOne({ _id: saved.insertedId });
+    return res.status(201).json({
+      id: created?._id ? created._id.toString() : null,
+      messageId,
+      groupId,
+      studentId: userId,
+      studentName: created?.studentName || studentName || 'Student',
+      comment: created?.comment || text,
+      text: created?.comment || text,
+      createdAt: created?.createdAt || null,
+      updatedAt: created?.updatedAt || null,
+    });
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/messages/:messageId/comments failed:', error);
+    return res.status(500).json({ message: 'Unable to add comment.' });
+  }
+});
+
+app.put('/api/groups/:groupId/messages/:messageId/comments/:commentId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messageId = (req.params.messageId || '').trim();
+    const commentId = (req.params.commentId || '').trim();
+    const userId = (req.body.userId || '').toString().trim();
+    const userRole = (req.body.userRole || '').toString().trim().toLowerCase();
+    const text = (req.body.comment || req.body.text || '').toString().trim();
+
+    if (!userId || !text) {
+      return res.status(422).json({ message: 'userId and comment text are required.' });
+    }
+    if (userRole !== 'student') {
+      return res.status(403).json({ message: 'Only students can edit comments.' });
+    }
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(commentId), groupId: { $in: groupIdVariants(groupId) }, messageId, studentId: userId };
+    } catch (_) {
+      selector = { id: commentId, groupId: { $in: groupIdVariants(groupId) }, messageId, studentId: userId };
+    }
+
+    const result = await groupMessageCommentsCollection.updateOne(selector, {
+      $set: { comment: text, text, updatedAt: new Date().toISOString() },
+    });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Comment not found.' });
+
+    const updated = await groupMessageCommentsCollection.findOne(selector);
+    return res.json({
+      id: updated?._id ? updated._id.toString() : updated?.id || null,
+      messageId: updated?.messageId || messageId,
+      groupId: updated?.groupId || groupId,
+      studentId: updated?.studentId || userId,
+      studentName: updated?.studentName || 'Student',
+      comment: updated?.comment || text,
+      text: updated?.comment || text,
+      createdAt: updated?.createdAt || null,
+      updatedAt: updated?.updatedAt || null,
+    });
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/messages/:messageId/comments/:commentId failed:', error);
+    return res.status(500).json({ message: 'Unable to update comment.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/messages/:messageId/comments/:commentId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messageId = (req.params.messageId || '').trim();
+    const commentId = (req.params.commentId || '').trim();
+    const userId = (req.body.userId || '').toString().trim();
+    const userRole = (req.body.userRole || '').toString().trim().toLowerCase();
+
+    if (!userId) {
+      return res.status(422).json({ message: 'userId is required.' });
+    }
+    if (userRole !== 'student') {
+      return res.status(403).json({ message: 'Only students can delete comments.' });
+    }
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(commentId), groupId: { $in: groupIdVariants(groupId) }, messageId, studentId: userId };
+    } catch (_) {
+      selector = { id: commentId, groupId: { $in: groupIdVariants(groupId) }, messageId, studentId: userId };
+    }
+
+    const result = await groupMessageCommentsCollection.deleteOne(selector);
+    if (!result.deletedCount) return res.status(404).json({ message: 'Comment not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/messages/:messageId/comments/:commentId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete comment.' });
   }
 });
 
@@ -792,24 +1035,35 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
 
     const body = req.body || {};
     const content = (body.content || body.message || '').toString().trim();
+    const title = (body.title || '').toString().trim();
     const category = (body.category || body.messageType || '').toString().trim();
-    if (!content || !category) {
-      return res.status(422).json({ message: 'Message type and message are required.' });
+    if (!content || !title || !category) {
+      return res.status(422).json({ message: 'Title, message, and message type are required.' });
     }
 
     const now = new Date().toISOString();
     const message = {
       groupId: requestedGroupId,
       groupName: (body.groupName || group.name || '').toString().trim(),
-      title: (body.title || category).toString().trim(),
+      title,
       content,
+      message: content,
       authorId: (body.authorId || body.senderId || '').toString().trim(),
+      createdBy: (body.createdBy || body.authorId || body.senderId || '').toString().trim(),
       authorRole: (body.authorRole || body.senderRole || '').toString().trim(),
       senderName: (body.senderName || '').toString().trim(),
       category,
+      messageType: category,
+      priority: (body.priority || 'Normal').toString().trim(),
+      audience: Array.isArray(body.audience) ? body.audience : [],
       target: (body.target || '').toString().trim(),
+      imageUrl: (body.imageUrl || null),
+      expiryDate: (body.expiryDate || null),
       approved: body.approved === true,
       approvedById: (body.approvedById || '').toString().trim(),
+      commentsAllowed: body.commentsAllowed !== false,
+      likedBy: [],
+      comments: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -819,6 +1073,54 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
   } catch (error) {
     console.error('POST /api/groups/:groupId/messages failed:', error);
     return res.status(500).json({ message: 'Unable to save message.' });
+  }
+});
+
+app.put('/api/groups/:groupId/messages/:messageId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const messageId = (req.params.messageId || '').trim();
+    const body = req.body || {};
+    
+    const content = (body.content || body.message || '').toString().trim();
+    const title = (body.title || '').toString().trim();
+    const category = (body.category || body.messageType || '').toString().trim();
+    if (!content || !title || !category) {
+      return res.status(422).json({ message: 'Title, message, and message type are required.' });
+    }
+
+    const selector = { groupId: { $in: groupIdVariants(groupId) } };
+    try {
+      selector._id = new ObjectId(messageId);
+    } catch (_) {
+      selector.id = messageId;
+    }
+
+    const now = new Date().toISOString();
+    const update = {
+      title,
+      content,
+      message: content,
+      category,
+      messageType: category,
+      priority: (body.priority || 'Normal').toString().trim(),
+      audience: Array.isArray(body.audience) ? body.audience : [],
+      target: (body.target || '').toString().trim(),
+      imageUrl: (body.imageUrl || null),
+      expiryDate: (body.expiryDate || null),
+      commentsAllowed: body.commentsAllowed !== false,
+      updatedAt: now,
+    };
+    
+    const result = await groupMessagesCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Message not found.' });
+    
+    const saved = await groupMessagesCollection.findOne(selector);
+    return res.json(sanitizeGroupMessageForResponse(saved));
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/messages/:messageId failed:', error);
+    return res.status(500).json({ message: 'Unable to update message.' });
   }
 });
 

@@ -332,12 +332,10 @@ class AppRouter {
       })(),
       AppRoutes.teacherEditGroupMessages => (() {
         final group = _groupFromArguments(settings.arguments);
-        final message = _messageFromArguments(settings.arguments);
         return GroupMessagesEditPage(
           groupId: generateGroupDatabaseId(group.name),
           groupName: group.name,
           groupYear: group.year,
-          message: message,
         );
       })(),
       AppRoutes.teacherWriteMessage ||

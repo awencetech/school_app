@@ -71,80 +71,78 @@ class LanguageSelectionScreen extends StatelessWidget {
       appBar: CustomAppBar(title: config.schoolName),
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Consumer<AppState>(
-                builder: (context, state, child) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Select your preferred Language',
-                        style: AppTextStyles.languageTitle,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return Center(
-                            child: SizedBox(
-                              width: constraints.maxWidth,
-                              height: 180,
-                              child: _buildPoster(
-                                context,
-                                config.posterDisplaySource,
-                              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Consumer<AppState>(
+                    builder: (context, state, child) {
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Select your preferred Language',
+                            style: AppTextStyles.languageTitle,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: constraints.maxWidth,
+                            height: 180,
+                            child: _buildPoster(
+                              context,
+                              config.posterDisplaySource,
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      LanguageCard(
-                        label: LanguageOption.tamil.label,
-                        iconColor: AppColors.tamilIcon,
-                        selected:
-                            state.selectedLanguage == LanguageOption.tamil,
-                        onTap: () => state.setLanguage(LanguageOption.tamil),
-                      ),
-                      const SizedBox(height: 12),
-                      LanguageCard(
-                        label: LanguageOption.english.label,
-                        iconColor: AppColors.englishIcon,
-                        selected:
-                            state.selectedLanguage == LanguageOption.english,
-                        onTap: () => state.setLanguage(LanguageOption.english),
-                      ),
-                      const SizedBox(height: 12),
-                      LanguageCard(
-                        label: LanguageOption.hindi.label,
-                        iconColor: AppColors.hindiIcon,
-                        selected:
-                            state.selectedLanguage == LanguageOption.hindi,
-                        onTap: () => state.setLanguage(LanguageOption.hindi),
-                      ),
-                      const SizedBox(height: 20),
-                      PrimaryButton(
-                        label: 'Continue',
-                        backgroundColor: AppColors.primary,
-                        textColor: AppColors.white,
-                        height: 48,
-                        borderRadius: 6,
-                        onPressed: state.hasSelectedLanguage
-                            ? () => Navigator.of(
-                                context,
-                              ).pushReplacementNamed(AppRoutes.main)
-                            : null,
-                      ),
-                    ],
-                  );
-                },
+                          ),
+                          const SizedBox(height: 20),
+                          LanguageCard(
+                            label: LanguageOption.tamil.label,
+                            iconColor: AppColors.tamilIcon,
+                            selected:
+                                state.selectedLanguage == LanguageOption.tamil,
+                            onTap: () => state.setLanguage(LanguageOption.tamil),
+                          ),
+                          const SizedBox(height: 12),
+                          LanguageCard(
+                            label: LanguageOption.english.label,
+                            iconColor: AppColors.englishIcon,
+                            selected:
+                                state.selectedLanguage == LanguageOption.english,
+                            onTap: () => state.setLanguage(LanguageOption.english),
+                          ),
+                          const SizedBox(height: 12),
+                          LanguageCard(
+                            label: LanguageOption.hindi.label,
+                            iconColor: AppColors.hindiIcon,
+                            selected:
+                                state.selectedLanguage == LanguageOption.hindi,
+                            onTap: () => state.setLanguage(LanguageOption.hindi),
+                          ),
+                          const SizedBox(height: 20),
+                          PrimaryButton(
+                            label: 'Continue',
+                            backgroundColor: AppColors.primary,
+                            textColor: AppColors.white,
+                            height: 48,
+                            borderRadius: 6,
+                            onPressed: state.hasSelectedLanguage
+                                ? () => Navigator.of(
+                                    context,
+                                  ).pushReplacementNamed(AppRoutes.main)
+                                : null,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

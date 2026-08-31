@@ -8,7 +8,7 @@ import '../../services/event_celebration_service.dart';
 import '../../widgets/staff_footer.dart';
 
 class StaffEventsCelebrationPage extends StatefulWidget {
-  StaffEventsCelebrationPage({super.key});
+  const StaffEventsCelebrationPage({super.key});
 
   @override
   State<StaffEventsCelebrationPage> createState() => _StaffEventsCelebrationPageState();
@@ -150,7 +150,9 @@ class _EventImage extends StatelessWidget {
     if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
       return CachedNetworkImage(
         imageUrl: trimmed,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        height: double.infinity,
         placeholder: (_, _) => const ColoredBox(color: Color(0xffeef1f3)),
         errorWidget: (_, _, _) =>
             const Icon(Icons.broken_image_outlined, color: Color(0xff8a8a8a)),
@@ -163,7 +165,9 @@ class _EventImage extends StatelessWidget {
           : trimmed;
       return Image.memory(
         base64Decode(encoded.replaceAll(RegExp(r'\s+'), '')),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        height: double.infinity,
       );
     } catch (_) {
       return const Icon(
@@ -198,7 +202,10 @@ class _EventDetailPage extends StatelessWidget {
             ),
           const SizedBox(height: 12),
           if (item.imageUrl.isNotEmpty)
-            SizedBox(height: 220, child: _EventImage(source: item.imageUrl)),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 260),
+              child: _EventImage(source: item.imageUrl),
+            ),
           const SizedBox(height: 14),
           Text(
             item.content,

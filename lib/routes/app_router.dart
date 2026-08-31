@@ -32,6 +32,7 @@ import '../screens/admin/know_your_school_page.dart';
 import '../screens/admin/know_your_school_detail_page.dart';
 import '../screens/admin/school_handbook_edit_page.dart';
 import '../screens/admin/events_celebration_edit_page.dart';
+import '../screens/admin/school_resources_edit_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/staff_details_page.dart';
@@ -233,10 +234,7 @@ class AppRouter {
               : null,
         ),
       AppRoutes.adminKnowYourSchoolSchoolResourcesEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'School Resources',
-          icon: Icons.folder_copy_outlined,
-        ),
+        const SchoolResourcesEditPage(),
       AppRoutes.adminKnowYourSchoolNewsletterEdit =>
         const KnowYourSchoolDetailPage(
           title: 'Newsletter',

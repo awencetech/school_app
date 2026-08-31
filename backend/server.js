@@ -73,6 +73,7 @@ let legacyClassTimetableCollection;
 let studentInfoCollection;
 let schoolHandbookCollection;
 let eventCelebrationCollection;
+let schoolResourcesCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -89,6 +90,7 @@ async function ensureIndexes(db) {
     studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
     schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
     eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
+    schoolResourcesCollection.createIndex({ schoolId: 1, date: -1, createdAt: -1 }),
   ]);
 }
 
@@ -125,6 +127,7 @@ async function connectMongo() {
     studentInfoCollection = db.collection('stud-in');
     schoolHandbookCollection = db.collection('school-handbook');
     eventCelebrationCollection = db.collection('event-celebration');
+    schoolResourcesCollection = db.collection('school-resources');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -316,6 +319,22 @@ function sanitizeEventCelebrationForResponse(doc) {
     content: doc.content || '',
     eventDate: doc.eventDate || null,
     category: doc.category || 'Event',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeSchoolResourceForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    schoolId: doc.schoolId || 'default-school',
+    heading: doc.heading || '',
+    date: doc.date || '',
+    resourceName: doc.resourceName || '',
+    imageUrl: doc.imageUrl || '',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1659,6 +1678,115 @@ app.delete('/api/events-celebration/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/events-celebration/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete the event.' });
+  }
+});
+
+// School resources CRUD
+app.get('/api/school-resources', async (req, res) => {
+  try {
+    await connectMongo();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    const items = await schoolResourcesCollection
+      .find({ schoolId })
+      .sort({ date: -1, createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(items.map(sanitizeSchoolResourceForResponse));
+  } catch (error) {
+    console.error('GET /api/school-resources failed:', error);
+    return res.status(500).json({ message: 'Unable to load school resources.' });
+  }
+});
+
+app.get('/api/school-resources/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await schoolResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ message: 'School resource not found.' });
+    return res.json(sanitizeSchoolResourceForResponse(item));
+  } catch (error) {
+    console.error('GET /api/school-resources/:id failed:', error);
+    return res.status(404).json({ message: 'School resource not found.' });
+  }
+});
+
+app.post('/api/school-resources', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const heading = String(body.heading || '').trim();
+    const date = String(body.date || '').trim();
+    const resourceName = String(body.resourceName || '').trim();
+
+    if (!heading || !date || !resourceName) {
+      return res.status(422).json({ message: 'Heading, date, and resource name are required.' });
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      schoolId,
+      heading,
+      date,
+      resourceName,
+      imageUrl: String(body.imageUrl || '').trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await schoolResourcesCollection.insertOne(payload);
+    const saved = await schoolResourcesCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeSchoolResourceForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/school-resources failed:', error);
+    return res.status(500).json({ message: 'Unable to create the school resource.' });
+  }
+});
+
+app.put('/api/school-resources/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const heading = String(body.heading || '').trim();
+    const date = String(body.date || '').trim();
+    const resourceName = String(body.resourceName || '').trim();
+
+    if (!heading || !date || !resourceName) {
+      return res.status(422).json({ message: 'Heading, date, and resource name are required.' });
+    }
+
+    const payload = {
+      schoolId,
+      heading,
+      date,
+      resourceName,
+      imageUrl: String(body.imageUrl || '').trim(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await schoolResourcesCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: payload },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'School resource not found.' });
+    const updated = await schoolResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeSchoolResourceForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/school-resources/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update the school resource.' });
+  }
+});
+
+app.delete('/api/school-resources/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await schoolResourcesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'School resource not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/school-resources/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete the school resource.' });
   }
 });
 

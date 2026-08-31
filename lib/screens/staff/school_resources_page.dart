@@ -1,30 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../models/school_resource.dart';
+import '../../services/school_resource_service.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 
-class SchoolResourcesPage extends StatelessWidget {
+class SchoolResourcesPage extends StatefulWidget {
   const SchoolResourcesPage({super.key});
 
-  static const _resources = [
-    [
-      'Parental Acknowledgment on Student Non-Participation in School Activities Due to Absence from School',
-      '27-Jun-25',
-    ],
-    ['Election short listed Candidates Name list AY 2026-27', '18-Jun-25'],
-    ['Election Process Flow for the Academic Year 2026-27', '18-Jun-25'],
-    ['F10 - F1 APP ACKNOWLEDGEMENT FORM', '01-Jun-25'],
-    ['Oath Of Office for a Prefect', '19-Apr-25'],
-    [
-      'F46-I5 - Elect Class Prefect Nomination & Self-Declaration Form',
-      '22-Aug-25',
-    ],
-    ['Choice Form for Academic year 2026 - 27', '03-Apr-25'],
-    [
-      'Incorporating the Vitamin Chart into the School Food System',
-      '14-Apr-24',
-    ],
-    ['Foundation and Integrated NEET / JEE Program - Fee Details', '02-Mar-24'],
-  ];
+  @override
+  State<SchoolResourcesPage> createState() => _SchoolResourcesPageState();
+}
+
+class _SchoolResourcesPageState extends State<SchoolResourcesPage> {
+  final _service = SchoolResourceService();
+  bool _loading = true;
+  List<SchoolResource> _resources = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadResources();
+  }
+
+  Future<void> _loadResources() async {
+    setState(() => _loading = true);
+    try {
+      final items = await _service.getResources();
+      if (!mounted) return;
+      setState(() {
+        _resources = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _resources = const [];
+        _loading = false;
+      });
+    }
+  }
+
+  String _formatDate(String value) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) return value;
+    return DateFormat('dd-MMM-yyyy').format(parsed);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,14 +68,19 @@ class SchoolResourcesPage extends StatelessWidget {
             child: Text('Resource List', style: TextStyle(fontSize: 11)),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(2, 0, 2, 5),
-              itemCount: _resources.length,
-              itemBuilder: (context, index) => _SchoolResourceRow(
-                title: _resources[index][0],
-                date: _resources[index][1],
-              ),
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _resources.isEmpty
+                    ? const Center(child: Text('No resources available'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(2, 0, 2, 5),
+                        itemCount: _resources.length,
+                        itemBuilder: (context, index) => _SchoolResourceRow(
+                          title: _resources[index].heading,
+                          date: _formatDate(_resources[index].date),
+                          subtitle: _resources[index].resourceName,
+                        ),
+                      ),
           ),
         ],
       ),
@@ -74,10 +100,15 @@ class SchoolResourcesPage extends StatelessWidget {
 }
 
 class _SchoolResourceRow extends StatelessWidget {
-  const _SchoolResourceRow({required this.title, required this.date});
+  const _SchoolResourceRow({
+    required this.title,
+    required this.date,
+    this.subtitle,
+  });
 
   final String title;
   final String date;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +127,11 @@ class _SchoolResourceRow extends StatelessWidget {
             title,
             style: const TextStyle(fontSize: 10, color: Color(0xff173c70)),
           ),
+          if (subtitle != null && subtitle!.trim().isNotEmpty)
+            Text(
+              subtitle!,
+              style: const TextStyle(fontSize: 8, color: Color(0xff555555)),
+            ),
           Text(
             date,
             style: const TextStyle(fontSize: 6, color: Color(0xff555555)),

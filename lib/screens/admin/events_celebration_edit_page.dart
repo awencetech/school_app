@@ -344,19 +344,12 @@ class _EventCelebrationFormPageState extends State<EventCelebrationFormPage> {
     try {
       setState(() => _uploading = true);
 
-      final dynamic selectedFile = file;
       List<int> bytes = const [];
-
-      final dynamic rawBytes = selectedFile.bytes;
-      if (rawBytes != null) {
-        bytes = List<int>.from(rawBytes);
-      }
-
-      if (bytes.isEmpty) {
-        final path = selectedFile.path as String?;
-        if (path != null && path.isNotEmpty) {
-          bytes = await File(path).readAsBytes();
-        }
+      final path = file.path;
+      if (path != null && path.isNotEmpty) {
+        bytes = await File(path).readAsBytes();
+      } else {
+        bytes = await file.readAsBytes();
       }
 
       if (bytes.isEmpty) {

@@ -76,6 +76,7 @@ let eventCelebrationCollection;
 let schoolResourcesCollection;
 let newsLetterCollection;
 let announcementCollection;
+let demographyCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -95,6 +96,7 @@ async function ensureIndexes(db) {
     schoolResourcesCollection.createIndex({ schoolId: 1, date: -1, createdAt: -1 }),
     newsLetterCollection.createIndex({ schoolId: 1, createdAt: -1 }),
     announcementCollection.createIndex({ createdAt: -1 }),
+    demographyCollection.createIndex({ groupId: 1 }, { unique: false }),
   ]);
 }
 
@@ -134,6 +136,7 @@ async function connectMongo() {
     schoolResourcesCollection = db.collection('school-resources');
     newsLetterCollection = db.collection('news-letter');
     announcementCollection = db.collection('announcement');
+    demographyCollection = db.collection('demography');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -384,6 +387,31 @@ function sanitizeAnnouncementForResponse(doc) {
       createdAt: comment && comment.createdAt ? String(comment.createdAt) : null,
     })) : [],
     reminders: Array.isArray(doc.reminders) ? doc.reminders.map((value) => String(value)) : [],
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeDemographyForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    groupId: doc.groupId || '',
+    groupName: doc.groupName || '',
+    teachers: Array.isArray(doc.teachers) ? doc.teachers.map((member) => ({
+      name: member && member.name ? String(member.name) : '',
+      staffId: member && member.staffId ? String(member.staffId) : '',
+    })) : [],
+    otherTeachers: Array.isArray(doc.otherTeachers) ? doc.otherTeachers.map((member) => ({
+      name: member && member.name ? String(member.name) : '',
+      staffId: member && member.staffId ? String(member.staffId) : '',
+    })) : [],
+    students: Array.isArray(doc.students) ? doc.students.map((member) => ({
+      name: member && member.name ? String(member.name) : '',
+      studentId: member && member.studentId ? String(member.studentId) : '',
+    })) : [],
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1613,6 +1641,134 @@ app.delete('/api/school-handbook/:handbookId', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/school-handbook/:handbookId failed:', error);
     return res.status(400).json({ message: 'Unable to delete the staff handbook.' });
+  }
+});
+
+// Demography CRUD
+app.get('/api/demography', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await demographyCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(items.map(sanitizeDemographyForResponse));
+  } catch (error) {
+    console.error('GET /api/demography failed:', error);
+    return res.status(500).json({ message: 'Unable to load demography.' });
+  }
+});
+
+app.get('/api/demography/group/:groupId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = String(req.params.groupId || '').trim();
+    if (!groupId) return res.status(422).json({ message: 'Group ID is required.' });
+    const items = await demographyCollection.find({ groupId }).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(items.map(sanitizeDemographyForResponse));
+  } catch (error) {
+    console.error('GET /api/demography/group/:groupId failed:', error);
+    return res.status(500).json({ message: 'Unable to load group demography.' });
+  }
+});
+
+app.post('/api/demography', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const groupId = String(body.groupId || '').trim();
+    const groupName = String(body.groupName || '').trim();
+    const teachers = Array.isArray(body.teachers) ? body.teachers : [];
+    const otherTeachers = Array.isArray(body.otherTeachers) ? body.otherTeachers : [];
+    const students = Array.isArray(body.students) ? body.students : [];
+
+    if (!groupName) return res.status(422).json({ message: 'Group Name is required.' });
+    if (students.length === 0 || !students.some((item) => String(item && item.name ? item.name : '').trim())) {
+      return res.status(422).json({ message: 'At least one student is required.' });
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      groupId: groupId || `group-${Date.now()}`,
+      groupName,
+      teachers: teachers.map((teacher) => ({
+        name: String((teacher && teacher.name) || '').trim(),
+        staffId: String((teacher && teacher.staffId) || '').trim(),
+      })).filter((teacher) => teacher.name),
+      otherTeachers: otherTeachers.map((teacher) => ({
+        name: String((teacher && teacher.name) || '').trim(),
+        staffId: String((teacher && teacher.staffId) || '').trim(),
+      })).filter((teacher) => teacher.name),
+      students: students.map((student) => ({
+        name: String((student && student.name) || '').trim(),
+        studentId: String((student && student.studentId) || '').trim(),
+      })).filter((student) => student.name),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await demographyCollection.insertOne(payload);
+    const saved = await demographyCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeDemographyForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/demography failed:', error);
+    return res.status(500).json({ message: 'Unable to create demography.' });
+  }
+});
+
+app.put('/api/demography/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const groupId = String(body.groupId || '').trim();
+    const groupName = String(body.groupName || '').trim();
+    const teachers = Array.isArray(body.teachers) ? body.teachers : [];
+    const otherTeachers = Array.isArray(body.otherTeachers) ? body.otherTeachers : [];
+    const students = Array.isArray(body.students) ? body.students : [];
+
+    if (!groupName) return res.status(422).json({ message: 'Group Name is required.' });
+    if (students.length === 0 || !students.some((item) => String(item && item.name ? item.name : '').trim())) {
+      return res.status(422).json({ message: 'At least one student is required.' });
+    }
+
+    const payload = {
+      groupId: groupId || `group-${Date.now()}`,
+      groupName,
+      teachers: teachers.map((teacher) => ({
+        name: String((teacher && teacher.name) || '').trim(),
+        staffId: String((teacher && teacher.staffId) || '').trim(),
+      })).filter((teacher) => teacher.name),
+      otherTeachers: otherTeachers.map((teacher) => ({
+        name: String((teacher && teacher.name) || '').trim(),
+        staffId: String((teacher && teacher.staffId) || '').trim(),
+      })).filter((teacher) => teacher.name),
+      students: students.map((student) => ({
+        name: String((student && student.name) || '').trim(),
+        studentId: String((student && student.studentId) || '').trim(),
+      })).filter((student) => student.name),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await demographyCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: payload },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Demography not found.' });
+    const updated = await demographyCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeDemographyForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/demography/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update demography.' });
+  }
+});
+
+app.delete('/api/demography/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await demographyCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Demography not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/demography/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete demography.' });
   }
 });
 

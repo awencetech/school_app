@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
-import '../../models/group.dart';
 import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
@@ -30,7 +29,6 @@ import '../student/student_check_approve_page.dart';
 import '../student/student_group_class_bus_page.dart';
 import '../student/student_ptm_page.dart';
 import '../student/student_uni_route_page.dart';
-import 'class_demography_page.dart';
 
 /// Admin dashboard page matching the requested layout.
 class AdminDashboard extends StatefulWidget {
@@ -394,17 +392,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.people,
                               label: 'Demography',
                               color: Color(0xFF6A1B9A),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => ClassDemographyPage(
-                                    group: Group(
-                                      id: 'grade-10-c',
-                                      name: 'Grade 10 C',
-                                      year: '2026-27',
-                                    ),
-                                    isStaffView: true,
-                                  ),
-                                ),
+                              onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.adminDashboardDemography,
                               ),
                             ),
                             _SchoolLinkChip(

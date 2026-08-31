@@ -177,12 +177,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back_ios_new),
         ),
-        title: const Text('Messages'),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.filter_list)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none)),
-        ],
+        title: const Text('Announcements'),
       ),
       body: SafeArea(
         child: _loading
@@ -271,107 +266,117 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  Wrap(
-                                    spacing: 10,
-                                    runSpacing: 8,
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      InkWell(
-                                        onTap: () => _toggleLike(item, 'current-user'),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                      const Expanded(child: SizedBox()),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Wrap(
+                                          alignment: WrapAlignment.end,
+                                          spacing: 10,
+                                          runSpacing: 8,
                                           children: [
-                                            const Icon(Icons.thumb_up_alt_outlined, size: 16),
-                                            const SizedBox(width: 4),
-                                            Text(isLiked ? 'Liked' : 'Like', style: GoogleFonts.poppins(fontSize: 12)),
-                                            const SizedBox(width: 4),
-                                            Text('$likeCount', style: GoogleFonts.poppins(fontSize: 12)),
-                                          ],
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () async {
-                                          await showModalBottomSheet<void>(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            builder: (context) {
-                                              final sheetController = TextEditingController();
-                                              return Padding(
-                                                padding: EdgeInsets.only(
-                                                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                                                ),
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(16),
-                                                  child: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        'Comments',
-                                                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+                                            InkWell(
+                                              onTap: () => _toggleLike(item, 'current-user'),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.thumb_up_alt_outlined, size: 16),
+                                                  const SizedBox(width: 4),
+                                                  Text(isLiked ? 'Liked' : 'Like', style: GoogleFonts.poppins(fontSize: 12)),
+                                                  const SizedBox(width: 4),
+                                                  Text('$likeCount', style: GoogleFonts.poppins(fontSize: 12)),
+                                                ],
+                                              ),
+                                            ),
+                                            InkWell(
+                                              onTap: () async {
+                                                await showModalBottomSheet<void>(
+                                                  context: context,
+                                                  isScrollControlled: true,
+                                                  builder: (context) {
+                                                    final sheetController = TextEditingController();
+                                                    return Padding(
+                                                      padding: EdgeInsets.only(
+                                                        bottom: MediaQuery.of(context).viewInsets.bottom,
                                                       ),
-                                                      const SizedBox(height: 12),
-                                                      if (item.comments.isEmpty)
-                                                        const Text('No comments yet.')
-                                                      else
-                                                        ...item.comments.map(
-                                                          (comment) => Padding(
-                                                            padding: const EdgeInsets.only(bottom: 8),
-                                                            child: Column(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                      child: Container(
+                                                        padding: const EdgeInsets.all(16),
+                                                        child: Column(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              'Comments',
+                                                              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+                                                            ),
+                                                            const SizedBox(height: 12),
+                                                            if (item.comments.isEmpty)
+                                                              const Text('No comments yet.')
+                                                            else
+                                                              ...item.comments.map(
+                                                                (comment) => Padding(
+                                                                  padding: const EdgeInsets.only(bottom: 8),
+                                                                  child: Column(
+                                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                                    children: [
+                                                                      Text(comment.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                                                                      const SizedBox(height: 2),
+                                                                      Text(comment.text, style: GoogleFonts.poppins(fontSize: 12)),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            const SizedBox(height: 12),
+                                                            Row(
                                                               children: [
-                                                                Text(comment.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                                                                const SizedBox(height: 2),
-                                                                Text(comment.text, style: GoogleFonts.poppins(fontSize: 12)),
+                                                                Expanded(
+                                                                  child: TextField(
+                                                                    controller: sheetController,
+                                                                    decoration: const InputDecoration(
+                                                                      hintText: 'Write Comment...',
+                                                                      border: OutlineInputBorder(),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(width: 8),
+                                                                FilledButton(
+                                                                  onPressed: () {
+                                                                    _addComment(item, sheetController);
+                                                                    Navigator.of(context).pop();
+                                                                  },
+                                                                  child: const Text('Post'),
+                                                                ),
                                                               ],
                                                             ),
-                                                          ),
+                                                          ],
                                                         ),
-                                                      const SizedBox(height: 12),
-                                                      Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: TextField(
-                                                              controller: sheetController,
-                                                              decoration: const InputDecoration(
-                                                                hintText: 'Write Comment...',
-                                                                border: OutlineInputBorder(),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          const SizedBox(width: 8),
-                                                          FilledButton(
-                                                            onPressed: () {
-                                                              _addComment(item, sheetController);
-                                                              Navigator.of(context).pop();
-                                                            },
-                                                            child: const Text('Post'),
-                                                          ),
-                                                        ],
                                                       ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          );
-                                        },
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.comment_outlined, size: 16),
-                                            const SizedBox(width: 4),
-                                            Text('Comment', style: GoogleFonts.poppins(fontSize: 12)),
-                                          ],
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () => _addReminder(item),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.alarm_add_outlined, size: 16),
-                                            const SizedBox(width: 4),
-                                            Text('Remind', style: GoogleFonts.poppins(fontSize: 12)),
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.comment_outlined, size: 16),
+                                                  const SizedBox(width: 4),
+                                                  Text('Comment', style: GoogleFonts.poppins(fontSize: 12)),
+                                                ],
+                                              ),
+                                            ),
+                                            InkWell(
+                                              onTap: () => _addReminder(item),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.alarm_add_outlined, size: 16),
+                                                  const SizedBox(width: 4),
+                                                  Text('Remind', style: GoogleFonts.poppins(fontSize: 12)),
+                                                ],
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),

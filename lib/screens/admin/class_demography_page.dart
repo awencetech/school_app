@@ -5,6 +5,7 @@ import '../../models/class_demography.dart';
 import '../../models/group.dart';
 import '../../models/user.dart';
 import '../../routes/app_routes.dart';
+import '../../services/demography_service.dart';
 import '../../services/user_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
@@ -25,6 +26,7 @@ class ClassDemographyPage extends StatefulWidget {
 
 class _ClassDemographyPageState extends State<ClassDemographyPage> {
   final UserService _userService = UserService();
+  final DemographyService _demographyService = DemographyService();
   bool _isLoading = true;
   String? _error;
   ClassDemography? _demography;
@@ -45,6 +47,29 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
       _error = null;
     });
     try {
+      final groupId = widget.group.id.trim();
+      if (groupId.isNotEmpty) {
+        final records = await _demographyService.getDemographiesByGroup(groupId);
+        if (records.isNotEmpty && mounted) {
+          final record = records.first;
+          setState(() {
+            _demography = ClassDemography(
+              className: record.groupName,
+              academicYear: widget.group.year,
+              schoolName: 'Sri Aurobindo Mira Universal School',
+              classTeachers: record.teachers.map((member) => member.displayText).toList(),
+              otherTeachers: record.otherTeachers.map((member) => member.displayText).toList(),
+              students: record.students.map((member) => member.displayText).toList(),
+              locations: [
+                const MapLocation(name: 'School', latitude: schoolLatitude, longitude: schoolLongitude, type: MarkerType.school),
+              ],
+            );
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+
       final users = await _userService.getUsers();
       final students = users.where((user) => user.role.toLowerCase() == 'student').map(_userLabel).toList();
       final teachers = users.where((user) => user.role.toLowerCase() == 'staff' || user.role.toLowerCase() == 'teacher').map(_userLabel).toList();
@@ -96,7 +121,7 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back, size: 20, color: Colors.white),
         ),
-        title: const Text('Today in Class', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+        title: const Text('Demography', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
         actions: [
           SizedBox(
             width: 48,
@@ -170,17 +195,6 @@ class _DemographyContent extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 76),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SizedBox(
-            height: 25,
-            child: Row(children: [
-              Text(demography.className, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xff1d3557))),
-              const SizedBox(width: 8),
-              const Text('Class Demography', style: TextStyle(fontSize: 12, color: Color(0xff1d3557))),
-            ]),
-          ),
-        ),
         SizedBox(
           height: 225,
           width: double.infinity,
@@ -229,7 +243,6 @@ class _DemographyText extends StatelessWidget {
       style: const TextStyle(fontSize: 10.5, height: 1.32, color: Color(0xff222222)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(demography.schoolName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        Text('Class: ${demography.className} NCC-${demography.academicYear}- FIRST YEAR'),
         const SizedBox(height: 6),
         const Text('Class Teacher:', style: TextStyle(fontWeight: FontWeight.w600)),
         ...demography.classTeachers.asMap().entries.map((entry) => Text('${entry.key + 1}. ${entry.value}')),

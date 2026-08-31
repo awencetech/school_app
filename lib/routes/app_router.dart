@@ -31,6 +31,7 @@ import '../screens/admin/admin_other_options.dart';
 import '../screens/admin/admin_detail_page.dart';
 import '../screens/admin/know_your_school_page.dart';
 import '../screens/admin/know_your_school_detail_page.dart';
+import '../screens/admin/demography_edit_page.dart';
 import '../screens/admin/school_handbook_edit_page.dart';
 import '../screens/admin/events_celebration_edit_page.dart';
 import '../screens/admin/school_resources_edit_page.dart';
@@ -219,6 +220,14 @@ class AppRouter {
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
+      AppRoutes.adminDashboardDemography => ClassDemographyPage(
+        group: Group(
+          id: 'grade-10-c',
+          name: 'Grade 10 C',
+          year: '2026-27',
+        ),
+        isStaffView: true,
+      ),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
@@ -243,7 +252,7 @@ class AppRouter {
       AppRoutes.adminKnowYourSchoolAnnouncementEdit =>
         const AnnouncementEditPage(),
       AppRoutes.adminKnowYourSchoolDemographyEdit =>
-        const KnowYourSchoolDetailPage(title: 'Demography', icon: Icons.people),
+        const DemographyEditPage(),
       AppRoutes.adminKnowYourSchoolFacebookEdit =>
         const KnowYourSchoolDetailPage(title: 'Facebook', icon: Icons.facebook),
       AppRoutes.adminKnowYourSchoolYoutubeEdit =>

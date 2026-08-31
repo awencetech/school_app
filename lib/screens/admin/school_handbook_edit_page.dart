@@ -27,29 +27,38 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
   }
 
   Future<void> _load() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = true;
         _error = null;
       });
+    }
     try {
       final handbook = await _service.getHandbook();
       _handbookId = handbook.id;
-      for (final section in _sections) section.dispose();
+      for (final section in _sections) {
+        section.dispose();
+      }
       _sections.clear();
       _sections.addAll(handbook.sections.map(_SectionDraft.fromModel));
     } catch (_) {
       _handbookId = null;
-      for (final section in _sections) section.dispose();
+      for (final section in _sections) {
+        section.dispose();
+      }
       _sections.clear();
       _error = 'Handbook data is temporarily unavailable.';
     }
-    if (mounted) setState(() => _loading = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   @override
   void dispose() {
-    for (final section in _sections) section.dispose();
+    for (final section in _sections) {
+      section.dispose();
+    }
     super.dispose();
   }
 
@@ -74,11 +83,12 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
         ],
       ),
     );
-    if (confirmed == true)
+    if (confirmed == true) {
       setState(() {
         _sections[index].dispose();
         _sections.removeAt(index);
       });
+    }
   }
 
   Future<void> _pickImage(_SectionDraft section) async {
@@ -91,10 +101,103 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
         files.single.name,
       );
     } catch (_) {
-      if (mounted) _snack('Unable to upload this image.', error: true);
+      if (mounted) {
+        _snack('Unable to upload this image.', error: true);
+      }
     } finally {
-      if (mounted) setState(() => section.uploading = false);
+      if (mounted) {
+        setState(() => section.uploading = false);
+      }
     }
+  }
+
+  Future<void> _editSection(int index) async {
+    final section = _sections[index];
+    final headingController = TextEditingController(text: section.heading.text);
+    final subDrafts = section.subSections
+        .map(
+          (sub) => _SubSectionDraft(
+            heading: TextEditingController(text: sub.heading.text),
+            content: TextEditingController(text: sub.content.text),
+          ),
+        )
+        .toList();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Section ${index + 1}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: headingController,
+                  decoration: const InputDecoration(labelText: 'Heading *'),
+                ),
+                const SizedBox(height: 12),
+                ...subDrafts.asMap().entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Sub Heading ${entry.key + 1}'),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: entry.value.heading,
+                          decoration: const InputDecoration(labelText: 'Sub Heading *'),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: entry.value.content,
+                          maxLines: 4,
+                          decoration: const InputDecoration(labelText: 'Content *'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != true) {
+      for (final draft in subDrafts) {
+        draft.dispose();
+      }
+      headingController.dispose();
+      return;
+    }
+
+    setState(() {
+      section.heading.text = headingController.text.trim();
+      for (var i = 0; i < section.subSections.length && i < subDrafts.length; i++) {
+        section.subSections[i].heading.text = subDrafts[i].heading.text.trim();
+        section.subSections[i].content.text = subDrafts[i].content.text.trim();
+      }
+    });
+
+    for (final draft in subDrafts) {
+      draft.dispose();
+    }
+    headingController.dispose();
   }
 
   Future<void> _save() async {
@@ -115,12 +218,14 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
       return;
     }
     setState(() => _saving = true);
+    final sectionModels = <HandbookSection>[];
+    for (var i = 0; i < _sections.length; i++) {
+      sectionModels.add(_sections[i].toModel(i + 1));
+    }
     final handbook = StaffHandbook(
       schoolId: StaffHandbookService.schoolId,
       id: _handbookId,
-      sections: [
-        for (var i = 0; i < _sections.length; i++) _sections[i].toModel(i + 1),
-      ],
+      sections: sectionModels,
     );
     try {
       final saved = await _service.save(handbook);
@@ -130,13 +235,16 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
         const SnackBar(content: Text('School Handbook saved successfully.')),
       );
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         _snack(
           'Unable to save handbook sections. Please try again.',
           error: true,
         );
+      }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 
@@ -250,56 +358,52 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              IconButton(
-                onPressed: index == 0
-                    ? null
-                    : () => setState(() {
-                        final item = _sections.removeAt(index);
-                        _sections.insert(index - 1, item);
-                      }),
-                tooltip: 'Move Up',
-                icon: const Icon(Icons.keyboard_arrow_up),
+              TextButton.icon(
+                onPressed: () => _editSection(index),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit'),
               ),
-              IconButton(
-                onPressed: index == _sections.length - 1
-                    ? null
-                    : () => setState(() {
-                        final item = _sections.removeAt(index);
-                        _sections.insert(index + 1, item);
-                      }),
-                tooltip: 'Move Down',
-                icon: const Icon(Icons.keyboard_arrow_down),
-              ),
-              IconButton(
+              TextButton.icon(
                 onPressed: () => _deleteSection(index),
-                tooltip: 'Delete Section',
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Delete'),
               ),
             ],
           ),
+          const SizedBox(height: 8),
           _field('Heading *', section.heading, 'Staff Handbook'),
           const SizedBox(height: 4),
-          const Text('Section Image'),
+          const Text(
+          'Section Image',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
           const SizedBox(height: 8),
           if (_hasNetworkImage(section.imageUrl))
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
               child: Image.network(
                 section.imageUrl,
-                height: 160,
+                height: 170,
                 width: double.infinity,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const SizedBox(
+                errorBuilder: (_, _, _) => const SizedBox(
                   height: 80,
                   child: Center(child: Text('Image unavailable')),
                 ),
               ),
             )
           else
-            const SizedBox(
-              height: 40,
-              child: Center(child: Text('No image selected')),
+            Container(
+              height: 170,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade100,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const Center(child: Text('No image selected')),
             ),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             children: [
@@ -314,7 +418,7 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
                 TextButton.icon(
                   onPressed: () => setState(() => section.imageUrl = ''),
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Remove Image'),
+                  label: const Text('Remove'),
                 ),
             ],
           ),
@@ -322,6 +426,7 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
           ...section.subSections.asMap().entries.map(
             (entry) => _subSectionCard(section, entry.key, entry.value),
           ),
+          const SizedBox(height: 6),
           OutlinedButton.icon(
             onPressed: () =>
                 setState(() => section.subSections.add(_SubSectionDraft())),
@@ -427,25 +532,30 @@ class _SectionDraft {
   String imageUrl = '';
   bool uploading = false;
   List<_SubSectionDraft> subSections = [];
-  HandbookSection toModel(int order) => HandbookSection(
-    heading: heading.text.trim(),
-    imageUrl: imageUrl,
-    order: order,
-    subSections: [
-      for (var i = 0; i < subSections.length; i++)
-        subSections[i].toModel(i + 1),
-    ],
-  );
+  HandbookSection toModel(int order) {
+    final subSectionModels = <HandbookSubSection>[];
+    for (var i = 0; i < subSections.length; i++) {
+      subSectionModels.add(subSections[i].toModel(i + 1));
+    }
+    return HandbookSection(
+      heading: heading.text.trim(),
+      imageUrl: imageUrl,
+      order: order,
+      subSections: subSectionModels,
+    );
+  }
   void dispose() {
     heading.dispose();
-    for (final sub in subSections) sub.dispose();
+    for (final sub in subSections) {
+      sub.dispose();
+    }
   }
 }
 
 class _SubSectionDraft {
-  _SubSectionDraft()
-    : heading = TextEditingController(),
-      content = TextEditingController();
+  _SubSectionDraft({TextEditingController? heading, TextEditingController? content})
+    : heading = heading ?? TextEditingController(),
+      content = content ?? TextEditingController();
   _SubSectionDraft.fromModel(HandbookSubSection value)
     : heading = TextEditingController(text: value.subHeading),
       content = TextEditingController(text: value.content);

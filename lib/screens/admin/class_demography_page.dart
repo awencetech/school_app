@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
 import '../../models/class_demography.dart';
+import '../../models/demography.dart';
 import '../../models/group.dart';
 import '../../models/user.dart';
 import '../../routes/app_routes.dart';
@@ -48,26 +49,36 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
     });
     try {
       final groupId = widget.group.id.trim();
+      final allRecords = await _demographyService.getDemographies();
+      Demography? record;
       if (groupId.isNotEmpty) {
-        final records = await _demographyService.getDemographiesByGroup(groupId);
-        if (records.isNotEmpty && mounted) {
-          final record = records.first;
-          setState(() {
-            _demography = ClassDemography(
-              className: record.groupName,
-              academicYear: widget.group.year,
-              schoolName: 'Sri Aurobindo Mira Universal School',
-              classTeachers: record.teachers.map((member) => member.displayText).toList(),
-              otherTeachers: record.otherTeachers.map((member) => member.displayText).toList(),
-              students: record.students.map((member) => member.displayText).toList(),
-              locations: [
-                const MapLocation(name: 'School', latitude: schoolLatitude, longitude: schoolLongitude, type: MarkerType.school),
-              ],
-            );
-            _isLoading = false;
-          });
-          return;
-        }
+        record = allRecords.cast<Demography?>().firstWhere(
+          (item) => item!.groupId.trim() == groupId,
+          orElse: () => null,
+        );
+      }
+      record ??= allRecords.cast<Demography?>().firstWhere(
+        (item) => item!.groupName.trim().toLowerCase() == widget.group.name.trim().toLowerCase(),
+        orElse: () => null,
+      );
+      record ??= allRecords.isEmpty ? null : allRecords.first;
+
+      if (record != null && mounted) {
+        setState(() {
+          _demography = ClassDemography(
+            className: record!.groupName,
+            academicYear: widget.group.year,
+            schoolName: 'Sri Aurobindo Mira Universal School',
+            classTeachers: record.teachers.map((member) => member.displayText).toList(),
+            otherTeachers: record.otherTeachers.map((member) => member.displayText).toList(),
+            students: record.students.map((member) => member.displayText).toList(),
+            locations: [
+              const MapLocation(name: 'School', latitude: schoolLatitude, longitude: schoolLongitude, type: MarkerType.school),
+            ],
+          );
+          _isLoading = false;
+        });
+        return;
       }
 
       final users = await _userService.getUsers();
@@ -194,9 +205,8 @@ class _DemographyContent extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 76),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SizedBox(height: 8),
         SizedBox(
-          height: 225,
+          height: 170,
           width: double.infinity,
           child: FlutterMap(
             options: MapOptions(initialCenter: center, initialZoom: 13, interactionOptions: const InteractionOptions(flags: InteractiveFlag.all)),

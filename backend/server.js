@@ -77,6 +77,7 @@ let schoolResourcesCollection;
 let newsLetterCollection;
 let announcementCollection;
 let demographyCollection;
+let libraryCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -97,6 +98,7 @@ async function ensureIndexes(db) {
     newsLetterCollection.createIndex({ schoolId: 1, createdAt: -1 }),
     announcementCollection.createIndex({ createdAt: -1 }),
     demographyCollection.createIndex({ groupId: 1 }, { unique: false }),
+    libraryCollection.createIndex({ bookId: 1 }, { unique: false }),
   ]);
 }
 
@@ -137,6 +139,7 @@ async function connectMongo() {
     newsLetterCollection = db.collection('news-letter');
     announcementCollection = db.collection('announcement');
     demographyCollection = db.collection('demography');
+    libraryCollection = db.collection('lib');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -412,6 +415,22 @@ function sanitizeDemographyForResponse(doc) {
       name: member && member.name ? String(member.name) : '',
       studentId: member && member.studentId ? String(member.studentId) : '',
     })) : [],
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeLibraryBookForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    bookName: doc.bookName || '',
+    author: doc.author || '',
+    bookId: doc.bookId || '',
+    publisher: doc.publisher || '',
+    availability: doc.availability === 'reserved' ? 'reserved' : 'available',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1769,6 +1788,83 @@ app.delete('/api/demography/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/demography/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete demography.' });
+  }
+});
+
+// Library CRUD
+app.get('/api/library', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await libraryCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(items.map(sanitizeLibraryBookForResponse));
+  } catch (error) {
+    console.error('GET /api/library failed:', error);
+    return res.status(500).json({ message: 'Unable to load library books.' });
+  }
+});
+
+app.get('/api/library/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await libraryCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ message: 'Book not found.' });
+    return res.json(sanitizeLibraryBookForResponse(item));
+  } catch (error) {
+    return res.status(404).json({ message: 'Book not found.' });
+  }
+});
+
+app.post('/api/library', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const bookName = String(body.bookName || '').trim();
+    const author = String(body.author || '').trim();
+    const bookId = String(body.bookId || '').trim();
+    const availability = body.availability === 'reserved' ? 'reserved' : 'available';
+    if (!bookName || !author || !bookId) return res.status(422).json({ message: 'Book name, author, and book ID are required.' });
+    const now = new Date().toISOString();
+    const result = await libraryCollection.insertOne({
+      bookName, author, bookId, publisher: String(body.publisher || '').trim(),
+      availability, createdAt: now, updatedAt: now,
+    });
+    return res.status(201).json(sanitizeLibraryBookForResponse(await libraryCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/library failed:', error);
+    return res.status(500).json({ message: 'Unable to create the book.' });
+  }
+});
+
+app.put('/api/library/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const bookName = String(body.bookName || '').trim();
+    const author = String(body.author || '').trim();
+    const bookId = String(body.bookId || '').trim();
+    const availability = body.availability === 'reserved' ? 'reserved' : 'available';
+    if (!bookName || !author || !bookId) return res.status(422).json({ message: 'Book name, author, and book ID are required.' });
+    const result = await libraryCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { bookName, author, bookId, publisher: String(body.publisher || '').trim(), availability, updatedAt: new Date().toISOString() } },
+    );
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Book not found.' });
+    return res.json(sanitizeLibraryBookForResponse(await libraryCollection.findOne({ _id: new ObjectId(req.params.id) })));
+  } catch (error) {
+    console.error('PUT /api/library/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update the book.' });
+  }
+});
+
+app.delete('/api/library/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await libraryCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Book not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/library/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete the book.' });
   }
 });
 

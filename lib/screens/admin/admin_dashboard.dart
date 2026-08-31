@@ -420,6 +420,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.library_books,
                               label: 'Library',
                               color: Color(0xFF795548),
+                              onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.adminDashboardLibrary,
+                              ),
                             ),
                           ],
                         ),

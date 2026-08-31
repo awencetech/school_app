@@ -30,6 +30,7 @@ class AppRoutes {
   static const adminDashboard = '/admin-dashboard';
   static const adminDashboardNewsletter = '$adminDashboard/news-letter';
   static const adminDashboardDemography = '$adminDashboard/demography';
+    static const adminDashboardLibrary = '$adminDashboard/library';
   static const adminOtherOptions = '/admin/other-options';
   static const adminMainEdit = '$adminOtherOptions/main-edit';
   static const adminAdd = '$adminOtherOptions/add';

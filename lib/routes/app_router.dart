@@ -36,6 +36,8 @@ import '../screens/admin/school_handbook_edit_page.dart';
 import '../screens/admin/events_celebration_edit_page.dart';
 import '../screens/admin/school_resources_edit_page.dart';
 import '../screens/admin/news_letter_page.dart';
+import '../screens/admin/library_page.dart';
+import '../screens/admin/library_edit_page.dart';
 import '../screens/admin/newsletter_edit_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
@@ -220,6 +222,7 @@ class AppRouter {
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
+      AppRoutes.adminDashboardLibrary => const LibraryPage(),
       AppRoutes.adminDashboardDemography => ClassDemographyPage(
         group: Group(
           id: 'grade-10-c',
@@ -268,10 +271,7 @@ class AppRouter {
           icon: Icons.camera_alt,
         ),
       AppRoutes.adminKnowYourSchoolLibraryEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'Library',
-          icon: Icons.library_books,
-        ),
+        const LibraryEditPage(),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
       AppRoutes.adminStudentInfo => (() {

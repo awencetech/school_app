@@ -503,6 +503,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.newspaper,
                               label: 'School\nNews',
                               color: Color(0xFF3B82F6),
+                              onTap: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.adminDashboardNewsletter);
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.medical_services,

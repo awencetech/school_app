@@ -33,6 +33,7 @@ import '../screens/admin/know_your_school_detail_page.dart';
 import '../screens/admin/school_handbook_edit_page.dart';
 import '../screens/admin/events_celebration_edit_page.dart';
 import '../screens/admin/school_resources_edit_page.dart';
+import '../screens/admin/news_letter_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/staff_details_page.dart';
@@ -215,6 +216,7 @@ class AppRouter {
       AppRoutes.staffEventsCelebration => StaffEventsCelebrationPage(),
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
+      AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),

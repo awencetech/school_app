@@ -28,6 +28,7 @@ class AppRoutes {
   static const staffEventsCelebration = '/staff-dashboard/events-celebration';
   static const staffTodoTasks = '/staff-dashboard/to-do-tasks';
   static const adminDashboard = '/admin-dashboard';
+  static const adminDashboardNewsletter = '$adminDashboard/news-letter';
   static const adminOtherOptions = '/admin/other-options';
   static const adminMainEdit = '$adminOtherOptions/main-edit';
   static const adminAdd = '$adminOtherOptions/add';

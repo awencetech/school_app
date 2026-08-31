@@ -178,7 +178,7 @@ class _AnnouncementEditPageState extends State<AnnouncementEditPage> {
                       child: FilledButton.icon(
                         onPressed: () => _openForm(),
                         icon: const Icon(Icons.add),
-                        label: const Text('+ Add Announcement'),
+                        label: const Text('Add Announcement'),
                       ),
                     ),
                     const SizedBox(height: 18),

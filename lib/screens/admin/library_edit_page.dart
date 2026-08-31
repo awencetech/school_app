@@ -89,7 +89,7 @@ class _LibraryEditPageState extends State<LibraryEditPage> {
                       child: FilledButton.icon(
                         onPressed: () => _openForm(),
                         icon: const Icon(Icons.add),
-                        label: const Text('+ Add Book'),
+                        label: const Text('Add Book'),
                       ),
                     ),
                     const SizedBox(height: 14),

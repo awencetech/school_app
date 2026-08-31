@@ -120,7 +120,7 @@ class _DemographyEditPageState extends State<DemographyEditPage> {
                       child: FilledButton.icon(
                         onPressed: () => _openForm(),
                         icon: const Icon(Icons.add),
-                        label: const Text('+ Add Demography'),
+                        label: const Text('Add Demography'),
                       ),
                     ),
                     const SizedBox(height: 18),

@@ -38,6 +38,10 @@ import '../screens/admin/school_resources_edit_page.dart';
 import '../screens/admin/news_letter_page.dart';
 import '../screens/admin/library_page.dart';
 import '../screens/admin/library_edit_page.dart';
+import '../screens/admin/facebook_edit_page.dart';
+import '../screens/admin/youtube_edit_page.dart';
+import '../screens/admin/instagram_edit_page.dart';
+import '../screens/admin/whatsapp_edit_page.dart';
 import '../screens/admin/newsletter_edit_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
@@ -257,19 +261,13 @@ class AppRouter {
       AppRoutes.adminKnowYourSchoolDemographyEdit =>
         const DemographyEditPage(),
       AppRoutes.adminKnowYourSchoolFacebookEdit =>
-        const KnowYourSchoolDetailPage(title: 'Facebook', icon: Icons.facebook),
+        const FacebookEditPage(),
       AppRoutes.adminKnowYourSchoolYoutubeEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'Youtube',
-          icon: Icons.ondemand_video,
-        ),
+        const YoutubeEditPage(),
       AppRoutes.adminKnowYourSchoolWhatsappEdit =>
-        const KnowYourSchoolDetailPage(title: 'WhatsApp', icon: Icons.chat),
+        const WhatsappEditPage(),
       AppRoutes.adminKnowYourSchoolInstagramEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'Instagram',
-          icon: Icons.camera_alt,
-        ),
+        const InstagramEditPage(),
       AppRoutes.adminKnowYourSchoolLibraryEdit =>
         const LibraryEditPage(),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),

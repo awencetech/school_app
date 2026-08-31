@@ -391,7 +391,7 @@ class _SchoolResourcesEditPageState extends State<SchoolResourcesEditPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(),
         icon: const Icon(Icons.add),
-        label: const Text('+ Add Resource'),
+        label: const Text('Add Resource'),
       ),
       bottomNavigationBar: AdminBottomNavigationBar(
         currentIndex: 0,

@@ -78,6 +78,7 @@ let newsLetterCollection;
 let announcementCollection;
 let demographyCollection;
 let libraryCollection;
+let socialUrlCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -99,6 +100,7 @@ async function ensureIndexes(db) {
     announcementCollection.createIndex({ createdAt: -1 }),
     demographyCollection.createIndex({ groupId: 1 }, { unique: false }),
     libraryCollection.createIndex({ bookId: 1 }, { unique: false }),
+    socialUrlCollection.createIndex({ platform: 1 }, { unique: true }),
   ]);
 }
 
@@ -140,6 +142,7 @@ async function connectMongo() {
     announcementCollection = db.collection('announcement');
     demographyCollection = db.collection('demography');
     libraryCollection = db.collection('lib');
+    socialUrlCollection = db.collection('social-url');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -434,6 +437,16 @@ function sanitizeLibraryBookForResponse(doc) {
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
+}
+
+function sanitizeSocialUrlForResponse(doc) {
+  if (!doc) return null;
+  return { platform: 'facebook', url: doc.url || '' };
+}
+
+function sanitizeWhatsAppForResponse(doc) {
+  if (!doc) return null;
+  return { platform: 'whatsapp', phoneNumber: doc.phoneNumber || '', text: doc.text || '' };
 }
 
 function sanitizeTodayInClassForResponse(doc) {
@@ -1865,6 +1878,137 @@ app.delete('/api/library/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/library/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete the book.' });
+  }
+});
+
+// Social URL management
+app.get('/api/social-url/facebook', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await socialUrlCollection.findOne({ platform: 'facebook' });
+    return res.json(sanitizeSocialUrlForResponse(item) || { platform: 'facebook', url: '' });
+  } catch (error) {
+    console.error('GET /api/social-url/facebook failed:', error);
+    return res.status(500).json({ message: 'Unable to load Facebook link.' });
+  }
+});
+
+app.post('/api/social-url/facebook', async (req, res) => {
+  try {
+    await connectMongo();
+    const url = String((req.body || {}).url || '').trim();
+    let parsed;
+    try { parsed = new URL(url); } catch (_) {}
+    if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) {
+      return res.status(422).json({ message: 'Enter a valid http or https URL.' });
+    }
+    const now = new Date().toISOString();
+    const saved = await socialUrlCollection.findOneAndUpdate(
+      { platform: 'facebook' },
+      { $set: { platform: 'facebook', url, updatedAt: now }, $setOnInsert: { createdAt: now } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    return res.json(sanitizeSocialUrlForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/social-url/facebook failed:', error);
+    return res.status(500).json({ message: 'Unable to save Facebook link.' });
+  }
+});
+
+app.get('/api/social-url/youtube', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await socialUrlCollection.findOne({ platform: 'youtube' });
+    return res.json(sanitizeSocialUrlForResponse(item) || { platform: 'youtube', url: '' });
+  } catch (error) {
+    console.error('GET /api/social-url/youtube failed:', error);
+    return res.status(500).json({ message: 'Unable to load YouTube link.' });
+  }
+});
+
+app.post('/api/social-url/youtube', async (req, res) => {
+  try {
+    await connectMongo();
+    const url = String((req.body || {}).url || '').trim();
+    let parsed;
+    try { parsed = new URL(url); } catch (_) {}
+    if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) {
+      return res.status(422).json({ message: 'Enter a valid http or https URL.' });
+    }
+    const now = new Date().toISOString();
+    const saved = await socialUrlCollection.findOneAndUpdate(
+      { platform: 'youtube' },
+      { $set: { platform: 'youtube', url, updatedAt: now }, $setOnInsert: { createdAt: now } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    return res.json(sanitizeSocialUrlForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/social-url/youtube failed:', error);
+    return res.status(500).json({ message: 'Unable to save YouTube link.' });
+  }
+});
+
+app.get('/api/social-url/instagram', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await socialUrlCollection.findOne({ platform: 'instagram' });
+    return res.json(sanitizeSocialUrlForResponse(item) || { platform: 'instagram', url: '' });
+  } catch (error) {
+    console.error('GET /api/social-url/instagram failed:', error);
+    return res.status(500).json({ message: 'Unable to load Instagram link.' });
+  }
+});
+
+app.post('/api/social-url/instagram', async (req, res) => {
+  try {
+    await connectMongo();
+    const url = String((req.body || {}).url || '').trim();
+    let parsed;
+    try { parsed = new URL(url); } catch (_) {}
+    if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) {
+      return res.status(422).json({ message: 'Enter a valid http or https URL.' });
+    }
+    const now = new Date().toISOString();
+    const saved = await socialUrlCollection.findOneAndUpdate(
+      { platform: 'instagram' },
+      { $set: { platform: 'instagram', url, updatedAt: now }, $setOnInsert: { createdAt: now } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    return res.json(sanitizeSocialUrlForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/social-url/instagram failed:', error);
+    return res.status(500).json({ message: 'Unable to save Instagram link.' });
+  }
+});
+
+app.get('/api/social-url/whatsapp', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await socialUrlCollection.findOne({ platform: 'whatsapp' });
+    return res.json(sanitizeWhatsAppForResponse(item) || { platform: 'whatsapp', phoneNumber: '', text: '' });
+  } catch (error) {
+    console.error('GET /api/social-url/whatsapp failed:', error);
+    return res.status(500).json({ message: 'Unable to load WhatsApp configuration.' });
+  }
+});
+
+app.post('/api/social-url/whatsapp', async (req, res) => {
+  try {
+    await connectMongo();
+    const phoneNumber = String((req.body || {}).phoneNumber || '').replace(/[^0-9]/g, '');
+    const text = String((req.body || {}).text || '').trim();
+    if (phoneNumber.length < 8 || phoneNumber.length > 15) return res.status(422).json({ message: 'Enter a valid international WhatsApp number.' });
+    if (!text) return res.status(422).json({ message: 'Default message text is required.' });
+    const now = new Date().toISOString();
+    const saved = await socialUrlCollection.findOneAndUpdate(
+      { platform: 'whatsapp' },
+      { $set: { platform: 'whatsapp', phoneNumber, text, updatedAt: now }, $setOnInsert: { createdAt: now } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    return res.json(sanitizeWhatsAppForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/social-url/whatsapp failed:', error);
+    return res.status(500).json({ message: 'Unable to save WhatsApp configuration.' });
   }
 });
 

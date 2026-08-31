@@ -46,7 +46,7 @@ class AppRoutes {
   static const adminKnowYourSchoolDemographyEdit = '$adminKnowYourSchool/demography-edit';
   static const adminKnowYourSchoolFacebookEdit = '$adminKnowYourSchool/facebook-edit';
   static const adminKnowYourSchoolYoutubeEdit = '$adminKnowYourSchool/youtube-edit';
-  static const adminKnowYourSchoolWhatsappEdit = '$adminKnowYourSchool/whatsapp-edit';
+    static const adminKnowYourSchoolWhatsappEdit = '$adminKnowYourSchool/whatsapp';
   static const adminKnowYourSchoolInstagramEdit = '$adminKnowYourSchool/instagram-edit';
   static const adminKnowYourSchoolLibraryEdit = '$adminKnowYourSchool/library-edit';
   static const adminStudentOptions = '$adminOtherOptions/student';

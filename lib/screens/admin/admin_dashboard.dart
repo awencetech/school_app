@@ -11,6 +11,7 @@ import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
+import '../../services/social_url_service.dart';
 import '../../services/app_state.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -63,6 +64,80 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to open the website right now.')),
       );
+    }
+  }
+
+  Future<void> _openFacebook(BuildContext context) async {
+    try {
+      final url = await SocialUrlService().getFacebookUrl();
+      if (!context.mounted) return;
+      if (url.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Facebook link is not available.')));
+        return;
+      }
+      final uri = Uri.tryParse(url);
+      if (uri == null || !['http', 'https'].contains(uri.scheme.toLowerCase()) || uri.host.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Facebook link.')));
+      }
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Facebook link.')));
+    }
+  }
+
+  Future<void> _openYoutube(BuildContext context) async {
+    try {
+      final url = await SocialUrlService().getYoutubeUrl();
+      if (!context.mounted) return;
+      if (url.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('YouTube link is not available.')));
+        return;
+      }
+      final uri = Uri.tryParse(url);
+      if (uri == null || !['http', 'https'].contains(uri.scheme.toLowerCase()) || uri.host.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open YouTube link.')));
+      }
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open YouTube link.')));
+    }
+  }
+
+  Future<void> _openInstagram(BuildContext context) async {
+    try {
+      final url = await SocialUrlService().getInstagramUrl();
+      if (!context.mounted) return;
+      if (url.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Instagram link is not available.')));
+        return;
+      }
+      final uri = Uri.tryParse(url);
+      if (uri == null || !['http', 'https'].contains(uri.scheme.toLowerCase()) || uri.host.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Instagram link.')));
+      }
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Instagram link.')));
+    }
+  }
+
+  Future<void> _openWhatsapp(BuildContext context) async {
+    try {
+      final config = await SocialUrlService().getWhatsappConfig();
+      if (!context.mounted) return;
+      final number = (config['phoneNumber'] ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+      final message = config['text'] ?? '';
+      if (number.isEmpty || message.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('WhatsApp link is not available.')));
+        return;
+      }
+      final uri = Uri.parse('https://wa.me/$number?text=${Uri.encodeComponent(message)}');
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open WhatsApp.')));
+      }
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open WhatsApp.')));
     }
   }
 
@@ -400,21 +475,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.facebook,
                               label: 'Facebook',
                               color: Color(0xFF3B5998),
+                              onTap: () => _openFacebook(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.ondemand_video,
                               label: 'Youtube',
                               color: Color(0xFFD32F2F),
+                              onTap: () => _openYoutube(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.chat,
                               label: 'Whatsapp',
                               color: Color(0xFF25D366),
+                              onTap: () => _openWhatsapp(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.camera_alt,
                               label: 'Instagram',
                               color: Color(0xFFE1306C),
+                              onTap: () => _openInstagram(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.library_books,

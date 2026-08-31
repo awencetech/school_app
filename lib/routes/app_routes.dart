@@ -35,6 +35,8 @@ class AppRoutes {
   static const adminKnowYourSchoolWebsiteEdit = '$adminKnowYourSchool/website-edit';
   static const adminKnowYourSchoolSchoolHandbookEdit = '$adminKnowYourSchool/school-handbook-edit';
   static const adminKnowYourSchoolEventsCelebrationEdit = '$adminKnowYourSchool/events-celebration-edit';
+  static const adminKnowYourSchoolEventsCelebrationEditAddEvent = '$adminKnowYourSchoolEventsCelebrationEdit/add-event';
+  static const adminKnowYourSchoolEventsCelebrationEditEditEvent = '$adminKnowYourSchoolEventsCelebrationEdit/edit-event';
   static const adminKnowYourSchoolSchoolResourcesEdit = '$adminKnowYourSchool/school-resources-edit';
   static const adminKnowYourSchoolNewsletterEdit = '$adminKnowYourSchool/newsletter-edit';
   static const adminKnowYourSchoolAnnouncementEdit = '$adminKnowYourSchool/announcement-edit';

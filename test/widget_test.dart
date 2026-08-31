@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import 'package:school_app/app.dart';
 import 'package:school_app/models/group.dart';
+import 'package:school_app/models/staff_handbook.dart';
 import 'package:school_app/screens/achievements/achievements_screen.dart';
 import 'package:school_app/screens/admin/group_info_edit_page.dart';
 import 'package:school_app/screens/admin/student_management_page.dart';
@@ -18,9 +19,11 @@ import 'package:school_app/screens/login/create_account_screen.dart';
 import 'package:school_app/screens/login/forgot_password_screen.dart';
 import 'package:school_app/screens/login/login_screen.dart';
 import 'package:school_app/screens/school/school_screen.dart';
+import 'package:school_app/screens/staff/staff_handbook_page.dart';
 import 'package:school_app/screens/student/student_info_screen.dart';
 import 'package:school_app/services/app_state.dart';
 import 'package:school_app/services/school_config_service.dart';
+import 'package:school_app/services/staff_handbook_service.dart';
 import 'package:school_app/widgets/cards/staff_profile_card.dart';
 import 'package:school_app/widgets/important_news_ticker.dart';
 import 'package:school_app/widgets/navigation/app_bottom_navigation.dart';
@@ -189,6 +192,21 @@ void main() {
     expect(find.text('Group Details'), findsOneWidget);
   });
 
+  testWidgets('StaffHandbookPage renders saved sections in the dashboard grid', (WidgetTester tester) async {
+    final service = _TestStaffHandbookService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StaffHandbookPage(service: service),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Introduction'), findsOneWidget);
+    expect(find.text('School Policies'), findsOneWidget);
+    expect(find.text('Staff attendance and weekly reporting process.'), findsOneWidget);
+  });
+
   testWidgets('ImportantNewsTicker does not overflow', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -208,4 +226,36 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(tester.takeException(), isNull);
   });
+}
+
+class _TestStaffHandbookService extends StaffHandbookService {
+  _TestStaffHandbookService();
+
+  @override
+  Future<StaffHandbook> getHandbook() async {
+    return StaffHandbook(
+      id: 'handbook-1',
+      schoolId: 'default-school',
+      sections: [
+        HandbookSection(
+          heading: 'Introduction',
+          subSections: [
+            HandbookSubSection(
+              subHeading: 'Welcome',
+              content: 'Staff attendance and weekly reporting process.',
+            ),
+          ],
+        ),
+        HandbookSection(
+          heading: 'School Policies',
+          subSections: [
+            HandbookSubSection(
+              subHeading: 'Code of conduct',
+              content: 'Follow the school policies and duty schedule.',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

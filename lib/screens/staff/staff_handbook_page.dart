@@ -5,18 +5,21 @@ import '../../services/staff_handbook_service.dart';
 import '../../widgets/staff_footer.dart';
 
 class StaffHandbookPage extends StatefulWidget {
-  const StaffHandbookPage({super.key});
+  const StaffHandbookPage({super.key, this.service});
+
+  final StaffHandbookService? service;
+
   @override
   State<StaffHandbookPage> createState() => _StaffHandbookPageState();
 }
 
 class _StaffHandbookPageState extends State<StaffHandbookPage> {
-  final _service = StaffHandbookService();
-  late Future<StaffHandbook> _future;
+  late final Future<StaffHandbook> _future;
+
   @override
   void initState() {
     super.initState();
-    _future = _service.getHandbook();
+    _future = (widget.service ?? StaffHandbookService()).getHandbook();
   }
 
   @override
@@ -39,6 +42,38 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
           ),
         );
       final handbook = snapshot.data!;
+      final cards = handbook.sections.isEmpty
+          ? const <Widget>[
+              _HandbookCard(
+                title: 'Staff Handbook',
+                summary: 'Important information and policies for staff.',
+              ),
+            ]
+          : handbook.sections.asMap().entries.map((entry) {
+              final section = entry.value;
+              final summary = section.subSections.isEmpty
+                  ? 'Important information and policies for staff.'
+                  : section.subSections.first.content.trim().isNotEmpty
+                  ? section.subSections.first.content
+                  : 'Important information and policies for staff.';
+
+              return _HandbookCard(
+                title: section.heading.trim().isNotEmpty
+                    ? section.heading
+                    : 'Staff Handbook',
+                summary: summary,
+                imageUrl: section.imageUrl,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => HandbookDetailPage(
+                      handbook: handbook,
+                      selectedSectionIndex: entry.key,
+                    ),
+                  ),
+                ),
+              );
+            }).toList();
+
       return _HandbookScaffold(
         title: 'Staff/Employee Handbook & Information',
         child: GridView.count(
@@ -47,31 +82,7 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
           crossAxisSpacing: 5,
           mainAxisSpacing: 5,
           childAspectRatio: .78,
-          children: [
-            _HandbookCard(
-              title: handbook.sections.isEmpty
-                  ? 'Staff Handbook'
-                  : handbook.sections.first.heading,
-              summary: 'Important information and policies for staff.',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => HandbookDetailPage(handbook: handbook),
-                ),
-              ),
-            ),
-            const _HandbookCard(
-              title: 'Employee Bulletin Board',
-              summary: 'Notices and updates for every employee.',
-            ),
-            const _HandbookCard(
-              title: 'Teaching Standards',
-              summary: 'Guidance for classroom planning and conduct.',
-            ),
-            const _HandbookCard(
-              title: 'School Procedures',
-              summary: 'Standard operating procedures and forms.',
-            ),
-          ],
+          children: cards,
         ),
       );
     },
@@ -79,144 +90,154 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
 }
 
 class HandbookDetailPage extends StatelessWidget {
-  const HandbookDetailPage({super.key, required this.handbook});
+  const HandbookDetailPage({
+    super.key,
+    required this.handbook,
+    this.selectedSectionIndex = 0,
+  });
+
   final StaffHandbook handbook;
+  final int selectedSectionIndex;
+
   @override
-  Widget build(BuildContext context) => _HandbookScaffold(
-    title: handbook.sections.isEmpty
-        ? 'Staff Handbook'
-        : handbook.sections.first.heading,
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _HandbookIllustration(height: 185),
-          if (handbook.sections.isNotEmpty &&
-              handbook.sections.first.imageUrl.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Image.network(
-                handbook.sections.first.imageUrl,
-                height: 150,
-                fit: BoxFit.contain,
-              ),
+  Widget build(BuildContext context) {
+    final section = handbook.sections.isEmpty
+        ? null
+        : handbook.sections[selectedSectionIndex.clamp(0, handbook.sections.length - 1)];
+
+    return _HandbookScaffold(
+      title: 'Staff Handbook',
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (section != null && section.imageUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  section.imageUrl,
+                  height: 185,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+              )
+            else
+              const _HandbookIllustration(height: 185),
+            const SizedBox(height: 12),
+            Text(
+              section == null || section.subSections.isEmpty
+                  ? 'Staff Handbook'
+                  : section.heading,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-          const SizedBox(height: 12),
-          Text(
-            handbook.sections.isEmpty ||
-                    handbook.sections.first.subSections.isEmpty
-                ? 'Staff Handbook'
-                : handbook.sections.first.heading,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Important information and policies for staff.',
-            style: TextStyle(fontSize: 11),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            handbook.sections.isEmpty ||
-                    handbook.sections.first.subSections.isEmpty
-                ? 'Create handbook sections from the admin page.'
-                : handbook.sections.first.subSections.first.content,
-            style: const TextStyle(fontSize: 12, height: 1.45),
-          ),
-          const Spacer(),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => HandbookReadingPage(handbook: handbook),
-              ),
+            const SizedBox(height: 7),
+            const Text(
+              'Important information and policies for staff.',
+              style: TextStyle(fontSize: 11),
             ),
-            icon: const Icon(Icons.menu_book_outlined, size: 16),
-            label: const Text('Read handbook'),
-          ),
-        ],
+            const SizedBox(height: 14),
+            Text(
+              section == null || section.subSections.isEmpty
+                  ? 'Create handbook sections from the admin page.'
+                  : section.subSections.first.content,
+              style: const TextStyle(fontSize: 12, height: 1.45),
+            ),
+            const Spacer(),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class HandbookReadingPage extends StatelessWidget {
-  const HandbookReadingPage({super.key, required this.handbook});
+  const HandbookReadingPage({
+    super.key,
+    required this.handbook,
+    this.selectedSectionIndex = 0,
+  });
+
   final StaffHandbook handbook;
+  final int selectedSectionIndex;
+
   @override
-  Widget build(BuildContext context) => _HandbookScaffold(
-    title: handbook.sections.isEmpty
-        ? 'Staff Handbook'
-        : handbook.sections.first.heading,
-    child: ListView(
-      padding: const EdgeInsets.all(14),
-      children: [
-        Text(
-          handbook.sections.isEmpty
-              ? 'Staff Handbook'
-              : handbook.sections.first.heading,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 5),
-        const Text(
-          'Important information and policies for staff.',
-          style: TextStyle(fontSize: 12),
-        ),
-        const Divider(height: 24),
-        const Text(
-          'Overview',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          handbook.sections.isEmpty
-              ? 'Create handbook sections from the admin page.'
-              : handbook.sections.first.subSections.first.content,
-          style: const TextStyle(fontSize: 12, height: 1.45),
-        ),
-        const SizedBox(height: 18),
-        ...handbook.sections.map(
-          (section) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (section.imageUrl.isNotEmpty)
-                  Image.network(
-                    section.imageUrl,
-                    width: double.infinity,
-                    height: 150,
-                    fit: BoxFit.contain,
+  Widget build(BuildContext context) {
+    final selectedSection = handbook.sections.isEmpty
+        ? null
+        : handbook.sections[selectedSectionIndex.clamp(0, handbook.sections.length - 1)];
+
+    return _HandbookScaffold(
+      title: selectedSection?.heading ?? 'Staff Handbook',
+      child: ListView(
+        padding: const EdgeInsets.all(14),
+        children: [
+          Text(
+            selectedSection?.heading ?? 'Staff Handbook',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Important information and policies for staff.',
+            style: TextStyle(fontSize: 12),
+          ),
+          const Divider(height: 24),
+          const Text(
+            'Overview',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            selectedSection == null || selectedSection.subSections.isEmpty
+                ? 'Create handbook sections from the admin page.'
+                : selectedSection.subSections.first.content,
+            style: const TextStyle(fontSize: 12, height: 1.45),
+          ),
+          const SizedBox(height: 18),
+          ...handbook.sections.map(
+            (section) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (section.imageUrl.isNotEmpty)
+                    Image.network(
+                      section.imageUrl,
+                      width: double.infinity,
+                      height: 150,
+                      fit: BoxFit.contain,
+                    ),
+                  Text(
+                    section.heading,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                Text(
-                  section.heading,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 5),
+                  Text(
+                    section.subSections
+                        .map((sub) => '${sub.subHeading}\n${sub.content}')
+                        .join('\n\n'),
+                    style: const TextStyle(fontSize: 12, height: 1.45),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  section.subSections
-                      .map((sub) => '${sub.subHeading}\n${sub.content}')
-                      .join('\n\n'),
-                  style: const TextStyle(fontSize: 12, height: 1.45),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        OutlinedButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => HandbookDocumentPage(handbook: handbook),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => HandbookDocumentPage(handbook: handbook),
+              ),
             ),
+            icon: const Icon(Icons.description_outlined, size: 16),
+            label: const Text('Open document'),
           ),
-          icon: const Icon(Icons.description_outlined, size: 16),
-          label: const Text('Open document'),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class HandbookDocumentPage extends StatelessWidget {
@@ -320,10 +341,18 @@ class HandbookDocumentPage extends StatelessWidget {
 }
 
 class _HandbookCard extends StatelessWidget {
-  const _HandbookCard({required this.title, required this.summary, this.onTap});
+  const _HandbookCard({
+    required this.title,
+    required this.summary,
+    this.imageUrl = '',
+    this.onTap,
+  });
+
   final String title;
   final String summary;
+  final String imageUrl;
   final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) => InkWell(
     onTap: onTap,
@@ -345,7 +374,19 @@ class _HandbookCard extends StatelessWidget {
             style: const TextStyle(fontSize: 11),
           ),
           const SizedBox(height: 6),
-          const Expanded(child: _HandbookIllustration()),
+          Expanded(
+            child: imageUrl.trim().isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => const _HandbookIllustration(),
+                    ),
+                  )
+                : const _HandbookIllustration(),
+          ),
           const SizedBox(height: 6),
           Text(
             summary,
@@ -396,7 +437,7 @@ class _HandbookScaffold extends StatelessWidget {
         onPressed: () => Navigator.of(context).maybePop(),
         icon: const Icon(Icons.arrow_back, size: 20),
       ),
-      title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),
+      title: const Text('Handbook', style: TextStyle(fontSize: 14)),
     ),
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

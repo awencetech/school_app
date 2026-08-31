@@ -2,107 +2,80 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../models/management_member.dart';
-import '../../services/school_config_service.dart';
+import '../../models/event_celebration.dart';
+import '../../services/event_celebration_service.dart';
 import '../../widgets/staff_footer.dart';
 
-class StaffEventsCelebrationPage extends StatelessWidget {
-  const StaffEventsCelebrationPage({super.key});
+class StaffEventsCelebrationPage extends StatefulWidget {
+  StaffEventsCelebrationPage({super.key});
 
-  static final _fallbackItems = [
-    ManagementMember(
-      title: 'Winter Bells 2025: A Grand Celebration of Talent and Festivity',
-      description:
-          'A joyful school celebration featuring student talent, music, and festive activities.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'Pongal Panorama 2026: Pongal Competitions',
-      description:
-          'Students celebrate Pongal through cultural programmes and traditional competitions.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'Threads of Tricolour, Echoes of Freedom',
-      description:
-          'Republic Day celebrations filled with pride, creativity, and student participation.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'United for a Cleaner Tomorrow',
-      description:
-          'Students and staff join together for a cleaner and greener school community.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'Celebrating Champions: Competition Winners',
-      description:
-          'Congratulations to our students for their outstanding achievements and dedication.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'Invoking the Light of Learning',
-      description:
-          'A special school gathering celebrating learning, values, and new beginnings.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'Parent Teachers Meet',
-      description:
-          'An opportunity for parents and teachers to connect and support student progress.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-    ManagementMember(
-      title: 'Road Safety and Responsible Citizenship',
-      description:
-          'An awareness initiative encouraging safe travel and responsible citizenship.',
-      photoBase64: '',
-      name: '',
-      designation: '',
-    ),
-  ];
+  @override
+  State<StaffEventsCelebrationPage> createState() => _StaffEventsCelebrationPageState();
+}
+
+class _StaffEventsCelebrationPageState extends State<StaffEventsCelebrationPage> {
+  final _service = EventCelebrationService();
+  bool _loading = true;
+  List<EventCelebration> _events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    setState(() => _loading = true);
+    try {
+      final events = await _service.getEvents();
+      if (!mounted) return;
+      setState(() {
+        _events = events;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _events = [];
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final configuredItems = context.watch<SchoolConfigService>().homeContent;
-    final items = configuredItems.isNotEmpty ? configuredItems : _fallbackItems;
+    final items = _events;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Events Celebration')),
-      body: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(3, 5, 3, 10),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 5,
-          mainAxisSpacing: 5,
-          childAspectRatio: .72,
-        ),
-        itemCount: items.length,
-        itemBuilder: (context, index) => _EventCard(
-          item: items[index],
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => _EventDetailPage(item: items[index]),
+      appBar: AppBar(title: const Text('Events & Celebrations')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : items.isEmpty
+          ? const Center(
+              child: Text(
+                'No events or celebrations saved yet.',
+                textAlign: TextAlign.center,
+              ),
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.fromLTRB(3, 5, 3, 10),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 5,
+                mainAxisSpacing: 5,
+                childAspectRatio: .72,
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, index) => _EventCard(
+                item: items[index],
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => _EventDetailPage(item: items[index]),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
       bottomNavigationBar: const StaffFooter(),
     );
   }
@@ -111,12 +84,12 @@ class StaffEventsCelebrationPage extends StatelessWidget {
 class _EventCard extends StatelessWidget {
   const _EventCard({required this.item, required this.onTap});
 
-  final ManagementMember item;
+  final EventCelebration item;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final title = item.title.isNotEmpty ? item.title : item.name;
+    final title = item.heading.isNotEmpty ? item.heading : item.subHeading;
 
     return InkWell(
       onTap: onTap,
@@ -138,10 +111,10 @@ class _EventCard extends StatelessWidget {
               style: const TextStyle(fontSize: 11),
             ),
             const SizedBox(height: 5),
-            Expanded(child: _EventImage(source: item.photoBase64)),
+            Expanded(child: _EventImage(source: item.imageUrl)),
             const SizedBox(height: 5),
             Text(
-              item.description,
+              item.subHeading,
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 9),
@@ -204,25 +177,31 @@ class _EventImage extends StatelessWidget {
 class _EventDetailPage extends StatelessWidget {
   const _EventDetailPage({required this.item});
 
-  final ManagementMember item;
+  final EventCelebration item;
 
   @override
   Widget build(BuildContext context) {
-    final title = item.title.isNotEmpty ? item.title : item.name;
     return Scaffold(
       appBar: AppBar(title: const Text('Event Details')),
       body: ListView(
         padding: const EdgeInsets.all(14),
         children: [
           Text(
-            title,
+            item.heading,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
+          const SizedBox(height: 8),
+          if (item.subHeading.isNotEmpty)
+            Text(
+              item.subHeading,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           const SizedBox(height: 12),
-          SizedBox(height: 220, child: _EventImage(source: item.photoBase64)),
+          if (item.imageUrl.isNotEmpty)
+            SizedBox(height: 220, child: _EventImage(source: item.imageUrl)),
           const SizedBox(height: 14),
           Text(
-            item.description,
+            item.content,
             style: const TextStyle(fontSize: 12, height: 1.5),
           ),
         ],

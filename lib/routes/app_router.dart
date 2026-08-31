@@ -31,6 +31,7 @@ import '../screens/admin/admin_detail_page.dart';
 import '../screens/admin/know_your_school_page.dart';
 import '../screens/admin/know_your_school_detail_page.dart';
 import '../screens/admin/school_handbook_edit_page.dart';
+import '../screens/admin/events_celebration_edit_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/staff_details_page.dart';
@@ -52,6 +53,7 @@ import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../models/group.dart';
 import '../models/class_timetable.dart';
+import '../models/event_celebration.dart';
 import '../screens/admin/admin_section_page.dart';
 import '../screens/admin/school_settings_editor.dart';
 import '../screens/admin/other_groups_screen.dart';
@@ -209,7 +211,7 @@ class AppRouter {
       AppRoutes.staffResources => const StaffResourcesPage(),
       AppRoutes.schoolResources => const SchoolResourcesPage(),
       AppRoutes.staffHandbook => const StaffHandbookPage(),
-      AppRoutes.staffEventsCelebration => const StaffEventsCelebrationPage(),
+      AppRoutes.staffEventsCelebration => StaffEventsCelebrationPage(),
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
@@ -221,9 +223,14 @@ class AppRouter {
       AppRoutes.adminKnowYourSchoolSchoolHandbookEdit =>
         const SchoolHandbookEditPage(),
       AppRoutes.adminKnowYourSchoolEventsCelebrationEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'Events Celebrations',
-          icon: Icons.event,
+        const EventsCelebrationEditPage(),
+      AppRoutes.adminKnowYourSchoolEventsCelebrationEditAddEvent =>
+        const EventCelebrationFormPage(),
+      AppRoutes.adminKnowYourSchoolEventsCelebrationEditEditEvent =>
+        EventCelebrationFormPage(
+          event: settings.arguments is EventCelebration
+              ? settings.arguments as EventCelebration
+              : null,
         ),
       AppRoutes.adminKnowYourSchoolSchoolResourcesEdit =>
         const KnowYourSchoolDetailPage(

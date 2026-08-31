@@ -72,6 +72,7 @@ let classTimetableCollection;
 let legacyClassTimetableCollection;
 let studentInfoCollection;
 let schoolHandbookCollection;
+let eventCelebrationCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -87,6 +88,7 @@ async function ensureIndexes(db) {
     studentInfoCollection.createIndex({ studentId: 1 }, { sparse: true }),
     studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
     schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
+    eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
   ]);
 }
 
@@ -122,6 +124,7 @@ async function connectMongo() {
     legacyClassTimetableCollection = db.collection('class-timetable');
     studentInfoCollection = db.collection('stud-in');
     schoolHandbookCollection = db.collection('school-handbook');
+    eventCelebrationCollection = db.collection('event-celebration');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -295,6 +298,24 @@ function sanitizeEventForResponse(doc) {
     description: doc.description || '',
     createdBy: doc.createdBy || '',
     color: doc.color || '#FF9800',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeEventCelebrationForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    schoolId: doc.schoolId || 'default-school',
+    heading: doc.heading || '',
+    imageUrl: doc.imageUrl || '',
+    subHeading: doc.subHeading || '',
+    content: doc.content || '',
+    eventDate: doc.eventDate || null,
+    category: doc.category || 'Event',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1524,6 +1545,120 @@ app.delete('/api/school-handbook/:handbookId', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/school-handbook/:handbookId failed:', error);
     return res.status(400).json({ message: 'Unable to delete the staff handbook.' });
+  }
+});
+
+// Event celebration CRUD
+app.get('/api/events-celebration', async (req, res) => {
+  try {
+    await connectMongo();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    const items = await eventCelebrationCollection
+      .find({ schoolId })
+      .sort({ eventDate: -1, createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(items.map(sanitizeEventCelebrationForResponse));
+  } catch (error) {
+    console.error('GET /api/events-celebration failed:', error);
+    return res.status(500).json({ message: 'Unable to load events and celebrations.' });
+  }
+});
+
+app.get('/api/events-celebration/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await eventCelebrationCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ message: 'Event or celebration not found.' });
+    return res.json(sanitizeEventCelebrationForResponse(item));
+  } catch (error) {
+    console.error('GET /api/events-celebration/:id failed:', error);
+    return res.status(404).json({ message: 'Event or celebration not found.' });
+  }
+});
+
+app.post('/api/events-celebration', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const heading = String(body.heading || '').trim();
+    const subHeading = String(body.subHeading || '').trim();
+    const content = String(body.content || '').trim();
+
+    if (!heading || !subHeading || !content) {
+      return res.status(422).json({ message: 'Heading, sub heading, and content are required.' });
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      schoolId,
+      heading,
+      imageUrl: String(body.imageUrl || '').trim(),
+      subHeading,
+      content,
+      eventDate: body.eventDate ? new Date(body.eventDate) : null,
+      category: String(body.category || 'Event').trim() || 'Event',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await eventCelebrationCollection.insertOne(payload);
+    const saved = await eventCelebrationCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeEventCelebrationForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/events-celebration failed:', error);
+    return res.status(500).json({ message: 'Unable to create the event.' });
+  }
+});
+
+app.put('/api/events-celebration/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const heading = String(body.heading || '').trim();
+    const subHeading = String(body.subHeading || '').trim();
+    const content = String(body.content || '').trim();
+
+    if (!heading || !subHeading || !content) {
+      return res.status(422).json({ message: 'Heading, sub heading, and content are required.' });
+    }
+
+    const payload = {
+      schoolId,
+      heading,
+      imageUrl: String(body.imageUrl || '').trim(),
+      subHeading,
+      content,
+      eventDate: body.eventDate ? new Date(body.eventDate) : null,
+      category: String(body.category || 'Event').trim() || 'Event',
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await eventCelebrationCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: payload },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Event not found.' });
+
+    const updated = await eventCelebrationCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeEventCelebrationForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/events-celebration/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update the event.' });
+  }
+});
+
+app.delete('/api/events-celebration/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await eventCelebrationCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Event not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/events-celebration/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete the event.' });
   }
 });
 

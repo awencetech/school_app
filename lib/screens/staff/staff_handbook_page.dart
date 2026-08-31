@@ -28,12 +28,12 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
     builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done)
         return const _HandbookScaffold(
-          title: 'Staff/Employee Handbook & Information',
+          title: 'Handbook & Info',
           child: Center(child: CircularProgressIndicator()),
         );
       if (snapshot.hasError)
         return _HandbookScaffold(
-          title: 'Staff/Employee Handbook & Information',
+          title: 'Handbook & Info',
           child: Center(
             child: Padding(
               padding: EdgeInsets.all(24),
@@ -75,7 +75,7 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
             }).toList();
 
       return _HandbookScaffold(
-        title: 'Staff/Employee Handbook & Information',
+        title: 'Handbook & Info',
         child: GridView.count(
           padding: const EdgeInsets.fromLTRB(2, 5, 2, 8),
           crossAxisCount: 2,
@@ -106,7 +106,7 @@ class HandbookDetailPage extends StatelessWidget {
         : handbook.sections[selectedSectionIndex.clamp(0, handbook.sections.length - 1)];
 
     return _HandbookScaffold(
-      title: 'Staff Handbook',
+      title: 'Handbook & Info',
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -127,7 +127,7 @@ class HandbookDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               section == null || section.subSections.isEmpty
-                  ? 'Staff Handbook'
+                  ? 'Handbook & Info'
                   : section.heading,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),

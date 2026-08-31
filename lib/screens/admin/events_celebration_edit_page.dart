@@ -336,16 +336,33 @@ class _EventCelebrationFormPageState extends State<EventCelebrationFormPage> {
   }
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.pickFiles(type: FileType.image);
-    if (result.isEmpty) return;
+    final files = await FilePicker.pickFiles(type: FileType.image);
+    if (files.isEmpty) return;
 
-    final file = result.first;
-    final filePath = file.path ?? '';
-    if (filePath.isEmpty) return;
+    final file = files.first;
 
     try {
       setState(() => _uploading = true);
-      final bytes = await File(filePath).readAsBytes();
+
+      final dynamic selectedFile = file;
+      List<int> bytes = const [];
+
+      final dynamic rawBytes = selectedFile.bytes;
+      if (rawBytes != null) {
+        bytes = List<int>.from(rawBytes);
+      }
+
+      if (bytes.isEmpty) {
+        final path = selectedFile.path as String?;
+        if (path != null && path.isNotEmpty) {
+          bytes = await File(path).readAsBytes();
+        }
+      }
+
+      if (bytes.isEmpty) {
+        throw Exception('Uploaded file data is not available.');
+      }
+
       final url = await _service.uploadImage(bytes, file.name);
       setState(() => _imageUrl = url);
     } catch (_) {
@@ -421,7 +438,7 @@ class _EventCelebrationFormPageState extends State<EventCelebrationFormPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -526,6 +543,10 @@ class _EventCelebrationFormPageState extends State<EventCelebrationFormPage> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: AdminBottomNavigationBar(
+        currentIndex: 0,
+        onItemSelected: (_) {},
       ),
     );
   }

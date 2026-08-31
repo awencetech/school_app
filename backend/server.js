@@ -74,6 +74,7 @@ let studentInfoCollection;
 let schoolHandbookCollection;
 let eventCelebrationCollection;
 let schoolResourcesCollection;
+let newsLetterCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -91,6 +92,7 @@ async function ensureIndexes(db) {
     schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
     eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
     schoolResourcesCollection.createIndex({ schoolId: 1, date: -1, createdAt: -1 }),
+    newsLetterCollection.createIndex({ schoolId: 1, createdAt: -1 }),
   ]);
 }
 
@@ -128,6 +130,7 @@ async function connectMongo() {
     schoolHandbookCollection = db.collection('school-handbook');
     eventCelebrationCollection = db.collection('event-celebration');
     schoolResourcesCollection = db.collection('school-resources');
+    newsLetterCollection = db.collection('news-letter');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -335,6 +338,25 @@ function sanitizeSchoolResourceForResponse(doc) {
     date: doc.date || '',
     resourceName: doc.resourceName || '',
     imageUrl: doc.imageUrl || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeNewsLetterForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    schoolId: doc.schoolId || 'default-school',
+    heading: doc.heading || '',
+    imageUrl: doc.imageUrl || '',
+    introduction: doc.introduction || '',
+    sections: Array.isArray(doc.sections) ? doc.sections.map((section) => ({
+      subHeading: section && section.subHeading ? String(section.subHeading) : '',
+      content: section && section.content ? String(section.content) : '',
+    })) : [],
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1787,6 +1809,121 @@ app.delete('/api/school-resources/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/school-resources/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete the school resource.' });
+  }
+});
+
+// Newsletter CRUD
+app.get('/api/news-letter', async (req, res) => {
+  try {
+    await connectMongo();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    const items = await newsLetterCollection
+      .find({ schoolId })
+      .sort({ createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(items.map(sanitizeNewsLetterForResponse));
+  } catch (error) {
+    console.error('GET /api/news-letter failed:', error);
+    return res.status(500).json({ message: 'Unable to load newsletters.' });
+  }
+});
+
+app.get('/api/news-letter/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await newsLetterCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ message: 'Newsletter not found.' });
+    return res.json(sanitizeNewsLetterForResponse(item));
+  } catch (error) {
+    console.error('GET /api/news-letter/:id failed:', error);
+    return res.status(404).json({ message: 'Newsletter not found.' });
+  }
+});
+
+app.post('/api/news-letter', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const heading = String(body.heading || '').trim();
+    const introduction = String(body.introduction || '').trim();
+    const sections = Array.isArray(body.sections) ? body.sections.map((section) => ({
+      subHeading: String((section && section.subHeading) || '').trim(),
+      content: String((section && section.content) || '').trim(),
+    })) : [];
+
+    if (!heading || !introduction) {
+      return res.status(422).json({ message: 'Heading and introduction are required.' });
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      schoolId,
+      heading,
+      imageUrl: String(body.imageUrl || '').trim(),
+      introduction,
+      sections,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await newsLetterCollection.insertOne(payload);
+    const saved = await newsLetterCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeNewsLetterForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/news-letter failed:', error);
+    return res.status(500).json({ message: 'Unable to create the newsletter.' });
+  }
+});
+
+app.put('/api/news-letter/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const heading = String(body.heading || '').trim();
+    const introduction = String(body.introduction || '').trim();
+    const sections = Array.isArray(body.sections) ? body.sections.map((section) => ({
+      subHeading: String((section && section.subHeading) || '').trim(),
+      content: String((section && section.content) || '').trim(),
+    })) : [];
+
+    if (!heading || !introduction) {
+      return res.status(422).json({ message: 'Heading and introduction are required.' });
+    }
+
+    const payload = {
+      schoolId,
+      heading,
+      imageUrl: String(body.imageUrl || '').trim(),
+      introduction,
+      sections,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await newsLetterCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: payload },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Newsletter not found.' });
+    const updated = await newsLetterCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeNewsLetterForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/news-letter/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update the newsletter.' });
+  }
+});
+
+app.delete('/api/news-letter/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await newsLetterCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Newsletter not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/news-letter/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete the newsletter.' });
   }
 });
 

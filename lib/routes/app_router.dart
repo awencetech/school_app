@@ -34,6 +34,7 @@ import '../screens/admin/school_handbook_edit_page.dart';
 import '../screens/admin/events_celebration_edit_page.dart';
 import '../screens/admin/school_resources_edit_page.dart';
 import '../screens/admin/news_letter_page.dart';
+import '../screens/admin/newsletter_edit_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/staff_details_page.dart';
@@ -237,11 +238,7 @@ class AppRouter {
         ),
       AppRoutes.adminKnowYourSchoolSchoolResourcesEdit =>
         const SchoolResourcesEditPage(),
-      AppRoutes.adminKnowYourSchoolNewsletterEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'Newsletter',
-          icon: Icons.newspaper,
-        ),
+      AppRoutes.adminKnowYourSchoolNewsletterEdit => const NewsletterEditPage(),
       AppRoutes.adminKnowYourSchoolAnnouncementEdit =>
         const KnowYourSchoolDetailPage(
           title: 'Announcement',

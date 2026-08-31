@@ -378,6 +378,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.newspaper,
                               label: 'Newsletter',
                               color: Color(0xFF5C84C3),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.adminDashboardNewsletter),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.announcement,

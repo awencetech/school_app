@@ -30,6 +30,7 @@ import '../screens/admin/admin_other_options.dart';
 import '../screens/admin/admin_detail_page.dart';
 import '../screens/admin/know_your_school_page.dart';
 import '../screens/admin/know_your_school_detail_page.dart';
+import '../screens/admin/school_handbook_edit_page.dart';
 import '../screens/admin/list_teachers_page.dart';
 import '../screens/admin/staff_management_page.dart';
 import '../screens/admin/staff_details_page.dart';
@@ -110,9 +111,14 @@ class AppRouter {
         if (nestedGroup is Group) return nestedGroup;
         if (nestedGroup is Map) {
           final name = (nestedGroup['name'] ?? '').toString().trim();
-          final id = (nestedGroup['id'] ?? nestedGroup['groupId'] ?? '').toString().trim();
+          final id = (nestedGroup['id'] ?? nestedGroup['groupId'] ?? '')
+              .toString()
+              .trim();
           if (name.isNotEmpty || id.isNotEmpty) {
-            return Group(id: id.isEmpty ? name : id, name: name.isEmpty ? id : name);
+            return Group(
+              id: id.isEmpty ? name : id,
+              name: name.isEmpty ? id : name,
+            );
           }
         }
 
@@ -210,18 +216,51 @@ class AppRouter {
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),
-      AppRoutes.adminKnowYourSchoolWebsiteEdit => const KnowYourSchoolDetailPage(title: 'Website', icon: Icons.language),
-      AppRoutes.adminKnowYourSchoolSchoolHandbookEdit => const KnowYourSchoolDetailPage(title: 'School Handbook', icon: Icons.school),
-      AppRoutes.adminKnowYourSchoolEventsCelebrationEdit => const KnowYourSchoolDetailPage(title: 'Events Celebrations', icon: Icons.event),
-      AppRoutes.adminKnowYourSchoolSchoolResourcesEdit => const KnowYourSchoolDetailPage(title: 'School Resources', icon: Icons.folder_copy_outlined),
-      AppRoutes.adminKnowYourSchoolNewsletterEdit => const KnowYourSchoolDetailPage(title: 'Newsletter', icon: Icons.newspaper),
-      AppRoutes.adminKnowYourSchoolAnnouncementEdit => const KnowYourSchoolDetailPage(title: 'Announcement', icon: Icons.announcement),
-      AppRoutes.adminKnowYourSchoolDemographyEdit => const KnowYourSchoolDetailPage(title: 'Demography', icon: Icons.people),
-      AppRoutes.adminKnowYourSchoolFacebookEdit => const KnowYourSchoolDetailPage(title: 'Facebook', icon: Icons.facebook),
-      AppRoutes.adminKnowYourSchoolYoutubeEdit => const KnowYourSchoolDetailPage(title: 'Youtube', icon: Icons.ondemand_video),
-      AppRoutes.adminKnowYourSchoolWhatsappEdit => const KnowYourSchoolDetailPage(title: 'WhatsApp', icon: Icons.chat),
-      AppRoutes.adminKnowYourSchoolInstagramEdit => const KnowYourSchoolDetailPage(title: 'Instagram', icon: Icons.camera_alt),
-      AppRoutes.adminKnowYourSchoolLibraryEdit => const KnowYourSchoolDetailPage(title: 'Library', icon: Icons.library_books),
+      AppRoutes.adminKnowYourSchoolWebsiteEdit =>
+        const KnowYourSchoolDetailPage(title: 'Website', icon: Icons.language),
+      AppRoutes.adminKnowYourSchoolSchoolHandbookEdit =>
+        const SchoolHandbookEditPage(),
+      AppRoutes.adminKnowYourSchoolEventsCelebrationEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'Events Celebrations',
+          icon: Icons.event,
+        ),
+      AppRoutes.adminKnowYourSchoolSchoolResourcesEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'School Resources',
+          icon: Icons.folder_copy_outlined,
+        ),
+      AppRoutes.adminKnowYourSchoolNewsletterEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'Newsletter',
+          icon: Icons.newspaper,
+        ),
+      AppRoutes.adminKnowYourSchoolAnnouncementEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'Announcement',
+          icon: Icons.announcement,
+        ),
+      AppRoutes.adminKnowYourSchoolDemographyEdit =>
+        const KnowYourSchoolDetailPage(title: 'Demography', icon: Icons.people),
+      AppRoutes.adminKnowYourSchoolFacebookEdit =>
+        const KnowYourSchoolDetailPage(title: 'Facebook', icon: Icons.facebook),
+      AppRoutes.adminKnowYourSchoolYoutubeEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'Youtube',
+          icon: Icons.ondemand_video,
+        ),
+      AppRoutes.adminKnowYourSchoolWhatsappEdit =>
+        const KnowYourSchoolDetailPage(title: 'WhatsApp', icon: Icons.chat),
+      AppRoutes.adminKnowYourSchoolInstagramEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'Instagram',
+          icon: Icons.camera_alt,
+        ),
+      AppRoutes.adminKnowYourSchoolLibraryEdit =>
+        const KnowYourSchoolDetailPage(
+          title: 'Library',
+          icon: Icons.library_books,
+        ),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
       AppRoutes.adminStudentInfo => (() {
@@ -268,9 +307,7 @@ class AppRouter {
       })(),
       AppRoutes.teacherGroupInfo => (() {
         final group = _groupFromArguments(settings.arguments);
-        return GroupInfoPage(
-          group: group,
-        );
+        return GroupInfoPage(group: group);
       })(),
       AppRoutes.teacherFutureEventCalendar ||
       AppRoutes.teacherEditFutureEventCalendar => (() {
@@ -378,9 +415,7 @@ class AppRouter {
       ),
       AppRoutes.teacherGroupInfoEdit => (() {
         final group = _groupFromArguments(settings.arguments);
-        return GroupInfoEditPage(
-          group: group,
-        );
+        return GroupInfoEditPage(group: group);
       })(),
       AppRoutes.teacherGroupClassMenu => GroupMenuPage(
         group: _groupFromArguments(settings.arguments),

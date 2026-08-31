@@ -71,6 +71,7 @@ let groupMessageCommentsCollection;
 let classTimetableCollection;
 let legacyClassTimetableCollection;
 let studentInfoCollection;
+let schoolHandbookCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -85,6 +86,7 @@ async function ensureIndexes(db) {
     classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
     studentInfoCollection.createIndex({ studentId: 1 }, { sparse: true }),
     studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
+    schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
   ]);
 }
 
@@ -119,6 +121,7 @@ async function connectMongo() {
     classTimetableCollection = db.collection('class-timetables');
     legacyClassTimetableCollection = db.collection('class-timetable');
     studentInfoCollection = db.collection('stud-in');
+    schoolHandbookCollection = db.collection('school-handbook');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -232,6 +235,27 @@ function sanitizeStudentForResponse(doc) {
     hobbies: doc.hobbies || '',
     role: doc.role || '',
     imageUrl: doc.imageUrl || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeHandbookForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    schoolId: doc.schoolId || 'default-school',
+    handbookId: doc.handbookId || 'staff-handbook',
+    title: doc.title || 'Staff Handbook',
+    shortDescription: doc.shortDescription || '',
+    category: doc.category || 'Staff Handbook',
+    displayOrder: doc.displayOrder || 1,
+    overview: doc.overview || '',
+    sections: Array.isArray(doc.sections) ? doc.sections : [],
+    contacts: Array.isArray(doc.contacts) ? doc.contacts : [],
+    documentUrl: doc.documentUrl || '',
+    documentName: doc.documentName || '',
+    isActive: doc.isActive !== false,
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1435,6 +1459,71 @@ app.delete('/api/users/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/users/:id failed:', error);
     return res.status(500).json({ message: 'Unable to delete user.' });
+  }
+});
+
+// Staff handbook CRUD
+app.get('/api/school-handbook/:schoolId', async (req, res) => {
+  try {
+    await connectMongo();
+    const handbook = await schoolHandbookCollection.findOne({ schoolId: req.params.schoolId, handbookId: 'staff-handbook' });
+    if (!handbook) {
+      const now = new Date().toISOString();
+      const result = await schoolHandbookCollection.insertOne({ schoolId: req.params.schoolId, handbookId: 'staff-handbook', title: 'Staff Handbook', shortDescription: 'Important information and policies for staff.', category: 'Staff Handbook', displayOrder: 1, overview: 'This handbook contains the information, expectations, and procedures that support staff in their day-to-day work at the school. Please read each section carefully and contact the school office when additional guidance is needed.', sections: [{ id: 'introduction', title: 'Introduction', content: '', order: 1 }, { id: 'responsibilities', title: 'Responsibilities', content: '', order: 2 }, { id: 'procedures', title: 'School Procedures', content: '', order: 3 }, { id: 'contacts', title: 'Useful Contacts', content: '', order: 4 }], contacts: [], documentUrl: '', documentName: '', isActive: true, createdAt: now, updatedAt: now });
+      return res.json(sanitizeHandbookForResponse(await schoolHandbookCollection.findOne({ _id: result.insertedId })));
+    }
+    return res.json(sanitizeHandbookForResponse(handbook));
+  } catch (error) {
+    console.error('GET /api/school-handbook/:schoolId failed:', error);
+    return res.status(500).json({ message: 'Unable to load the staff handbook.' });
+  }
+});
+
+app.post('/api/school-handbook', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    if (!String(body.schoolId || '').trim()) return res.status(422).json({ message: 'schoolId is required.' });
+    const now = new Date().toISOString();
+    const document = {
+      schoolId: String(body.schoolId).trim(), handbookId: 'staff-handbook',
+      sections: Array.isArray(body.sections) ? body.sections : [], updatedAt: now, createdAt: now,
+    };
+    const result = await schoolHandbookCollection.insertOne(document);
+    return res.status(201).json(sanitizeHandbookForResponse(await schoolHandbookCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/school-handbook failed:', error);
+    return res.status(500).json({ message: 'Unable to create the staff handbook.' });
+  }
+});
+
+app.put('/api/school-handbook/:handbookId', async (req, res) => {
+  try {
+    await connectMongo();
+    const id = new ObjectId(req.params.handbookId);
+    const body = req.body || {};
+    if (!String(body.schoolId || '').trim()) return res.status(422).json({ message: 'schoolId is required.' });
+    const updates = {
+      schoolId: String(body.schoolId).trim(), sections: Array.isArray(body.sections) ? body.sections : [], updatedAt: new Date().toISOString(),
+    };
+    const result = await schoolHandbookCollection.updateOne({ _id: id }, { $set: updates });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Staff handbook not found.' });
+    return res.json(sanitizeHandbookForResponse(await schoolHandbookCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PUT /api/school-handbook/:handbookId failed:', error);
+    return res.status(400).json({ message: 'Unable to update the staff handbook.' });
+  }
+});
+
+app.delete('/api/school-handbook/:handbookId', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await schoolHandbookCollection.deleteOne({ _id: new ObjectId(req.params.handbookId) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Staff handbook not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/school-handbook/:handbookId failed:', error);
+    return res.status(400).json({ message: 'Unable to delete the staff handbook.' });
   }
 });
 

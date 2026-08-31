@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/staff_handbook.dart';
@@ -88,26 +87,6 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
         _sections[index].dispose();
         _sections.removeAt(index);
       });
-    }
-  }
-
-  Future<void> _pickImage(_SectionDraft section) async {
-    final files = await FilePicker.pickFiles(type: FileType.image);
-    if (files.isEmpty) return;
-    try {
-      setState(() => section.uploading = true);
-      section.imageUrl = await _service.upload(
-        await files.single.readAsBytes(),
-        files.single.name,
-      );
-    } catch (_) {
-      if (mounted) {
-        _snack('Unable to upload this image.', error: true);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => section.uploading = false);
-      }
     }
   }
 
@@ -344,179 +323,93 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
     ),
   );
 
-  Widget _sectionCard(int index, _SectionDraft section) => Card(
-    margin: const EdgeInsets.only(bottom: 14),
-    child: Padding(
-      padding: const EdgeInsets.all(14),
+  Widget _sectionCard(int index, _SectionDraft section) {
+    final heading = section.heading.text.trim();
+    final summary = section.subSections.isEmpty
+        ? 'No content added yet.'
+        : section.subSections.first.content.text.trim().isNotEmpty
+        ? section.subSections.first.content.text.trim()
+        : 'No content added yet.';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 14),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                'Section ${index + 1}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => _editSection(index),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
-              ),
-              TextButton.icon(
-                onPressed: () => _deleteSection(index),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Delete'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _field('Heading *', section.heading, 'Staff Handbook'),
-          const SizedBox(height: 4),
-          const Text(
-          'Section Image',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-          const SizedBox(height: 8),
           if (_hasNetworkImage(section.imageUrl))
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 220),
               child: Image.network(
                 section.imageUrl,
-                height: 170,
                 width: double.infinity,
                 fit: BoxFit.contain,
+                alignment: Alignment.center,
                 errorBuilder: (_, _, _) => const SizedBox(
-                  height: 80,
+                  height: 120,
                   child: Center(child: Text('Image unavailable')),
                 ),
               ),
             )
           else
             Container(
-              height: 170,
+              height: 165,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.grey.shade100,
-                border: Border.all(color: Colors.grey.shade300),
+                color: Colors.grey.shade200,
+                border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
               ),
-              child: const Center(child: Text('No image selected')),
+              child: const Center(
+                child: Icon(Icons.image_not_supported_outlined, size: 36),
+              ),
             ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+            child: Text(
+              heading.isEmpty ? 'Section ${index + 1}' : heading,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+            child: Text(
+              summary,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, height: 1.5),
+            ),
+          ),
+          const Divider(height: 1),
+          Row(
             children: [
-              OutlinedButton.icon(
-                onPressed: section.uploading ? null : () => _pickImage(section),
-                icon: const Icon(Icons.image_outlined),
-                label: Text(
-                  section.imageUrl.isEmpty ? 'Upload Image' : 'Change Image',
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () => _editSection(index),
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  label: const Text('Edit'),
                 ),
               ),
-              if (section.imageUrl.isNotEmpty)
-                TextButton.icon(
-                  onPressed: () => setState(() => section.imageUrl = ''),
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Remove'),
+              Container(
+                width: 1,
+                height: 18,
+                color: Colors.grey.shade300,
+              ),
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () => _deleteSection(index),
+                  icon: const Icon(Icons.delete_outline, size: 17),
+                  label: const Text('Delete'),
                 ),
+              ),
             ],
-          ),
-          const Divider(height: 28),
-          ...section.subSections.asMap().entries.map(
-            (entry) => _subSectionCard(section, entry.key, entry.value),
-          ),
-          const SizedBox(height: 6),
-          OutlinedButton.icon(
-            onPressed: () =>
-                setState(() => section.subSections.add(_SubSectionDraft())),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Sub Heading'),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _subSectionCard(
-    _SectionDraft section,
-    int index,
-    _SubSectionDraft sub,
-  ) => Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey.shade300),
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Sub Heading ${index + 1}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const Spacer(),
-            IconButton(
-              onPressed: index == 0
-                  ? null
-                  : () => setState(() {
-                      final item = section.subSections.removeAt(index);
-                      section.subSections.insert(index - 1, item);
-                    }),
-              tooltip: 'Move Up',
-              icon: const Icon(Icons.keyboard_arrow_up, size: 20),
-            ),
-            IconButton(
-              onPressed: index == section.subSections.length - 1
-                  ? null
-                  : () => setState(() {
-                      final item = section.subSections.removeAt(index);
-                      section.subSections.insert(index + 1, item);
-                    }),
-              tooltip: 'Move Down',
-              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-            ),
-            IconButton(
-              onPressed: () => setState(() {
-                sub.dispose();
-                section.subSections.removeAt(index);
-              }),
-              tooltip: 'Delete',
-              icon: const Icon(Icons.delete_outline, size: 20),
-            ),
-          ],
-        ),
-        _field('Sub Heading *', sub.heading, 'Introduction'),
-        _field(
-          'Content *',
-          sub.content,
-          'Welcome to the Staff Handbook...',
-          lines: 5,
-        ),
-      ],
-    ),
-  );
-
-  Widget _field(
-    String label,
-    TextEditingController controller,
-    String hint, {
-    int lines = 1,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: TextField(
-      controller: controller,
-      maxLines: lines,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: const OutlineInputBorder(),
-      ),
-    ),
-  );
 }
 
 class _SectionDraft {

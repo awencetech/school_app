@@ -71,96 +71,105 @@ class _NewsLetterPageState extends State<NewsLetterPage> {
                     itemCount: _newsletters.length,
                     itemBuilder: (context, index) {
                       final item = _newsletters[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (item.imageUrl.isNotEmpty)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: CachedNetworkImage(
-                                    imageUrl: item.imageUrl,
-                                    height: 180,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    placeholder: (_, _) => const SizedBox(
-                                      height: 180,
-                                      child: Center(child: CircularProgressIndicator()),
-                                    ),
-                                    errorWidget: (_, _, _) => Container(
-                                      height: 180,
-                                      color: const Color(0xffeef2f7),
-                                      child: const Center(
-                                        child: Icon(Icons.broken_image_outlined),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              else
-                                Container(
-                                  height: 180,
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (item.imageUrl.isNotEmpty)
+                              CachedNetworkImage(
+                                imageUrl: item.imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.contain,
+                                placeholder: (_, _) => Container(
                                   width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffeef2f7),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
+                                  padding: const EdgeInsets.all(32),
+                                  color: const Color(0xffeef2f7),
                                   child: const Center(
-                                    child: Icon(Icons.newspaper, size: 40),
+                                    child: CircularProgressIndicator(),
                                   ),
                                 ),
-                              const SizedBox(height: 12),
-                              Text(
-                                item.heading,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              if (item.introduction.isNotEmpty)
-                                Text(
-                                  item.introduction,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    height: 1.5,
-                                    color: Color(0xff374151),
-                                  ),
-                                ),
-                              const SizedBox(height: 12),
-                              ...item.sections.map(
-                                (section) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      if (section.subHeading.isNotEmpty)
-                                        Text(
-                                          section.subHeading,
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      if (section.content.isNotEmpty) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          section.content,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            height: 1.6,
-                                            color: Color(0xff4b5563),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                errorWidget: (_, _, _) => Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(32),
+                                  color: const Color(0xffeef2f7),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 40,
+                                    color: Color(0xff6b7280),
                                   ),
                                 ),
                               )
-                            ],
-                          ),
+                            else
+                              Container(
+                                width: double.infinity,
+                                height: 220,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffeef2f7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.newspaper,
+                                    size: 40,
+                                    color: Color(0xff6b7280),
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 18),
+                            if (item.heading.isNotEmpty)
+                              Text(
+                                item.heading,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff111827),
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                            if (item.introduction.isNotEmpty)
+                              Text(
+                                item.introduction,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.7,
+                                  color: Color(0xff374151),
+                                ),
+                              ),
+                            const SizedBox(height: 18),
+                            ...item.sections.map(
+                              (section) => Padding(
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (section.subHeading.isNotEmpty)
+                                      Text(
+                                        section.subHeading,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xff111827),
+                                        ),
+                                      ),
+                                    if (section.content.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        section.content,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          height: 1.7,
+                                          color: Color(0xff374151),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },

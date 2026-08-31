@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -224,35 +222,6 @@ class _NewsletterEditPageState extends State<NewsletterEditPage> {
     }
   }
 
-  Future<void> _downloadNewsletter() async {
-    final heading = _headingController.text.trim();
-    if (heading.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add a heading before downloading.')),
-      );
-      return;
-    }
-
-    final file = File('newsletter_${DateTime.now().millisecondsSinceEpoch}.txt');
-    final content = [
-      heading,
-      '',
-      _introductionController.text.trim(),
-      '',
-      for (final section in _sections)
-        if (section.subHeadingController.text.trim().isNotEmpty || section.contentController.text.trim().isNotEmpty) ...[
-          section.subHeadingController.text.trim(),
-          section.contentController.text.trim(),
-          '',
-        ],
-    ].join('\n');
-    await file.writeAsString(content);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Download saved to ${file.path}')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -391,13 +360,6 @@ class _NewsletterEditPageState extends State<NewsletterEditPage> {
                 child: OutlinedButton(
                   onPressed: _deleteNewsletter,
                   child: const Text('Delete'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _downloadNewsletter,
-                  child: const Text('Download'),
                 ),
               ),
               const SizedBox(width: 8),

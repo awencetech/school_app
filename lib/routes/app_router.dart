@@ -8,7 +8,8 @@ import '../screens/login/forgot_password_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/staff/staff_dashboard.dart';
 import '../screens/staff/staff_overview_dashboard_page.dart';
-import '../screens/messages/messages_page.dart';
+import '../screens/announcements/announcements_page.dart';
+import '../screens/admin/announcement_edit_page.dart';
 import '../screens/staff/staff_apply_leave_page.dart';
 import '../screens/staff/staff_info_page.dart';
 import '../screens/staff/staff_swipe_attendance_page.dart';
@@ -210,7 +211,7 @@ class AppRouter {
         title: 'Management Feedback',
       ),
       AppRoutes.staffMeeting => const StaffMeetingPage(),
-      AppRoutes.staffAnnouncements => const MessagesPage(),
+      AppRoutes.staffAnnouncements => const AnnouncementsPage(),
       AppRoutes.staffResources => const StaffResourcesPage(),
       AppRoutes.schoolResources => const SchoolResourcesPage(),
       AppRoutes.staffHandbook => const StaffHandbookPage(),
@@ -240,10 +241,7 @@ class AppRouter {
         const SchoolResourcesEditPage(),
       AppRoutes.adminKnowYourSchoolNewsletterEdit => const NewsletterEditPage(),
       AppRoutes.adminKnowYourSchoolAnnouncementEdit =>
-        const KnowYourSchoolDetailPage(
-          title: 'Announcement',
-          icon: Icons.announcement,
-        ),
+        const AnnouncementEditPage(),
       AppRoutes.adminKnowYourSchoolDemographyEdit =>
         const KnowYourSchoolDetailPage(title: 'Demography', icon: Icons.people),
       AppRoutes.adminKnowYourSchoolFacebookEdit =>

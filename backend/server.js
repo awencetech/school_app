@@ -75,6 +75,7 @@ let schoolHandbookCollection;
 let eventCelebrationCollection;
 let schoolResourcesCollection;
 let newsLetterCollection;
+let announcementCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -93,6 +94,7 @@ async function ensureIndexes(db) {
     eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
     schoolResourcesCollection.createIndex({ schoolId: 1, date: -1, createdAt: -1 }),
     newsLetterCollection.createIndex({ schoolId: 1, createdAt: -1 }),
+    announcementCollection.createIndex({ createdAt: -1 }),
   ]);
 }
 
@@ -131,6 +133,7 @@ async function connectMongo() {
     eventCelebrationCollection = db.collection('event-celebration');
     schoolResourcesCollection = db.collection('school-resources');
     newsLetterCollection = db.collection('news-letter');
+    announcementCollection = db.collection('announcement');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -357,6 +360,30 @@ function sanitizeNewsLetterForResponse(doc) {
       subHeading: section && section.subHeading ? String(section.subHeading) : '',
       content: section && section.content ? String(section.content) : '',
     })) : [],
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeAnnouncementForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    subject: doc.subject || '',
+    from: doc.from || doc.fromName || '',
+    to: Array.isArray(doc.to) ? doc.to.map((value) => String(value)) : [],
+    createdOn: doc.createdOn || '',
+    content: doc.content || '',
+    likes: Array.isArray(doc.likes) ? doc.likes.map((value) => String(value)) : [],
+    comments: Array.isArray(doc.comments) ? doc.comments.map((comment) => ({
+      id: comment && comment.id ? String(comment.id) : null,
+      name: comment && comment.name ? String(comment.name) : 'Student',
+      text: comment && comment.text ? String(comment.text) : '',
+      createdAt: comment && comment.createdAt ? String(comment.createdAt) : null,
+    })) : [],
+    reminders: Array.isArray(doc.reminders) ? doc.reminders.map((value) => String(value)) : [],
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1924,6 +1951,203 @@ app.delete('/api/news-letter/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/news-letter/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete the newsletter.' });
+  }
+});
+
+// Announcement CRUD
+app.get('/api/announcement', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await announcementCollection
+      .find({})
+      .sort({ createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(items.map(sanitizeAnnouncementForResponse));
+  } catch (error) {
+    console.error('GET /api/announcement failed:', error);
+    return res.status(500).json({ message: 'Unable to load announcements.' });
+  }
+});
+
+app.get('/api/announcement/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await announcementCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ message: 'Announcement not found.' });
+    return res.json(sanitizeAnnouncementForResponse(item));
+  } catch (error) {
+    console.error('GET /api/announcement/:id failed:', error);
+    return res.status(404).json({ message: 'Announcement not found.' });
+  }
+});
+
+app.post('/api/announcement', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const subject = String(body.subject || '').trim();
+    const fromName = String(body.from || body.fromName || '').trim();
+    const to = Array.isArray(body.to) ? body.to.map((value) => String(value).trim()).filter(Boolean) : [];
+    const createdOn = String(body.createdOn || '').trim();
+    const content = String(body.content || '').trim();
+
+    if (!subject || !fromName || !createdOn || !content || to.length === 0) {
+      return res.status(422).json({ message: 'Subject, from, to, createdOn, and content are required.' });
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      subject,
+      from: fromName,
+      to,
+      createdOn,
+      content,
+      likes: [],
+      comments: [],
+      reminders: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await announcementCollection.insertOne(payload);
+    const saved = await announcementCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeAnnouncementForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/announcement failed:', error);
+    return res.status(500).json({ message: 'Unable to create the announcement.' });
+  }
+});
+
+app.put('/api/announcement/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const subject = String(body.subject || '').trim();
+    const fromName = String(body.from || body.fromName || '').trim();
+    const to = Array.isArray(body.to) ? body.to.map((value) => String(value).trim()).filter(Boolean) : [];
+    const createdOn = String(body.createdOn || '').trim();
+    const content = String(body.content || '').trim();
+
+    if (!subject || !fromName || !createdOn || !content || to.length === 0) {
+      return res.status(422).json({ message: 'Subject, from, to, createdOn, and content are required.' });
+    }
+
+    const payload = {
+      subject,
+      from: fromName,
+      to,
+      createdOn,
+      content,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await announcementCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: payload },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Announcement not found.' });
+    const updated = await announcementCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeAnnouncementForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/announcement/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update the announcement.' });
+  }
+});
+
+app.delete('/api/announcement/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await announcementCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Announcement not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/announcement/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete the announcement.' });
+  }
+});
+
+app.post('/api/announcement/:id/like', async (req, res) => {
+  try {
+    await connectMongo();
+    const announcementId = req.params.id;
+    const userId = String(req.body.userId || '').trim();
+    if (!userId) return res.status(422).json({ message: 'userId is required.' });
+
+    const item = await announcementCollection.findOne({ _id: new ObjectId(announcementId) });
+    if (!item) return res.status(404).json({ message: 'Announcement not found.' });
+
+    const likes = Array.isArray(item.likes) ? item.likes.map((value) => String(value)) : [];
+    const alreadyLiked = likes.includes(userId);
+    const nextLikes = alreadyLiked ? likes.filter((value) => value !== userId) : [...new Set([...likes, userId])];
+
+    await announcementCollection.updateOne(
+      { _id: new ObjectId(announcementId) },
+      { $set: { likes: nextLikes, updatedAt: new Date().toISOString() } },
+    );
+
+    return res.json({ liked: !alreadyLiked, likeCount: nextLikes.length, likes: nextLikes });
+  } catch (error) {
+    console.error('POST /api/announcement/:id/like failed:', error);
+    return res.status(500).json({ message: 'Unable to update like.' });
+  }
+});
+
+app.post('/api/announcement/:id/comments', async (req, res) => {
+  try {
+    await connectMongo();
+    const announcementId = req.params.id;
+    const userId = String(req.body.userId || '').trim();
+    const userName = String(req.body.userName || '').trim() || 'Student';
+    const text = String(req.body.text || req.body.comment || '').trim();
+
+    if (!userId || !text) return res.status(422).json({ message: 'userId and comment text are required.' });
+
+    const item = await announcementCollection.findOne({ _id: new ObjectId(announcementId) });
+    if (!item) return res.status(404).json({ message: 'Announcement not found.' });
+
+    const comments = Array.isArray(item.comments) ? item.comments : [];
+    const nextComment = {
+      id: new ObjectId().toString(),
+      name: userName,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+
+    comments.push(nextComment);
+    await announcementCollection.updateOne(
+      { _id: new ObjectId(announcementId) },
+      { $set: { comments, updatedAt: new Date().toISOString() } },
+    );
+
+    return res.status(201).json({ id: nextComment.id, userName: nextComment.name, text: nextComment.text, createdAt: nextComment.createdAt });
+  } catch (error) {
+    console.error('POST /api/announcement/:id/comments failed:', error);
+    return res.status(500).json({ message: 'Unable to add comment.' });
+  }
+});
+
+app.post('/api/announcement/:id/remind', async (req, res) => {
+  try {
+    await connectMongo();
+    const announcementId = req.params.id;
+    const userId = String(req.body.userId || '').trim();
+    if (!userId) return res.status(422).json({ message: 'userId is required.' });
+
+    const item = await announcementCollection.findOne({ _id: new ObjectId(announcementId) });
+    if (!item) return res.status(404).json({ message: 'Announcement not found.' });
+
+    const reminders = Array.isArray(item.reminders) ? item.reminders.map((value) => String(value)) : [];
+    const nextReminders = reminders.includes(userId) ? reminders : [...new Set([...reminders, userId])];
+    await announcementCollection.updateOne(
+      { _id: new ObjectId(announcementId) },
+      { $set: { reminders: nextReminders, updatedAt: new Date().toISOString() } },
+    );
+
+    return res.json({ reminded: true, reminders: nextReminders });
+  } catch (error) {
+    console.error('POST /api/announcement/:id/remind failed:', error);
+    return res.status(500).json({ message: 'Unable to save reminder.' });
   }
 });
 

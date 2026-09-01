@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/group.dart';
+import '../../routes/app_router.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -97,6 +98,7 @@ class GroupMenuPage extends StatelessWidget {
   ];
 
   Future<void> _openItem(BuildContext context, _GroupMenuItem item) async {
+    AppRouter.rememberSelectedGroup(group);
     final result = await Navigator.of(context).pushNamed(
       item.route,
       arguments: group,

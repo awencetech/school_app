@@ -105,49 +105,74 @@ import 'app_routes.dart';
 class AppRouter {
   AppRouter._();
   static bool _splashShown = false;
+  static Group? _lastSelectedGroup;
 
   static void markSplashShown() {
     _splashShown = true;
   }
 
-  /// Safely extract Group from arguments, with fallback to unknown group.
+  static void rememberSelectedGroup(Group group) {
+    _lastSelectedGroup = group;
+  }
+
+  /// Safely extract Group from arguments, with fallback to the last selected group.
   /// This prevents TypeError: null crashes when arguments are missing or wrong type.
   static Group _groupFromArguments(Object? arguments) {
     if (arguments == null) {
-      return Group(id: 'unknown', name: 'Unknown');
+      return _lastSelectedGroup ?? Group(id: 'unknown', name: 'Unknown');
     }
-    if (arguments is Group) return arguments;
+    if (arguments is Group) {
+      rememberSelectedGroup(arguments);
+      return arguments;
+    }
     if (arguments is Map) {
       try {
         final values = Map<String, dynamic>.from(arguments);
+
         final nestedGroup = values['group'];
         if (nestedGroup is Group) return nestedGroup;
         if (nestedGroup is Map) {
-          final name = (nestedGroup['name'] ?? '').toString().trim();
-          final id = (nestedGroup['id'] ?? nestedGroup['groupId'] ?? '')
-              .toString()
-              .trim();
-          if (name.isNotEmpty || id.isNotEmpty) {
-            return Group(
-              id: id.isEmpty ? name : id,
-              name: name.isEmpty ? id : name,
-            );
+          final nestedValues = Map<String, dynamic>.from(nestedGroup);
+          if (nestedValues.containsKey('name') ||
+              nestedValues.containsKey('id') ||
+              nestedValues.containsKey('groupId') ||
+              nestedValues.containsKey('_id')) {
+            final group = Group.fromJson(nestedValues);
+            rememberSelectedGroup(group);
+            return group;
           }
+        }
+
+        if (values.containsKey('name') ||
+            values.containsKey('id') ||
+            values.containsKey('groupId') ||
+            values.containsKey('_id')) {
+          final group = Group.fromJson(values);
+          rememberSelectedGroup(group);
+          return group;
         }
 
         final name = values['name']?.toString().trim() ?? '';
         final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
         if (name.isNotEmpty || id.isNotEmpty) {
-          return Group(
+          final group = Group(
+            databaseId: (values['_id'] ?? values['databaseId'] ?? '').toString(),
             id: id.isEmpty ? name : id,
             name: name.isEmpty ? id : name,
+            code: values['code']?.toString() ?? '',
+            description: values['description']?.toString() ?? '',
+            type: values['type']?.toString() ?? 'Other',
+            status: values['status']?.toString() ?? 'Active',
+            year: values['year']?.toString() ?? '2022',
           );
+          rememberSelectedGroup(group);
+          return group;
         }
       } catch (e) {
         debugPrint('WARNING: Failed to extract Group from arguments: $e');
       }
     }
-    return Group(id: 'unknown', name: 'Unknown');
+    return _lastSelectedGroup ?? Group(id: 'unknown', name: 'Unknown');
   }
 
   static Group _eventGroupFromArguments(Object? arguments) {

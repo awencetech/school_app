@@ -79,6 +79,9 @@ let announcementCollection;
 let demographyCollection;
 let libraryCollection;
 let socialUrlCollection;
+let classPhotosCollection;
+let classNewsCollection;
+let lessonPlansCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -101,6 +104,8 @@ async function ensureIndexes(db) {
     demographyCollection.createIndex({ groupId: 1 }, { unique: false }),
     libraryCollection.createIndex({ bookId: 1 }, { unique: false }),
     socialUrlCollection.createIndex({ platform: 1 }, { unique: true }),
+    classPhotosCollection.createIndex({ groupId: 1, uploadedAt: -1 }),
+    classNewsCollection.createIndex({ groupId: 1, publishedAt: -1 }),
   ]);
 }
 
@@ -143,6 +148,9 @@ async function connectMongo() {
     demographyCollection = db.collection('demography');
     libraryCollection = db.collection('lib');
     socialUrlCollection = db.collection('social-url');
+    classPhotosCollection = db.collection('class-photos');
+    classNewsCollection = db.collection('class-news');
+    lessonPlansCollection = db.collection('lesson-plans');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -743,6 +751,27 @@ function sanitizeClassTimetableForResponse(doc) {
   };
 }
 
+function sanitizeLessonPlanForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    groupId: doc.groupId || '',
+    date: doc.date || '',
+    subject: doc.subject || '',
+    topic: doc.topic || '',
+    startTime: doc.startTime || '',
+    endTime: doc.endTime || '',
+    learningObjectives: doc.learningObjectives || '',
+    notes: doc.notes || '',
+    room: doc.room || '',
+    status: doc.status || 'Planned',
+    attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
+    completionNotes: doc.completionNotes || '',
+    createdAt: doc.createdAt || '',
+    updatedAt: doc.updatedAt || '',
+  };
+}
+
 function timetableSelector(groupId, entryId) {
   return { groupId: { $in: groupIdVariants(groupId) }, ...recordIdSelector(entryId) };
 }
@@ -804,6 +833,116 @@ app.delete('/api/groups/:groupId/class-timetable/:entryId', async (req, res) => 
   } catch (error) {
     console.error('DELETE class timetable failed:', error);
     return res.status(500).json({ message: 'Unable to delete class timetable.' });
+  }
+});
+
+// Lesson Plans API Endpoints
+app.get('/api/groups/:groupId/lesson-plans', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const date = (req.query.date || '').toString().trim();
+    
+    let query = { groupId: { $in: groupIdVariants(groupId) } };
+    if (date && !Number.isNaN(Date.parse(date))) {
+      const startDate = new Date(date);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 1);
+      query.date = { $gte: startDate.toISOString(), $lt: endDate.toISOString() };
+    }
+    
+    const plans = await lessonPlansCollection.find(query).sort({ date: -1, startTime: -1 }).toArray();
+    return res.json(plans.map(sanitizeLessonPlanForResponse));
+  } catch (error) {
+    console.error('GET lesson plans failed:', error);
+    return res.status(500).json({ message: 'Unable to load lesson plans.' });
+  }
+});
+
+app.post('/api/groups/:groupId/lesson-plans', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const body = req.body || {};
+    const values = ['date', 'subject', 'topic', 'startTime', 'endTime'];
+    const plan = Object.fromEntries([...values, 'learningObjectives', 'notes', 'room', 'status', 'attachments', 'completionNotes'].map((field) => [field, (body[field] || '').toString().trim()]));
+    
+    if (!groupId || values.some((field) => !plan[field])) {
+      return res.status(422).json({ message: 'Date, subject, topic, start time, and end time are required.' });
+    }
+    
+    if (Number.isNaN(Date.parse(plan.date))) {
+      return res.status(422).json({ message: 'Invalid date format.' });
+    }
+    
+    const now = new Date().toISOString();
+    const result = await lessonPlansCollection.insertOne({ 
+      groupId, 
+      ...plan, 
+      date: plan.date,
+      status: plan.status || 'Planned',
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      createdAt: now, 
+      updatedAt: now 
+    });
+    return res.status(201).json(sanitizeLessonPlanForResponse(await lessonPlansCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST lesson plan failed:', error);
+    return res.status(500).json({ message: 'Unable to save lesson plan.' });
+  }
+});
+
+app.put('/api/groups/:groupId/lesson-plans/:planId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const planId = (req.params.planId || '').trim();
+    const body = req.body || {};
+    const values = ['date', 'subject', 'topic', 'startTime', 'endTime'];
+    const plan = Object.fromEntries([...values, 'learningObjectives', 'notes', 'room', 'status', 'attachments', 'completionNotes'].map((field) => [field, (body[field] || '').toString().trim()]));
+    
+    if (values.some((field) => !plan[field])) {
+      return res.status(422).json({ message: 'Date, subject, topic, start time, and end time are required.' });
+    }
+    
+    if (Number.isNaN(Date.parse(plan.date))) {
+      return res.status(422).json({ message: 'Invalid date format.' });
+    }
+    
+    const selector = { groupId: { $in: groupIdVariants(groupId) }, ...recordIdSelector(planId) };
+    const update = {
+      date: plan.date,
+      subject: plan.subject,
+      topic: plan.topic,
+      startTime: plan.startTime,
+      endTime: plan.endTime,
+      learningObjectives: plan.learningObjectives,
+      notes: plan.notes,
+      room: plan.room,
+      status: plan.status || 'Planned',
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      completionNotes: plan.completionNotes,
+      updatedAt: new Date().toISOString(),
+    };
+    const result = await lessonPlansCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Lesson plan not found.' });
+    return res.json(sanitizeLessonPlanForResponse(await lessonPlansCollection.findOne(selector)));
+  } catch (error) {
+    console.error('PUT lesson plan failed:', error);
+    return res.status(500).json({ message: 'Unable to update lesson plan.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/lesson-plans/:planId', async (req, res) => {
+  try {
+    await connectMongo();
+    const selector = { groupId: { $in: groupIdVariants((req.params.groupId || '').trim()) }, ...recordIdSelector(req.params.planId) };
+    const result = await lessonPlansCollection.deleteOne(selector);
+    if (!result.deletedCount) return res.status(404).json({ message: 'Lesson plan not found.' });
+    return res.sendStatus(204);
+  } catch (error) {
+    console.error('DELETE lesson plan failed:', error);
+    return res.status(500).json({ message: 'Unable to delete lesson plan.' });
   }
 });
 
@@ -3203,6 +3342,287 @@ app.get('/uploads/:filename', async (req, res) => {
   } catch (error) {
     console.error('GET /uploads/:filename fallback failed:', error);
     return res.status(500).json({ message: 'Unable to load the image.' });
+  }
+});
+
+// ============= CLASS PHOTOS ENDPOINTS =============
+
+app.get('/api/groups/:groupId/photos', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    if (!groupId) {
+      return res.status(400).json({ message: 'Group ID is required.' });
+    }
+    
+    const photos = await classPhotosCollection
+      .find({ groupId: { $in: groupIdVariants(groupId) } })
+      .sort({ uploadedAt: -1 })
+      .toArray();
+    return res.json(photos.map(photo => ({
+      id: photo._id ? photo._id.toString() : photo.id,
+      groupId: photo.groupId,
+      imageUrl: photo.imageUrl,
+      caption: photo.caption || '',
+      uploadedAt: photo.uploadedAt,
+      uploadedBy: photo.uploadedBy || '',
+    })));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/photos failed:', error);
+    return res.status(500).json({ message: 'Unable to load photos.' });
+  }
+});
+
+app.post('/api/groups/:groupId/photos', upload.single('file'), async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const caption = (req.body.caption || '').trim();
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No photo file provided.' });
+    }
+
+    const now = new Date();
+    let imageUrl = '';
+    
+    // Try to upload to GridFS
+    try {
+      if (imageBucket) {
+        const uploadStream = imageBucket.openUploadStream(req.file.originalname, {
+          metadata: { contentType: req.file.mimetype }
+        });
+        
+        await new Promise((resolve, reject) => {
+          uploadStream.on('finish', resolve);
+          uploadStream.on('error', reject);
+          uploadStream.end(req.file.buffer);
+        });
+        
+        imageUrl = `${req.protocol}://${req.get('host')}/api/images/${uploadStream.id}`;
+      } else {
+        throw new Error('ImageBucket not initialized');
+      }
+    } catch (e) {
+      console.warn('GridFS upload failed:', e.message);
+      imageUrl = `/uploads/${Date.now()}-${req.file.originalname}`;
+    }
+
+    const photo = {
+      groupId,
+      imageUrl,
+      caption,
+      uploadedAt: now.toISOString(),
+      uploadedBy: req.body.uploadedBy || 'Teacher',
+    };
+
+    const result = await classPhotosCollection.insertOne(photo);
+    return res.status(201).json({
+      id: result.insertedId.toString(),
+      ...photo,
+    });
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/photos failed:', error);
+    return res.status(500).json({ message: 'Unable to upload photo.' });
+  }
+});
+
+app.put('/api/groups/:groupId/photos/:photoId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const photoId = (req.params.photoId || '').trim();
+    const caption = (req.body.caption || '').trim();
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(photoId), groupId: { $in: groupIdVariants(groupId) } };
+    } catch (_) {
+      selector = { id: photoId, groupId: { $in: groupIdVariants(groupId) } };
+    }
+
+    const result = await classPhotosCollection.findOneAndUpdate(
+      selector,
+      { $set: { caption } },
+      { returnDocument: 'after' }
+    );
+
+    if (!result.value) {
+      return res.status(404).json({ message: 'Photo not found.' });
+    }
+
+    const photo = result.value;
+    return res.json({
+      id: photo._id ? photo._id.toString() : photo.id,
+      groupId: photo.groupId,
+      imageUrl: photo.imageUrl,
+      caption: photo.caption || '',
+      uploadedAt: photo.uploadedAt,
+      uploadedBy: photo.uploadedBy || '',
+    });
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/photos/:photoId failed:', error);
+    return res.status(500).json({ message: 'Unable to update photo.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/photos/:photoId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const photoId = (req.params.photoId || '').trim();
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(photoId), groupId: { $in: groupIdVariants(groupId) } };
+    } catch (_) {
+      selector = { id: photoId, groupId: { $in: groupIdVariants(groupId) } };
+    }
+
+    const result = await classPhotosCollection.deleteOne(selector);
+    if (!result.deletedCount) {
+      return res.status(404).json({ message: 'Photo not found.' });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/photos/:photoId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete photo.' });
+  }
+});
+
+// ============= CLASS NEWS ENDPOINTS =============
+
+app.get('/api/groups/:groupId/news', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const news = await classNewsCollection
+      .find({ groupId: { $in: groupIdVariants(groupId) } })
+      .sort({ publishedAt: -1 })
+      .toArray();
+    return res.json(news.map(item => ({
+      id: item._id ? item._id.toString() : item.id,
+      groupId: item.groupId,
+      title: item.title,
+      description: item.description || '',
+      imageUrl: item.imageUrl || '',
+      publishedAt: item.publishedAt,
+      publishedBy: item.publishedBy || '',
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    })));
+  } catch (error) {
+    console.error('GET /api/groups/:groupId/news failed:', error);
+    return res.status(500).json({ message: 'Unable to load news.' });
+  }
+});
+
+app.post('/api/groups/:groupId/news', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const title = (req.body.title || '').trim();
+    const description = (req.body.description || '').trim();
+    const imageUrl = (req.body.imageUrl || '').trim();
+    const publishedAt = req.body.publishedAt || new Date().toISOString();
+
+    if (!title) {
+      return res.status(422).json({ message: 'News title is required.' });
+    }
+
+    const now = new Date().toISOString();
+    const newsItem = {
+      groupId,
+      title,
+      description,
+      imageUrl,
+      publishedAt,
+      publishedBy: req.body.publishedBy || 'Teacher',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await classNewsCollection.insertOne(newsItem);
+    return res.status(201).json({
+      id: result.insertedId.toString(),
+      ...newsItem,
+    });
+  } catch (error) {
+    console.error('POST /api/groups/:groupId/news failed:', error);
+    return res.status(500).json({ message: 'Unable to create news.' });
+  }
+});
+
+app.put('/api/groups/:groupId/news/:newsId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const newsId = (req.params.newsId || '').trim();
+    const title = (req.body.title || '').trim();
+    const description = (req.body.description || '').trim();
+    const imageUrl = (req.body.imageUrl || '').trim();
+    const publishedAt = req.body.publishedAt || new Date().toISOString();
+
+    if (!title) {
+      return res.status(422).json({ message: 'News title is required.' });
+    }
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(newsId), groupId: { $in: groupIdVariants(groupId) } };
+    } catch (_) {
+      selector = { id: newsId, groupId: { $in: groupIdVariants(groupId) } };
+    }
+
+    const result = await classNewsCollection.findOneAndUpdate(
+      selector,
+      { $set: { title, description, imageUrl, publishedAt, updatedAt: new Date().toISOString() } },
+      { returnDocument: 'after' }
+    );
+
+    if (!result.value) {
+      return res.status(404).json({ message: 'News not found.' });
+    }
+
+    const item = result.value;
+    return res.json({
+      id: item._id ? item._id.toString() : item.id,
+      groupId: item.groupId,
+      title: item.title,
+      description: item.description || '',
+      imageUrl: item.imageUrl || '',
+      publishedAt: item.publishedAt,
+      publishedBy: item.publishedBy || '',
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    });
+  } catch (error) {
+    console.error('PUT /api/groups/:groupId/news/:newsId failed:', error);
+    return res.status(500).json({ message: 'Unable to update news.' });
+  }
+});
+
+app.delete('/api/groups/:groupId/news/:newsId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const newsId = (req.params.newsId || '').trim();
+
+    let selector;
+    try {
+      selector = { _id: new ObjectId(newsId), groupId: { $in: groupIdVariants(groupId) } };
+    } catch (_) {
+      selector = { id: newsId, groupId: { $in: groupIdVariants(groupId) } };
+    }
+
+    const result = await classNewsCollection.deleteOne(selector);
+    if (!result.deletedCount) {
+      return res.status(404).json({ message: 'News not found.' });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    console.error('DELETE /api/groups/:groupId/news/:newsId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete news.' });
   }
 });
 

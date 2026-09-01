@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
+import '../../routes/app_router.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -172,6 +173,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   Icons.photo_camera,
                   const Color(0xFFEC4899),
                   onTap: () {
+                    AppRouter.rememberSelectedGroup(widget.group);
                     Navigator.of(context).pushNamed(
                       AppRoutes.teacherPhotosNews,
                       arguments: widget.group,

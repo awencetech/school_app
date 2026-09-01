@@ -7,6 +7,18 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
+import 'student_achievements_awards_page.dart';
+import 'student_attendance_page.dart';
+import 'student_diary_page.dart';
+import 'student_exam_results_page.dart';
+import 'student_faculty_feedback_page.dart';
+import 'student_fee_information_page.dart';
+import 'student_info_screen.dart';
+import 'student_medical_page.dart';
+import 'student_ptm_page.dart';
+import 'student_resources_page.dart';
+import 'student_uni_route_page.dart';
+import 'student_uniform_request_page.dart';
 
 /// Student menu screen matching the provided reference flow.
 class StudentMenuScreen extends StatelessWidget {
@@ -204,63 +216,133 @@ class StudentMenuScreen extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
+                  crossAxisCount: 5,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 0.95,
+                  childAspectRatio: 0.68,
                 ),
-                itemCount: 10,
+                itemCount: 12,
                 itemBuilder: (context, index) {
-                  const items = [
+                  final items = [
                     _StudentMenuTile(
                       icon: Icons.info,
                       label: 'Student Info',
-                      color: Color(0xFF26C6DA),
+                      color: const Color(0xFF26C6DA),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentInfoScreen(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.calendar_today,
                       label: 'Attendance\nApply Leave',
-                      color: Color(0xFFF57C00),
+                      color: const Color(0xFFF57C00),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentAttendancePage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.bar_chart,
                       label: 'Exam Score',
-                      color: Color(0xFF2E7D32),
+                      color: const Color(0xFF2E7D32),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentExamResultsPage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.menu_book,
                       label: 'Student Diary',
-                      color: Color(0xFF26C6DA),
+                      color: const Color(0xFF26C6DA),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentDiaryPage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.emoji_events,
                       label: 'Achievements\nAwards',
-                      color: Color(0xFF8E24AA),
+                      color: const Color(0xFF8E24AA),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentAchievementsAwardsPage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.payments,
                       label: 'Fee Information',
-                      color: Color(0xFFB0C400),
+                      color: const Color(0xFFB0C400),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentFeeInformationPage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.checkroom,
                       label: 'Size & Uniform\nOrdering',
-                      color: Color(0xFF2196F3),
+                      color: const Color(0xFF2196F3),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentUniformRequestPage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.medical_services,
                       label: 'Medical',
-                      color: Color(0xFF90A4AE),
+                      color: const Color(0xFF90A4AE),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentMedicalPage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.folder,
                       label: 'Student Resources',
-                      color: Color(0xFFD84315),
+                      color: const Color(0xFFD84315),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentResourcesPage(),
+                        ),
+                      ),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.feedback,
+                      label: 'Feedback',
+                      color: const Color(0xFF1E88E5),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentFacultyFeedbackPage(),
+                        ),
+                      ),
+                    ),
+                    _StudentMenuTile(
+                      icon: Icons.directions_bus,
+                      label: 'Pick Up',
+                      color: const Color(0xFF00796B),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentUniRoutePage(),
+                        ),
+                      ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.assignment_turned_in,
                       label: 'PTM Status',
-                      color: Color(0xFF0D47A1),
+                      color: const Color(0xFF0D47A1),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const StudentPtmPage(),
+                        ),
+                      ),
                     ),
                   ];
                   return items[index];
@@ -280,39 +362,46 @@ class _StudentMenuTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: Colors.white),
           ),
-          child: Icon(icon, size: 13, color: Colors.white),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF222222),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF222222),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

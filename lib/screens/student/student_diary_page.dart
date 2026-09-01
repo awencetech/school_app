@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../widgets/navigation/app_bottom_navigation.dart';
+import 'student_faculty_feedback_page.dart';
 
 class StudentDiaryPage extends StatefulWidget {
   const StudentDiaryPage({super.key});
@@ -37,6 +38,12 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const _StudentEntryPage()));
+  }
+
+  void _openReviewFeedback() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const StudentFacultyFeedbackPage()),
+    );
   }
 
   @override
@@ -92,7 +99,7 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
           _entryRow('Student Entry', _openStudentEntry),
           _entryRow('Teacher Entry', null),
           _entryRow('GK Score Entry', null),
-          _entryRow('Subject Feedback Entry', null),
+          _entryRow('Review Feedback', _openReviewFeedback),
           const Padding(
             padding: EdgeInsets.fromLTRB(4, 8, 4, 2),
             child: Text(
@@ -188,7 +195,10 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              child: Text('Enter $label', style: const TextStyle(fontSize: 7)),
+              child: Text(
+                label == 'Review Feedback' ? label : 'Enter $label',
+                style: const TextStyle(fontSize: 7),
+              ),
             ),
           ),
       ],

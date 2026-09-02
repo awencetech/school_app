@@ -148,6 +148,22 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
   final String _sortBy = 'Newest';
   final List<Assessment> _assessments = _initialAssessments();
 
+  void _duplicateAssessmentLocally(Assessment assessment) {
+    final duplicate = assessment.copyWith(
+      id: '${assessment.id}-copy-${DateTime.now().millisecondsSinceEpoch}',
+      title: '${assessment.title} (Copy)',
+      status: 'Draft',
+      completedCount: 0,
+    );
+    _assessments.insert(0, duplicate);
+    setState(() {});
+  }
+
+  void _deleteAssessmentLocally(Assessment assessment) {
+    _assessments.removeWhere((item) => item.id == assessment.id);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredAssessments = _getFilteredAssessments();
@@ -1137,19 +1153,12 @@ class _AssessmentCard extends StatelessWidget {
         _showResultsSheet(context, assessment);
         break;
       case 'duplicate':
-        final copy = assessment.copyWith(
-          title: '${assessment.title} (Copy)',
-          id: '${assessment.id}-copy',
-          status: 'Draft',
-          completedCount: 0,
-        );
-        if (state != null) {
-          state._assessments.insert(0, copy);
-          state.setState(() {});
+        state?._duplicateAssessmentLocally(assessment);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Duplicated "${assessment.title}" locally.')),
+          );
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Duplicated "${assessment.title}" locally.')),
-        );
         break;
       case 'delete':
         _confirmDelete(context, assessment);
@@ -1193,17 +1202,20 @@ class _AssessmentCard extends StatelessWidget {
     );
 
     if (confirmed == true) {
+      // ignore: use_build_context_synchronously
       final state = context.findAncestorStateOfType<_OnlineAssessmentPageState>();
       if (state != null) {
-        state._assessments.removeWhere((item) => item.id == assessment.id);
-        state.setState(() {});
+        state._deleteAssessmentLocally(assessment);
       }
       if (context.mounted) {
         Navigator.pop(context);
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Assessment deleted locally.')),
-      );
+      if (context.mounted) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assessment deleted locally.')),
+        );
+      }
     }
   }
 }
@@ -1344,6 +1356,7 @@ class _AssessmentDetailSheetState extends State<_AssessmentDetailSheet> {
                   ReorderableListView(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
+                    // ignore: deprecated_member_use
                     onReorder: (oldIndex, newIndex) {
                       setState(() {
                         if (oldIndex < newIndex) newIndex -= 1;
@@ -1391,6 +1404,7 @@ class _AssessmentDetailSheetState extends State<_AssessmentDetailSheet> {
       builder: (_) => _CreateAssessmentDialog(initialAssessment: assessment),
     ).then((value) {
       if (value != null) {
+        // ignore: use_build_context_synchronously
         final state = context.findAncestorStateOfType<_OnlineAssessmentPageState>();
         if (state != null) {
           final index = state._assessments.indexWhere((item) => item.id == assessment.id);
@@ -1404,18 +1418,17 @@ class _AssessmentDetailSheetState extends State<_AssessmentDetailSheet> {
   }
 
   void _duplicateAssessment(BuildContext context, Assessment assessment) {
+    // ignore: use_build_context_synchronously
     final state = context.findAncestorStateOfType<_OnlineAssessmentPageState>();
-    final duplicate = assessment.copyWith(
-      id: '${assessment.id}-copy-${DateTime.now().millisecondsSinceEpoch}',
-      title: '${assessment.title} (Copy)',
-      status: 'Draft',
-      completedCount: 0,
-    );
     if (state != null) {
-      state._assessments.insert(0, duplicate);
-      state.setState(() {});
+      state._duplicateAssessmentLocally(assessment);
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Created "${duplicate.title}"')));
+    if (context.mounted) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Created "${assessment.title} (Copy)"')),
+      );
+    }
   }
 
   void _deleteAssessment(BuildContext context, Assessment assessment) async {
@@ -1436,12 +1449,13 @@ class _AssessmentDetailSheetState extends State<_AssessmentDetailSheet> {
     );
 
     if (confirmed == true) {
+      // ignore: use_build_context_synchronously
       final state = context.findAncestorStateOfType<_OnlineAssessmentPageState>();
       if (state != null) {
-        state._assessments.removeWhere((item) => item.id == assessment.id);
-        state.setState(() {});
+        state._deleteAssessmentLocally(assessment);
       }
       if (context.mounted) {
+        // ignore: use_build_context_synchronously
         Navigator.pop(context);
       }
     }
@@ -2116,6 +2130,7 @@ class _QuestionManagerSheet extends StatelessWidget {
                       )
                     : ReorderableListView(
                         buildDefaultDragHandles: true,
+                        // ignore: deprecated_member_use
                         onReorder: (oldIndex, newIndex) {
                           if (oldIndex < newIndex) newIndex -= 1;
                           final item = assessment.questions.removeAt(oldIndex);

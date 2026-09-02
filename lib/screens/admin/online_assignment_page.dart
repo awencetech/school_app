@@ -12,7 +12,7 @@ class StudentSubmission {
   final String studentName;
   final DateTime submittedDate;
   final String status; // Submitted, Pending, Late, Not Submitted
-  final double? marks;
+  double? marks;
   final String? feedback;
 
   StudentSubmission({
@@ -878,7 +878,10 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              final marks = double.tryParse(marksController.text);
+              final parsedMarks = double.tryParse(marksController.text);
+              if (parsedMarks != null) {
+                submission.marks = parsedMarks;
+              }
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Grade saved')));
               Navigator.pop(context);
             },

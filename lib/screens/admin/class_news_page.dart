@@ -30,7 +30,6 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
   String? _error;
   bool _uploading = false;
   final _searchController = TextEditingController();
-  String _sortBy = 'latest'; // latest, oldest
 
   @override
   void initState() {
@@ -113,7 +112,6 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
 
   void _sortNews(String sortType) {
     setState(() {
-      _sortBy = sortType;
       if (sortType == 'latest') {
         _filteredNews.sort((a, b) =>
             (b.publishedAt ?? b.createdAt ?? DateTime.now())
@@ -128,6 +126,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
 
   Future<void> _uploadPhotos() async {
     try {
+      // ignore: deprecated_member_use
       final result = await FilePicker.pickFiles(type: FileType.image, allowMultiple: true);
       if (result.isEmpty) return;
 
@@ -145,12 +144,15 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
 
       if (mounted) {
         await _loadContent();
+        if (!mounted) return;
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Photos uploaded successfully!')),
         );
       }
     } catch (e) {
       if (mounted) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Unable to upload photos: $e')),
         );
@@ -196,18 +198,19 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
         photo.id,
         controller.text.trim(),
       );
-      if (mounted) {
-        await _loadContent();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Caption updated!')),
-        );
-      }
+      if (!mounted) return;
+      await _loadContent();
+      if (!mounted) return;
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Caption updated!')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to update caption: $e')),
-        );
-      }
+      if (!mounted) return;
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to update caption: $e')),
+      );
     }
     controller.dispose();
   }
@@ -236,18 +239,17 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
 
     try {
       await _service.deletePhoto(widget.group.id, photo.id);
-      if (mounted) {
-        await _loadContent();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Photo deleted!')),
-        );
-      }
+      if (!mounted) return;
+      await _loadContent();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo deleted!')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to delete photo: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to delete photo: $e')),
+      );
     }
   }
 
@@ -300,12 +302,15 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
       await _service.deleteNews(widget.group.id, news.id);
       if (mounted) {
         await _loadContent();
+        if (!mounted) return;
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('News deleted!')),
         );
       }
     } catch (e) {
       if (mounted) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Unable to delete news: $e')),
         );
@@ -1156,19 +1161,18 @@ class _AddNewsDialogState extends State<_AddNewsDialog> {
 
       await widget.service.createNews(widget.groupId, news);
 
-      if (mounted) {
-        Navigator.pop(context);
-        await widget.onSave();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('News published!')),
-        );
-      }
+      if (!mounted) return;
+      Navigator.pop(context);
+      await widget.onSave();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('News published!')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to publish: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to publish: $e')),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1348,19 +1352,18 @@ class _EditNewsDialogState extends State<_EditNewsDialog> {
 
       await widget.service.updateNews(widget.groupId, updatedNews);
 
-      if (mounted) {
-        Navigator.pop(context);
-        await widget.onSave();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('News updated!')),
-        );
-      }
+      if (!mounted) return;
+      Navigator.pop(context);
+      await widget.onSave();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('News updated!')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to save: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to save: $e')),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }

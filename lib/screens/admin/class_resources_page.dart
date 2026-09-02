@@ -264,11 +264,14 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
       }
       if (!mounted) return;
       await _loadResources();
+      if (!mounted) return;
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(resource == null ? 'Resource added.' : 'Resource updated.')),
       );
     } catch (_) {
       if (!mounted) return;
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to save the resource.')),
       );

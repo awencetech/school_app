@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/group.dart';
-import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 // ============================================================================
@@ -78,7 +77,6 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
   String _selectedDateFilter = 'All'; // Today, Tomorrow, This Week, All
   String _searchQuery = '';
   final _searchController = TextEditingController();
-  final bool _showCopyFeedback = false;
 
   @override
   void initState() {
@@ -284,7 +282,6 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
     final filteredMeetings = _getFilteredMeetings();
     final upcomingCount = _getUpcomingCount();
     final liveNowCount = _getLiveNowCount();
-    final isMobileLayout = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: const Color(0xfff4f5f8),

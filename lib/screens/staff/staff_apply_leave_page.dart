@@ -30,8 +30,6 @@ class StaffApplyLeavePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _PageHeading('Staff Leave'),
-                  const SizedBox(height: 8),
                   _LeaveLinks(
                     onLeaveRequest: () => showDialog<void>(
                       context: context,
@@ -55,20 +53,6 @@ class StaffApplyLeavePage extends StatelessWidget {
       bottomNavigationBar: const StaffFooter(),
     );
   }
-}
-
-class _PageHeading extends StatelessWidget {
-  const _PageHeading(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 12, color: Color(0xFF234E9B)),
-    ),
-  );
 }
 
 class _LeaveLinks extends StatelessWidget {

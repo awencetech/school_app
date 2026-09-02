@@ -151,7 +151,7 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
     return FutureBuilder<List<SchoolNews>>(
       future: _schoolNewsFuture,
       builder: (context, snapshot) {
-        final publishedNews = (snapshot.data ?? const <SchoolNews>[])
+        final publishedNews = List<SchoolNews>.from(snapshot.data ?? const <SchoolNews>[])
           ..sort((a, b) {
             final aDate = a.date ?? DateTime.fromMillisecondsSinceEpoch(0);
             final bDate = b.date ?? DateTime.fromMillisecondsSinceEpoch(0);

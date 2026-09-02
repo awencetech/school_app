@@ -84,30 +84,46 @@ let classNewsCollection;
 let lessonPlansCollection;
 let schoolNewsCollection;
 
+async function safeCreateIndex(collection, spec, options = {}) {
+  try {
+    await collection.createIndex(spec, options);
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    const isDuplicateIndex = /already exists|same name as the requested index/i.test(message);
+    if (!isDuplicateIndex) {
+      throw error;
+    }
+  }
+}
+
 async function ensureIndexes(db) {
   await Promise.all([
-    groupsCollection.createIndex({ id: 1 }, { sparse: true }),
-    usersCollection.createIndex({ userId: 1 }, { sparse: true }),
-    usersCollection.createIndex({ email: 1 }, { sparse: true }),
-    eventsCollection.createIndex({ groupId: 1, startDate: 1 }),
-    todayInClassCollection.createIndex({ groupId: 1, date: 1 }),
-    homeworkCollection.createIndex({ groupId: 1, date: 1 }),
-    groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
-    groupMessageCommentsCollection.createIndex({ groupId: 1, messageId: 1, createdAt: 1 }),
-    classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
-    studentInfoCollection.createIndex({ studentId: 1 }, { unique: true, sparse: true, collation: { locale: 'en', strength: 2 } }),
-    studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
-    schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
-    eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
-    schoolResourcesCollection.createIndex({ schoolId: 1, date: -1, createdAt: -1 }),
-    newsLetterCollection.createIndex({ schoolId: 1, createdAt: -1 }),
-    announcementCollection.createIndex({ createdAt: -1 }),
-    demographyCollection.createIndex({ groupId: 1 }, { unique: false }),
-    libraryCollection.createIndex({ bookId: 1 }, { unique: false }),
-    socialUrlCollection.createIndex({ platform: 1 }, { unique: true }),
-    classPhotosCollection.createIndex({ groupId: 1, uploadedAt: -1 }),
-    classNewsCollection.createIndex({ groupId: 1, publishedAt: -1 }),
-    schoolNewsCollection.createIndex({ isPublished: 1, date: -1, createdAt: -1 }),
+    safeCreateIndex(groupsCollection, { id: 1 }, { sparse: true }),
+    safeCreateIndex(usersCollection, { userId: 1 }, { sparse: true }),
+    safeCreateIndex(usersCollection, { email: 1 }, { sparse: true }),
+    safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
+    safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
+    safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
+    safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
+    safeCreateIndex(groupMessageCommentsCollection, { groupId: 1, messageId: 1, createdAt: 1 }),
+    safeCreateIndex(classTimetableCollection, { groupId: 1, day: 1, startTime: 1 }),
+    safeCreateIndex(
+      studentInfoCollection,
+      { studentId: 1 },
+      { unique: true, sparse: true, collation: { locale: 'en', strength: 2 } },
+    ),
+    safeCreateIndex(studentInfoCollection, { admissionNumber: 1 }, { sparse: true }),
+    safeCreateIndex(schoolHandbookCollection, { schoolId: 1, handbookId: 1 }, { unique: true }),
+    safeCreateIndex(eventCelebrationCollection, { schoolId: 1, eventDate: 1 }),
+    safeCreateIndex(schoolResourcesCollection, { schoolId: 1, date: -1, createdAt: -1 }),
+    safeCreateIndex(newsLetterCollection, { schoolId: 1, createdAt: -1 }),
+    safeCreateIndex(announcementCollection, { createdAt: -1 }),
+    safeCreateIndex(demographyCollection, { groupId: 1 }, { unique: false }),
+    safeCreateIndex(libraryCollection, { bookId: 1 }, { unique: false }),
+    safeCreateIndex(socialUrlCollection, { platform: 1 }, { unique: true }),
+    safeCreateIndex(classPhotosCollection, { groupId: 1, uploadedAt: -1 }),
+    safeCreateIndex(classNewsCollection, { groupId: 1, publishedAt: -1 }),
+    safeCreateIndex(schoolNewsCollection, { isPublished: 1, date: -1, createdAt: -1 }),
   ]);
 }
 

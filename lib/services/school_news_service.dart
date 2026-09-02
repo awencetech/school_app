@@ -27,6 +27,25 @@ class SchoolNewsService {
     final response = await http
         .get(_uri(onlyPublished ? '/api/schoolnews?published=true' : '/api/schoolnews'))
         .timeout(const Duration(seconds: 20));
+
+    if (response.statusCode == 404 && onlyPublished) {
+      final fallback = await http
+          .get(_uri('/api/schoolnews'))
+          .timeout(const Duration(seconds: 20));
+      if (fallback.statusCode != 200) {
+        if (fallback.statusCode == 404) return const [];
+        throw Exception(_messageBody(fallback.statusCode, fallback.body));
+      }
+
+      final decoded = jsonDecode(fallback.body);
+      if (decoded is! List) return const [];
+      final items = decoded
+          .map((item) => SchoolNews.fromJson(Map<String, dynamic>.from(item)))
+          .where((item) => item.isPublished)
+          .toList();
+      return items;
+    }
+
     if (response.statusCode == 404) return const [];
     if (response.statusCode != 200) {
       throw Exception(_messageBody(response.statusCode, response.body));

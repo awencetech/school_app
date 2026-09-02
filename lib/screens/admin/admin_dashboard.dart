@@ -596,7 +596,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               onTap: () {
                                 Navigator.of(
                                   context,
-                                ).pushNamed(AppRoutes.adminDashboardNewsletter);
+                                ).pushNamed(AppRoutes.adminSchoolNews);
                               },
                             ),
                             _QuickAction(
@@ -618,6 +618,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.approval,
                               label: 'Emp Leave\nApproval',
                               color: Color(0xFF16A34A),
+                            ),
+                            _QuickAction(
+                              icon: Icons.people_alt,
+                              label: 'One on\nOne',
+                              color: Color(0xFF4F46E5),
+                              onTap: () {},
+                            ),
+                            _QuickAction(
+                              icon: Icons.door_front_door,
+                              label: 'Gate\nRegister',
+                              color: Color(0xFF10B981),
+                              onTap: () {},
                             ),
                           ],
                         ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../models/school_news.dart';
 import '../../routes/app_routes.dart';
+import '../../services/school_news_service.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 
 class StaffOverviewDashboardPage extends StatefulWidget {
@@ -39,7 +42,7 @@ class _StaffOverviewDashboardPageState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Dashboard',
+              'News Summaries',
               style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
             ),
             const SizedBox(height: 8),
@@ -127,25 +130,104 @@ class _Tab extends StatelessWidget {
   }
 }
 
-class _UserDashboardContent extends StatelessWidget {
+class _UserDashboardContent extends StatefulWidget {
   const _UserDashboardContent();
 
   @override
+  State<_UserDashboardContent> createState() => _UserDashboardContentState();
+}
+
+class _UserDashboardContentState extends State<_UserDashboardContent> {
+  late final Future<List<SchoolNews>> _schoolNewsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _schoolNewsFuture = SchoolNewsService().getSchoolNews(onlyPublished: true);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const _Section(
-      title: 'New Messages 114',
-      lines: [
-        '27-Aug-26 - from Employee Leaves to Approve',
-        '27-Aug-26 - from Employee Leaves to Approve',
-        '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-        '26-Aug-26 - from System from School',
-        '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-        '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-        '26-Aug-26 - from JEWILLPAUL from Parent of JEWILLIN PAUL GIDEONS in 12 B Grade 12 B - 2026-27 (2026)',
-        '25-Aug-26 - from Gurunagesh_S Teacher of 10 C Grade 10 C - 2026-27 (2026)',
-        '24-Aug-26 - from imayavarman from Parent of IMAYAVARMAN.K in 1 B Grade 1 B - 2026-27 (2026)',
-        '25-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-      ],
+    return FutureBuilder<List<SchoolNews>>(
+      future: _schoolNewsFuture,
+      builder: (context, snapshot) {
+        final publishedNews = (snapshot.data ?? const <SchoolNews>[])
+          ..sort((a, b) {
+            final aDate = a.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final bDate = b.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return bDate.compareTo(aDate);
+          });
+
+        final newsLines = publishedNews.isEmpty
+            ? const ['No school news available.']
+            : publishedNews.map((news) {
+                final date = news.date != null
+                    ? DateFormat('dd-MMM-yy').format(news.date!)
+                    : 'Date n/a';
+                return '$date - ${news.title}';
+              }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Section(
+              title: 'New Messages 114',
+              lines: [
+                '27-Aug-26 - from Employee Leaves to Approve',
+                '27-Aug-26 - from Employee Leaves to Approve',
+                '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
+                '26-Aug-26 - from System from School',
+                '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
+                '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
+                '26-Aug-26 - from JEWILLPAUL from Parent of JEWILLIN PAUL GIDEONS in 12 B Grade 12 B - 2026-27 (2026)',
+                '25-Aug-26 - from Gurunagesh_S Teacher of 10 C Grade 10 C - 2026-27 (2026)',
+                '24-Aug-26 - from imayavarman from Parent of IMAYAVARMAN.K in 1 B Grade 1 B - 2026-27 (2026)',
+                '25-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
+              ],
+            ),
+            const SizedBox(height: 8),
+            _Section(
+              title: 'News',
+              lines: snapshot.connectionState == ConnectionState.waiting
+                  ? const ['Loading school news...']
+                  : newsLines,
+            ),
+            if (publishedNews.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...publishedNews.take(3).map((news) => Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xffdddddd)),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${news.date != null ? DateFormat('dd-MMM-yy').format(news.date!) : 'Date n/a'} - ${news.title}',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xff222222),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          news.news,
+                          style: const TextStyle(
+                            fontSize: 8,
+                            height: 1.35,
+                            color: Color(0xff355c8a),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
+          ],
+        );
+      },
     );
   }
 }

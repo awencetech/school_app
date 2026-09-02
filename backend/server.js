@@ -82,6 +82,7 @@ let socialUrlCollection;
 let classPhotosCollection;
 let classNewsCollection;
 let lessonPlansCollection;
+let schoolNewsCollection;
 
 async function ensureIndexes(db) {
   await Promise.all([
@@ -106,6 +107,7 @@ async function ensureIndexes(db) {
     socialUrlCollection.createIndex({ platform: 1 }, { unique: true }),
     classPhotosCollection.createIndex({ groupId: 1, uploadedAt: -1 }),
     classNewsCollection.createIndex({ groupId: 1, publishedAt: -1 }),
+    schoolNewsCollection.createIndex({ isPublished: 1, date: -1, createdAt: -1 }),
   ]);
 }
 
@@ -151,6 +153,7 @@ async function connectMongo() {
     classPhotosCollection = db.collection('class-photos');
     classNewsCollection = db.collection('class-news');
     lessonPlansCollection = db.collection('lesson-plans');
+    schoolNewsCollection = db.collection('schoolnews');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -405,6 +408,21 @@ function sanitizeNewsLetterForResponse(doc) {
       subHeading: section && section.subHeading ? String(section.subHeading) : '',
       content: section && section.content ? String(section.content) : '',
     })) : [],
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeSchoolNewsForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    _id: id,
+    title: doc.title || '',
+    date: doc.date instanceof Date ? doc.date.toISOString() : (doc.date ? String(doc.date) : null),
+    news: doc.news || '',
+    isPublished: Boolean(doc.isPublished),
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -2539,6 +2557,138 @@ app.delete('/api/news-letter/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/news-letter/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete the newsletter.' });
+  }
+});
+
+app.get('/api/schoolnews', async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = String(req.query.published || '').toLowerCase() === 'true' ? { isPublished: true } : {};
+    const items = await schoolNewsCollection
+      .find(filter)
+      .sort({ date: -1, isPublished: -1, createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(items.map(sanitizeSchoolNewsForResponse));
+  } catch (error) {
+    console.error('GET /api/schoolnews failed:', error);
+    return res.status(500).json({ message: 'Unable to load school news.' });
+  }
+});
+
+app.get('/api/schoolnews/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await schoolNewsCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ message: 'School news not found.' });
+    return res.json(sanitizeSchoolNewsForResponse(item));
+  } catch (error) {
+    console.error('GET /api/schoolnews/:id failed:', error);
+    return res.status(404).json({ message: 'School news not found.' });
+  }
+});
+
+app.post('/api/schoolnews', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const news = String(body.news || '').trim();
+    const rawDate = String(body.date || '').trim();
+    const isPublished = body.isPublished === true;
+
+    if (!title || !news || !rawDate) {
+      return res.status(422).json({ message: 'Title, date, and news are required.' });
+    }
+
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) {
+      return res.status(422).json({ message: 'Please provide a valid date.' });
+    }
+
+    const now = new Date();
+    const payload = {
+      title,
+      date,
+      news,
+      isPublished,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await schoolNewsCollection.insertOne(payload);
+    const saved = await schoolNewsCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeSchoolNewsForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/schoolnews failed:', error);
+    return res.status(500).json({ message: 'Unable to create school news.' });
+  }
+});
+
+app.put('/api/schoolnews/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const news = String(body.news || '').trim();
+    const rawDate = String(body.date || '').trim();
+
+    if (!title || !news || !rawDate) {
+      return res.status(422).json({ message: 'Title, date, and news are required.' });
+    }
+
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) {
+      return res.status(422).json({ message: 'Please provide a valid date.' });
+    }
+
+    const payload = {
+      title,
+      date,
+      news,
+      updatedAt: new Date(),
+    };
+
+    const result = await schoolNewsCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: payload },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'School news not found.' });
+    const updated = await schoolNewsCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeSchoolNewsForResponse(updated));
+  } catch (error) {
+    console.error('PUT /api/schoolnews/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update school news.' });
+  }
+});
+
+app.patch('/api/schoolnews/:id/publish', async (req, res) => {
+  try {
+    await connectMongo();
+    const isPublished = req.body && req.body.isPublished === true;
+    const result = await schoolNewsCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { isPublished, updatedAt: new Date() } },
+    );
+
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'School news not found.' });
+    const updated = await schoolNewsCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeSchoolNewsForResponse(updated));
+  } catch (error) {
+    console.error('PATCH /api/schoolnews/:id/publish failed:', error);
+    return res.status(400).json({ message: 'Unable to update publish status.' });
+  }
+});
+
+app.delete('/api/schoolnews/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await schoolNewsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'School news not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/schoolnews/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete school news.' });
   }
 });
 

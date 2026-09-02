@@ -38,6 +38,7 @@ import '../screens/admin/school_resources_edit_page.dart';
 import '../screens/admin/news_letter_page.dart';
 import '../screens/admin/library_page.dart';
 import '../screens/admin/library_edit_page.dart';
+import '../screens/admin/school_news_page.dart';
 import '../screens/admin/facebook_edit_page.dart';
 import '../screens/admin/youtube_edit_page.dart';
 import '../screens/admin/instagram_edit_page.dart';
@@ -256,6 +257,7 @@ class AppRouter {
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
       AppRoutes.adminDashboardLibrary => const LibraryPage(),
+      AppRoutes.adminSchoolNews => const SchoolNewsPage(),
       AppRoutes.adminDashboardDemography => ClassDemographyPage(
         group: Group(
           id: 'grade-10-c',

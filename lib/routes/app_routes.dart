@@ -13,7 +13,7 @@ class AppRoutes {
   static const groupClassMenu = '/group-class-menu';
   static const studentMenu = '/student-menu';
   static const staffDashboard = '/staff-dashboard';
-  static const staffOverviewDashboard = '/staff-dashboard/overview';
+  static const staffOverviewDashboard = '/staff-dashboard/dashboard-summary';
   static const staffEventCalendar = '/staff-dashboard/event-calendar';
   static const staffInfo = '/staff-dashboard/staff-info';
   static const staffInfoEdit = '$staffInfo/edit';
@@ -30,7 +30,8 @@ class AppRoutes {
   static const adminDashboard = '/admin-dashboard';
   static const adminDashboardNewsletter = '$adminDashboard/news-letter';
   static const adminDashboardDemography = '$adminDashboard/demography';
-    static const adminDashboardLibrary = '$adminDashboard/library';
+  static const adminDashboardLibrary = '$adminDashboard/library';
+  static const adminSchoolNews = '/admin/other-options/schoolnews';
   static const adminOtherOptions = '/admin/other-options';
   static const adminMainEdit = '$adminOtherOptions/main-edit';
   static const adminAdd = '$adminOtherOptions/add';

@@ -56,7 +56,7 @@ class StaffApplyLeavePage extends StatelessWidget {
 }
 
 class _LeaveLinks extends StatelessWidget {
-  _LeaveLinks({
+  const _LeaveLinks({
     required this.onLeaveRequest,
     required this.onAdjustLeave,
   });

@@ -517,6 +517,7 @@ function sanitizeGroupMessageForResponse(doc) {
     authorId: doc.authorId || '',
     authorRole: doc.authorRole || '',
     senderName: doc.senderName || '',
+    senderEmail: doc.senderEmail || '',
     category: doc.category || '',
     messageType: doc.messageType || doc.category || '',
     priority: doc.priority || 'Normal',
@@ -1395,6 +1396,10 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
   try {
     await connectMongo();
     const requestedGroupId = (req.params.groupId || '').trim();
+    if (!requestedGroupId) {
+      return res.status(422).json({ message: 'Current group ID is required.' });
+    }
+
     const group = await findGroupByReference(requestedGroupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
 
@@ -1406,6 +1411,23 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       return res.status(422).json({ message: 'Title, message, and message type are required.' });
     }
 
+    const senderId = (body.senderId || body.authorId || body.userId || '').toString().trim();
+    const senderRole = (body.senderRole || body.authorRole || '').toString().trim().toLowerCase();
+    if (!senderId) {
+      return res.status(422).json({ message: 'Logged-in student is required.' });
+    }
+    if (senderRole !== 'student') {
+      return res.status(403).json({ message: 'Only student accounts can create group messages.' });
+    }
+
+    const verifiedUser = await usersCollection.findOne({ userId: senderId, role: { $in: ['student', 'students'] } });
+    if (!verifiedUser) {
+      return res.status(403).json({ message: 'Student account not found.' });
+    }
+
+    const studentRecord = await studentInfoCollection.findOne({ studentId: senderId });
+    const senderName = (body.senderName || studentRecord?.name || '').toString().trim() || verifiedUser.email?.split('@')[0] || 'Student';
+    const senderEmail = (body.senderEmail || verifiedUser.email || '').toString().trim();
     const allowComments = body.allowComments !== undefined ? body.allowComments !== false : body.commentsAllowed !== false;
     const now = new Date().toISOString();
     const message = {
@@ -1414,10 +1436,13 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       title,
       content,
       message: content,
-      authorId: (body.authorId || body.senderId || '').toString().trim(),
-      createdBy: (body.createdBy || body.authorId || body.senderId || '').toString().trim(),
-      authorRole: (body.authorRole || body.senderRole || '').toString().trim(),
-      senderName: (body.senderName || '').toString().trim(),
+      authorId: senderId,
+      createdBy: senderId,
+      authorRole: 'student',
+      senderId,
+      senderRole: 'student',
+      senderName,
+      senderEmail,
       category,
       messageType: category,
       priority: (body.priority || 'Normal').toString().trim(),

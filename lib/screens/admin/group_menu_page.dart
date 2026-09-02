@@ -42,12 +42,6 @@ class GroupMenuPage extends StatelessWidget {
       AppRoutes.teacherEditWriteMessage,
     ),
     _GroupMenuItem(
-      'Class Demography',
-      Icons.groups,
-      Color(0xff06b6d4),
-      AppRoutes.teacherEditClassDemography,
-    ),
-    _GroupMenuItem(
       'Class Resources',
       Icons.library_books,
       Color(0xff8b5cf6),

@@ -54,6 +54,7 @@ class GroupMessage {
     required this.authorId,
     required this.authorRole,
     required this.senderName,
+    this.senderEmail = '',
     required this.category,
     required this.approved,
     this.messageType = '',
@@ -78,6 +79,7 @@ class GroupMessage {
   final String authorId;
   final String authorRole;
   final String senderName;
+  final String senderEmail;
   final String category;
   final bool approved;
   final String messageType;
@@ -102,6 +104,7 @@ class GroupMessage {
     String? authorId,
     String? authorRole,
     String? senderName,
+    String? senderEmail,
     String? category,
     bool? approved,
     String? messageType,
@@ -126,6 +129,7 @@ class GroupMessage {
       authorId: authorId ?? this.authorId,
       authorRole: authorRole ?? this.authorRole,
       senderName: senderName ?? this.senderName,
+      senderEmail: senderEmail ?? this.senderEmail,
       category: category ?? this.category,
       approved: approved ?? this.approved,
       messageType: messageType ?? this.messageType,
@@ -158,6 +162,7 @@ class GroupMessage {
       authorId: (json['authorId'] ?? '').toString(),
       authorRole: (json['authorRole'] ?? '').toString(),
       senderName: (json['senderName'] ?? '').toString(),
+      senderEmail: (json['senderEmail'] ?? '').toString(),
       category: (json['category'] ?? '').toString(),
       messageType: (json['messageType'] ?? json['category'] ?? '').toString(),
       priority: (json['priority'] ?? 'Normal').toString(),
@@ -191,6 +196,7 @@ class GroupMessage {
     'authorId': authorId,
     'authorRole': authorRole,
     'senderName': senderName,
+    'senderEmail': senderEmail,
     'category': category,
     'messageType': messageType,
     'priority': priority,

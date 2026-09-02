@@ -12,6 +12,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../routes/app_routes.dart';
+import 'group_messages_edit_page.dart';
 
 class GroupMessagesPage extends StatefulWidget {
   const GroupMessagesPage({
@@ -225,268 +226,16 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
     }
   }
 
-  void _navigateToEdit(GroupMessage message) async {
-    final group = Group(
-      id: widget.groupId,
-      name: widget.groupName,
-      year: widget.groupYear,
-    );
-    final result = await Navigator.of(context).pushNamed(
-      AppRoutes.teacherEditGroupMessages,
-      arguments: {
-        'group': group,
-        'message': message,
-      },
-    );
-    if (result == true) {
-      _loadMessages();
+  String _teacherDisplayName(GroupMessage message) {
+    final senderName = message.senderName.trim();
+    if (senderName.isNotEmpty && senderName.toLowerCase() != 'user') {
+      return senderName;
     }
-  }
-
-  void _showMessageDetail(GroupMessage message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                message.title,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(
-                          message.likedBy.contains(_currentUserId ?? '') ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Like ${message.likedBy.length}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Comments (${message.comments.length})',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryText,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Message Type and Priority
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Type',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            message.messageType.isEmpty ? message.category : message.messageType,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Priority',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _getPriorityColor(message.priority).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            message.priority,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: _getPriorityColor(message.priority),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Message Content
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Message',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message.content,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: AppColors.primaryText,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Audience
-              if (message.audience.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Visible To',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: message.audience
-                          .map((audience) => Chip(
-                                label: Text(audience),
-                                labelStyle: GoogleFonts.poppins(fontSize: 11),
-                              ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              // Dates
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Created',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatDate(message.createdAt),
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppColors.primaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (message.expiryDate != null)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Expires',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            message.expiryDate!,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppColors.primaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
+    final authorRole = message.authorRole.trim();
+    if (authorRole.isNotEmpty && authorRole.toLowerCase() != 'unknown') {
+      return authorRole[0].toUpperCase() + authorRole.substring(1);
+    }
+    return 'Student';
   }
 
   String _commentDisplayName(String value) {
@@ -940,6 +689,18 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
               ],
             ),
             const SizedBox(height: 8),
+            TeacherNameBadge(teacherName: _teacherDisplayName(message)),
+            if (message.senderEmail.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${message.senderName} / ${message.senderEmail}',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
             // Title
             Text(
               message.title,
@@ -993,45 +754,6 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
                     color: AppColors.hintText,
                   ),
                 ),
-                const SizedBox(width: 10),
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  tooltip: 'Message actions',
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      _navigateToEdit(message);
-                    } else if (value == 'delete') {
-                      _deleteMessage(message);
-                    } else if (value == 'details') {
-                      _showMessageDetail(message);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'details',
-                      child: Text('View Details'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Edit'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
-                  ],
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Text(
-                      'Actions',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1050,45 +772,6 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
         ),
       ),
     );
-  }
-
-  Future<void> _deleteMessage(GroupMessage message) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Message'),
-        content: Text('Are you sure you want to delete "${message.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await _service.deleteMessage(
-        groupId: widget.groupId,
-        messageId: message.id,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message deleted successfully.')),
-      );
-      _loadMessages();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to delete message: $e')),
-      );
-    }
   }
 
   Color _getPriorityColor(String priority) {

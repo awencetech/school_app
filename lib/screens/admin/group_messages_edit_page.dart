@@ -215,6 +215,10 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
             ],
           ),
           const SizedBox(height: 10),
+          TeacherNameBadge(
+            teacherName: _teacherDisplayName(message),
+          ),
+          const SizedBox(height: 10),
           Text(
             message.title,
             style: GoogleFonts.poppins(
@@ -268,6 +272,18 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
     );
   }
 
+  String _teacherDisplayName(GroupMessage message) {
+    final senderName = message.senderName.trim();
+    if (senderName.isNotEmpty && senderName.toLowerCase() != 'user') {
+      return senderName;
+    }
+    final authorRole = message.authorRole.trim();
+    if (authorRole.isNotEmpty && authorRole.toLowerCase() != 'unknown') {
+      return authorRole[0].toUpperCase() + authorRole.substring(1);
+    }
+    return 'Teacher';
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
@@ -283,6 +299,45 @@ class _GroupMessagesEditPageState extends State<GroupMessagesEditPage> {
       default:
         return Colors.grey;
     }
+  }
+}
+
+class TeacherNameBadge extends StatelessWidget {
+  const TeacherNameBadge({
+    super.key,
+    required this.teacherName,
+  });
+
+  final String teacherName;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = teacherName.trim();
+    final label = displayName.isEmpty ? 'Teacher' : displayName;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.person_outline, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

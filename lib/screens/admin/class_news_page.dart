@@ -93,7 +93,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
         return '${match.group(2)} (Error ${match.group(1)})';
       }
     }
-    return error.length > 100 ? error.substring(0, 100) + '...' : error;
+    return error.length > 100 ? '${error.substring(0, 100)}...' : error;
   }
 
   void _filterNews(String query) {
@@ -129,7 +129,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
   Future<void> _uploadPhotos() async {
     try {
       final result = await FilePicker.pickFiles(type: FileType.image, allowMultiple: true);
-      if (result == null || result.isEmpty) return;
+      if (result.isEmpty) return;
 
       if (mounted) setState(() => _uploading = true);
 
@@ -710,7 +710,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
                 child: CachedNetworkImage(
                   imageUrl: photo.imageUrl,
                   fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) =>
+                  errorWidget: (_, _, _) =>
                       const Icon(Icons.image_not_supported, size: 64),
                 ),
               ),
@@ -1095,7 +1095,7 @@ class _AddNewsDialogState extends State<_AddNewsDialog> {
   Future<void> _pickImage() async {
     try {
       final result = await FilePicker.pickFiles(type: FileType.image);
-      if (result == null || result.isEmpty) return;
+      if (result.isEmpty) return;
 
       final file = result.first;
       final bytes = await file.readAsBytes();
@@ -1289,7 +1289,7 @@ class _EditNewsDialogState extends State<_EditNewsDialog> {
   Future<void> _pickImage() async {
     try {
       final result = await FilePicker.pickFiles(type: FileType.image);
-      if (result == null || result.isEmpty) return;
+      if (result.isEmpty) return;
 
       final file = result.first;
       final bytes = await file.readAsBytes();

@@ -230,7 +230,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
                 children: [
                   // Class Name Header
                   Container(
-                    color: AppColors.topBar.withOpacity(0.05),
+                    color: AppColors.topBar.withValues(alpha: 0.05),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +457,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.blueButton.withOpacity(0.1),
+                color: AppColors.blueButton.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.divider),
               ),
@@ -533,7 +533,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -546,12 +546,12 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(10),
                     topRight: Radius.circular(10),
                   ),
-                  border: Border(bottom: BorderSide(color: Colors.red.withOpacity(0.3))),
+                  border: Border(bottom: BorderSide(color: Colors.red.withValues(alpha: 0.3))),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -579,7 +579,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
+                          color: color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(icon, size: 18, color: color),
@@ -654,9 +654,9 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.05),
+                        color: Colors.amber.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.amber.withOpacity(0.2)),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         children: [
@@ -748,7 +748,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, size: 18, color: color),

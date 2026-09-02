@@ -536,7 +536,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
   Widget _buildSummary() {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -611,7 +611,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -629,7 +629,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                   child: Text(assignment.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
                 ),
               ],
@@ -672,13 +672,13 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
       onTap: () => _openDetails(assignment),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(3)),
+              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
               child: Text(assignment.status, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: statusColor)),
             ),
             const SizedBox(height: 8),
@@ -709,7 +709,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
                     child: Row(
                       children: [
                         const Icon(Icons.folder, size: 28, color: Color(0xfff59e0b)),
@@ -728,7 +728,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -752,7 +752,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -951,8 +951,8 @@ class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
   final _descController = TextEditingController();
   final _instrController = TextEditingController();
   final _marksController = TextEditingController(text: '50');
-  DateTime _assignDate = DateTime.now();
-  DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
+  final DateTime _assignDate = DateTime.now();
+  final DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
   String _folder = 'Mathematics';
   String _status = 'Draft';
 
@@ -1008,14 +1008,14 @@ class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
             TextField(controller: _marksController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Max Marks', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _folder,
+              initialValue: _folder,
               onChanged: (value) => setState(() => _folder = value ?? 'Mathematics'),
               decoration: const InputDecoration(labelText: 'Folder', border: OutlineInputBorder()),
               items: ['Mathematics', 'Science', 'English', 'Homework', 'Projects', 'Exams'].map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               onChanged: (value) => setState(() => _status = value ?? 'Draft'),
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: ['Draft', 'Active', 'Closed'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
@@ -1103,14 +1103,14 @@ class _EditAssignmentDialogState extends State<_EditAssignmentDialog> {
             TextField(controller: _marksController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Max Marks', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _folder,
+              initialValue: _folder,
               onChanged: (value) => setState(() => _folder = value ?? 'Mathematics'),
               decoration: const InputDecoration(labelText: 'Folder', border: OutlineInputBorder()),
               items: ['Mathematics', 'Science', 'English', 'Homework', 'Projects', 'Exams'].map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               onChanged: (value) => setState(() => _status = value ?? 'Draft'),
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: ['Draft', 'Active', 'Pending', 'Submitted', 'Overdue', 'Closed'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),

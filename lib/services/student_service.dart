@@ -92,6 +92,18 @@ class StudentService {
     return payload.map((item) => StudentRecord.fromJson(Map<String, dynamic>.from(item as Map))).toList();
   }
 
+  Future<String> getNextStudentId() async {
+    final response = await http.get(_uri('/api/students/next-id')).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Unable to generate student ID.');
+    }
+
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    final value = (payload['studentId'] ?? '').toString().trim();
+    if (value.isEmpty) throw Exception('Unable to generate student ID.');
+    return value;
+  }
+
   Future<StudentRecord> createStudent(StudentRecord student) async {
     final response = await http.post(
       _uri('/api/students'),

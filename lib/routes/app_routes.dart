@@ -54,6 +54,7 @@ class AppRoutes {
   static const adminStudentInfo = '$adminListStudents/student-info';
   static const adminStudentMenu = '$adminListStudents/student-menu';
   static const adminStaffOptions = '$adminOtherOptions/staff';
+  static const adminListClasses = '$adminOtherOptions/list-classes';
   static const adminListTeachers = '$adminOtherOptions/list-teachers';
   static const adminEmployeeInfo = '$adminListTeachers/employee-info';
   static const adminMainEditSplashScreen = '$adminMainEdit/splash-screen';
@@ -66,6 +67,7 @@ class AppRoutes {
   static const adminAddStaff = '$adminAdd/staff-create-id';
   static const adminAddAdmin = '$adminAdd/admin-create-id';
   static const adminAddGroup = '$adminAdd/create-group';
+  static const adminAddClasses = '$adminAdd/create-classes';
   static const adminOtherGroups = '/admin/other-groups/list-other-groups';
   static const adminOtherGroupDetails = '$adminOtherGroups/';
   static const adminGroupDetails = '/admin/group-details';

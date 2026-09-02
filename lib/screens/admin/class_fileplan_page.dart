@@ -441,7 +441,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
                       // Summary Card
                       Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -537,7 +537,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
                                   side: BorderSide(color: isSelected ? const Color(0xff2baac8) : const Color(0xffe4e6eb)),
                                 ),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -718,7 +718,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         child: Row(
           children: [
             const Icon(Icons.folder, size: 24, color: Color(0xfff59e0b)),
@@ -746,7 +746,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
       onTap: () => _openFolder(folder),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -767,7 +767,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         child: Row(
           children: [
             Text(_getFileIcon(file.type), style: const TextStyle(fontSize: 20)),
@@ -794,7 +794,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
       onTap: () => _openFileDetails(file),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -942,14 +942,14 @@ class _AddFileDialogState extends State<_AddFileDialog> {
             TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'File Name *', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _fileType,
+              initialValue: _fileType,
               onChanged: (value) => setState(() => _fileType = value ?? 'pdf'),
               decoration: const InputDecoration(labelText: 'File Type', border: OutlineInputBorder()),
               items: ['pdf', 'word', 'powerpoint', 'excel', 'image', 'video', 'link'].map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedFolder,
+              initialValue: _selectedFolder,
               onChanged: (value) => setState(() => _selectedFolder = value),
               decoration: const InputDecoration(labelText: 'Select Folder *', border: OutlineInputBorder()),
               items: widget.folders.map((folder) => DropdownMenuItem(value: folder.id, child: Text(folder.name))).toList(),
@@ -1127,7 +1127,7 @@ class _EditFileDialogState extends State<_EditFileDialog> {
             TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'File Name', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedFolder,
+              initialValue: _selectedFolder,
               onChanged: (value) => setState(() => _selectedFolder = value ?? ''),
               decoration: const InputDecoration(labelText: 'Folder', border: OutlineInputBorder()),
               items: widget.folders.map((folder) => DropdownMenuItem(value: folder.id, child: Text(folder.name))).toList(),

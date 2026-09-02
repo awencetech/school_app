@@ -568,6 +568,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.class_,
                               label: 'List\nClasses',
                               color: Color(0xFF16A34A),
+                              onTap: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.adminListClasses);
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.group_work,

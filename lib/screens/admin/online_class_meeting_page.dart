@@ -78,7 +78,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
   String _selectedDateFilter = 'All'; // Today, Tomorrow, This Week, All
   String _searchQuery = '';
   final _searchController = TextEditingController();
-  bool _showCopyFeedback = false;
+  final bool _showCopyFeedback = false;
 
   @override
   void initState() {
@@ -329,7 +329,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
                 // Class Info Card
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -484,7 +484,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -507,7 +507,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                       child: Text(meeting.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
                     ),
                   ],
@@ -640,9 +640,11 @@ class _AddMeetingDialogState extends State<_AddMeetingDialog> {
 
   Future<void> _selectTime(bool isStart) async {
     final picked = await showTimePicker(context: context, initialTime: isStart ? _startTime : _endTime);
-    if (picked != null) setState(() {
+    if (picked != null) {
+      setState(() {
       isStart ? _startTime = picked : _endTime = picked;
     });
+    }
   }
 
   bool _validateForm() {
@@ -705,7 +707,7 @@ class _AddMeetingDialogState extends State<_AddMeetingDialog> {
             TextField(controller: _linkController, decoration: const InputDecoration(labelText: 'Meeting Link', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               onChanged: (value) => setState(() => _status = value ?? 'Upcoming'),
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: ['Upcoming', 'Live Now', 'Completed', 'Cancelled'].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
@@ -778,9 +780,11 @@ class _EditMeetingDialogState extends State<_EditMeetingDialog> {
 
   Future<void> _selectTime(bool isStart) async {
     final picked = await showTimePicker(context: context, initialTime: isStart ? _startTime : _endTime);
-    if (picked != null) setState(() {
+    if (picked != null) {
+      setState(() {
       isStart ? _startTime = picked : _endTime = picked;
     });
+    }
   }
 
   bool _validateForm() {
@@ -842,7 +846,7 @@ class _EditMeetingDialogState extends State<_EditMeetingDialog> {
             TextField(controller: _linkController, decoration: const InputDecoration(labelText: 'Meeting Link', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               onChanged: (value) => setState(() => _status = value ?? 'Upcoming'),
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: ['Upcoming', 'Live Now', 'Completed', 'Cancelled'].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),

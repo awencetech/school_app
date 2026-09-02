@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../routes/app_routes.dart';
 
 /// A popup menu that appears above the User button in the bottom navigation.
 /// This widget positions itself above the bottom nav without covering the button.

@@ -57,6 +57,8 @@ import '../screens/admin/student_create_id_screen.dart';
 import '../screens/admin/staff_create_id_screen.dart';
 import '../screens/admin/admin_create_id_screen.dart';
 import '../screens/admin/create_group_screen.dart';
+import '../screens/admin/create_class_screen.dart';
+import '../screens/admin/empty_admin_option_page.dart';
 import '../screens/admin/grade_content_management_screen.dart';
 import '../screens/admin/content_edit_screen.dart';
 import '../screens/admin/school_content_management.dart';
@@ -299,6 +301,7 @@ class AppRouter {
         const LibraryEditPage(),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
+      AppRoutes.adminListClasses => const EmptyAdminOptionPage(title: 'Classes'),
       AppRoutes.adminStudentInfo => (() {
         final student = settings.arguments;
         return student is StudentRecord
@@ -323,6 +326,7 @@ class AppRouter {
       AppRoutes.adminAddStaff => const StaffCreateIdScreen(),
       AppRoutes.adminAddAdmin => const AdminCreateIdScreen(),
       AppRoutes.adminAddGroup => const CreateGroupScreen(),
+      AppRoutes.adminAddClasses => const CreateClassesScreen(),
       AppRoutes.adminMainEditGradePage => const GradeContentManagementScreen(),
       AppRoutes.adminMainEditContentEdit => const ContentEditScreen(),
       _

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/models/demography.dart';
+import 'package:school_app/models/demography.dart';
 
 void main() {
   test('demography model serializes grouped members', () {

@@ -143,6 +143,25 @@ void main() {
     expect(find.text('Add Student'), findsOneWidget);
   });
 
+  testWidgets('StudentManagementPage uses class/section dropdowns with a generated read-only student ID', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add Student'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(2));
+    expect(find.text('Class'), findsOneWidget);
+    expect(find.text('Section'), findsOneWidget);
+
+    final idField = find.widgetWithText(TextFormField, 'Student ID');
+    expect(idField, findsOneWidget);
+    final tf = tester.widget<TextFormField>(idField);
+    expect(tf.enabled, isFalse);
+    expect(tf.controller!.text, isNotEmpty);
+    expect(tf.controller!.text.startsWith('STU'), isTrue);
+  });
+
   testWidgets('StudentManagementPage shows saved students with edit and delete actions', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
     await tester.pumpAndSettle();

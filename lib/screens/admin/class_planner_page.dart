@@ -508,7 +508,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                       width: 56,
                       height: 70,
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.blueButton : (isToday ? Colors.blue.withOpacity(0.1) : Colors.grey[100]),
+                        color: isSelected ? AppColors.blueButton : (isToday ? Colors.blue.withValues(alpha: 0.1) : Colors.grey[100]),
                         borderRadius: BorderRadius.circular(12),
                         border: isToday && !isSelected ? Border.all(color: AppColors.blueButton, width: 1.5) : null,
                       ),
@@ -591,7 +591,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withOpacity(0.2))),
+      decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withValues(alpha: 0.2))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -656,7 +656,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xffE4E6EB)),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,7 +675,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                                  decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                                   child: Text('● NOW', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.red)),
                                 ),
                               ],
@@ -688,7 +688,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                       child: Text(plan.status, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
                     ),
                   ],
@@ -882,7 +882,7 @@ class _AddLessonPlanDialogState extends State<_AddLessonPlanDialog> {
             TextField(controller: _objectivesController, maxLines: 3, decoration: const InputDecoration(labelText: 'Learning Objectives (one per line)', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               onChanged: (value) => setState(() => _status = value ?? 'Planned'),
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: ['Planned', 'In Progress', 'Completed', 'Cancelled'].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
@@ -1033,7 +1033,7 @@ class _EditLessonPlanDialogState extends State<_EditLessonPlanDialog> {
             TextField(controller: _objectivesController, maxLines: 3, decoration: const InputDecoration(labelText: 'Learning Objectives (one per line)', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               onChanged: (value) => setState(() => _status = value ?? 'Planned'),
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: ['Planned', 'In Progress', 'Completed', 'Cancelled'].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),

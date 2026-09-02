@@ -94,7 +94,7 @@ async function ensureIndexes(db) {
     groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
     groupMessageCommentsCollection.createIndex({ groupId: 1, messageId: 1, createdAt: 1 }),
     classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
-    studentInfoCollection.createIndex({ studentId: 1 }, { sparse: true }),
+    studentInfoCollection.createIndex({ studentId: 1 }, { unique: true, sparse: true, collation: { locale: 'en', strength: 2 } }),
     studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
     schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
     eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
@@ -288,6 +288,34 @@ function sanitizeHandbookForResponse(doc) {
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function formatStudentIdSequence(value) {
+  const numeric = Number.parseInt(String(value), 10);
+  if (!Number.isFinite(numeric) || numeric < 1) return 'STU0001';
+  return `STU${String(numeric).padStart(4, '0')}`;
+}
+
+async function generateNextStudentId() {
+  if (!studentInfoCollection) return 'STU0001';
+
+  const docs = await studentInfoCollection
+    .find({ studentId: { $regex: /^STU\d+$/i } }, { projection: { studentId: 1, _id: 0 } })
+    .toArray();
+
+  let max = 0;
+  for (const document of docs) {
+    const match = String(document.studentId || '').match(/^STU(\d+)$/i);
+    if (!match) continue;
+    const numeric = Number.parseInt(match[1], 10);
+    if (Number.isFinite(numeric) && numeric > max) max = numeric;
+  }
+
+  return formatStudentIdSequence(max + 1);
 }
 
 function sanitizeGroupForResponse(doc) {
@@ -2828,6 +2856,17 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
+app.get('/api/students/next-id', async (req, res) => {
+  try {
+    await connectMongo();
+    const studentId = await generateNextStudentId();
+    return res.json({ studentId });
+  } catch (error) {
+    console.error('GET /api/students/next-id failed:', error);
+    return res.status(500).json({ message: 'Unable to generate student ID.' });
+  }
+});
+
 app.get('/api/students/:id', async (req, res) => {
   try {
     await connectMongo();
@@ -2849,7 +2888,9 @@ app.post('/api/students', async (req, res) => {
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
 
     const studentId = String(body.studentId).trim();
-    const existing = await studentInfoCollection.findOne({ studentId });
+    const existing = await studentInfoCollection.findOne({
+      studentId: { $regex: `^${escapeRegex(studentId)}$`, $options: 'i' }
+    });
     if (existing) return res.status(409).json({ message: 'This student ID is already assigned.' });
 
     const now = new Date().toISOString();
@@ -2869,7 +2910,17 @@ app.post('/api/students', async (req, res) => {
       createdAt: now,
       updatedAt: now,
     };
-    const result = await studentInfoCollection.insertOne(document);
+
+    let result;
+    try {
+      result = await studentInfoCollection.insertOne(document);
+    } catch (error) {
+      if (error && (error.code === 11000 || /duplicate key|duplicate/i.test(error.message))) {
+        return res.status(409).json({ message: 'This student ID is already assigned.' });
+      }
+      throw error;
+    }
+
     const saved = await studentInfoCollection.findOne({ _id: result.insertedId });
     return res.status(201).json(sanitizeStudentForResponse(saved));
   } catch (error) {
@@ -2888,7 +2939,10 @@ app.put('/api/students/:id', async (req, res) => {
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
 
     const nextStudentId = String(body.studentId).trim();
-    const existing = await studentInfoCollection.findOne({ studentId: nextStudentId, _id: { $ne: id } });
+    const existing = await studentInfoCollection.findOne({
+      studentId: { $regex: `^${escapeRegex(nextStudentId)}$`, $options: 'i' },
+      _id: { $ne: id },
+    });
     if (existing) return res.status(409).json({ message: 'This student ID is already assigned.' });
 
     const updates = {
@@ -2907,7 +2961,16 @@ app.put('/api/students/:id', async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    const result = await studentInfoCollection.updateOne({ _id: id }, { $set: updates });
+    let result;
+    try {
+      result = await studentInfoCollection.updateOne({ _id: id }, { $set: updates });
+    } catch (error) {
+      if (error && (error.code === 11000 || /duplicate key|duplicate/i.test(error.message))) {
+        return res.status(409).json({ message: 'This student ID is already assigned.' });
+      }
+      throw error;
+    }
+
     if (result.matchedCount === 0) return res.status(404).json({ message: 'Student not found.' });
     return res.json(sanitizeStudentForResponse(await studentInfoCollection.findOne({ _id: id })));
   } catch (error) {

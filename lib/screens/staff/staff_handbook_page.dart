@@ -26,12 +26,13 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
   Widget build(BuildContext context) => FutureBuilder<StaffHandbook>(
     future: _future,
     builder: (context, snapshot) {
-      if (snapshot.connectionState != ConnectionState.done)
+      if (snapshot.connectionState != ConnectionState.done) {
         return const _HandbookScaffold(
           title: 'Handbook & Info',
           child: Center(child: CircularProgressIndicator()),
         );
-      if (snapshot.hasError)
+      }
+      if (snapshot.hasError) {
         return _HandbookScaffold(
           title: 'Handbook & Info',
           child: Center(
@@ -41,6 +42,7 @@ class _StaffHandbookPageState extends State<StaffHandbookPage> {
             ),
           ),
         );
+      }
       final handbook = snapshot.data!;
       final cards = handbook.sections.isEmpty
           ? const <Widget>[
@@ -382,7 +384,7 @@ class _HandbookCard extends StatelessWidget {
                       imageUrl,
                       fit: BoxFit.contain,
                       width: double.infinity,
-                      errorBuilder: (_, __, ___) => const _HandbookIllustration(),
+                      errorBuilder: (_, _, _) => const _HandbookIllustration(),
                     ),
                   )
                 : const _HandbookIllustration(),

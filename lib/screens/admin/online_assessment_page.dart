@@ -145,7 +145,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
   String _statusFilter = 'All';
   String _subjectFilter = 'All';
   String _dateFilter = 'Any';
-  String _sortBy = 'Newest';
+  final String _sortBy = 'Newest';
   final List<Assessment> _assessments = _initialAssessments();
 
   @override
@@ -327,7 +327,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: tabs.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final item = tabs[index];
           final selected = _selectedView == item.$2;
@@ -383,7 +383,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: statusChips.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final label = statusChips[index];
               final selected = _statusFilter == label;
@@ -489,7 +489,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final assessment = items[index];
         return _AssessmentCard(assessment: assessment, onTap: () => _showAssessmentDetails(assessment));
@@ -585,8 +585,8 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
 
     final metrics = [
       _MetricTile(label: 'Total Assessments', value: '$totalAssessments'),
-      _MetricTile(label: 'Average Score', value: '${averageScore}%'),
-      _MetricTile(label: 'Average Completion Rate', value: '${completionRate}%'),
+      _MetricTile(label: 'Average Score', value: '$averageScore%'),
+      _MetricTile(label: 'Average Completion Rate', value: '$completionRate%'),
       _MetricTile(label: 'Pending Students', value: '$pending'),
       _MetricTile(label: 'Highest Score', value: '$highest%'),
       _MetricTile(label: 'Lowest Score', value: '$lowest%'),
@@ -1606,7 +1606,7 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: _type,
+                initialValue: _type,
                 items: questionTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                 onChanged: (value) => setState(() => _type = value ?? 'Multiple Choice'),
                 decoration: const InputDecoration(labelText: 'Question Type'),
@@ -1835,7 +1835,7 @@ class _CreateAssessmentDialogState extends State<_CreateAssessmentDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _status,
+                              initialValue: _status,
                               decoration: const InputDecoration(labelText: 'Status'),
                               items: ['Draft', 'Upcoming', 'Active', 'Completed', 'Cancelled']
                                   .map((option) => DropdownMenuItem(value: option, child: Text(option)))
@@ -1949,7 +1949,7 @@ class _ResultsSheet extends StatelessWidget {
     ];
 
     final average = students.where((student) => student.status == 'Completed' || student.status == 'Late').fold<int>(0, (sum, student) => sum + student.score) /
-        (students.where((student) => student.status == 'Completed' || student.status == 'Late').length == 0 ? 1 : students.where((student) => student.status == 'Completed' || student.status == 'Late').length);
+        (students.where((student) => student.status == 'Completed' || student.status == 'Late').isEmpty ? 1 : students.where((student) => student.status == 'Completed' || student.status == 'Late').length);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,

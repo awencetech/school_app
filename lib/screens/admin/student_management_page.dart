@@ -21,8 +21,11 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
   final StudentService _studentService = StudentService();
   bool _showStudentForm = false;
   bool _loading = true;
+  bool _submittingStudent = false;
   String? _error;
   int? _editingStudentIndex;
+  String? _selectedClass;
+  String? _selectedSection;
   final List<StudentRecord> _students = [];
   final Map<String, TextEditingController> _controllers = {
     'Name': TextEditingController(),
@@ -39,6 +42,9 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
   };
   Uint8List? _imageBytes;
   String _imageName = '';
+
+  static const List<String> _classOptions = ['6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+  static const List<String> _sectionOptions = ['A', 'B', 'C', 'D'];
 
   @override
   void initState() {
@@ -91,16 +97,41 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
     for (final controller in _controllers.values) {
       controller.clear();
     }
+    _selectedClass = null;
+    _selectedSection = null;
     _imageBytes = null;
     _imageName = '';
   }
 
-  void _openAddStudentForm() {
+  Future<void> _generateNextStudentId() async {
+    try {
+      final nextStudentId = await _studentService.getNextStudentId();
+      if (!mounted) return;
+      _controllers['Student ID']!.text = nextStudentId;
+    } catch (_) {
+      if (!mounted) return;
+      final existingIds = _students
+          .map((student) => student.studentId)
+          .where((value) => RegExp(r'^STU\d+$', caseSensitive: false).hasMatch(value))
+          .toList();
+      var maxNumber = 0;
+      for (final id in existingIds) {
+        final match = RegExp(r'^STU(\d+)$', caseSensitive: false).firstMatch(id);
+        if (match == null) continue;
+        final parsed = int.tryParse(match.group(1) ?? '0') ?? 0;
+        if (parsed > maxNumber) maxNumber = parsed;
+      }
+      _controllers['Student ID']!.text = 'STU${(maxNumber + 1).toString().padLeft(4, '0')}';
+    }
+  }
+
+  Future<void> _openAddStudentForm() async {
     setState(() {
       _editingStudentIndex = null;
       _showStudentForm = true;
       _resetStudentForm();
     });
+    await _generateNextStudentId();
   }
 
   void _editStudent(StudentRecord student) {
@@ -118,6 +149,8 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
     _controllers['About']!.text = student.about;
     _controllers['Hobbies & Interest']!.text = student.hobbies;
     _controllers['Role']!.text = student.role;
+    _selectedClass = _classOptions.contains(student.className) ? student.className : null;
+    _selectedSection = _sectionOptions.contains(student.section) ? student.section : null;
     _imageBytes = null;
     _imageName = '';
 
@@ -147,7 +180,17 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
   }
 
   Future<void> _saveStudent() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_submittingStudent || !_formKey.currentState!.validate()) return;
+
+    final studentId = _controllers['Student ID']!.text.trim();
+    if (studentId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Student ID is required.')),
+      );
+      return;
+    }
+
+    setState(() => _submittingStudent = true);
 
     final imageUrl = _imageBytes != null ? 'data:image/png;base64,${base64Encode(_imageBytes!)}' : '';
 
@@ -156,7 +199,7 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
       name: _controllers['Name']!.text.trim(),
       className: _controllers['Class']!.text.trim(),
       section: _controllers['Section']!.text.trim(),
-      studentId: _controllers['Student ID']!.text.trim(),
+      studentId: studentId,
       admissionNumber: _controllers['Admission Number']!.text.trim(),
       parentName: _controllers['Parent Name']!.text.trim(),
       mobileNumber: _controllers['Mobile Number']!.text.trim(),
@@ -188,9 +231,21 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
       );
     } catch (error) {
       if (!mounted) return;
+      final message = error.toString().replaceFirst('Exception: ', '');
+      if (message.contains('already assigned') || message.contains('already exists')) {
+        await _generateNextStudentId();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Student ID already exists. A new Student ID has been generated.')),
+        );
+        return;
+      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(message.isNotEmpty ? message : 'Unable to add student. Please try again.')),
       );
+    } finally {
+      if (mounted) setState(() => _submittingStudent = false);
     }
   }
 
@@ -209,6 +264,11 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
       'Hobbies & Interest',
       'Role',
     ];
+
+    final inputDecoration = const InputDecoration(
+      border: OutlineInputBorder(),
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -248,15 +308,53 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
                   for (final field in fields)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: TextFormField(
-                        controller: _controllers[field],
-                        validator: ['About', 'Hobbies & Interest', 'Address'].contains(field) ? null : _required,
-                        maxLines: ['About', 'Hobbies & Interest', 'Address'].contains(field) ? 4 : 1,
-                        decoration: InputDecoration(
-                          labelText: field,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
+                      child: field == 'Class'
+                          ? DropdownButtonFormField<String>(
+                              initialValue: _selectedClass,
+                              isExpanded: true,
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              hint: const Text('Class'),
+                              decoration: inputDecoration.copyWith(hintText: 'Class'),
+                              validator: (value) => (value == null || value.isEmpty) ? 'This field is required.' : null,
+                              items: _classOptions
+                                  .map((item) => DropdownMenuItem<String>(value: item, child: Text(item)))
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedClass = value);
+                                _controllers['Class']!.text = value ?? '';
+                              },
+                            )
+                          : field == 'Section'
+                              ? DropdownButtonFormField<String>(
+                                  initialValue: _selectedSection,
+                                  isExpanded: true,
+                                  icon: const Icon(Icons.keyboard_arrow_down),
+                                  hint: const Text('Section'),
+                                  decoration: inputDecoration.copyWith(hintText: 'Section'),
+                                  validator: (value) => (value == null || value.isEmpty) ? 'This field is required.' : null,
+                                  items: _sectionOptions
+                                      .map((item) => DropdownMenuItem<String>(value: item, child: Text(item)))
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() => _selectedSection = value);
+                                    _controllers['Section']!.text = value ?? '';
+                                  },
+                                )
+                              : field == 'Student ID'
+                                  ? TextFormField(
+                                      controller: _controllers[field],
+                                      enabled: false,
+                                      showCursor: false,
+                                      enableInteractiveSelection: false,
+                                      validator: _required,
+                                      decoration: inputDecoration.copyWith(hintText: 'Student ID'),
+                                    )
+                                  : TextFormField(
+                                      controller: _controllers[field],
+                                      validator: ['About', 'Hobbies & Interest', 'Address'].contains(field) ? null : _required,
+                                      maxLines: ['About', 'Hobbies & Interest', 'Address'].contains(field) ? 4 : 1,
+                                      decoration: inputDecoration.copyWith(labelText: field),
+                                    ),
                     ),
                   const SizedBox(height: 4),
                   Row(
@@ -293,8 +391,10 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
                   ],
                   const SizedBox(height: 20),
                   FilledButton(
-                    onPressed: _saveStudent,
-                    child: const Text('Save Student'),
+                    onPressed: _submittingStudent ? null : _saveStudent,
+                    child: _submittingStudent
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Save Student'),
                   ),
                 ],
               ),

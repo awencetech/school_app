@@ -121,6 +121,30 @@ class _AddOptionsState extends State<AddOptions> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
+            const Text('5. Create Classes'),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pushNamed(AppRoutes.adminAddClasses);
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.class_outlined, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Create Classes'),
+                ],
+              ),
+            ),
           ],
         ),
       ),

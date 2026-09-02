@@ -43,8 +43,9 @@ class StaffHandbookService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(handbook.toJson()),
     ).timeout(const Duration(seconds: 20));
-    if (response.statusCode != 200 && response.statusCode != 201)
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception(_message(response));
+    }
     return StaffHandbook.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
@@ -60,11 +61,13 @@ class StaffHandbookService {
     );
     final response = await request.send().timeout(const Duration(seconds: 30));
     final body = await response.stream.bytesToString();
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception(_messageBody(response.statusCode, body));
+    }
     final url = (jsonDecode(body) as Map<String, dynamic>)['url']?.toString();
-    if (url == null || url.isEmpty)
+    if (url == null || url.isEmpty) {
       throw Exception('The uploaded document URL was missing.');
+    }
     return url
         .replaceAll('http://localhost:3001', _productionBaseUrl)
         .replaceAll('http://10.0.2.2:3001', _productionBaseUrl);
@@ -75,8 +78,9 @@ class StaffHandbookService {
   String _messageBody(int statusCode, String body) {
     try {
       final value = jsonDecode(body);
-      if (value is Map && value['message'] != null)
+      if (value is Map && value['message'] != null) {
         return value['message'].toString();
+      }
     } catch (_) {}
     return 'Handbook request failed ($statusCode).';
   }

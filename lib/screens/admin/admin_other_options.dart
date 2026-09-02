@@ -31,7 +31,7 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                 'icon': Icons.dashboard_outlined,
               },
               {
-                'label': 'Add',
+                'label': 'Add IDs',
                 'icon': Icons.add_circle_outline,
               },
               {
@@ -41,10 +41,6 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
               {
                 'label': 'Student',
                 'icon': Icons.people_outline,
-              },
-              {
-                'label': 'List Students',
-                'icon': Icons.list_outlined,
               },
               {
                 'label': 'Staff',
@@ -77,10 +73,6 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                         AppRoutes.adminStudentOptions,
                       );
                     } else if (index == 4) {
-                      Navigator.of(context).pushNamed(
-                        AppRoutes.adminListStudents,
-                      );
-                    } else if (index == 5) {
                       Navigator.of(context).pushNamed(
                         AppRoutes.adminStaffOptions,
                       );

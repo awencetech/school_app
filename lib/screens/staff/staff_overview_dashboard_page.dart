@@ -158,13 +158,21 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
             return bDate.compareTo(aDate);
           });
 
-        final newsLines = publishedNews.isEmpty
-            ? const ['No school news available.']
-            : publishedNews.map((news) {
+        final newsCards = publishedNews.isEmpty
+            ? const [
+                _NewsDataCard(
+                  title: 'No school news available',
+                  message: 'There are no published news items at the moment.',
+                ),
+              ]
+            : publishedNews.take(3).map((news) {
                 final date = news.date != null
                     ? DateFormat('dd-MMM-yy').format(news.date!)
                     : 'Date n/a';
-                return '$date - ${news.title}';
+                return _NewsDataCard(
+                  title: '$date - ${news.title}',
+                  message: news.news,
+                );
               }).toList();
 
         return Column(
@@ -186,45 +194,40 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
               ],
             ),
             const SizedBox(height: 8),
-            _Section(
-              title: 'News',
-              lines: snapshot.connectionState == ConnectionState.waiting
-                  ? const ['Loading school news...']
-                  : newsLines,
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xffdddddd)),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    color: const Color(0xffeeeeee),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: const Text(
+                      'News',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff222222),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: snapshot.connectionState == ConnectionState.waiting
+                        ? const Text(
+                            'Loading school news...',
+                            style: TextStyle(fontSize: 8, color: Color(0xff355c8a)),
+                          )
+                        : Column(
+                            children: newsCards,
+                          ),
+                  ),
+                ],
+              ),
             ),
-            if (publishedNews.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              ...publishedNews.take(3).map((news) => Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xffdddddd)),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${news.date != null ? DateFormat('dd-MMM-yy').format(news.date!) : 'Date n/a'} - ${news.title}',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff222222),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          news.news,
-                          style: const TextStyle(
-                            fontSize: 8,
-                            height: 1.35,
-                            color: Color(0xff355c8a),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
           ],
         );
       },
@@ -283,6 +286,49 @@ class _AdminDashboardContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _NewsDataCard extends StatelessWidget {
+  const _NewsDataCard({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fbff),
+        border: Border.all(color: const Color(0xffd7e3f2)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: Color(0xff22324a),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 8,
+              height: 1.35,
+              color: Color(0xff355c8a),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

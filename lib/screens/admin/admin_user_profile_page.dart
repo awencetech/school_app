@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../theme/app_colors.dart';
 
 /// Model for user profile data
@@ -56,6 +58,9 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
   late TextEditingController _phoneController;
   late TextEditingController _usernameController;
 
+  // Image selection fields
+  Uint8List? _selectedImageBytes;
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +98,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
       _emailController.text = _profileData.email;
       _phoneController.text = _profileData.phoneNumber;
       _usernameController.text = _profileData.username;
+      _selectedImageBytes = null;
     }
     setState(() {
       _isEditing = !_isEditing;
@@ -132,6 +138,8 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
         username: _usernameController.text.trim(),
       );
       _isEditing = false;
+      // Clear the selected image bytes after saving
+      _selectedImageBytes = null;
     });
 
     _showSuccessDialog('Profile updated successfully');
@@ -162,6 +170,46 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
     );
   }
 
+  Future<void> _pickImage() async {
+    try {
+      // ignore: deprecated_member_use
+      final result = await FilePicker.pickFiles(type: FileType.image);
+
+      if (result.isEmpty) {
+        return;
+      }
+
+      final file = result.first;
+
+      // Read file bytes for display
+      final bytes = await file.readAsBytes();
+
+      // Validate file size (limit to 5MB)
+      if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+        if (mounted) {
+          _showErrorDialog('Image size must be less than 5MB');
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _selectedImageBytes = bytes;
+          // Update the profile photo URL with a marker for display
+          // In a real app, you would upload this to a server
+          _profileData = _profileData.copyWith(
+            profilePhotoUrl: 'selected',
+          );
+        });
+        _showSuccessDialog('Image selected successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Error picking image: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,29 +238,43 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                       border: Border.all(color: AppColors.border, width: 2),
                       borderRadius: BorderRadius.circular(60),
                     ),
-                    child: _profileData.profilePhotoUrl != null
+                    child: _selectedImageBytes != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(60),
-                            child: Image.network(
-                              _profileData.profilePhotoUrl!,
+                            child: Image.memory(
+                              _selectedImageBytes!,
                               fit: BoxFit.cover,
                             ),
                           )
-                        : Center(
-                            child: Icon(
-                              Icons.person,
-                              size: 60,
-                              color: AppColors.hintText,
-                            ),
-                          ),
+                        : _profileData.profilePhotoUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(60),
+                                child: Image.network(
+                                  _profileData.profilePhotoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Center(
+                                      child: Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: AppColors.hintText,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              )
+                            : Center(
+                                child: Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: AppColors.hintText,
+                                ),
+                              ),
                   ),
                   const SizedBox(height: 12),
                   if (_isEditing)
                     ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Implement image picker
-                        _showErrorDialog('Image upload feature coming soon');
-                      },
+                      onPressed: _pickImage,
                       icon: const Icon(Icons.camera_alt, size: 16),
                       label: const Text('Change Photo'),
                       style: ElevatedButton.styleFrom(

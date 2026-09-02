@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../routes/app_routes.dart';
 import '../services/app_state.dart';
+import '../services/user_menu_state.dart';
 
 /// Shared footer navigation for the admin dashboard section only.
+/// Manages the User button popup menu with proper toggle behavior.
 class AdminBottomNavigationBar extends StatelessWidget {
   const AdminBottomNavigationBar({
     super.key,
@@ -37,7 +39,15 @@ class AdminBottomNavigationBar extends StatelessWidget {
       iconSize: 22,
       currentIndex: currentIndex,
       onTap: (index) async {
+        // User button: toggle menu instead of navigating
+        if (index == 1) {
+          context.read<UserMenuState>().toggle();
+          return;
+        }
+
+        // Logout button
         if (index == 4) {
+          context.read<UserMenuState>().close();
           await context.read<AppState>().logout();
           if (!context.mounted) return;
           Navigator.of(context).pushNamedAndRemoveUntil(
@@ -46,6 +56,9 @@ class AdminBottomNavigationBar extends StatelessWidget {
           );
           return;
         }
+
+        // Other buttons
+        context.read<UserMenuState>().close();
         onItemSelected(index);
       },
       items: const [

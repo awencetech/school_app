@@ -98,6 +98,8 @@ import '../screens/admin/leave_approval_page.dart';
 import '../screens/admin/medical_event_list_page.dart';
 import '../screens/admin/one_on_one_meeting_page.dart';
 import '../screens/admin/pick_drop_entry_page.dart';
+import '../screens/admin/admin_user_profile_page.dart';
+import '../screens/admin/admin_change_password_page.dart';
 import '../utils/slug_generator.dart';
 import 'app_routes.dart';
 
@@ -496,6 +498,8 @@ class AppRouter {
         return AdminSectionPage(title: title);
       })(),
       AppRoutes.adminSplashScreenEditor => const SplashScreenEditor(),
+      AppRoutes.adminUserProfile => const AdminUserProfilePage(),
+      AppRoutes.adminChangePassword => const AdminChangePasswordPage(),
       AppRoutes.supportQuery => const SupportQueryScreen(),
       AppRoutes.privacyPolicy => const PrivacyPolicyScreen(),
       _ => const MainShell(),

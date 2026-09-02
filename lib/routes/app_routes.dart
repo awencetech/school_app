@@ -140,6 +140,8 @@ class AppRoutes {
   static const adminSection = '/admin/section';
   static const adminSchoolSettings = adminMainEditSchoolSettings;
   static const adminSchoolContentManagement = adminMainEditSchoolContent;
+  static const adminUserProfile = '/admin/user-profile';
+  static const adminChangePassword = '/admin/change-password';
   static const supportQuery = '/support-query';
   static const privacyPolicy = '/privacy-policy';
 }

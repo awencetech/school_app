@@ -13,14 +13,15 @@ import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
 import '../../services/social_url_service.dart';
 import '../../services/app_state.dart';
+import '../../services/user_menu_state.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
-import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
+import '../../widgets/user_action_menu.dart';
 import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
 import '../staff/staff_campaigns_page.dart';
@@ -143,43 +144,53 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.topBar,
-        centerTitle: true,
-        title: Text(
-          context.watch<SchoolConfigService>().schoolName,
-          style: AppTextStyles.appTitle,
+    return PopScope(
+      canPop: !context.watch<UserMenuState>().isOpen,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && context.read<UserMenuState>().isOpen) {
+          context.read<UserMenuState>().close();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        appBar: AppBar(
+          backgroundColor: AppColors.topBar,
+          centerTitle: true,
+          title: Text(
+            context.watch<SchoolConfigService>().schoolName,
+            style: AppTextStyles.appTitle,
+          ),
+          automaticallyImplyLeading: false,
         ),
-        automaticallyImplyLeading: false,
-      ),
-        body: _selectedBottomIndex == 2
-          ? const HelpMenuScreen()
-          : _selectedBottomIndex == 3
-          ? const SupportScreen()
-          : FutureBuilder<SchoolInfo>(
-              future: DummyDataService.getSchoolInfo(),
-              builder: (context, snapshot) {
-                final config = context.watch<SchoolConfigService>();
-                final schoolName = config.schoolName.isNotEmpty
-                    ? config.schoolName
-                    : snapshot.data?.name ?? 'SCHOOL NAME';
-                final welcomeText = config.welcome.isNotEmpty
-                    ? config.welcome
-                    : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
+        body: Stack(
+          children: [
+            // Main body content
+            _selectedBottomIndex == 2
+              ? const HelpMenuScreen()
+              : _selectedBottomIndex == 3
+              ? const SupportScreen()
+              : FutureBuilder<SchoolInfo>(
+                  future: DummyDataService.getSchoolInfo(),
+                  builder: (context, snapshot) {
+                    final config = context.watch<SchoolConfigService>();
+                    final schoolName = config.schoolName.isNotEmpty
+                        ? config.schoolName
+                        : snapshot.data?.name ?? 'SCHOOL NAME';
+                    final welcomeText = config.welcome.isNotEmpty
+                        ? config.welcome
+                        : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12, bottom: 12),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 220,
-                          child: () {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12, bottom: 12),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 220,
+                              child: () {
                             final posterSource = config.posterDisplaySource;
                             if (posterSource != null &&
                                 posterSource.isNotEmpty) {
@@ -611,40 +622,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 );
               },
             ),
-      bottomNavigationBar: AdminBottomNavigationBar(
-        currentIndex: _selectedBottomIndex,
-        onItemSelected: (index) async {
-          if (index == 1 && context.read<AppState>().isLoggedIn) {
-            showUserActionPopup(context);
-            return;
-          }
-
-          switch (index) {
-            case 0:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.adminDashboard,
-                (route) => false,
-              );
-              break;
-            case 1:
-              Navigator.of(context).pushNamed(AppRoutes.adminDashboard);
-              break;
-            case 2:
-              setState(() => _selectedBottomIndex = 2);
-              break;
-            case 3:
-              setState(() => _selectedBottomIndex = 3);
-              break;
-            case 4:
-              await context.read<AppState>().logout();
-              if (!context.mounted) return;
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.main,
-                (route) => false,
-              );
-              break;
-          }
-        },
+            
+            // Transparent overlay to close menu when tapping outside
+            if (context.watch<UserMenuState>().isOpen)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => context.read<UserMenuState>().close(),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            
+            // User action menu (appears above the navigation bar)
+            if (context.watch<UserMenuState>().isOpen)
+              UserActionMenu(
+                onProfileTap: () async {
+                  context.read<UserMenuState>().close();
+                  if (!mounted) return;
+                  await Navigator.of(context).pushNamed(AppRoutes.adminUserProfile);
+                },
+                onPasswordTap: () async {
+                  context.read<UserMenuState>().close();
+                  if (!mounted) return;
+                  await Navigator.of(context).pushNamed(AppRoutes.adminChangePassword);
+                },
+              ),
+          ],
+        ),
+        bottomNavigationBar: AdminBottomNavigationBar(
+          currentIndex: _selectedBottomIndex,
+          onItemSelected: (index) async {
+            switch (index) {
+              case 0:
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  AppRoutes.adminDashboard,
+                  (route) => false,
+                );
+                break;
+              case 2:
+                setState(() => _selectedBottomIndex = 2);
+                break;
+              case 3:
+                setState(() => _selectedBottomIndex = 3);
+                break;
+            }
+          },
+        ),
       ),
     );
   }

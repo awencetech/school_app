@@ -9,6 +9,7 @@ import 'services/app_state.dart';
 import 'services/app_route_observer.dart';
 import 'services/school_config_service.dart';
 import 'services/splash_config_service.dart';
+import 'services/user_menu_state.dart';
 import 'theme/app_theme.dart';
 
 /// Root widget for the School App.
@@ -22,6 +23,7 @@ class SchoolApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppState()),
         ChangeNotifierProvider(create: (_) => SplashConfigService()),
         ChangeNotifierProvider(create: (_) => SchoolConfigService()),
+        ChangeNotifierProvider(create: (_) => UserMenuState()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

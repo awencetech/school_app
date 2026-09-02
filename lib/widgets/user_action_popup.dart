@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../routes/app_routes.dart';
 
 Future<void> showUserActionPopup(BuildContext context) {
   return showDialog<void>(
@@ -40,7 +41,10 @@ Future<void> showUserActionPopup(BuildContext context) {
                       icon: Icons.person,
                       label: 'Update User\nProfile',
                       iconColor: const Color(0xFFD9007F),
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed(AppRoutes.adminUserProfile);
+                      },
                     ),
                   ),
                   Expanded(
@@ -48,7 +52,10 @@ Future<void> showUserActionPopup(BuildContext context) {
                       icon: Icons.lock,
                       label: 'Change\nPassword',
                       iconColor: const Color(0xFFC99700),
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed(AppRoutes.adminChangePassword);
+                      },
                     ),
                   ),
                 ],

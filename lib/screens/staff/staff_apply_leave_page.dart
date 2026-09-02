@@ -18,7 +18,7 @@ class StaffApplyLeavePage extends StatelessWidget {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
-        title: const Text('SAMUNI', style: TextStyle(fontSize: 15)),
+        title: const Text('Staff Leave', style: TextStyle(fontSize: 15)),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -72,7 +72,7 @@ class _PageHeading extends StatelessWidget {
 }
 
 class _LeaveLinks extends StatelessWidget {
-  const _LeaveLinks({
+  _LeaveLinks({
     required this.onLeaveRequest,
     required this.onAdjustLeave,
   });

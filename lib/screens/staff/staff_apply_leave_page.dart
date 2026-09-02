@@ -30,7 +30,7 @@ class StaffApplyLeavePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _PageHeading('Leave Request'),
+                  const _PageHeading('Staff Leave'),
                   const SizedBox(height: 8),
                   _LeaveLinks(
                     onLeaveRequest: () => showDialog<void>(
@@ -40,11 +40,6 @@ class StaffApplyLeavePage extends StatelessWidget {
                     onAdjustLeave: () => showDialog<void>(
                       context: context,
                       builder: (_) => const _AdjustLeaveDialog(),
-                    ),
-                    onManageLeave: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const _ManageLeavePage(),
-                      ),
                     ),
                   ),
                   SizedBox(height: 12),
@@ -80,12 +75,10 @@ class _LeaveLinks extends StatelessWidget {
   const _LeaveLinks({
     required this.onLeaveRequest,
     required this.onAdjustLeave,
-    required this.onManageLeave,
   });
 
   final VoidCallback onLeaveRequest;
   final VoidCallback onAdjustLeave;
-  final VoidCallback onManageLeave;
 
   @override
   Widget build(BuildContext context) => Align(
@@ -97,7 +90,6 @@ class _LeaveLinks extends StatelessWidget {
         children: [
           _ActionLink('Leave Request', onLeaveRequest),
           _ActionLink('Adjust Leave', onAdjustLeave),
-          _ActionLink('Manage Leave', onManageLeave),
         ],
       ),
     ),
@@ -241,91 +233,6 @@ class _LeaveFormDialog extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ManageLeavePage extends StatelessWidget {
-  const _ManageLeavePage();
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.white,
-    body: SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 26, 12, 24),
-              color: Colors.white,
-              child: const Column(
-                children: [
-                  Text(
-                    'Employee Leave\nManagement',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Menu',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF8B0000)),
-                  ),
-                ],
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(6, 10, 6, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ManagementLink(
-                    'Manage Leave',
-                    'Define different types of Leaves/holidays for Employees and allocate them',
-                  ),
-                  _ManagementLink(
-                    'Approve Leave',
-                    'Approve Holidays of Employees',
-                  ),
-                  _ManagementLink('Leave Report', 'Report for Employees'),
-                  _ManagementLink(
-                    'Entitlement Report',
-                    'Report of Employee entitlement for leaves',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-class _ManagementLink extends StatelessWidget {
-  const _ManagementLink(this.title, this.description);
-  final String title;
-  final String description;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF087FF5),
-          ),
-        ),
-        Text(description, style: const TextStyle(fontSize: 10)),
-      ],
-    ),
-  );
 }
 
 class _Entitlements extends StatelessWidget {

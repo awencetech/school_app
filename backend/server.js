@@ -176,7 +176,7 @@ async function connectMongo() {
     lessonPlansCollection = db.collection('lesson-plans');
     schoolNewsCollection = db.collection('schoolnews');
     medicalEventCollection = db.collection('medical-event');
-    staffLeaveCollection = db.collection('staff-leave');
+    staffLeaveCollection = db.collection('emp-leave');
     staffLeaveEntitlementsCollection = db.collection('staff-leave-entitlements');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
@@ -3182,7 +3182,7 @@ app.post('/api/announcement/:id/remind', async (req, res) => {
 });
 
 // Staff information CRUD
-app.post('/api/staff-leave', async (req, res) => {
+app.post('/api/emp-leave', async (req, res) => {
   try {
     await connectMongo();
     const body = req.body || {};
@@ -3214,12 +3214,12 @@ app.post('/api/staff-leave', async (req, res) => {
     const result = await staffLeaveCollection.insertOne(document);
     return res.status(201).json({ success: true, message: 'Leave request submitted successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: result.insertedId })) });
   } catch (error) {
-    console.error('POST /api/staff-leave failed:', error);
+    console.error('POST /api/emp-leave failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to submit leave request.' });
   }
 });
 
-app.get('/api/staff-leave/:staffId/entitlements', async (req, res) => {
+app.get('/api/emp-leave/:staffId/entitlements', async (req, res) => {
   try {
     await connectMongo();
     const year = Number(req.query.year);
@@ -3233,18 +3233,18 @@ app.get('/api/staff-leave/:staffId/entitlements', async (req, res) => {
   }
 });
 
-app.get('/api/staff-leave/:staffId', async (req, res) => {
+app.get('/api/emp-leave/employee/:staffId', async (req, res) => {
   try {
     await connectMongo();
     const items = await staffLeaveCollection.find({ staffId: String(req.params.staffId) }).sort({ createdAt: -1, _id: -1 }).toArray();
     return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
   } catch (error) {
-    console.error('GET /api/staff-leave/:staffId failed:', error);
+    console.error('GET /api/emp-leave/employee/:staffId failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to load leave requests.' });
   }
 });
 
-app.post('/api/staff-leave/adjust', async (req, res) => {
+app.post('/api/emp-leave/adjust', async (req, res) => {
   try {
     await connectMongo();
     const body = req.body || {};
@@ -3265,7 +3265,7 @@ app.post('/api/staff-leave/adjust', async (req, res) => {
   }
 });
 
-app.put('/api/staff-leave/:id/cancel', async (req, res) => {
+app.put('/api/emp-leave/:id/cancel', async (req, res) => {
   try {
     await connectMongo();
     const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Cancelled', updatedAt: new Date() } });
@@ -3275,6 +3275,45 @@ app.put('/api/staff-leave/:id/cancel', async (req, res) => {
     console.error('PUT /api/staff-leave/:id/cancel failed:', error);
     return res.status(400).json({ message: 'Unable to cancel leave request.' });
   }
+});
+
+app.get('/api/emp-leave', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await staffLeaveCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
+  } catch (error) {
+    console.error('GET /api/emp-leave failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load leave requests.' });
+  }
+});
+
+app.get('/api/emp-leave/history', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await staffLeaveCollection.find({ status: { $in: ['Approved', 'Rejected'] } }).sort({ updatedAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Unable to load leave history.' });
+  }
+});
+
+app.put('/api/emp-leave/:id/approve', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Approved', approvedBy: req.body?.approvedBy || null, approvedOn: new Date(), updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Pending leave request not found.' });
+    return res.json({ success: true, message: 'Leave approved successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: new ObjectId(req.params.id) })) });
+  } catch (error) { return res.status(400).json({ success: false, message: 'Unable to approve leave request.' }); }
+});
+
+app.put('/api/emp-leave/:id/reject', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Rejected', rejectedBy: req.body?.rejectedBy || null, rejectedOn: new Date(), rejectionReason: String(req.body?.reason || '').trim(), updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Pending leave request not found.' });
+    return res.json({ success: true, message: 'Leave rejected successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: new ObjectId(req.params.id) })) });
+  } catch (error) { return res.status(400).json({ success: false, message: 'Unable to reject leave request.' }); }
 });
 
 app.get('/api/staff', async (req, res) => {

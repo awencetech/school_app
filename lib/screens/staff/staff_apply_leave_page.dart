@@ -85,7 +85,7 @@ class _ApplyLeaveDialog extends StatefulWidget {
 class _ApplyLeaveDialogState extends State<_ApplyLeaveDialog> {
   final _key = GlobalKey<FormState>(); final _reason = TextEditingController(); final _service = StaffLeaveService();
   String? _type; int? _year; DateTime? _start; DateTime? _end; bool _begin = false; bool _endHalf = false; bool _saving = false;
-  List<String> get _types => widget.entitlements.map((item) => item.leaveType).where((item) => item.isNotEmpty).toSet().toList();
+  List<String> get _types => _availableLeaveTypes(widget.entitlements);
   List<int> get _years { final values = widget.entitlements.map((item) => item.year).where((item) => item > 0).toSet(); values.add(DateTime.now().year); return values.toList()..sort(); }
   double get _days { if (_start == null || _end == null || _end!.isBefore(_start!)) return 0; var value = _end!.difference(_start!).inDays + 1.0; if (_begin) value -= .5; if (_endHalf) value -= .5; return value; }
   Future<void> _pick(bool start) async { final picked = await showDatePicker(context: context, initialDate: (start ? _start : _end) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100)); if (picked != null && mounted) setState(() { if (start) _start = picked; else _end = picked; }); }
@@ -120,7 +120,7 @@ class _ApplyLeaveDialogState extends State<_ApplyLeaveDialog> {
 class _AdjustLeaveDialog extends StatefulWidget { const _AdjustLeaveDialog({required this.entitlements}); final List<StaffLeaveEntitlement> entitlements; @override State<_AdjustLeaveDialog> createState() => _AdjustLeaveDialogState(); }
 class _AdjustLeaveDialogState extends State<_AdjustLeaveDialog> {
   final _service = StaffLeaveService(); final _days = TextEditingController(); String? _type; int? _year; bool _saving = false;
-  List<String> get _types => widget.entitlements.map((item) => item.leaveType).where((item) => item.isNotEmpty).toSet().toList();
+  List<String> get _types => _availableLeaveTypes(widget.entitlements);
   List<int> get _years { final values = widget.entitlements.map((item) => item.year).where((item) => item > 0).toSet(); values.add(DateTime.now().year); return values.toList()..sort(); }
   Future<void> _add() async { final days = double.tryParse(_days.text.trim()); if (_type == null || _year == null || days == null || days <= 0) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select a leave type and enter positive days.'))); return; } setState(() => _saving = true); try { final state = context.read<AppState>(); await _service.adjust({'staffId': state.currentUserId, 'leaveType': _type, 'year': _year, 'days': days}); if (mounted) Navigator.pop(context, true); } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString()))); } finally { if (mounted) setState(() => _saving = false); } }
   @override
@@ -189,3 +189,13 @@ class _StateBox extends StatelessWidget {
 }
 String _date(DateTime? value) => value == null ? 'Not available' : '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
 String _number(double value) => value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);
+
+List<String> _availableLeaveTypes(List<StaffLeaveEntitlement> entitlements) {
+  final types = <String>{'ML (Medical Leave)', 'Other'};
+  types.addAll(
+    entitlements
+        .map((item) => item.leaveType.trim())
+        .where((item) => item.isNotEmpty),
+  );
+  return types.toList();
+}

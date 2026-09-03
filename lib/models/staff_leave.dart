@@ -1,6 +1,8 @@
 class StaffLeaveRequest {
-  const StaffLeaveRequest({this.id, required this.leaveType, required this.year, required this.startDate, required this.endDate, required this.beginHalfDay, required this.endHalfDay, required this.effectiveDays, required this.reason, required this.status, this.createdAt});
+  const StaffLeaveRequest({this.id, this.staffId = '', this.staffName = '', required this.leaveType, required this.year, required this.startDate, required this.endDate, required this.beginHalfDay, required this.endHalfDay, required this.effectiveDays, required this.reason, required this.status, this.createdAt});
   final String? id;
+  final String staffId;
+  final String staffName;
   final String leaveType;
   final int year;
   final DateTime startDate;
@@ -13,7 +15,7 @@ class StaffLeaveRequest {
   final DateTime? createdAt;
 
   factory StaffLeaveRequest.fromJson(Map<String, dynamic> json) => StaffLeaveRequest(
-    id: json['id']?.toString() ?? json['_id']?.toString(), leaveType: json['leaveType']?.toString() ?? '', year: int.tryParse(json['applicableYear'].toString()) ?? 0,
+    id: json['id']?.toString() ?? json['_id']?.toString(), staffId: json['staffId']?.toString() ?? '', staffName: json['staffName']?.toString() ?? '', leaveType: json['leaveType']?.toString() ?? '', year: int.tryParse(json['applicableYear'].toString()) ?? 0,
     startDate: DateTime.tryParse(json['startDate'].toString()) ?? DateTime(1970), endDate: DateTime.tryParse(json['endDate'].toString()) ?? DateTime(1970),
     beginHalfDay: json['beginHalfDay'] == true, endHalfDay: json['endHalfDay'] == true, effectiveDays: double.tryParse(json['effectiveDays'].toString()) ?? 0,
     reason: json['reason']?.toString() ?? '', status: json['status']?.toString() ?? 'Pending', createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),

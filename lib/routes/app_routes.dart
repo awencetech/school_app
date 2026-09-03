@@ -42,7 +42,8 @@ class AppRoutes {
     static const adminEmployeeAttendance =
             '$adminDashboard/other-options/employee-attendance';
         static const adminEmpLeaveApproval =
-            '$adminDashboard/other-options/emp-leave approval';
+            '$adminDashboard/other-options/emp-leave-approval';
+    static const adminEmpLeaveApprovalHistory = '$adminEmpLeaveApproval/history';
     static const adminOneOnOne = '$adminDashboard/other-options/one-on-one';
     static const adminGateRegister = '$adminDashboard/other-options/gate-register';
   static const adminMainEdit = '$adminOtherOptions/main-edit';

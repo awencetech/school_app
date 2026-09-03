@@ -62,6 +62,8 @@ import '../screens/admin/admin_create_id_screen.dart';
 import '../screens/admin/create_group_screen.dart';
 import '../screens/admin/create_class_screen.dart';
 import '../screens/admin/empty_admin_option_page.dart';
+import '../screens/admin/emp_leave_approval_page.dart';
+import '../screens/admin/emp_leave_history_page.dart';
 import '../screens/admin/grade_content_management_screen.dart';
 import '../screens/admin/content_edit_screen.dart';
 import '../screens/admin/school_content_management.dart';
@@ -271,9 +273,8 @@ class AppRouter {
       AppRoutes.adminEmployeeAttendance => const EmptyAdminOptionPage(
         title: 'Employee Attendance',
       ),
-      AppRoutes.adminEmpLeaveApproval => const EmptyAdminOptionPage(
-        title: 'Emp Leave Approval',
-      ),
+      AppRoutes.adminEmpLeaveApproval => const EmpLeaveApprovalPage(),
+      AppRoutes.adminEmpLeaveApprovalHistory => const EmpLeaveHistoryPage(),
       AppRoutes.adminOneOnOne => const EmptyAdminOptionPage(
         title: 'One on One',
       ),

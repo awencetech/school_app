@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/group_event.dart';
 import 'group_service.dart';
+import 'auth_headers.dart';
 
 class GroupEventService {
   GroupEventService({String? baseUrl})
@@ -75,7 +76,7 @@ class GroupEventService {
     final uri = Uri.parse(
       '$_baseUrl/api/groups/${Uri.encodeComponent(event.groupId)}/events/${Uri.encodeComponent(event.id)}',
     );
-    final response = await http.delete(uri).timeout(const Duration(seconds: 15));
+    final response = await http.delete(uri, headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 15));
     if (response.statusCode != 204) {
       throw ApiException(response.statusCode, 'Unable to delete event.', uri.toString());
     }
@@ -89,9 +90,9 @@ class GroupEventService {
   ) async {
     final encodedBody = jsonEncode(body);
     final response = method == 'POST'
-        ? await http.post(uri, headers: {'Content-Type': 'application/json'}, body: encodedBody)
+        ? await http.post(uri, headers: await AuthHeaders.json(), body: encodedBody)
             .timeout(const Duration(seconds: 15))
-        : await http.put(uri, headers: {'Content-Type': 'application/json'}, body: encodedBody)
+        : await http.put(uri, headers: await AuthHeaders.json(), body: encodedBody)
             .timeout(const Duration(seconds: 15));
     if (response.statusCode != expectedStatus) {
       throw ApiException(

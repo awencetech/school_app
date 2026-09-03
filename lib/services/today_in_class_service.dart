@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 
 import '../models/today_in_class.dart';
 import 'group_service.dart';
+import 'auth_headers.dart';
 
 class TodayInClassService {
   TodayInClassService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -53,7 +54,7 @@ class TodayInClassService {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class');
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({
         'date': date.toIso8601String(),
         'subject': subject,
@@ -73,7 +74,7 @@ class TodayInClassService {
 
   Future<void> deleteRecord(String groupId, String recordId) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class/${Uri.encodeComponent(recordId)}');
-    final response = await http.delete(uri).timeout(const Duration(seconds: 15));
+    final response = await http.delete(uri, headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, 'Unable to delete Today in Class.', uri.toString());
     }
@@ -94,7 +95,7 @@ class TodayInClassService {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class/${Uri.encodeComponent(recordId)}');
     final response = await http.put(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({
         'date': date.toIso8601String(),
         'subject': subject,

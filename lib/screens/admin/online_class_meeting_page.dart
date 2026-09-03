@@ -65,8 +65,9 @@ class OnlineMeeting {
 
 class OnlineClassMeetingPage extends StatefulWidget {
   final Group group;
+  final bool isViewOnly;
 
-  const OnlineClassMeetingPage({super.key, required this.group});
+  const OnlineClassMeetingPage({super.key, required this.group, this.isViewOnly = false});
 
   @override
   State<OnlineClassMeetingPage> createState() => _OnlineClassMeetingPageState();
@@ -442,7 +443,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
                               const SizedBox(height: 6),
                               const Text('Schedule an online class or meeting for this group.', style: TextStyle(fontSize: 12, color: Color(0xff7a7a7a))),
                               const SizedBox(height: 16),
-                              ElevatedButton.icon(
+                              if (!widget.isViewOnly) ElevatedButton.icon(
                                 onPressed: _openAddDialog,
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff2baac8)),
                                 icon: const Icon(Icons.add, size: 18),
@@ -460,7 +461,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: widget.isViewOnly ? null : FloatingActionButton.extended(
         onPressed: _openAddDialog,
         backgroundColor: const Color(0xff2baac8),
         icon: const Icon(Icons.add, size: 22),
@@ -551,14 +552,14 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Expanded(
+                if (!widget.isViewOnly) Expanded(
                   child: TextButton.icon(
                     onPressed: () => _joinMeeting(meeting.meetingLink),
                     icon: const Icon(Icons.video_call, size: 14),
                     label: const Text('Join', style: TextStyle(fontSize: 11)),
                   ),
                 ),
-                Expanded(
+                if (!widget.isViewOnly) Expanded(
                   child: TextButton.icon(
                     onPressed: () => _openEditDialog(meeting),
                     icon: const Icon(Icons.edit, size: 14),

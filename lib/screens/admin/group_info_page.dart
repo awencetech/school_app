@@ -16,9 +16,10 @@ import '../student/student_menu_screen.dart';
 import '../../routes/app_routes.dart';
 
 class GroupInfoPage extends StatefulWidget {
-  const GroupInfoPage({super.key, required this.group});
+  const GroupInfoPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<GroupInfoPage> createState() => _GroupInfoPageState();
@@ -165,7 +166,9 @@ class _GroupInfoPageState extends State<GroupInfoPage>
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: _goBack,
         ),
-        actions: [
+        actions: widget.isViewOnly
+            ? const []
+            : [
           IconButton(
             tooltip: 'Undo last change',
             icon: const Icon(Icons.undo, color: AppColors.white),

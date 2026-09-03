@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/group_message.dart';
 import 'group_service.dart';
+import 'auth_headers.dart';
 
 class GroupMessageService {
   GroupMessageService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -56,7 +57,7 @@ class GroupMessageService {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages');
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({
         'groupId': groupId,
         'groupName': groupName,
@@ -98,7 +99,7 @@ class GroupMessageService {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}');
     final response = await http.put(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({
         'title': title.trim(),
         'category': messageType,
@@ -126,7 +127,7 @@ class GroupMessageService {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}/like');
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({'userId': userId}),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) {
@@ -175,7 +176,7 @@ class GroupMessageService {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}/comments');
     final response = await http.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({
         'userId': userId,
         'userRole': normalizedRole,
@@ -203,7 +204,7 @@ class GroupMessageService {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}/comments/${Uri.encodeComponent(commentId)}');
     final response = await http.put(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({
         'userId': userId,
         'userRole': userRole,
@@ -228,7 +229,7 @@ class GroupMessageService {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}/comments/${Uri.encodeComponent(commentId)}');
     final response = await http.delete(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode({'userId': userId, 'userRole': userRole}),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != 200 && response.statusCode != 204) {
@@ -241,7 +242,7 @@ class GroupMessageService {
     required String messageId,
   }) async {
     final uri = Uri.parse('$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/messages/${Uri.encodeComponent(messageId)}');
-    final response = await http.delete(uri).timeout(const Duration(seconds: 15));
+    final response = await http.delete(uri, headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw ApiException(response.statusCode, 'Unable to delete message.', uri.toString());
     }

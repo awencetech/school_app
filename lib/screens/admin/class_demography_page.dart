@@ -16,10 +16,12 @@ class ClassDemographyPage extends StatefulWidget {
     super.key,
     required this.group,
     this.isStaffView = false,
+    this.isViewOnly = false,
   });
 
   final Group group;
   final bool isStaffView;
+  final bool isViewOnly;
 
   @override
   State<ClassDemographyPage> createState() => _ClassDemographyPageState();

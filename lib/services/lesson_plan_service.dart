@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/lesson_plan.dart';
 import 'group_service.dart';
+import 'auth_headers.dart';
 
 class LessonPlanService {
   LessonPlanService({String? baseUrl})
@@ -70,12 +71,12 @@ class LessonPlanService {
     final response = plan.id.isEmpty
         ? await http.post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: await AuthHeaders.json(),
             body: jsonEncode(plan.toJson()),
           )
         : await http.put(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: await AuthHeaders.json(),
             body: jsonEncode(plan.toJson()),
           );
     if (response.statusCode != (plan.id.isEmpty ? 201 : 200)) {
@@ -92,7 +93,7 @@ class LessonPlanService {
 
   Future<void> delete(String groupId, String id) async {
     final uri = _uri(groupId, id);
-    final response = await http.delete(uri);
+    final response = await http.delete(uri, headers: await AuthHeaders.bearer());
     if (response.statusCode != 204) {
       throw ApiException(
         response.statusCode,

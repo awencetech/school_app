@@ -46,6 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
         userId: user.userId,
         email: user.email,
         role: user.role,
+        token: user.token,
       );
 
       if (!mounted) return;

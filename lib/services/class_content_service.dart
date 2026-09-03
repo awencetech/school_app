@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/class_news.dart';
 import '../models/class_photo.dart';
+import 'auth_headers.dart';
 
 class ClassContentService {
   ClassContentService({String? baseUrl})
@@ -70,6 +71,7 @@ class ClassContentService {
         'POST',
         _uri('/api/groups/${Uri.encodeComponent(groupId)}/photos'),
       );
+      request.headers.addAll(await AuthHeaders.bearer());
       request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
       request.fields['caption'] = caption;
 
@@ -96,7 +98,7 @@ class ClassContentService {
       final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/photos/${Uri.encodeComponent(photoId)}');
       final response = await http.put(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthHeaders.json(),
         body: jsonEncode({'caption': newCaption}),
       ).timeout(const Duration(seconds: 15));
 
@@ -118,7 +120,7 @@ class ClassContentService {
   Future<void> deletePhoto(String groupId, String photoId) async {
     try {
       final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/photos/${Uri.encodeComponent(photoId)}');
-      final response = await http.delete(uri).timeout(const Duration(seconds: 15));
+      final response = await http.delete(uri, headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw ApiException(
@@ -175,7 +177,7 @@ class ClassContentService {
       final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/news');
       final response = await http.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthHeaders.json(),
         body: jsonEncode(news.toJson()),
       ).timeout(const Duration(seconds: 15));
 
@@ -199,7 +201,7 @@ class ClassContentService {
       final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/news/${Uri.encodeComponent(news.id)}');
       final response = await http.put(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthHeaders.json(),
         body: jsonEncode(news.toJson()),
       ).timeout(const Duration(seconds: 15));
 
@@ -221,7 +223,7 @@ class ClassContentService {
   Future<void> deleteNews(String groupId, String newsId) async {
     try {
       final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/news/${Uri.encodeComponent(newsId)}');
-      final response = await http.delete(uri).timeout(const Duration(seconds: 15));
+      final response = await http.delete(uri, headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw ApiException(
@@ -239,6 +241,7 @@ class ClassContentService {
   Future<String> uploadNewsImage(String fileName, List<int> bytes) async {
     try {
       final request = http.MultipartRequest('POST', _uri('/api/upload/attachment'));
+      request.headers.addAll(await AuthHeaders.bearer());
       request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
 
       final response = await request.send().timeout(const Duration(seconds: 30));

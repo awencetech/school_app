@@ -20,25 +20,25 @@ class DashboardIconGrid extends StatelessWidget {
   final int? itemCount;
   final EdgeInsetsGeometry padding;
 
-  int _columnCount(double width) {
-    return 5;
-  }
+  static const int columnCount = 5;
+  static const double crossAxisSpacing = 12;
+  static const double mainAxisSpacing = 8;
+  static const double childAspectRatio = 0.68;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columnCount = _columnCount(constraints.maxWidth);
         return Center(
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: padding,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columnCount,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.6,
+              crossAxisCount: DashboardIconGrid.columnCount,
+              crossAxisSpacing: DashboardIconGrid.crossAxisSpacing,
+              mainAxisSpacing: DashboardIconGrid.mainAxisSpacing,
+              childAspectRatio: DashboardIconGrid.childAspectRatio,
             ),
             itemCount: itemCount ?? children!.length,
             itemBuilder: itemBuilder ?? (context, index) => children![index],

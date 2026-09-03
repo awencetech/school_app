@@ -11,9 +11,10 @@ import '../../widgets/admin_bottom_nav.dart';
 
 /// Group Details page showing comprehensive information about a selected group.
 class GroupDetailsPage extends StatefulWidget {
-  const GroupDetailsPage({super.key, required this.group});
+  const GroupDetailsPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<GroupDetailsPage> createState() => _GroupDetailsPageState();
@@ -275,7 +276,10 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     Navigator.of(context).pushNamed(
                       AppRoutes.teacherGroupClassMenu,
-                      arguments: widget.group,
+                      arguments: {
+                        'group': widget.group,
+                        'viewOnly': widget.isViewOnly,
+                      },
                     );
                   },
                 ),

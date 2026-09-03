@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 
 import '../models/today_in_class.dart';
 import 'group_service.dart';
+import 'auth_headers.dart';
 
 class HomeworkService {
   HomeworkService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -92,7 +93,7 @@ class HomeworkService {
 
   Future<void> deleteRecord(String groupId, String recordId) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/homework/${Uri.encodeComponent(recordId)}');
-    final response = await http.delete(uri).timeout(const Duration(seconds: 15));
+    final response = await http.delete(uri, headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, 'Unable to delete Homework.', uri.toString());
     }
@@ -105,8 +106,8 @@ class HomeworkService {
     required int expectedStatus,
   }) async {
     final request = http.Request(method, uri)
-      ..headers['Content-Type'] = 'application/json'
       ..body = jsonEncode(body);
+    request.headers.addAll(await AuthHeaders.json());
     final response = await http.Client().send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 20));
     if (response.statusCode != expectedStatus) {
       throw ApiException(response.statusCode, _message(response.body, 'Unable to save Homework.'), uri.toString());

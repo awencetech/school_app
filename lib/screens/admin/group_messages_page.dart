@@ -20,11 +20,13 @@ class GroupMessagesPage extends StatefulWidget {
     required this.groupId,
     required this.groupName,
     required this.groupYear,
+    this.isViewOnly = false,
   });
 
   final String groupId;
   final String groupName;
   final String groupYear;
+  final bool isViewOnly;
 
   @override
   State<GroupMessagesPage> createState() => _GroupMessagesPageState();
@@ -604,7 +606,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
               style: GoogleFonts.poppins(color: Colors.red),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            if (!widget.isViewOnly) ElevatedButton.icon(
               onPressed: _loadMessages,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),

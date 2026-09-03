@@ -751,17 +751,20 @@ class _QuickAction extends StatelessWidget {
             ),
             child: Icon(icon, size: 16, color: AppColors.white),
           ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            softWrap: true,
-            overflow: TextOverflow.visible,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF222222),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 45,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF222222),
+              ),
             ),
           ),
         ],
@@ -800,15 +803,18 @@ class _SchoolLinkChip extends StatelessWidget {
             child: Icon(icon, size: 16, color: AppColors.white),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            overflow: TextOverflow.visible,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF222222),
+          SizedBox(
+            height: 45,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.visible,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF222222),
+              ),
             ),
           ),
         ],

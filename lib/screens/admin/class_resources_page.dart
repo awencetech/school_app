@@ -9,9 +9,10 @@ import '../../services/school_resource_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class ClassResourcesPage extends StatefulWidget {
-  const ClassResourcesPage({super.key, required this.group});
+  const ClassResourcesPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<ClassResourcesPage> createState() => _ClassResourcesPageState();
@@ -401,7 +402,7 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
               style: TextStyle(fontSize: 13, color: Color(0xff6b7280), height: 1.45),
             ),
             const SizedBox(height: 22),
-            FilledButton.icon(
+            if (!widget.isViewOnly) FilledButton.icon(
               onPressed: () => _showAddOrEditDialog(),
               icon: const Icon(Icons.add),
               label: const Text('+ Add Resource'),
@@ -458,7 +459,7 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xff1f2937)),
                       ),
                     ),
-                    PopupMenuButton<String>(
+                    if (!widget.isViewOnly) PopupMenuButton<String>(
                       tooltip: 'More options',
                       onSelected: (value) {
                         switch (value) {
@@ -703,7 +704,7 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
           ],
         ),
       ),
-      floatingActionButton: Padding(
+      floatingActionButton: widget.isViewOnly ? null : Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: FloatingActionButton.extended(
           onPressed: () => _showAddOrEditDialog(),

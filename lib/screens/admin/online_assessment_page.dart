@@ -131,9 +131,10 @@ class StudentResult {
 }
 
 class OnlineAssessmentPage extends StatefulWidget {
-  const OnlineAssessmentPage({super.key, required this.group});
+  const OnlineAssessmentPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<OnlineAssessmentPage> createState() => _OnlineAssessmentPageState();
@@ -317,7 +318,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: widget.isViewOnly ? null : FloatingActionButton.extended(
         onPressed: _showCreateAssessmentDialog,
         backgroundColor: AppColors.topBar,
         icon: const Icon(Icons.add, color: Colors.white),
@@ -779,7 +780,11 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AssessmentDetailSheet(assessment: assessment, onRefresh: () => setState(() {})),
+      builder: (_) => _AssessmentDetailSheet(
+        assessment: assessment,
+        onRefresh: () => setState(() {}),
+        isViewOnly: widget.isViewOnly,
+      ),
     );
   }
 
@@ -1221,10 +1226,11 @@ class _AssessmentCard extends StatelessWidget {
 }
 
 class _AssessmentDetailSheet extends StatefulWidget {
-  const _AssessmentDetailSheet({required this.assessment, required this.onRefresh});
+  const _AssessmentDetailSheet({required this.assessment, required this.onRefresh, this.isViewOnly = false});
 
   final Assessment assessment;
   final VoidCallback onRefresh;
+  final bool isViewOnly;
 
   @override
   State<_AssessmentDetailSheet> createState() => _AssessmentDetailSheetState();
@@ -1279,7 +1285,7 @@ class _AssessmentDetailSheetState extends State<_AssessmentDetailSheet> {
               if (!_showQuestionManager) ...[
                 Row(
                   children: [
-                    _ActionChip(label: 'Edit', icon: Icons.edit_rounded, onTap: () => _editAssessment(context, assessment)),
+                    if (!widget.isViewOnly) _ActionChip(label: 'Edit', icon: Icons.edit_rounded, onTap: () => _editAssessment(context, assessment)),
                     const SizedBox(width: 8),
                     _ActionChip(label: 'View Questions', icon: Icons.quiz_rounded, onTap: () => setState(() => _showQuestionManager = true)),
                     const SizedBox(width: 8),
@@ -1291,8 +1297,8 @@ class _AssessmentDetailSheetState extends State<_AssessmentDetailSheet> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _ActionChip(label: 'Duplicate', icon: Icons.copy_rounded, onTap: () => _duplicateAssessment(context, assessment)),
-                    _ActionChip(label: 'Delete', icon: Icons.delete_outline_rounded, onTap: () => _deleteAssessment(context, assessment)),
+                    if (!widget.isViewOnly) _ActionChip(label: 'Duplicate', icon: Icons.copy_rounded, onTap: () => _duplicateAssessment(context, assessment)),
+                    if (!widget.isViewOnly) _ActionChip(label: 'Delete', icon: Icons.delete_outline_rounded, onTap: () => _deleteAssessment(context, assessment)),
                   ],
                 ),
                 const SizedBox(height: 18),

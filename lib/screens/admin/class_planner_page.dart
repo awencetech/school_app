@@ -202,9 +202,10 @@ List<LessonPlan> _generateMockLessonPlans() {
 }
 
 class ClassPlannerPage extends StatefulWidget {
-  const ClassPlannerPage({super.key, required this.group});
+  const ClassPlannerPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<ClassPlannerPage> createState() => _ClassPlannerPageState();
@@ -405,8 +406,10 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-          TextButton(onPressed: () { Navigator.pop(context); _openEditDialog(plan); }, child: const Text('Edit')),
-          TextButton(onPressed: () { Navigator.pop(context); _deletePlan(plan); }, style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Delete')),
+          if (!widget.isViewOnly) ...[
+            TextButton(onPressed: () { Navigator.pop(context); _openEditDialog(plan); }, child: const Text('Edit')),
+            TextButton(onPressed: () { Navigator.pop(context); _deletePlan(plan); }, style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Delete')),
+          ],
         ],
       ),
     );
@@ -578,7 +581,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
           Expanded(child: _buildLessonsList()),
         ],
       ),
-      floatingActionButton: FloatingActionButton(backgroundColor: AppColors.blueButton, onPressed: _openAddDialog, child: const Icon(Icons.add, color: Colors.white)),
+      floatingActionButton: widget.isViewOnly ? null : FloatingActionButton(backgroundColor: AppColors.blueButton, onPressed: _openAddDialog, child: const Icon(Icons.add, color: Colors.white)),
       bottomNavigationBar: AdminBottomNavigationBar(currentIndex: 2, onItemSelected: (_) {}),
     );
   }
@@ -627,7 +630,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
               const SizedBox(height: 8),
               Text('Create a lesson plan for this day\nto organize your classes.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText)),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
+              if (!widget.isViewOnly) ElevatedButton.icon(
                 onPressed: _openAddDialog,
                 icon: const Icon(Icons.add),
                 label: Text('+ Add Lesson Plan', style: GoogleFonts.poppins()),

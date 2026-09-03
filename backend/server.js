@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const compression = require('compression');
 const dotenv = require('dotenv');
 const fs = require('fs');
@@ -15,6 +16,7 @@ app.set('trust proxy', true);
 const port = Number(process.env.PORT) || 3001;
 const mongoUri = process.env.MONGODB_URI;
 const uploadDirectory = path.join(__dirname, 'uploads');
+const authSecret = process.env.AUTH_SECRET || mongoUri || 'development-only-auth-secret';
 
 fs.mkdirSync(uploadDirectory, { recursive: true });
 
@@ -49,6 +51,44 @@ app.use('/api/groups', (req, res, next) => {
   }
   next();
 });
+
+function readAuthToken(req) {
+  const header = req.headers.authorization || '';
+  return header.startsWith('Bearer ') ? header.substring(7) : '';
+}
+
+function signAuthPayload(payload) {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
+  return `${encoded}.${signature}`;
+}
+
+function verifyAuthToken(token) {
+  const [encoded, signature] = token.split('.');
+  if (!encoded || !signature) return null;
+  const expected = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
+  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+  return payload.exp > Math.floor(Date.now() / 1000) ? payload : null;
+}
+
+function requireTeacherMutation(req, res, next) {
+  const isGroupMenuMutation = req.method !== 'GET' && /\/(events|class-timetable|lesson-plans|homework|today-in-class|messages|photos|news)(\/|$)/.test(req.path);
+  if (!isGroupMenuMutation) return next();
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (role !== 'staff' && role !== 'teacher') {
+      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only teachers may modify Group Menu data.' : 'Authentication required.' });
+    }
+    req.auth = auth;
+    return next();
+  } catch (_) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+}
+
+app.use('/api/groups', requireTeacherMutation);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -3725,7 +3765,12 @@ app.post('/api/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid email or password' });
 
-    return res.json({ success: true, user: sanitizeUserForResponse(user) });
+    const token = signAuthPayload({
+      userId: user.userId,
+      role: user.role,
+      exp: Math.floor(Date.now() / 1000) + (8 * 60 * 60),
+    });
+    return res.json({ success: true, token, user: sanitizeUserForResponse(user) });
   } catch (error) {
     console.error('POST /api/login failed:', error);
     return res.status(500).json({ message: 'Unable to authenticate user.' });

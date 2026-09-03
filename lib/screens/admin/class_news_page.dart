@@ -12,9 +12,10 @@ import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class ClassNewsPage extends StatefulWidget {
-  const ClassNewsPage({super.key, required this.group});
+  const ClassNewsPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<ClassNewsPage> createState() => _ClassNewsPageState();
@@ -489,7 +490,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
                 ),
               ),
               const SizedBox(height: 32),
-              ElevatedButton.icon(
+              if (!widget.isViewOnly) ElevatedButton.icon(
                 onPressed: _uploading ? null : _uploadPhotos,
                 icon: const Icon(Icons.add),
                 label: Text(
@@ -526,13 +527,14 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
                   onViewTap: () => _showPhotoPreview(_photos[index]),
                   onEditTap: () => _editPhotoCaption(_photos[index]),
                   onDeleteTap: () => _deletePhoto(_photos[index]),
+                  isViewOnly: widget.isViewOnly,
                 ),
           ),
         ),
         Container(
           padding: const EdgeInsets.all(16),
           color: Colors.grey[50],
-          child: ElevatedButton.icon(
+          child: widget.isViewOnly ? const SizedBox.shrink() : ElevatedButton.icon(
             onPressed: _uploading ? null : _uploadPhotos,
             icon: const Icon(Icons.add),
             label: Text(
@@ -647,7 +649,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        ElevatedButton.icon(
+                        if (!widget.isViewOnly) ElevatedButton.icon(
                           onPressed: _showAddNewsDialog,
                           icon: const Icon(Icons.add),
                           label: Text(
@@ -674,11 +676,12 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
                             _showEditNewsDialog(_filteredNews[index]),
                         onDeleteTap: () =>
                             _deleteNews(_filteredNews[index]),
+                        isViewOnly: widget.isViewOnly,
                       ),
                 ),
         ),
         // Add News Button
-        if (_filteredNews.isNotEmpty)
+        if (_filteredNews.isNotEmpty && !widget.isViewOnly)
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey[50],
@@ -816,12 +819,14 @@ class _PhotoGridItem extends StatelessWidget {
     required this.onViewTap,
     required this.onEditTap,
     required this.onDeleteTap,
+    this.isViewOnly = false,
   });
 
   final ClassPhoto photo;
   final VoidCallback onViewTap;
   final VoidCallback onEditTap;
   final VoidCallback onDeleteTap;
+  final bool isViewOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -864,7 +869,7 @@ class _PhotoGridItem extends StatelessWidget {
               ),
             ),
             // Info and Actions
-            Positioned(
+            if (!isViewOnly) Positioned(
               bottom: 0,
               left: 0,
               right: 0,
@@ -959,11 +964,13 @@ class _NewsCard extends StatelessWidget {
     required this.news,
     required this.onEditTap,
     required this.onDeleteTap,
+    this.isViewOnly = false,
   });
 
   final ClassNews news;
   final VoidCallback onEditTap;
   final VoidCallback onDeleteTap;
+  final bool isViewOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -1035,7 +1042,7 @@ class _NewsCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
+                if (!isViewOnly) Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton.icon(

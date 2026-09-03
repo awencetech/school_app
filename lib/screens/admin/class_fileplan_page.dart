@@ -92,9 +92,10 @@ class FolderItem {
 // ============================================================================
 
 class ClassFileplanPage extends StatefulWidget {
-  const ClassFileplanPage({super.key, required this.group});
+  const ClassFileplanPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<ClassFileplanPage> createState() => _ClassFileplanPageState();
@@ -608,9 +609,11 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    ElevatedButton.icon(onPressed: _openAddFileDialog, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff2baac8)), icon: const Icon(Icons.add, size: 16), label: const Text('Add File')),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton.icon(onPressed: _openAddFolderDialog, style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[600]), icon: const Icon(Icons.add, size: 16), label: const Text('Create Folder')),
+                                    if (!widget.isViewOnly) ...[
+                                      ElevatedButton.icon(onPressed: _openAddFileDialog, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff2baac8)), icon: const Icon(Icons.add, size: 16), label: const Text('Add File')),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton.icon(onPressed: _openAddFolderDialog, style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[600]), icon: const Icon(Icons.add, size: 16), label: const Text('Create Folder')),
+                                    ],
                                   ],
                                 ),
                               ],
@@ -702,7 +705,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
                 ),
               ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: widget.isViewOnly ? null : FloatingActionButton(
         onPressed: _openAddMenu,
         backgroundColor: const Color(0xff2baac8),
         child: const Icon(Icons.add, size: 24),
@@ -821,7 +824,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
               Navigator.pop(context);
               _openFileDetails(file);
             }),
-            ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit'), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit'), onTap: () {
               Navigator.pop(context);
               _openEditFileDialog(file);
             }),
@@ -829,7 +832,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Downloading file...')));
             }),
-            ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red), title: const Text('Delete', style: TextStyle(color: Colors.red)), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red), title: const Text('Delete', style: TextStyle(color: Colors.red)), onTap: () {
               Navigator.pop(context);
               _deleteFile(file);
             }),
@@ -847,11 +850,11 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit'), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit'), onTap: () {
               Navigator.pop(context);
               _openFolderDetails(folder);
             }),
-            ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red), title: const Text('Delete', style: TextStyle(color: Colors.red)), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red), title: const Text('Delete', style: TextStyle(color: Colors.red)), onTap: () {
               Navigator.pop(context);
               _deleteFolder(folder);
             }),

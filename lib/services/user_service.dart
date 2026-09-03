@@ -91,8 +91,9 @@ class UserService {
 
     final payload = jsonDecode(resp.body) as Map<String, dynamic>;
     // Support either {user: {...}} or direct user object
-    final userPayload = payload['user'] ?? payload;
-    return User.fromJson(Map<String, dynamic>.from(userPayload as Map));
+    final userPayload = Map<String, dynamic>.from((payload['user'] ?? payload) as Map);
+    userPayload['token'] = payload['token'];
+    return User.fromJson(userPayload);
   }
 
   Future<User> getUserById(String id) async {

@@ -108,9 +108,10 @@ class Assignment {
 // ============================================================================
 
 class OnlineAssignmentPage extends StatefulWidget {
-  const OnlineAssignmentPage({super.key, required this.group});
+  const OnlineAssignmentPage({super.key, required this.group, this.isViewOnly = false});
 
   final Group group;
+  final bool isViewOnly;
 
   @override
   State<OnlineAssignmentPage> createState() => _OnlineAssignmentPageState();
@@ -498,7 +499,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
                                     const SizedBox(height: 6),
                                     const Text('Create an assignment to give students homework and class activities.', style: TextStyle(fontSize: 12, color: Color(0xff7a7a7a))),
                                     const SizedBox(height: 16),
-                                    ElevatedButton.icon(onPressed: _openAddDialog, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff2baac8)), icon: const Icon(Icons.add, size: 16), label: const Text('Create Assignment')),
+                                    if (!widget.isViewOnly) ElevatedButton.icon(onPressed: _openAddDialog, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff2baac8)), icon: const Icon(Icons.add, size: 16), label: const Text('Create Assignment')),
                                   ],
                                 ),
                               ),
@@ -523,7 +524,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
                     ),
                   ),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: widget.isViewOnly ? null : FloatingActionButton.extended(
         onPressed: _openAddDialog,
         backgroundColor: const Color(0xff2baac8),
         icon: const Icon(Icons.add, size: 22),
@@ -796,7 +797,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
               Navigator.pop(context);
               _openDetails(assignment);
             }),
-            ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit'), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit'), onTap: () {
               Navigator.pop(context);
               _openEdit(assignment);
             }),
@@ -804,12 +805,12 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
               Navigator.pop(context);
               _showSubmissions(assignment);
             }),
-            ListTile(leading: const Icon(Icons.content_copy_outlined), title: const Text('Duplicate'), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.content_copy_outlined), title: const Text('Duplicate'), onTap: () {
               Navigator.pop(context);
               _duplicateAssignment(assignment);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assignment duplicated')));
             }),
-            ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red), title: const Text('Delete', style: TextStyle(color: Colors.red)), onTap: () {
+            if (!widget.isViewOnly) ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red), title: const Text('Delete', style: TextStyle(color: Colors.red)), onTap: () {
               Navigator.pop(context);
               _deleteAssignment(assignment);
             }),

@@ -189,6 +189,7 @@ class AppRouter {
     if (arguments is Group) return arguments;
     if (arguments is Map) {
       final values = Map<String, dynamic>.from(arguments);
+      if (values['group'] is Group) return values['group'] as Group;
       final name = values['name']?.toString().trim() ?? '';
       final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
       if (name.isNotEmpty || id.isNotEmpty) {
@@ -199,6 +200,10 @@ class AppRouter {
       }
     }
     return Group(id: 'unknown', name: 'Unknown');
+  }
+
+  static bool _isViewOnly(Object? arguments) {
+    return arguments is Map && arguments['viewOnly'] == true;
   }
 
   static String _eventGroupId(Group group) {
@@ -361,8 +366,13 @@ class AppRouter {
           when settings.name?.startsWith(AppRoutes.adminOtherGroupDetails) ==
               true =>
         (() {
-          final group = settings.arguments as Group;
-          return GroupDetailsPage(group: group);
+          final group = settings.arguments is Group
+              ? settings.arguments as Group
+              : Group(
+                  id: Uri.decodeComponent(settings.name!.split('/').last),
+                  name: Uri.decodeComponent(settings.name!.split('/').last),
+                );
+          return GroupDetailsPage(group: group, isViewOnly: true);
         })(),
       AppRoutes.adminOtherGroups => const OtherGroupsScreen(),
       AppRoutes.adminGroupDetails => (() {
@@ -375,25 +385,30 @@ class AppRouter {
       })(),
       AppRoutes.teacherGroupInfo => (() {
         final group = _groupFromArguments(settings.arguments);
-        return GroupInfoPage(group: group);
+        return GroupInfoPage(
+          group: group,
+          isViewOnly: _isViewOnly(settings.arguments),
+        );
       })(),
       AppRoutes.teacherFutureEventCalendar ||
       AppRoutes.teacherEditFutureEventCalendar => (() {
         final group = _eventGroupFromArguments(settings.arguments);
+        final viewOnly = _isViewOnly(settings.arguments);
         return FutureEventCalendarPage(
           groupId: _eventGroupId(group),
           groupName: group.name,
-          isEdit: settings.name == AppRoutes.teacherEditFutureEventCalendar,
+          isEdit: !viewOnly && settings.name == AppRoutes.teacherEditFutureEventCalendar,
         );
       })(),
       AppRoutes.teacherHomeworkToday ||
       AppRoutes.teacherEditHomeworkToday => (() {
         final group = _eventGroupFromArguments(settings.arguments);
+        final viewOnly = _isViewOnly(settings.arguments);
         return HomeworkTodayInClassPage(
           groupId: _eventGroupId(group),
           groupName: group.name,
           groupYear: group.year,
-          isEdit: settings.name == AppRoutes.teacherEditHomeworkToday,
+          isEdit: !viewOnly && settings.name == AppRoutes.teacherEditHomeworkToday,
         );
       })(),
       AppRoutes.teacherHomeworkAdd => (() {
@@ -412,10 +427,12 @@ class AppRouter {
       })(),
       AppRoutes.teacherGroupMessages => (() {
         final group = _groupFromArguments(settings.arguments);
+        final viewOnly = _isViewOnly(settings.arguments);
         return GroupMessagesPage(
           groupId: generateGroupDatabaseId(group.name),
           groupName: group.name,
           groupYear: group.year,
+          isViewOnly: viewOnly,
         );
       })(),
       AppRoutes.teacherEditGroupMessages => (() {
@@ -438,11 +455,18 @@ class AppRouter {
       AppRoutes.teacherClassDemography ||
       AppRoutes.teacherEditClassDemography => ClassDemographyPage(
         group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
       ),
       AppRoutes.teacherClassResources || AppRoutes.teacherEditClassResources =>
-        ClassResourcesPage(group: _groupFromArguments(settings.arguments)),
+        ClassResourcesPage(
+          group: _groupFromArguments(settings.arguments),
+          isViewOnly: _isViewOnly(settings.arguments),
+        ),
       AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews =>
-        ClassNewsPage(group: _groupFromArguments(settings.arguments)),
+        ClassNewsPage(
+          group: _groupFromArguments(settings.arguments),
+          isViewOnly: _isViewOnly(settings.arguments),
+        ),
       AppRoutes.teacherClassTimetable => ClassTimetablePage(
         group: _eventGroupFromArguments(settings.arguments),
       ),
@@ -466,28 +490,42 @@ class AppRouter {
         );
       })(),
       AppRoutes.teacherClassPlanner || AppRoutes.teacherEditClassPlanner =>
-        ClassPlannerPage(group: _groupFromArguments(settings.arguments)),
+        ClassPlannerPage(
+          group: _groupFromArguments(settings.arguments),
+          isViewOnly: _isViewOnly(settings.arguments),
+        ),
       AppRoutes.teacherVideoConference ||
       AppRoutes.teacherEditVideoConference => OnlineClassMeetingPage(
         group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
       ),
       AppRoutes.teacherClassFilePlan || AppRoutes.teacherEditClassFilePlan =>
-        ClassFileplanPage(group: _groupFromArguments(settings.arguments)),
+        ClassFileplanPage(
+          group: _groupFromArguments(settings.arguments),
+          isViewOnly: _isViewOnly(settings.arguments),
+        ),
       AppRoutes.teacherOnlineAssignment ||
       AppRoutes.teacherEditOnlineAssignment => OnlineAssignmentPage(
         group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
       ),
       AppRoutes.teacherOnlineAssessment ||
       AppRoutes.teacherEditOnlineAssessment => OnlineAssessmentPage(
         group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
       ),
       AppRoutes.teacherGroupInfoEdit => (() {
         final group = _groupFromArguments(settings.arguments);
         return GroupInfoEditPage(group: group);
       })(),
-      AppRoutes.teacherGroupClassMenu => GroupMenuPage(
-        group: _groupFromArguments(settings.arguments),
-      ),
+      AppRoutes.teacherGroupClassMenu => (() {
+        final arguments = settings.arguments;
+        final viewOnly = arguments is Map && arguments['viewOnly'] == true;
+        return GroupMenuPage(
+          group: _groupFromArguments(arguments),
+          isViewOnly: viewOnly,
+        );
+      })(),
       AppRoutes.teacherGroupDashboard => GroupDashboardPage(
         group: _groupFromArguments(settings.arguments),
       ),

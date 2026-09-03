@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_colors.dart';
+import 'dashboard_icon_grid.dart';
 
 class DashboardExtraQuickAccess extends StatelessWidget {
   const DashboardExtraQuickAccess({
@@ -42,10 +43,10 @@ class DashboardExtraQuickAccess extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.75,
+        crossAxisCount: DashboardIconGrid.columnCount,
+        crossAxisSpacing: DashboardIconGrid.crossAxisSpacing,
+        mainAxisSpacing: DashboardIconGrid.mainAxisSpacing,
+        childAspectRatio: DashboardIconGrid.childAspectRatio,
       ),
       itemCount: leadingItems.length + _items.length,
       itemBuilder: (context, index) {
@@ -84,15 +85,18 @@ class DashboardExtraQuickAccess extends StatelessWidget {
                 child: Icon(item.icon, size: 16, color: AppColors.white),
               ),
               const SizedBox(height: 4),
-              Text(
-                item.label,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                softWrap: true,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xff222222),
+              SizedBox(
+                height: 45,
+                child: Text(
+                  item.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  softWrap: true,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xff222222),
+                  ),
                 ),
               ),
             ],

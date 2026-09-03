@@ -40,6 +40,7 @@ import '../screens/admin/library_page.dart';
 import '../screens/admin/library_edit_page.dart';
 import '../screens/admin/school_news_page.dart';
 import '../screens/admin/admin_medical_event_list_page.dart';
+import '../screens/admin/admin_medical_event_view_page.dart';
 import '../screens/admin/facebook_edit_page.dart';
 import '../screens/admin/youtube_edit_page.dart';
 import '../screens/admin/instagram_edit_page.dart';
@@ -67,6 +68,7 @@ import '../screens/admin/school_content_management.dart';
 import '../screens/admin/splash_screen_editor.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../models/group.dart';
+import '../models/medical_event.dart';
 import '../models/class_timetable.dart';
 import '../models/event_celebration.dart';
 import '../screens/admin/admin_section_page.dart';
@@ -257,6 +259,11 @@ class AppRouter {
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
       AppRoutes.adminMedicalEventList => const AdminMedicalEventListPage(),
+      AppRoutes.adminMedicalEventListView => AdminMedicalEventViewPage(
+        event: settings.arguments is MedicalEvent
+        ? settings.arguments as MedicalEvent
+        : null,
+      ),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
       AppRoutes.adminDashboardLibrary => const LibraryPage(),
       AppRoutes.adminSchoolNews => const SchoolNewsPage(),

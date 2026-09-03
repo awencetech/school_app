@@ -116,7 +116,12 @@ class _AdminMedicalEventListPageState extends State<AdminMedicalEventListPage> {
     return role == null || role == 'admin' || role == 'staff';
   }
 
-  Future<void> _showDetails(MedicalEvent event) => showDialog<void>(context: context, builder: (_) => _MedicalEventDetails(event: event));
+  void _showDetails(MedicalEvent event) {
+    Navigator.of(context).pushNamed(
+      AppRoutes.adminMedicalEventListView,
+      arguments: event,
+    );
+  }
 }
 
 class _MessageBox extends StatelessWidget {
@@ -142,18 +147,39 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 12),
+    margin: const EdgeInsets.only(bottom: 8),
     elevation: 0,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: Color(0xFFDEE5EE))),
-    child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('${event.studentName.toUpperCase()} (${event.studentId})', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-      const SizedBox(height: 5), Text(event.className), const SizedBox(height: 12),
-      _value('Description', event.description), _value('Created by', event.reportedByLabel), _value('Last Modified By', event.lastModifiedByLabel), _value('Last Modified', _formatDate(event.lastModifiedAt ?? event.updatedAt)),
-      const Divider(height: 22), Row(children: [TextButton.icon(onPressed: onView, icon: const Icon(Icons.visibility_outlined, size: 17), label: const Text('View')), if (canEdit) ...[const Spacer(), IconButton(onPressed: onEdit, tooltip: 'Edit', icon: const Icon(Icons.edit_outlined)), IconButton(onPressed: onDelete, tooltip: 'Delete', icon: const Icon(Icons.delete_outline, color: Colors.redAccent))]])
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4), side: const BorderSide(color: Color(0xFFD6D6D6))),
+    child: Padding(padding: const EdgeInsets.fromLTRB(7, 5, 7, 4), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('${event.studentName.toUpperCase()} (${event.studentId})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+      Text(event.className, style: const TextStyle(fontSize: 10, color: Color(0xFF263238))),
+      Text(event.symptomReported, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Color(0xFF263238))),
+      _metadata('Created by:', '${event.reportedByLabel} at ${_formatShortDate(event.createdAt)}'),
+      _metadata('Last Modified By:', '${event.lastModifiedByLabel} at ${_formatShortDate(event.lastModifiedAt ?? event.updatedAt)}'),
+      Align(
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (canEdit) ...[
+              IconButton(onPressed: onEdit, tooltip: 'Edit', padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 28), icon: const Icon(Icons.edit_outlined, size: 16)),
+              IconButton(onPressed: onDelete, tooltip: 'Delete', padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 28), icon: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent)),
+            ],
+            TextButton.icon(onPressed: onView, style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(48, 28), tapTargetSize: MaterialTapTargetSize.shrinkWrap), icon: const Icon(Icons.visibility_outlined, size: 14), label: const Text('View', style: TextStyle(fontSize: 10))),
+          ],
+        ),
+      )
     ])),
   );
 
-  static Widget _value(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 7), child: Text('$label:\n${value.isEmpty ? 'Not available' : value}', style: const TextStyle(fontSize: 13, color: Color(0xFF374151))));
+  static Widget _metadata(String label, String value) => Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: '$label ', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF263238))),
+            TextSpan(text: value, style: const TextStyle(fontSize: 9, color: Color(0xFF263238))),
+          ],
+        ),
+      );
 }
 
 class _MedicalEventForm extends StatefulWidget {
@@ -253,13 +279,4 @@ class _MedicalEventFormState extends State<_MedicalEventForm> {
   Widget _networkPreview() => Column(children: [const SizedBox(height: 10), Image.network(_imageUrl, height: 140, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('Unable to load image')), Align(alignment: Alignment.centerRight, child: IconButton(onPressed: () => setState(() => _imageUrl = ''), icon: const Icon(Icons.close)))]);
 }
 
-class _MedicalEventDetails extends StatelessWidget {
-  const _MedicalEventDetails({required this.event});
-  final MedicalEvent event;
-  @override
-  Widget build(BuildContext context) => AlertDialog(title: const Text('Medical Event Display - Details of a Medical Event'), content: SizedBox(width: 520, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Student: ${event.studentName} (${event.studentId})'), Text('Class: ${event.className}'), _detail('Last modified by:', event.lastModifiedByLabel), _detail('Description:', event.description), const SizedBox(height: 14), const Text('First Observations', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)), _detail('Symptom Reported:', event.symptomReported), _detail('Special Needs Known:', event.specialNeedsKnown.isEmpty ? 'None recorded' : event.specialNeedsKnown), if (event.reportImage.isNotEmpty) ...[const SizedBox(height: 10), const Text('Medical Report', style: TextStyle(fontWeight: FontWeight.w700)), Image.network(event.reportImage, width: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('Unable to load medical report image.'))], _detail('Reported by:', event.reportedByLabel), _detail('Reported Date:', _formatDate(event.createdAt)), _detail('Last Modified:', _formatDate(event.lastModifiedAt ?? event.updatedAt))]))), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))]);
-  Widget _detail(String label, String value) => Padding(padding: const EdgeInsets.only(top: 10), child: Text('$label\n${value.isEmpty ? 'Not available' : value}', style: const TextStyle(color: Color(0xFF374151))));
-}
-
-String _formatDate(DateTime? date) => date == null ? 'Not available' : '${date.day.toString().padLeft(2, '0')} ${_months[date.month - 1]} ${date.year}';
-const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+String _formatShortDate(DateTime? date) => date == null ? 'date unavailable' : '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';

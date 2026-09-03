@@ -588,6 +588,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.edit,
                               label: 'Write',
                               color: Color(0xFFF97316),
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminWrite,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.newspaper,
@@ -613,28 +618,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               icon: Icons.how_to_reg,
                               label: 'Student\nAttendance',
                               color: Color(0xFF0EA5E9),
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminStudentAttendance,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.badge,
                               label: 'Employee\nAttendance',
                               color: Color(0xFF2563EB),
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminEmployeeAttendance,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.approval,
                               label: 'Emp Leave\nApproval',
                               color: Color(0xFF16A34A),
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminEmpLeaveApproval,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.people_alt,
                               label: 'One on\nOne',
                               color: Color(0xFF4F46E5),
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminOneOnOne,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.door_front_door,
                               label: 'Gate\nRegister',
                               color: Color(0xFF10B981),
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminGateRegister,
+                                );
+                              },
                             ),
                           ],
                         ),

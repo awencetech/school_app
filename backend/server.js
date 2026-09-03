@@ -84,6 +84,8 @@ let classNewsCollection;
 let lessonPlansCollection;
 let schoolNewsCollection;
 let medicalEventCollection;
+let staffLeaveCollection;
+let staffLeaveEntitlementsCollection;
 
 async function safeCreateIndex(collection, spec, options = {}) {
   try {
@@ -125,6 +127,8 @@ async function ensureIndexes(db) {
     safeCreateIndex(classPhotosCollection, { groupId: 1, uploadedAt: -1 }),
     safeCreateIndex(classNewsCollection, { groupId: 1, publishedAt: -1 }),
     safeCreateIndex(schoolNewsCollection, { isPublished: 1, date: -1, createdAt: -1 }),
+    safeCreateIndex(staffLeaveCollection, { staffId: 1, createdAt: -1 }),
+    safeCreateIndex(staffLeaveEntitlementsCollection, { staffId: 1, year: 1, leaveType: 1 }),
   ]);
 }
 
@@ -172,6 +176,8 @@ async function connectMongo() {
     lessonPlansCollection = db.collection('lesson-plans');
     schoolNewsCollection = db.collection('schoolnews');
     medicalEventCollection = db.collection('medical-event');
+    staffLeaveCollection = db.collection('staff-leave');
+    staffLeaveEntitlementsCollection = db.collection('staff-leave-entitlements');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -286,6 +292,39 @@ function sanitizeStudentForResponse(doc) {
     role: doc.role || '',
     imageUrl: doc.imageUrl || '',
     createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeStaffLeaveForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    staffId: doc.staffId || '',
+    staffName: doc.staffName || '',
+    leaveType: doc.leaveType || '',
+    applicableYear: doc.applicableYear || null,
+    startDate: doc.startDate || null,
+    endDate: doc.endDate || null,
+    beginHalfDay: doc.beginHalfDay === true,
+    endHalfDay: doc.endHalfDay === true,
+    effectiveDays: Number(doc.effectiveDays || 0),
+    reason: doc.reason || '',
+    status: doc.status || 'Pending',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeStaffLeaveEntitlementForResponse(doc) {
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    staffId: doc.staffId || '',
+    leaveType: doc.leaveType || '',
+    year: Number(doc.year || 0),
+    totalLeaves: Number(doc.totalLeaves || 0),
+    adjustment: Number(doc.adjustment || 0),
+    leaveTaken: Number(doc.leaveTaken || 0),
     updatedAt: doc.updatedAt || null,
   };
 }
@@ -3143,6 +3182,101 @@ app.post('/api/announcement/:id/remind', async (req, res) => {
 });
 
 // Staff information CRUD
+app.post('/api/staff-leave', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const required = ['staffId', 'leaveType', 'applicableYear', 'startDate', 'endDate', 'reason'];
+    const missing = required.find((key) => !String(body[key] || '').trim());
+    if (missing) return res.status(422).json({ message: `${missing} is required.` });
+    const startDate = new Date(body.startDate);
+    const endDate = new Date(body.endDate);
+    const effectiveDays = Number(body.effectiveDays);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate || !Number.isFinite(effectiveDays) || effectiveDays <= 0) {
+      return res.status(422).json({ message: 'Please provide valid leave dates and effective days.' });
+    }
+    const now = new Date();
+    const document = {
+      staffId: String(body.staffId).trim(),
+      staffName: String(body.staffName || '').trim(),
+      leaveType: String(body.leaveType).trim(),
+      applicableYear: Number(body.applicableYear),
+      startDate,
+      endDate,
+      beginHalfDay: body.beginHalfDay === true,
+      endHalfDay: body.endHalfDay === true,
+      effectiveDays,
+      reason: String(body.reason).trim(),
+      status: 'Pending',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await staffLeaveCollection.insertOne(document);
+    return res.status(201).json({ success: true, message: 'Leave request submitted successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: result.insertedId })) });
+  } catch (error) {
+    console.error('POST /api/staff-leave failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to submit leave request.' });
+  }
+});
+
+app.get('/api/staff-leave/:staffId/entitlements', async (req, res) => {
+  try {
+    await connectMongo();
+    const year = Number(req.query.year);
+    const filter = { staffId: String(req.params.staffId) };
+    if (Number.isFinite(year) && year > 0) filter.year = year;
+    const items = await staffLeaveEntitlementsCollection.find(filter).sort({ year: -1, leaveType: 1 }).toArray();
+    return res.json({ success: true, data: items.map(sanitizeStaffLeaveEntitlementForResponse) });
+  } catch (error) {
+    console.error('GET staff leave entitlements failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load leave entitlements.' });
+  }
+});
+
+app.get('/api/staff-leave/:staffId', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await staffLeaveCollection.find({ staffId: String(req.params.staffId) }).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
+  } catch (error) {
+    console.error('GET /api/staff-leave/:staffId failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load leave requests.' });
+  }
+});
+
+app.post('/api/staff-leave/adjust', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const staffId = String(body.staffId || '').trim();
+    const leaveType = String(body.leaveType || '').trim();
+    const year = Number(body.year);
+    const days = Number(body.days);
+    if (!staffId || !leaveType || !Number.isFinite(year) || !Number.isFinite(days) || days <= 0) return res.status(422).json({ message: 'Staff, leave type, year, and positive days are required.' });
+    const updated = await staffLeaveEntitlementsCollection.findOneAndUpdate(
+      { staffId, leaveType, year },
+      { $inc: { adjustment: days }, $set: { updatedAt: new Date() }, $setOnInsert: { totalLeaves: 0, leaveTaken: 0 } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    return res.json({ success: true, message: 'Leave adjusted successfully', data: sanitizeStaffLeaveEntitlementForResponse(updated) });
+  } catch (error) {
+    console.error('POST /api/staff-leave/adjust failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to adjust leave.' });
+  }
+});
+
+app.put('/api/staff-leave/:id/cancel', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Cancelled', updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Pending leave request not found.' });
+    return res.json({ success: true, message: 'Leave request cancelled successfully' });
+  } catch (error) {
+    console.error('PUT /api/staff-leave/:id/cancel failed:', error);
+    return res.status(400).json({ message: 'Unable to cancel leave request.' });
+  }
+});
+
 app.get('/api/staff', async (req, res) => {
   try {
     await connectMongo();

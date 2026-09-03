@@ -264,6 +264,22 @@ class AppRouter {
         ? settings.arguments as MedicalEvent
         : null,
       ),
+      AppRoutes.adminWrite => const EmptyAdminOptionPage(title: 'Write'),
+      AppRoutes.adminStudentAttendance => const EmptyAdminOptionPage(
+        title: 'Student Attendance',
+      ),
+      AppRoutes.adminEmployeeAttendance => const EmptyAdminOptionPage(
+        title: 'Employee Attendance',
+      ),
+      AppRoutes.adminEmpLeaveApproval => const EmptyAdminOptionPage(
+        title: 'Emp Leave Approval',
+      ),
+      AppRoutes.adminOneOnOne => const EmptyAdminOptionPage(
+        title: 'One on One',
+      ),
+      AppRoutes.adminGateRegister => const EmptyAdminOptionPage(
+        title: 'Gate Register',
+      ),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
       AppRoutes.adminDashboardLibrary => const LibraryPage(),
       AppRoutes.adminSchoolNews => const SchoolNewsPage(),

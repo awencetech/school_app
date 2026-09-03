@@ -36,6 +36,15 @@ class AppRoutes {
   static const adminDashboardLibrary = '$adminDashboard/library';
   static const adminSchoolNews = '/admin/other-options/schoolnews';
   static const adminOtherOptions = '/admin/other-options';
+    static const adminWrite = '$adminDashboard/other-options/write';
+    static const adminStudentAttendance =
+            '$adminDashboard/other-options/student-attendance';
+    static const adminEmployeeAttendance =
+            '$adminDashboard/other-options/employee-attendance';
+        static const adminEmpLeaveApproval =
+            '$adminDashboard/other-options/emp-leave approval';
+    static const adminOneOnOne = '$adminDashboard/other-options/one-on-one';
+    static const adminGateRegister = '$adminDashboard/other-options/gate-register';
   static const adminMainEdit = '$adminOtherOptions/main-edit';
   static const adminAdd = '$adminOtherOptions/add';
   static const adminKnowYourSchool = '$adminOtherOptions/know-your-school';

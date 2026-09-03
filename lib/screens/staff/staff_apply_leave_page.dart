@@ -53,7 +53,28 @@ class _StaffApplyLeavePageState extends State<StaffApplyLeavePage> {
       Align(alignment: Alignment.centerRight, child: Wrap(spacing: 9, children: [TextButton(onPressed: _loading ? null : _openApply, child: const Text('Apply for Leave', style: TextStyle(fontSize: 10))), TextButton(onPressed: _loading ? null : _openAdjust, child: const Text('Adjust Leave', style: TextStyle(fontSize: 10)))])),
       if (_loading) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('Loading leave information...')))
       else if (_error != null) _StateBox(text: _error!, action: TextButton(onPressed: _load, child: const Text('Retry')))
-      else ...[_EntitlementSection(entitlements: _entitlements, year: _year), const SizedBox(height: 14), _RequestSection(requests: _requests, onCancel: _cancel)],
+      else ...[
+        _EntitlementSection(entitlements: _entitlements, year: _year),
+        const SizedBox(height: 14),
+        _RequestSection(
+          title: 'Leave Requests',
+          requests: _requests.where((item) => item.status.toLowerCase() == 'pending').toList(),
+          onCancel: _cancel,
+        ),
+        const SizedBox(height: 14),
+        _RequestSection(
+          title: 'Leave History',
+          requests: _requests.where((item) => item.status.toLowerCase() != 'pending').toList(),
+          onCancel: _cancel,
+          onClear: () {
+            setState(() {
+              _requests = _requests
+                  .where((item) => item.status.toLowerCase() == 'pending')
+                  .toList();
+            });
+          },
+        ),
+      ],
     ])),
     bottomNavigationBar: const StaffFooter(),
   );
@@ -67,15 +88,17 @@ class _EntitlementSection extends StatelessWidget {
 }
 
 class _RequestSection extends StatelessWidget {
-  const _RequestSection({required this.requests, required this.onCancel});
+  const _RequestSection({required this.title, required this.requests, required this.onCancel, this.onClear});
+  final String title;
   final List<StaffLeaveRequest> requests; final Future<void> Function(StaffLeaveRequest) onCancel;
-  @override Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const _SectionTitle('Leave Requests'), const SizedBox(height: 5), if (requests.isEmpty) const _StateBox(text: 'No leave requests available') else ...requests.map((request) => _StaffLeaveRequestCard(request: request, onCancel: () => onCancel(request))) ]);
+  final VoidCallback? onClear;
+  @override Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [_SectionTitle(title), const Spacer(), if (onClear != null && requests.isNotEmpty) TextButton(onPressed: onClear, child: const Text('Clear', style: TextStyle(fontSize: 10)))]), const SizedBox(height: 5), if (requests.isEmpty) _StateBox(text: title == 'Leave History' ? 'No completed leave requests available' : 'No leave requests available') else ...requests.map((request) => _StaffLeaveRequestCard(request: request, onCancel: () => onCancel(request))) ]);
 }
 
 class _StaffLeaveRequestCard extends StatelessWidget {
   const _StaffLeaveRequestCard({required this.request, required this.onCancel});
   final StaffLeaveRequest request; final VoidCallback onCancel;
-  @override Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 9, left: 2, right: 2), padding: const EdgeInsets.all(8), decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD9DEE7)), borderRadius: BorderRadius.circular(4)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(request.leaveType, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)), Text('From: ${_date(request.startDate)} to ${_date(request.endDate)}', style: const TextStyle(fontSize: 9)), Text('Begin Half Day: ${request.beginHalfDay ? 'Yes' : 'No'}', style: const TextStyle(fontSize: 9)), Text('End Half Day: ${request.endHalfDay ? 'Yes' : 'No'}', style: const TextStyle(fontSize: 9)), Text('Reason: ${request.reason}', style: const TextStyle(fontSize: 9)), Text('Effective Days: ${_number(request.effectiveDays)}', style: const TextStyle(fontSize: 9)), Row(children: [Text('Status: ${request.status}', style: const TextStyle(fontSize: 9)), const Spacer(), if (request.status.toLowerCase() == 'pending') TextButton(onPressed: onCancel, style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero), child: const Text('Cancel', style: TextStyle(fontSize: 8)))]) , Text('Requested On: ${_date(request.createdAt)}', style: const TextStyle(fontSize: 9))]));
+  @override Widget build(BuildContext context) { final status = request.status.toLowerCase(); final color = status == 'approved' ? Colors.green : status == 'rejected' ? Colors.red : status == 'cancelled' ? Colors.grey : const Color(0xFFE08A00); return Container(margin: const EdgeInsets.only(bottom: 9, left: 2, right: 2), padding: const EdgeInsets.all(8), decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD9DEE7)), borderRadius: BorderRadius.circular(4)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(request.leaveType, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)), Text('From: ${_date(request.startDate)} to ${_date(request.endDate)}', style: const TextStyle(fontSize: 9)), Text('Begin Half Day: ${request.beginHalfDay ? 'Yes' : 'No'}', style: const TextStyle(fontSize: 9)), Text('End Half Day: ${request.endHalfDay ? 'Yes' : 'No'}', style: const TextStyle(fontSize: 9)), Text('Reason: ${request.reason}', style: const TextStyle(fontSize: 9)), Text('Effective Days: ${_number(request.effectiveDays)}', style: const TextStyle(fontSize: 9)), Row(children: [Text('Status: ${_displayStatus(request.status)}', style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w600)), const Spacer(), if (status == 'pending') TextButton(onPressed: onCancel, style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero), child: const Text('Cancel', style: TextStyle(fontSize: 8)))]) , Text('Requested On: ${_date(request.createdAt)}', style: const TextStyle(fontSize: 9))])); }
 }
 
 class _ApplyLeaveDialog extends StatefulWidget {
@@ -189,6 +212,7 @@ class _StateBox extends StatelessWidget {
 }
 String _date(DateTime? value) => value == null ? 'Not available' : '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
 String _number(double value) => value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);
+String _displayStatus(String status) => status.toLowerCase() == 'pending' ? 'Waiting' : status;
 
 List<String> _availableLeaveTypes(List<StaffLeaveEntitlement> entitlements) {
   final types = <String>{'ML (Medical Leave)', 'Other'};

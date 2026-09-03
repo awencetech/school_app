@@ -1,7 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../models/admin_message.dart';
+import '../../services/admin_message_service.dart';
+import '../../services/app_state.dart';
 import '../../theme/app_colors.dart';
 
 class MessageModel {
@@ -41,6 +45,7 @@ class _MessagesPageState extends State<MessagesPage> {
   String _selectedFilter = 'All';
   String _searchQuery = '';
   final Map<String, TextEditingController> _commentControllers = {};
+  final _adminMessageService = AdminMessageService();
 
   @override
   void initState() {
@@ -50,7 +55,62 @@ class _MessagesPageState extends State<MessagesPage> {
     for (final message in _allMessages) {
       _commentControllers[message.id] = TextEditingController();
     }
+    _loadAdminMessages();
   }
+
+  Future<void> _loadAdminMessages() async {
+    try {
+      final role = context.read<AppState>().currentUserRole?.toLowerCase();
+      if (role != 'student') return;
+      final adminMessages = await _adminMessageService.getMessagesForRole(
+        'student',
+      );
+      if (!mounted || adminMessages.isEmpty) return;
+      final liveMessages = adminMessages.map(_toMessageModel).toList();
+      setState(() {
+        _allMessages = [
+          ...liveMessages,
+          ..._allMessages.where((message) => !message.id.startsWith('admin-')),
+        ];
+        _messages = List.from(_allMessages);
+        for (final message in liveMessages) {
+          _commentControllers[message.id] = TextEditingController();
+        }
+      });
+    } catch (_) {}
+  }
+
+  MessageModel _toMessageModel(AdminMessage message) {
+    final date = message.createdAt;
+    return MessageModel(
+      id: 'admin-${message.id}',
+      title: message.subject,
+      teacherName: 'From: ${message.senderName}',
+      createdDate: date == null
+          ? ''
+          : '${date.day.toString().padLeft(2, '0')} ${_month(date.month)} ${date.year}',
+      createdTime: '',
+      message: message.message,
+      profileImage: null,
+      isViewed: false,
+      category: message.messageType,
+    );
+  }
+
+  String _month(int month) => const [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][month - 1];
 
   @override
   void dispose() {
@@ -68,7 +128,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Mr. Arun Kumar',
         createdDate: 'Aug 07, 2026',
         createdTime: '12:41 PM',
-        message: 'Complete Exercise 5 from Mathematics textbook and submit it tomorrow.',
+        message:
+            'Complete Exercise 5 from Mathematics textbook and submit it tomorrow.',
         profileImage: null,
         isViewed: true,
         category: 'Homework',
@@ -79,7 +140,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Mrs. Priya',
         createdDate: 'Aug 07, 2026',
         createdTime: '11:20 AM',
-        message: 'Submit the science project before Monday and bring the materials.',
+        message:
+            'Submit the science project before Monday and bring the materials.',
         profileImage: null,
         isViewed: false,
         category: 'Homework',
@@ -90,7 +152,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Ms. Saira',
         createdDate: 'Aug 06, 2026',
         createdTime: '04:05 PM',
-        message: 'Write a short essay on your favorite place and bring it to class.',
+        message:
+            'Write a short essay on your favorite place and bring it to class.',
         profileImage: null,
         isViewed: true,
         category: 'Homework',
@@ -112,7 +175,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'System',
         createdDate: 'Aug 05, 2026',
         createdTime: '09:30 AM',
-        message: 'The school will remain closed on Monday due to the public holiday.',
+        message:
+            'The school will remain closed on Monday due to the public holiday.',
         profileImage: null,
         isViewed: false,
         category: 'Events',
@@ -123,7 +187,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Class Teacher',
         createdDate: 'Aug 05, 2026',
         createdTime: '08:15 AM',
-        message: 'Sports Day practice starts from August 15 and all students must attend.',
+        message:
+            'Sports Day practice starts from August 15 and all students must attend.',
         profileImage: null,
         isViewed: false,
         category: 'Circular',
@@ -134,7 +199,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Mr. Rahul',
         createdDate: 'Aug 04, 2026',
         createdTime: '01:40 PM',
-        message: 'Please ensure you attend the morning assembly and maintain attendance.',
+        message:
+            'Please ensure you attend the morning assembly and maintain attendance.',
         profileImage: null,
         isViewed: true,
         category: 'Attendance',
@@ -145,7 +211,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Accounts',
         createdDate: 'Aug 04, 2026',
         createdTime: '10:10 AM',
-        message: 'School fee payment is due this week and late charges may apply.',
+        message:
+            'School fee payment is due this week and late charges may apply.',
         profileImage: null,
         isViewed: false,
         category: 'Fees',
@@ -156,7 +223,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Exam Cell',
         createdDate: 'Aug 03, 2026',
         createdTime: '05:20 PM',
-        message: 'The annual exam timetable has been updated and shared with all classes.',
+        message:
+            'The annual exam timetable has been updated and shared with all classes.',
         profileImage: null,
         isViewed: true,
         category: 'Exam',
@@ -167,7 +235,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Ms. Rani',
         createdDate: 'Aug 03, 2026',
         createdTime: '03:50 PM',
-        message: 'Please upload your project submission before Wednesday evening.',
+        message:
+            'Please upload your project submission before Wednesday evening.',
         profileImage: null,
         isViewed: false,
         category: 'Homework',
@@ -178,7 +247,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Music Teacher',
         createdDate: 'Aug 02, 2026',
         createdTime: '02:25 PM',
-        message: 'The rehearsal for Independence Day will be held tomorrow morning.',
+        message:
+            'The rehearsal for Independence Day will be held tomorrow morning.',
         profileImage: null,
         isViewed: true,
         category: 'Events',
@@ -222,7 +292,8 @@ class _MessagesPageState extends State<MessagesPage> {
         teacherName: 'Science Dept',
         createdDate: 'Jul 30, 2026',
         createdTime: '12:35 PM',
-        message: 'Bring your lab record book for the practical session on Friday.',
+        message:
+            'Bring your lab record book for the practical session on Friday.',
         profileImage: null,
         isViewed: true,
         category: 'Announcements',
@@ -234,9 +305,11 @@ class _MessagesPageState extends State<MessagesPage> {
     final query = _searchQuery.toLowerCase();
     setState(() {
       _messages = _allMessages.where((message) {
-        final matchesFilter = _selectedFilter == 'All' ||
+        final matchesFilter =
+            _selectedFilter == 'All' ||
             message.category.toLowerCase() == _selectedFilter.toLowerCase();
-        final matchesSearch = query.isEmpty ||
+        final matchesSearch =
+            query.isEmpty ||
             message.title.toLowerCase().contains(query) ||
             message.teacherName.toLowerCase().contains(query) ||
             message.message.toLowerCase().contains(query);
@@ -246,16 +319,7 @@ class _MessagesPageState extends State<MessagesPage> {
   }
 
   Future<void> _refreshMessages() async {
-    await Future<void>.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() {
-      _allMessages = _buildDemoMessages();
-      _commentControllers.clear();
-      for (final message in _allMessages) {
-        _commentControllers[message.id] = TextEditingController();
-      }
-      _applyFilters();
-    });
+    await _loadAdminMessages();
   }
 
   Future<void> _openSearch() async {
@@ -280,9 +344,9 @@ class _MessagesPageState extends State<MessagesPage> {
       return;
     }
     controller?.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comment Posted')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Comment Posted')));
   }
 
   @override
@@ -331,7 +395,10 @@ class _MessagesPageState extends State<MessagesPage> {
                 PopupMenuItem(value: 'Attendance', child: Text('Attendance')),
                 PopupMenuItem(value: 'Fees', child: Text('Fees')),
                 PopupMenuItem(value: 'Exam', child: Text('Exam')),
-                PopupMenuItem(value: 'Announcements', child: Text('Announcements')),
+                PopupMenuItem(
+                  value: 'Announcements',
+                  child: Text('Announcements'),
+                ),
               ],
             ),
             IconButton(
@@ -379,8 +446,13 @@ class _MessagesPageState extends State<MessagesPage> {
                       duration: Duration(milliseconds: 250 + (index * 80)),
                       opacity: 1,
                       child: Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                         color: Colors.white,
                         child: Padding(
@@ -394,23 +466,41 @@ class _MessagesPageState extends State<MessagesPage> {
                                   CircleAvatar(
                                     radius: 24,
                                     backgroundColor: const Color(0xFFEDEFF6),
-                                    child: message.profileImage == null || message.profileImage!.isEmpty
-                                        ? const Icon(Icons.person, color: Color(0xFF2F3352))
+                                    child:
+                                        message.profileImage == null ||
+                                            message.profileImage!.isEmpty
+                                        ? const Icon(
+                                            Icons.person,
+                                            color: Color(0xFF2F3352),
+                                          )
                                         : ClipOval(
                                             child: CachedNetworkImage(
                                               imageUrl: message.profileImage!,
                                               fit: BoxFit.cover,
                                               width: 48,
                                               height: 48,
-                                              placeholder: (context, url) => Container(color: const Color(0xFFEDEFF6)),
-                                              errorWidget: (context, url, error) => const Icon(Icons.person, color: Color(0xFF2F3352)),
+                                              placeholder: (context, url) =>
+                                                  Container(
+                                                    color: const Color(
+                                                      0xFFEDEFF6,
+                                                    ),
+                                                  ),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      const Icon(
+                                                        Icons.person,
+                                                        color: Color(
+                                                          0xFF2F3352,
+                                                        ),
+                                                      ),
                                             ),
                                           ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           message.title,
@@ -453,13 +543,25 @@ class _MessagesPageState extends State<MessagesPage> {
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  _StatusIcon(label: 'Like', icon: Icons.thumb_up_alt_outlined),
+                                  _StatusIcon(
+                                    label: 'Like',
+                                    icon: Icons.thumb_up_alt_outlined,
+                                  ),
                                   const SizedBox(width: 12),
-                                  _StatusIcon(label: message.isViewed ? 'Viewed' : 'New', icon: Icons.visibility_outlined),
+                                  _StatusIcon(
+                                    label: message.isViewed ? 'Viewed' : 'New',
+                                    icon: Icons.visibility_outlined,
+                                  ),
                                   const SizedBox(width: 12),
-                                  _StatusIcon(label: 'Remind', icon: Icons.alarm_add_outlined),
+                                  _StatusIcon(
+                                    label: 'Remind',
+                                    icon: Icons.alarm_add_outlined,
+                                  ),
                                   const SizedBox(width: 12),
-                                  _StatusIcon(label: 'Comment', icon: Icons.comment_outlined),
+                                  _StatusIcon(
+                                    label: 'Comment',
+                                    icon: Icons.comment_outlined,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -470,16 +572,31 @@ class _MessagesPageState extends State<MessagesPage> {
                                       controller: controller,
                                       decoration: InputDecoration(
                                         hintText: 'Write Comment...',
-                                        hintStyle: GoogleFonts.poppins(fontSize: 12, color: greyText),
+                                        hintStyle: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: greyText,
+                                        ),
                                         isDense: true,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 12,
+                                            ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                          borderSide: const BorderSide(color: Color(0xFFE5E5E5)),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFE5E5E5),
+                                          ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                          borderSide: const BorderSide(color: Color(0xFFE5E5E5)),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFE5E5E5),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -489,10 +606,18 @@ class _MessagesPageState extends State<MessagesPage> {
                                     onPressed: () => _postComment(message.id),
                                     style: FilledButton.styleFrom(
                                       backgroundColor: primaryColor,
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                     ),
-                                    child: Text('Post', style: GoogleFonts.poppins(fontSize: 12)),
+                                    child: Text(
+                                      'Post',
+                                      style: GoogleFonts.poppins(fontSize: 12),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -523,7 +648,11 @@ class _StatusIcon extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF757575), fontWeight: FontWeight.w500),
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: const Color(0xFF757575),
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -578,7 +707,10 @@ class _MessagesSearchDelegate extends SearchDelegate<String> {
       return Center(
         child: Text(
           'No results',
-          style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF757575)),
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: const Color(0xFF757575),
+          ),
         ),
       );
     }
@@ -588,8 +720,14 @@ class _MessagesSearchDelegate extends SearchDelegate<String> {
       itemBuilder: (context, index) {
         final message = matches[index];
         return ListTile(
-          title: Text(message.title, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          subtitle: Text(message.teacherName, style: GoogleFonts.poppins(fontSize: 12)),
+          title: Text(
+            message.title,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            message.teacherName,
+            style: GoogleFonts.poppins(fontSize: 12),
+          ),
           onTap: () => close(context, message.title),
         );
       },

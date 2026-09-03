@@ -1,8 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../models/admin_message.dart';
 import '../../routes/app_routes.dart';
+import '../../services/admin_message_service.dart';
+import '../../services/app_state.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 
 class StaffGroupMessagesPage extends StatefulWidget {
@@ -28,7 +32,7 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
     'Search String',
   ];
 
-  static const _messages = [
+  static const _defaultMessages = [
     _StaffMessage(
       'R.S.VELSIRIRAM was absent on 2026-08-27 in class 10-C (All Day) - had notified',
       'Created on: Aug 27, 2026 9:41 AM\nMessage for R.S.VELSIRAM by GURU GANESH S (SAMUNIT0500)',
@@ -45,6 +49,34 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
       'Absent Student Id : 3117',
     ),
   ];
+  final _adminMessageService = AdminMessageService();
+  late List<_StaffMessage> _messages;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = List.from(_defaultMessages);
+    _loadAdminMessages();
+  }
+
+  Future<void> _loadAdminMessages() async {
+    try {
+      if (context.read<AppState>().currentUserRole?.toLowerCase() != 'staff') {
+        return;
+      }
+      final messages = await _adminMessageService.getMessagesForRole('staff');
+      if (!mounted) return;
+      setState(() {
+        _messages = [...messages.map(_toStaffMessage), ..._messages];
+      });
+    } catch (_) {}
+  }
+
+  _StaffMessage _toStaffMessage(AdminMessage message) => _StaffMessage(
+    '${message.messageType.toUpperCase()}  ${message.subject}',
+    'From: ${message.senderName}\n${message.message}',
+    message.groupName,
+  );
 
   Future<void> _openFilter() async {
     var selected = _selectedFilter;

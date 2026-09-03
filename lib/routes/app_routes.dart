@@ -37,8 +37,8 @@ class AppRoutes {
   static const adminSchoolNews = '/admin/other-options/schoolnews';
   static const adminOtherOptions = '/admin/other-options';
     static const adminWrite = '$adminDashboard/other-options/write';
-    static const adminStudentAttendance =
-            '$adminDashboard/other-options/student-attendance';
+        static const adminTrackBusGps =
+            '$adminDashboard/other-options/track-bus-gps';
     static const adminEmployeeAttendance =
             '$adminDashboard/other-options/employee-attendance';
         static const adminEmpLeaveApproval =

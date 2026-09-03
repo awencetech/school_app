@@ -615,12 +615,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               },
                             ),
                             _QuickAction(
-                              icon: Icons.how_to_reg,
-                              label: 'Student\nAttendance',
+                              icon: Icons.location_on,
+                              label: 'Track Bus\nGPS',
                               color: Color(0xFF0EA5E9),
                               onTap: () {
                                 Navigator.of(context).pushNamed(
-                                  AppRoutes.adminStudentAttendance,
+                                  AppRoutes.adminTrackBusGps,
                                 );
                               },
                             ),

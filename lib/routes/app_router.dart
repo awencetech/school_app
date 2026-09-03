@@ -62,6 +62,7 @@ import '../screens/admin/admin_create_id_screen.dart';
 import '../screens/admin/create_group_screen.dart';
 import '../screens/admin/create_class_screen.dart';
 import '../screens/admin/empty_admin_option_page.dart';
+import '../screens/admin/admin_write_message_page.dart';
 import '../screens/admin/emp_leave_approval_page.dart';
 import '../screens/admin/emp_leave_history_page.dart';
 import '../screens/admin/grade_content_management_screen.dart';
@@ -166,7 +167,8 @@ class AppRouter {
         final id = (values['id'] ?? values['groupId'])?.toString().trim() ?? '';
         if (name.isNotEmpty || id.isNotEmpty) {
           final group = Group(
-            databaseId: (values['_id'] ?? values['databaseId'] ?? '').toString(),
+            databaseId: (values['_id'] ?? values['databaseId'] ?? '')
+                .toString(),
             id: id.isEmpty ? name : id,
             name: name.isEmpty ? id : name,
             code: values['code']?.toString() ?? '',
@@ -268,12 +270,12 @@ class AppRouter {
       AppRoutes.adminMedicalEventList => const AdminMedicalEventListPage(),
       AppRoutes.adminMedicalEventListView => AdminMedicalEventViewPage(
         event: settings.arguments is MedicalEvent
-        ? settings.arguments as MedicalEvent
-        : null,
+            ? settings.arguments as MedicalEvent
+            : null,
       ),
-      AppRoutes.adminWrite => const EmptyAdminOptionPage(title: 'Write'),
-      AppRoutes.adminStudentAttendance => const EmptyAdminOptionPage(
-        title: 'Student Attendance',
+      AppRoutes.adminWrite => const AdminWriteMessagePage(),
+      AppRoutes.adminTrackBusGps => const EmptyAdminOptionPage(
+        title: 'Track Bus GPS',
       ),
       AppRoutes.adminEmployeeAttendance => const EmptyAdminOptionPage(
         title: 'Employee Attendance',
@@ -290,11 +292,7 @@ class AppRouter {
       AppRoutes.adminDashboardLibrary => const LibraryPage(),
       AppRoutes.adminSchoolNews => const SchoolNewsPage(),
       AppRoutes.adminDashboardDemography => ClassDemographyPage(
-        group: Group(
-          id: 'grade-10-c',
-          name: 'Grade 10 C',
-          year: '2026-27',
-        ),
+        group: Group(id: 'grade-10-c', name: 'Grade 10 C', year: '2026-27'),
         isStaffView: true,
       ),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
@@ -320,21 +318,17 @@ class AppRouter {
       AppRoutes.adminKnowYourSchoolNewsletterEdit => const NewsletterEditPage(),
       AppRoutes.adminKnowYourSchoolAnnouncementEdit =>
         const AnnouncementEditPage(),
-      AppRoutes.adminKnowYourSchoolDemographyEdit =>
-        const DemographyEditPage(),
-      AppRoutes.adminKnowYourSchoolFacebookEdit =>
-        const FacebookEditPage(),
-      AppRoutes.adminKnowYourSchoolYoutubeEdit =>
-        const YoutubeEditPage(),
-      AppRoutes.adminKnowYourSchoolWhatsappEdit =>
-        const WhatsappEditPage(),
-      AppRoutes.adminKnowYourSchoolInstagramEdit =>
-        const InstagramEditPage(),
-      AppRoutes.adminKnowYourSchoolLibraryEdit =>
-        const LibraryEditPage(),
+      AppRoutes.adminKnowYourSchoolDemographyEdit => const DemographyEditPage(),
+      AppRoutes.adminKnowYourSchoolFacebookEdit => const FacebookEditPage(),
+      AppRoutes.adminKnowYourSchoolYoutubeEdit => const YoutubeEditPage(),
+      AppRoutes.adminKnowYourSchoolWhatsappEdit => const WhatsappEditPage(),
+      AppRoutes.adminKnowYourSchoolInstagramEdit => const InstagramEditPage(),
+      AppRoutes.adminKnowYourSchoolLibraryEdit => const LibraryEditPage(),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
-      AppRoutes.adminListClasses => const EmptyAdminOptionPage(title: 'Classes'),
+      AppRoutes.adminListClasses => const EmptyAdminOptionPage(
+        title: 'Classes',
+      ),
       AppRoutes.adminStudentInfo => (() {
         final student = settings.arguments;
         return student is StudentRecord
@@ -362,10 +356,11 @@ class AppRouter {
       AppRoutes.adminAddClasses => const CreateClassesScreen(),
       AppRoutes.adminMainEditGradePage => const GradeContentManagementScreen(),
       AppRoutes.adminMainEditContentEdit => const ContentEditScreen(),
-        _
+      _
           when settings.name != null &&
-            RegExp(r'^/admin/other-groups/list-other-groups/[^/]+/group-menu/[^/]+$')
-              .hasMatch(settings.name!) =>
+              RegExp(
+                r'^/admin/other-groups/list-other-groups/[^/]+/group-menu/[^/]+$',
+              ).hasMatch(settings.name!) =>
         _adminGroupMenuPage(settings),
       _
           when settings.name?.startsWith(AppRoutes.adminOtherGroupDetails) ==
@@ -402,7 +397,9 @@ class AppRouter {
         return FutureEventCalendarPage(
           groupId: _eventGroupId(group),
           groupName: group.name,
-          isEdit: !viewOnly && settings.name == AppRoutes.teacherEditFutureEventCalendar,
+          isEdit:
+              !viewOnly &&
+              settings.name == AppRoutes.teacherEditFutureEventCalendar,
         );
       })(),
       AppRoutes.teacherHomeworkToday ||
@@ -413,7 +410,8 @@ class AppRouter {
           groupId: _eventGroupId(group),
           groupName: group.name,
           groupYear: group.year,
-          isEdit: !viewOnly && settings.name == AppRoutes.teacherEditHomeworkToday,
+          isEdit:
+              !viewOnly && settings.name == AppRoutes.teacherEditHomeworkToday,
         );
       })(),
       AppRoutes.teacherHomeworkAdd => (() {
@@ -462,23 +460,24 @@ class AppRouter {
         group: _groupFromArguments(settings.arguments),
         isViewOnly: _isViewOnly(settings.arguments),
       ),
-      AppRoutes.teacherClassResources || AppRoutes.teacherEditClassResources =>
-        (() {
-          final selectedGroup = _groupFromArguments(settings.arguments);
-          final group = selectedGroup.id.toLowerCase() == 'unknown'
-              ? Group(id: 'NCC2022', name: 'NCC2022', year: '2022')
-              : selectedGroup;
-          return ClassResourcesPage(
+      AppRoutes.teacherClassResources ||
+      AppRoutes.teacherEditClassResources => (() {
+        final selectedGroup = _groupFromArguments(settings.arguments);
+        final group = selectedGroup.id.toLowerCase() == 'unknown'
+            ? Group(id: 'NCC2022', name: 'NCC2022', year: '2022')
+            : selectedGroup;
+        return ClassResourcesPage(
           group: group,
-          isViewOnly: settings.name == AppRoutes.teacherClassResources ||
+          isViewOnly:
+              settings.name == AppRoutes.teacherClassResources ||
               _isViewOnly(settings.arguments),
-          );
-        })(),
-      AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews =>
-        ClassNewsPage(
-          group: _groupFromArguments(settings.arguments),
-          isViewOnly: _isViewOnly(settings.arguments),
-        ),
+        );
+      })(),
+      AppRoutes.teacherPhotosNews ||
+      AppRoutes.teacherEditPhotosNews => ClassNewsPage(
+        group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
+      ),
       AppRoutes.teacherClassTimetable => ClassTimetablePage(
         group: _eventGroupFromArguments(settings.arguments),
       ),
@@ -501,21 +500,21 @@ class AppRouter {
               : null,
         );
       })(),
-      AppRoutes.teacherClassPlanner || AppRoutes.teacherEditClassPlanner =>
-        ClassPlannerPage(
-          group: _groupFromArguments(settings.arguments),
-          isViewOnly: _isViewOnly(settings.arguments),
-        ),
+      AppRoutes.teacherClassPlanner ||
+      AppRoutes.teacherEditClassPlanner => ClassPlannerPage(
+        group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
+      ),
       AppRoutes.teacherVideoConference ||
       AppRoutes.teacherEditVideoConference => OnlineClassMeetingPage(
         group: _groupFromArguments(settings.arguments),
         isViewOnly: _isViewOnly(settings.arguments),
       ),
-      AppRoutes.teacherClassFilePlan || AppRoutes.teacherEditClassFilePlan =>
-        ClassFileplanPage(
-          group: _groupFromArguments(settings.arguments),
-          isViewOnly: _isViewOnly(settings.arguments),
-        ),
+      AppRoutes.teacherClassFilePlan ||
+      AppRoutes.teacherEditClassFilePlan => ClassFileplanPage(
+        group: _groupFromArguments(settings.arguments),
+        isViewOnly: _isViewOnly(settings.arguments),
+      ),
       AppRoutes.teacherOnlineAssignment ||
       AppRoutes.teacherEditOnlineAssignment => OnlineAssignmentPage(
         group: _groupFromArguments(settings.arguments),
@@ -606,8 +605,8 @@ class AppRouter {
     final arguments = settings.arguments;
     final argumentGroup = arguments is Map ? arguments['group'] : null;
     final group = arguments is Group
-      ? arguments
-      : argumentGroup is Group
+        ? arguments
+        : argumentGroup is Group
         ? argumentGroup
         : Group(id: parts[4], name: parts[4]);
     switch (feature) {

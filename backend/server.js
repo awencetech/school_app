@@ -102,11 +102,124 @@ function requireTeacher(req, res, next) {
   }
 }
 
+function requireAdmin(req, res, next) {
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (role !== 'admin') {
+      return res.status(auth ? 403 : 401).json({ message: auth ? 'Admin access required.' : 'Authentication required.' });
+    }
+    req.auth = auth;
+    return next();
+  } catch (_) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+}
+
+function requireRecipientRole(role) {
+  return (req, res, next) => {
+    try {
+      const auth = verifyAuthToken(readAuthToken(req));
+      if ((auth?.role || '').toLowerCase() !== role) {
+        return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
+      }
+      req.auth = auth;
+      return next();
+    } catch (_) {
+      return res.status(401).json({ message: 'Authentication required.' });
+    }
+  };
+}
+
 app.use('/api/groups', requireTeacherMutation);
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
+});
+app.post('/api/messages/admin', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const subject = String(body.subject || '').trim();
+    const message = String(body.message || '').trim();
+    const messageType = String(body.messageType || '').trim();
+    const sendToStudents = body.sendToStudents === true;
+    const sendToStaff = body.sendToStaff === true;
+    if (!subject || !message || !messageType) {
+      return res.status(422).json({ message: 'Subject, message, and message type are required.' });
+    }
+    if (!sendToStudents && !sendToStaff) {
+      return res.status(422).json({ message: 'At least one recipient is required.' });
+    }
+    const senderId = String(req.auth.userId || '').trim();
+    const admin = await usersCollection.findOne({ userId: senderId });
+    const senderName = String(admin?.name || admin?.fullName || admin?.email || 'Admin').split('@')[0];
+    const now = new Date().toISOString();
+    const document = {
+      subject,
+      title: subject,
+      message,
+      content: message,
+      messageType,
+      category: messageType,
+      senderId,
+      senderName,
+      senderRole: 'admin',
+      sendToStudents,
+      sendToStaff,
+      groupId: body.groupId ? String(body.groupId).trim() : null,
+      groupName: String(body.groupName || 'All Groups').trim() || 'All Groups',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await groupMessagesCollection.insertOne(document);
+    const saved = await groupMessagesCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({ success: true, message: 'Message sent successfully.', data: sanitizeAdminMessageForResponse(saved) });
+  } catch (error) {
+    console.error('POST /api/messages/admin failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to send message.' });
+  }
+});
+
+async function getAdminMessagesForRecipient(req, res, role) {
+  try {
+    await connectMongo();
+    const user = await usersCollection.findOne({ userId: req.auth.userId });
+    const profile = role === 'student'
+      ? await studentInfoCollection.findOne({ studentId: req.auth.userId })
+      : await employeeInfoCollection.findOne({ $or: [{ employeeId: req.auth.userId }, { staffId: req.auth.userId }] });
+    const groupValues = [
+      user?.groupId, user?.groupName, user?.className, user?.class,
+      profile?.groupId, profile?.groupName, profile?.className, profile?.class,
+    ].filter((value) => value).map((value) => String(value));
+    const groupFilter = groupValues.length
+      ? { $or: [{ groupId: null }, { groupId: '' }, { groupId: { $in: groupValues } }] }
+      : { $or: [{ groupId: null }, { groupId: '' }] };
+    const recipientField = role === 'student' ? 'sendToStudents' : 'sendToStaff';
+    const messages = await groupMessagesCollection.find({
+      senderRole: 'admin',
+      [recipientField]: true,
+      ...groupFilter,
+    }).sort({ createdAt: -1 }).toArray();
+    return res.json({ success: true, data: messages.map(sanitizeAdminMessageForResponse) });
+  } catch (error) {
+    console.error(`GET /api/messages/${role} failed:`, error);
+    return res.status(500).json({ success: false, message: 'Unable to load messages.' });
+  }
+}
+
+app.get('/api/messages/student', requireRecipientRole('student'), (req, res) => getAdminMessagesForRecipient(req, res, 'student'));
+app.get('/api/messages/staff', requireRecipientRole('staff'), (req, res) => getAdminMessagesForRecipient(req, res, 'staff'));
+app.get('/api/messages/group/:groupId', requireRecipientRole('student'), async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = String(req.params.groupId || '').trim();
+    const messages = await groupMessagesCollection.find({ senderRole: 'admin', groupId: { $in: [groupId, null, ''] }, sendToStudents: true }).sort({ createdAt: -1 }).toArray();
+    return res.json({ success: true, data: messages.map(sanitizeAdminMessageForResponse) });
+  } catch (_) {
+    return res.status(500).json({ success: false, message: 'Unable to load group messages.' });
+  }
 });
 
 let client;
@@ -710,6 +823,26 @@ function sanitizeGroupMessageForResponse(doc) {
       text: comment.text || comment.comment || '',
       createdAt: comment.createdAt || new Date().toISOString(),
     })) : [],
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeAdminMessageForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    subject: doc.subject || doc.title || '',
+    message: doc.message || doc.content || '',
+    messageType: doc.messageType || doc.category || 'General',
+    senderId: doc.senderId || '',
+    senderName: doc.senderName || 'Admin',
+    senderRole: 'admin',
+    sendToStudents: doc.sendToStudents === true,
+    sendToStaff: doc.sendToStaff === true,
+    groupId: doc.groupId || null,
+    groupName: doc.groupName || 'All Groups',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };

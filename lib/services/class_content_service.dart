@@ -65,7 +65,7 @@ class ClassContentService {
     }
   }
 
-  Future<ClassPhoto> uploadPhoto(String groupId, String fileName, List<int> bytes, {String caption = ''}) async {
+  Future<ClassPhoto> uploadPhoto(String groupId, String fileName, List<int> bytes, {String caption = '', String uploadedBy = ''}) async {
     try {
       final request = http.MultipartRequest(
         'POST',
@@ -74,6 +74,7 @@ class ClassContentService {
       request.headers.addAll(await AuthHeaders.bearer());
       request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
       request.fields['caption'] = caption;
+      if (uploadedBy.isNotEmpty) request.fields['uploadedBy'] = uploadedBy;
 
       final response = await request.send().timeout(const Duration(seconds: 30));
       final body = await response.stream.bytesToString();
@@ -172,13 +173,13 @@ class ClassContentService {
     }
   }
 
-  Future<ClassNews> createNews(String groupId, ClassNews news) async {
+  Future<ClassNews> createNews(String groupId, ClassNews news, {String publishedBy = ''}) async {
     try {
       final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/news');
       final response = await http.post(
         uri,
         headers: await AuthHeaders.json(),
-        body: jsonEncode(news.toJson()),
+        body: jsonEncode({...news.toJson(), if (publishedBy.isNotEmpty) 'publishedBy': publishedBy}),
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200 && response.statusCode != 201) {

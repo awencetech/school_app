@@ -8,6 +8,9 @@ import '../../models/class_news.dart';
 import '../../models/class_photo.dart';
 import '../../models/group.dart';
 import '../../services/class_content_service.dart';
+import '../../services/app_state.dart';
+import '../../services/group_service.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -23,6 +26,8 @@ class ClassNewsPage extends StatefulWidget {
 
 class _ClassNewsPageState extends State<ClassNewsPage> {
   final _service = ClassContentService();
+  final _groupService = GroupService();
+  late Group _activeGroup;
   int _selectedTab = 0; // 0: Gallery, 1: News
   List<ClassPhoto> _photos = [];
   List<ClassNews> _newsList = [];
@@ -35,6 +40,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
   @override
   void initState() {
     super.initState();
+    _activeGroup = widget.group;
     _loadContent();
   }
 
@@ -52,9 +58,13 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
     });
 
     try {
-      debugPrint('ClassNewsPage: Loading content for group ${widget.group.id} (${widget.group.name})');
-      final photosFuture = _service.getPhotosForGroup(widget.group.id);
-      final newsFuture = _service.getNewsForGroup(widget.group.id);
+      if (_activeGroup.id.toLowerCase() == 'unknown') {
+        final groups = await _groupService.getGroups(refresh: true);
+        if (groups.isNotEmpty) _activeGroup = groups.first;
+      }
+      debugPrint('ClassNewsPage: Loading content for group ${_activeGroup.id} (${_activeGroup.name})');
+      final photosFuture = _service.getPhotosForGroup(_activeGroup.id);
+      final newsFuture = _service.getNewsForGroup(_activeGroup.id);
 
       final results = await Future.wait([photosFuture, newsFuture]);
       final photos = results[0] as List<ClassPhoto>;
@@ -127,6 +137,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
 
   Future<void> _uploadPhotos() async {
     try {
+      final uploadedBy = context.read<AppState>().currentUserId ?? '';
       // ignore: deprecated_member_use
       final result = await FilePicker.pickFiles(type: FileType.image, allowMultiple: true);
       if (result.isEmpty) return;
@@ -136,10 +147,11 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
       for (final file in result) {
         final bytes = await file.readAsBytes();
         await _service.uploadPhoto(
-          widget.group.id,
+          _activeGroup.id,
           file.name,
           bytes,
           caption: '',
+          uploadedBy: uploadedBy,
         );
       }
 
@@ -195,7 +207,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
 
     try {
       await _service.updatePhotoCaption(
-        widget.group.id,
+        _activeGroup.id,
         photo.id,
         controller.text.trim(),
       );
@@ -239,7 +251,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
     if (confirm != true) return;
 
     try {
-      await _service.deletePhoto(widget.group.id, photo.id);
+      await _service.deletePhoto(_activeGroup.id, photo.id);
       if (!mounted) return;
       await _loadContent();
       if (!mounted) return;
@@ -259,7 +271,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
       context: context,
       builder: (context) => _AddNewsDialog(
         service: _service,
-        groupId: widget.group.id,
+        groupId: _activeGroup.id,
         onSave: _loadContent,
       ),
     );
@@ -270,7 +282,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
       context: context,
       builder: (context) => _EditNewsDialog(
         service: _service,
-        groupId: widget.group.id,
+        groupId: _activeGroup.id,
         news: news,
         onSave: _loadContent,
       ),
@@ -300,7 +312,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
     if (confirm != true) return;
 
     try {
-      await _service.deleteNews(widget.group.id, news.id);
+      await _service.deleteNews(_activeGroup.id, news.id);
       if (mounted) {
         await _loadContent();
         if (!mounted) return;
@@ -322,10 +334,10 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
   @override
   Widget build(BuildContext context) {
     final headerSubtitle = [
-      if (widget.group.type.isNotEmpty && widget.group.type != 'Other')
-        widget.group.type,
-      if (widget.group.code.isNotEmpty) widget.group.code,
-      if (widget.group.year.isNotEmpty) widget.group.year,
+      if (_activeGroup.type.isNotEmpty && _activeGroup.type != 'Other')
+        _activeGroup.type,
+      if (_activeGroup.code.isNotEmpty) _activeGroup.code,
+      if (_activeGroup.year.isNotEmpty) _activeGroup.year,
     ].join(' • ');
 
     return Scaffold(
@@ -347,7 +359,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.group.name,
+              _activeGroup.name,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -1166,7 +1178,11 @@ class _AddNewsDialogState extends State<_AddNewsDialog> {
         publishedAt: _publishDate,
       );
 
-      await widget.service.createNews(widget.groupId, news);
+      await widget.service.createNews(
+        widget.groupId,
+        news,
+        publishedBy: context.read<AppState>().currentUserId ?? '',
+      );
 
       if (!mounted) return;
       Navigator.pop(context);

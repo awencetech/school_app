@@ -717,6 +717,10 @@ function sanitizeGroupMessageForResponse(doc) {
 
 function groupIdVariants(groupId) {
   const variants = [groupId];
+  const doubleSeparatorId = groupId.replace(/^SAMUNI-2022-/i, 'SAMUNI-2022--');
+  if (!variants.includes(doubleSeparatorId)) {
+    variants.push(doubleSeparatorId);
+  }
   const singleSeparatorId = groupId.replace(/^SAMUNI-2022--/i, 'SAMUNI-2022-');
   if (!variants.includes(singleSeparatorId)) {
     variants.push(singleSeparatorId);

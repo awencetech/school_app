@@ -191,6 +191,7 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
             const SizedBox(height: 8),
             DropdownButtonFormField<Group?>(
               initialValue: _selectedGroup,
+              isExpanded: true,
               decoration: _decoration('All Groups'),
               items: [
                 const DropdownMenuItem<Group?>(
@@ -200,7 +201,11 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
                 ..._groups.map(
                   (group) => DropdownMenuItem<Group?>(
                     value: group,
-                    child: Text(group.name),
+                    child: Text(
+                      group.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -258,16 +263,23 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
       children: [
         Icon(icon, color: AppColors.primary),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(color: AppColors.hintText, fontSize: 12),
-            ),
-            const SizedBox(height: 3),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.hintText, fontSize: 12),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
       ],
     ),

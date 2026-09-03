@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../models/school_news.dart';
 import '../../services/school_news_service.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/admin_bottom_nav.dart';
+import '../../routes/app_routes.dart';
 
 class SchoolNewsPage extends StatefulWidget {
   const SchoolNewsPage({super.key});
@@ -151,8 +153,17 @@ class _SchoolNewsPageState extends State<SchoolNewsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  onPressed: _loading || _submitting ? null : () => _openForm(),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add News'),
+                ),
+              ),
+              const SizedBox(height: 12),
               const Text(
-                'Note: News and Thought of the day is available to a user even if they are not logged in or for open to public.',
+                'Note: News is available to a user even if they are not logged in or for open to public.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Color(0xFF5F6B7A),
@@ -167,20 +178,13 @@ class _SchoolNewsPageState extends State<SchoolNewsPage> {
                   children: [
                     Row(
                       children: [
-                        const Expanded(
-                          child: Text(
-                            'News',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1F2937),
-                            ),
+                        const Text(
+                          'News',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1F2937),
                           ),
-                        ),
-                        FilledButton.icon(
-                          onPressed: _loading || _submitting ? null : () => _openForm(),
-                          icon: const Icon(Icons.add),
-                          label: const Text('+ Add News'),
                         ),
                       ],
                     ),
@@ -283,27 +287,40 @@ class _SchoolNewsPageState extends State<SchoolNewsPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              _SectionCard(
-                title: 'B. THOUGHT OF THE DAY',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      '“Success is the sum of small efforts, repeated day in and day out.”',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F2937),
-                        height: 1.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: AdminBottomNavigationBar(
+        currentIndex: 0,
+        onItemSelected: (index) {
+          switch (index) {
+            case 0:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.adminDashboard,
+                (route) => false,
+              );
+              break;
+            case 1:
+              Navigator.of(context).pushNamed(AppRoutes.adminDashboard);
+              break;
+            case 2:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.adminDashboard,
+                (route) => false,
+              );
+              break;
+            case 3:
+              Navigator.of(context).pushNamed(AppRoutes.supportQuery);
+              break;
+            case 4:
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRoutes.main,
+                (route) => false,
+              );
+              break;
+          }
+        },
       ),
     );
   }

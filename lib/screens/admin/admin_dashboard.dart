@@ -601,8 +601,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                             _QuickAction(
                               icon: Icons.medical_services,
-                              label: 'Medical',
+                              label: 'Medical Event\nList',
                               color: Color(0xFF92400E),
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.adminMedicalEventList,
+                                );
+                              },
                             ),
                             _QuickAction(
                               icon: Icons.how_to_reg,

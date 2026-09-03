@@ -39,6 +39,7 @@ import '../screens/admin/news_letter_page.dart';
 import '../screens/admin/library_page.dart';
 import '../screens/admin/library_edit_page.dart';
 import '../screens/admin/school_news_page.dart';
+import '../screens/admin/admin_medical_event_list_page.dart';
 import '../screens/admin/facebook_edit_page.dart';
 import '../screens/admin/youtube_edit_page.dart';
 import '../screens/admin/instagram_edit_page.dart';
@@ -255,6 +256,7 @@ class AppRouter {
       AppRoutes.staffEventsCelebration => StaffEventsCelebrationPage(),
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
+      AppRoutes.adminMedicalEventList => const AdminMedicalEventListPage(),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
       AppRoutes.adminDashboardLibrary => const LibraryPage(),
       AppRoutes.adminSchoolNews => const SchoolNewsPage(),

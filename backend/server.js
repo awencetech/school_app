@@ -2758,6 +2758,107 @@ app.get('/api/announcement/:id', async (req, res) => {
   }
 });
 
+app.get('/api/medical-events', async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await medicalEventCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: items.map(sanitizeMedicalEventForResponse) });
+  } catch (error) {
+    console.error('GET /api/medical-events failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load medical events.' });
+  }
+});
+
+app.get('/api/medical-events/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const item = await medicalEventCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!item) return res.status(404).json({ success: false, message: 'Medical event not found.' });
+    return res.json({ success: true, data: sanitizeMedicalEventForResponse(item) });
+  } catch (error) {
+    console.error('GET /api/medical-events/:id failed:', error);
+    return res.status(404).json({ success: false, message: 'Medical event not found.' });
+  }
+});
+
+app.post('/api/medical-events', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const observations = body.firstObservations || {};
+    const payload = {
+      studentId: String(body.studentId || '').trim(),
+      studentName: String(body.studentName || '').trim(),
+      className: String(body.className || '').trim(),
+      description: String(body.description || '').trim(),
+      firstObservations: {
+        symptomReported: String(observations.symptomReported || body.symptomReported || '').trim(),
+        specialNeedsKnown: String(observations.specialNeedsKnown || body.specialNeedsKnown || '').trim(),
+      },
+      reportImage: String(body.reportImage || '').trim(),
+      reportedBy: body.reportedBy || {},
+      lastModifiedBy: body.lastModifiedBy || {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastModifiedAt: new Date(),
+    };
+    if (!payload.studentId || !payload.studentName || !payload.className || !payload.description || !payload.firstObservations.symptomReported || !String(payload.reportedBy.userId || payload.reportedBy.name || '').trim()) {
+      return res.status(422).json({ success: false, message: 'Student, class, description, symptom, and reported by are required.' });
+    }
+    const result = await medicalEventCollection.insertOne(payload);
+    const saved = await medicalEventCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({ success: true, message: 'Medical event saved successfully', data: sanitizeMedicalEventForResponse(saved) });
+  } catch (error) {
+    console.error('POST /api/medical-events failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to save medical event.' });
+  }
+});
+
+app.put('/api/medical-events/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const observations = body.firstObservations || {};
+    const payload = {
+      studentId: String(body.studentId || '').trim(),
+      studentName: String(body.studentName || '').trim(),
+      className: String(body.className || '').trim(),
+      description: String(body.description || '').trim(),
+      firstObservations: {
+        symptomReported: String(observations.symptomReported || body.symptomReported || '').trim(),
+        specialNeedsKnown: String(observations.specialNeedsKnown || body.specialNeedsKnown || '').trim(),
+      },
+      reportImage: String(body.reportImage || '').trim(),
+      reportedBy: body.reportedBy || {},
+      lastModifiedBy: body.lastModifiedBy || {},
+      updatedAt: new Date(),
+      lastModifiedAt: new Date(),
+    };
+    if (!payload.studentId || !payload.studentName || !payload.className || !payload.description || !payload.firstObservations.symptomReported || !String(payload.reportedBy.userId || payload.reportedBy.name || '').trim()) {
+      return res.status(422).json({ success: false, message: 'Student, class, description, symptom, and reported by are required.' });
+    }
+    const result = await medicalEventCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: payload });
+    if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Medical event not found.' });
+    const updated = await medicalEventCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json({ success: true, message: 'Medical event updated successfully', data: sanitizeMedicalEventForResponse(updated) });
+  } catch (error) {
+    console.error('PUT /api/medical-events/:id failed:', error);
+    return res.status(400).json({ success: false, message: 'Unable to update medical event.' });
+  }
+});
+
+app.delete('/api/medical-events/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await medicalEventCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ success: false, message: 'Medical event not found.' });
+    return res.json({ success: true, message: 'Medical event deleted successfully' });
+  } catch (error) {
+    console.error('DELETE /api/medical-events/:id failed:', error);
+    return res.status(400).json({ success: false, message: 'Unable to delete medical event.' });
+  }
+});
+
 app.post('/api/announcement', async (req, res) => {
   try {
     await connectMongo();

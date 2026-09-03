@@ -76,11 +76,12 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
       var loadedTeachers = teachers;
       var loadedGroup = stored;
       var shouldMigrateMembers = false;
-      if (widget.group.databaseId.isNotEmpty) {
-        try {
-          final remote = await _groupService.getGroupDetails(
-            widget.group.databaseId,
-          );
+      try {
+        final remote = await _groupService.getGroupDetails(
+          widget.group.databaseId.isNotEmpty
+              ? widget.group.databaseId
+              : _groupId,
+        );
           shouldMigrateMembers =
               (remote.students.isEmpty && students.isNotEmpty) ||
               (remote.teachers.isEmpty && teachers.isNotEmpty);
@@ -91,9 +92,8 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
               ? teachers
               : remote.teachers;
           loadedGroup = remote.group;
-        } catch (_) {
-          // Keep locally cached data when MongoDB is unavailable.
-        }
+      } catch (_) {
+        // Keep locally cached data when MongoDB is unavailable.
       }
       if (!mounted) return;
       setState(() {
@@ -121,10 +121,11 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<void> _syncMembersToMongo() async {
-    if (widget.group.databaseId.isEmpty) return;
     try {
       await _groupService.updateGroup(
-        widget.group.databaseId,
+        widget.group.databaseId.isNotEmpty
+            ? widget.group.databaseId
+            : _groupId,
         name: _nameController.text.trim(),
         id: _idController.text.trim(),
         type: _typeController.text.trim().isEmpty

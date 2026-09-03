@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,7 +48,10 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
     });
 
     try {
-      final data = await _service.getResources();
+        final groupId = widget.group.id.trim().isNotEmpty
+          ? widget.group.id.trim()
+          : widget.group.name.trim();
+        final data = await _service.getResources(groupId);
       if (!mounted) return;
       setState(() {
         _resources = data;
@@ -96,7 +100,10 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
   }
 
   String _resourceType(SchoolResource resource) {
-    final value = (resource.imageUrl.isNotEmpty ? resource.imageUrl : resource.resourceName)
+    if (resource.resourceType.trim().isNotEmpty) return resource.resourceType.trim();
+    final value = (resource.fileName.isNotEmpty
+            ? resource.fileName
+            : (resource.imageUrl.isNotEmpty ? resource.imageUrl : resource.resourceName))
         .toLowerCase();
     if (value.contains('.pdf') || resource.heading.toLowerCase().contains('pdf')) {
       return 'PDF';
@@ -143,10 +150,25 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
     }
   }
 
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  String _fileExtension(String name) {
+    final dot = name.lastIndexOf('.');
+    return dot > 0 && dot < name.length - 1 ? name.substring(dot + 1) : '';
+  }
+
   Future<void> _showAddOrEditDialog({SchoolResource? resource}) async {
     final titleController = TextEditingController(text: resource?.heading ?? '');
     final descriptionController = TextEditingController(text: resource?.resourceName ?? '');
     final linkController = TextEditingController(text: resource?.imageUrl ?? '');
+    PlatformFile? selectedFile;
     final type = ValueNotifier<String>(_resourceType(resource ?? const SchoolResource(
       heading: '',
       date: '',
@@ -202,19 +224,56 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.upload_file_outlined),
-                        SizedBox(width: 8),
-                        Expanded(child: Text('Choose file')),
-                      ],
+                  InkWell(
+                    onTap: () async {
+                      final result = await FilePicker.pickFiles(
+                        allowMultiple: false,
+                      );
+                      if (result.isEmpty) return;
+                      setState(() => selectedFile = result.first);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.upload_file_outlined),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: selectedFile == null
+                                ? const Text('Choose file')
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        selectedFile!.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      FutureBuilder<int>(
+                                        future: selectedFile!.length(),
+                                        builder: (context, snapshot) {
+                                          final extension = _fileExtension(selectedFile!.name);
+                                          final size = snapshot.hasData
+                                              ? ' · ${_formatFileSize(snapshot.data!)}'
+                                              : '';
+                                          return Text(
+                                            '${extension.isEmpty ? 'Unknown' : extension.toUpperCase()}$size',
+                                            style: Theme.of(context).textTheme.bodySmall,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -249,19 +308,38 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
       return;
     }
 
+    if (selectedFile == null && resource == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please choose a file.')),
+      );
+      return;
+    }
+
     final payload = SchoolResource(
       id: resource?.id,
       heading: title,
       date: resource?.date ?? DateFormat('dd-MMM-yyyy').format(DateTime.now()),
       resourceName: description.isNotEmpty ? description : title,
       imageUrl: link,
+      groupId: widget.group.id.trim().isNotEmpty ? widget.group.id.trim() : widget.group.name.trim(),
+      resourceType: type.value,
+      fileName: selectedFile?.name ?? resource?.fileName ?? '',
+      fileSize: selectedFile == null ? resource?.fileSize : await selectedFile!.length(),
     );
 
     try {
       if (resource == null || resource.id == null) {
-        await _service.createResource(payload);
+        await _service.createResource(
+          payload,
+          groupId: payload.groupId,
+          file: selectedFile!,
+        );
       } else {
-        await _service.updateResource(resource.id!, payload);
+        await _service.updateResource(
+          resource.id!,
+          payload,
+          groupId: payload.groupId,
+        );
       }
       if (!mounted) return;
       await _loadResources();
@@ -301,7 +379,10 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
     if (!mounted || confirmed != true || resource.id == null) return;
 
     try {
-      await _service.deleteResource(resource.id!);
+      await _service.deleteResource(
+        resource.id!,
+        groupId: resource.groupId,
+      );
       if (!mounted) return;
       setState(() => _resources.removeWhere((item) => item.id == resource.id));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -491,8 +572,8 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
                   children: [
                     _MetaPill(type),
                     const SizedBox(width: 6),
-                    if (resource.imageUrl.trim().isNotEmpty)
-                      _MetaPill(_guessFileSize(resource.imageUrl)),
+                    if (resource.fileSize != null)
+                      _MetaPill(_formatFileSize(resource.fileSize!)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -541,24 +622,6 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
         ],
       ),
     );
-  }
-
-  String _guessFileSize(String url) {
-    if (url.isEmpty) return '—';
-    final ext = url.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'pdf':
-        return '1.2 MB';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return '2.4 MB';
-      case 'mp4':
-      case 'mov':
-        return '12.8 MB';
-      default:
-        return 'File';
-    }
   }
 
   @override

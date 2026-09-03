@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/group.dart';
 import 'group_state_service.dart';
 import 'preferences_service.dart';
+import 'auth_headers.dart';
 
 class GroupRemoteData {
   const GroupRemoteData({
@@ -196,7 +197,7 @@ class GroupService {
     final resp = await http
         .put(
           _uri('/api/groups/$databaseId'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode({
             'name': name.trim(),
             'id': id.trim(),

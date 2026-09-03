@@ -32,6 +32,13 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
     }
   }
 
+  String _groupMenuRoute(String feature) {
+    final groupId = widget.group.id.trim().isNotEmpty
+        ? widget.group.id.trim()
+        : widget.group.name;
+    return '${AppRoutes.adminOtherGroupDetails}${generateGroupSlug(groupId)}/group-menu/$feature';
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupDatabaseId = widget.group.id.trim().isNotEmpty
@@ -98,8 +105,11 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF2563EB),
                   onTap: () {
                       Navigator.of(context).pushNamed(
-                        AppRoutes.teacherGroupInfo,
-                        arguments: widget.group,
+                        _groupMenuRoute('group-info'),
+                        arguments: {
+                          'group': widget.group,
+                          'viewOnly': true,
+                        },
                       );
                   },
                 ),
@@ -109,8 +119,11 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFFF59E0B),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherFutureEventCalendar,
-                      arguments: widget.group,
+                      _groupMenuRoute('future-event-calendar'),
+                      arguments: {
+                        'group': widget.group,
+                        'viewOnly': true,
+                      },
                     );
                   },
                 ),
@@ -120,8 +133,11 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFFEF4444),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherHomeworkToday,
-                      arguments: widget.group,
+                      _groupMenuRoute('hw-today-in-class'),
+                      arguments: {
+                        'group': widget.group,
+                        'viewOnly': true,
+                      },
                     );
                   },
                 ),
@@ -131,8 +147,11 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF16A34A),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherGroupMessages,
-                      arguments: widget.group,
+                      _groupMenuRoute('group-messages'),
+                      arguments: {
+                        'group': widget.group,
+                        'viewOnly': true,
+                      },
                     );
                   },
                 ),
@@ -142,7 +161,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF9333EA),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherWriteMessage,
+                      _groupMenuRoute('write-message'),
                       arguments: widget.group,
                     );
                   },
@@ -153,7 +172,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF06B6D4),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherClassDemography,
+                      _groupMenuRoute('class-demography'),
                       arguments: widget.group,
                     );
                   },
@@ -164,7 +183,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF8B5CF6),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherClassResources,
+                      _groupMenuRoute('class-resources'),
                       arguments: widget.group,
                     );
                   },
@@ -176,7 +195,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     AppRouter.rememberSelectedGroup(widget.group);
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherPhotosNews,
+                      _groupMenuRoute('photo-news'),
                       arguments: widget.group,
                     );
                   },
@@ -187,7 +206,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF3B82F6),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherClassTimetable,
+                      _groupMenuRoute('class-timetable'),
                       arguments: widget.group,
                     );
                   },
@@ -198,7 +217,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF10B981),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherClassPlanner,
+                      _groupMenuRoute('class-planner'),
                       arguments: widget.group,
                     );
                   },
@@ -209,7 +228,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFFDC2626),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherVideoConference,
+                      _groupMenuRoute('video-conference'),
                       arguments: widget.group,
                     );
                   },
@@ -220,7 +239,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF0EA5E9),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherClassFilePlan,
+                      _groupMenuRoute('class-files'),
                       arguments: widget.group,
                     );
                   },
@@ -231,7 +250,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFFF97316),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherOnlineAssignment,
+                      _groupMenuRoute('online-assignment'),
                       arguments: widget.group,
                     );
                   },
@@ -242,7 +261,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   const Color(0xFF6366F1),
                   onTap: () {
                     Navigator.of(context).pushNamed(
-                      AppRoutes.teacherOnlineAssessment,
+                      _groupMenuRoute('online-assessment'),
                       arguments: widget.group,
                     );
                   },

@@ -114,7 +114,9 @@ class _GroupInfoPageState extends State<GroupInfoPage>
         _staff = shouldMigrateStaff ? localStaff : remote.teachers;
         if (shouldMigrateStudents || shouldMigrateStaff) {
           await _groupService.updateGroup(
-            widget.group.databaseId,
+            widget.group.databaseId.isNotEmpty
+                ? widget.group.databaseId
+                : _groupId,
             name: remote.group.name,
             id: remote.group.id,
             type: remote.group.type,

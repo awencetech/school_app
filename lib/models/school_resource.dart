@@ -5,6 +5,11 @@ class SchoolResource {
     required this.date,
     required this.resourceName,
     this.imageUrl = '',
+    this.groupId = '',
+    this.resourceType = '',
+    this.fileName = '',
+    this.fileSize,
+    this.mimeType = '',
     this.createdAt,
     this.updatedAt,
   });
@@ -14,6 +19,11 @@ class SchoolResource {
   final String date;
   final String resourceName;
   final String imageUrl;
+  final String groupId;
+  final String resourceType;
+  final String fileName;
+  final int? fileSize;
+  final String mimeType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -38,6 +48,11 @@ class SchoolResource {
       date: (json['date'] ?? '').toString().trim(),
       resourceName: (json['resourceName'] ?? '').toString().trim(),
       imageUrl: (json['imageUrl'] ?? '').toString().trim(),
+      groupId: (json['groupId'] ?? '').toString().trim(),
+      resourceType: (json['resourceType'] ?? '').toString().trim(),
+      fileName: (json['fileName'] ?? '').toString().trim(),
+      fileSize: int.tryParse((json['fileSize'] ?? '').toString()),
+      mimeType: (json['mimeType'] ?? '').toString().trim(),
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
     );
@@ -48,5 +63,10 @@ class SchoolResource {
     'date': date,
     'resourceName': resourceName,
     'imageUrl': imageUrl,
+    'groupId': groupId,
+    'resourceType': resourceType,
+    'fileName': fileName,
+    'fileSize': fileSize,
+    'mimeType': mimeType,
   };
 }

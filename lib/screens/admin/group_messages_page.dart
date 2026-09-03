@@ -439,7 +439,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
                         top: false,
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                          child: _canCommentOnMessage
+                          child: _canCommentOnMessage && !widget.isViewOnly
                               ? Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
@@ -626,7 +626,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
               style: GoogleFonts.poppins(color: AppColors.secondaryText),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            if (!widget.isViewOnly) ElevatedButton.icon(
               onPressed: _navigateToCreate,
               icon: const Icon(Icons.add),
               label: const Text('Create Message'),
@@ -727,7 +727,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
             Row(
               children: [
                 GestureDetector(
-                  onTap: () => _toggleLike(message),
+                  onTap: widget.isViewOnly ? null : () => _toggleLike(message),
                   child: Row(
                     children: [
                       Icon(

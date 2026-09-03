@@ -88,6 +88,20 @@ function requireTeacherMutation(req, res, next) {
   }
 }
 
+function requireTeacher(req, res, next) {
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (role !== 'staff' && role !== 'teacher') {
+      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only teachers may modify class resources.' : 'Authentication required.' });
+    }
+    req.auth = auth;
+    return next();
+  } catch (_) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+}
+
 app.use('/api/groups', requireTeacherMutation);
 
 const upload = multer({
@@ -114,6 +128,7 @@ let studentInfoCollection;
 let schoolHandbookCollection;
 let eventCelebrationCollection;
 let schoolResourcesCollection;
+let classResourcesCollection;
 let newsLetterCollection;
 let announcementCollection;
 let demographyCollection;
@@ -159,6 +174,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(schoolHandbookCollection, { schoolId: 1, handbookId: 1 }, { unique: true }),
     safeCreateIndex(eventCelebrationCollection, { schoolId: 1, eventDate: 1 }),
     safeCreateIndex(schoolResourcesCollection, { schoolId: 1, date: -1, createdAt: -1 }),
+    safeCreateIndex(classResourcesCollection, { groupId: 1, createdAt: -1 }),
     safeCreateIndex(newsLetterCollection, { schoolId: 1, createdAt: -1 }),
     safeCreateIndex(announcementCollection, { createdAt: -1 }),
     safeCreateIndex(demographyCollection, { groupId: 1 }, { unique: false }),
@@ -206,6 +222,7 @@ async function connectMongo() {
     schoolHandbookCollection = db.collection('school-handbook');
     eventCelebrationCollection = db.collection('event-celebration');
     schoolResourcesCollection = db.collection('school-resources');
+    classResourcesCollection = db.collection('class-resources');
     newsLetterCollection = db.collection('news-letter');
     announcementCollection = db.collection('announcement');
     demographyCollection = db.collection('demography');
@@ -507,6 +524,26 @@ function sanitizeSchoolResourceForResponse(doc) {
     date: doc.date || '',
     resourceName: doc.resourceName || '',
     imageUrl: doc.imageUrl || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeClassResourceForResponse(doc) {
+  if (!doc) return null;
+  const id = doc._id ? doc._id.toString() : doc.id || '';
+  return {
+    id,
+    groupId: doc.groupId || '',
+    heading: doc.title || doc.heading || '',
+    date: doc.createdAt || doc.date || '',
+    resourceName: doc.description || doc.resourceName || '',
+    imageUrl: doc.fileUrl || doc.imageUrl || '',
+    resourceType: doc.resourceType || '',
+    fileName: doc.fileName || '',
+    fileSize: Number.isFinite(doc.fileSize) ? doc.fileSize : null,
+    mimeType: doc.mimeType || '',
+    createdBy: doc.createdBy || '',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -2451,6 +2488,90 @@ app.delete('/api/events-celebration/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/events-celebration/:id failed:', error);
     return res.status(400).json({ message: 'Unable to delete the event.' });
+  }
+});
+
+// Group-scoped class resources CRUD
+app.get('/api/class-resources/:groupId', async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const items = await classResourcesCollection.find({ groupId }).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(items.map(sanitizeClassResourceForResponse));
+  } catch (error) {
+    console.error('GET /api/class-resources/:groupId failed:', error);
+    return res.status(500).json({ message: 'Unable to load class resources.' });
+  }
+});
+
+app.post('/api/class-resources/:groupId', requireTeacher, upload.single('file'), async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const title = String(req.body.title || '').trim();
+    const description = String(req.body.description || '').trim();
+    const resourceType = String(req.body.resourceType || '').trim();
+    if (!groupId || !title || !req.file) {
+      return res.status(422).json({ message: 'Group, title, and file are required.' });
+    }
+
+    const savedFile = await saveFileToGridFS(req.file);
+    const now = new Date().toISOString();
+    const payload = {
+      groupId,
+      title,
+      description,
+      resourceType,
+      fileName: req.file.originalname,
+      fileUrl: `${req.protocol}://${req.get('host')}/api/images/${savedFile.id}`,
+      filePath: savedFile.filename,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype || 'application/octet-stream',
+      createdBy: req.auth.userId || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await classResourcesCollection.insertOne(payload);
+    const saved = await classResourcesCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeClassResourceForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/class-resources/:groupId failed:', error);
+    return res.status(500).json({ message: 'Unable to save class resource.' });
+  }
+});
+
+app.put('/api/class-resources/:groupId/:id', requireTeacher, async (req, res) => {
+  try {
+    await connectMongo();
+    const groupId = (req.params.groupId || '').trim();
+    const title = String(req.body.title || '').trim();
+    const description = String(req.body.description || '').trim();
+    const resourceType = String(req.body.resourceType || '').trim();
+    const result = await classResourcesCollection.updateOne(
+      { _id: new ObjectId(req.params.id), groupId },
+      { $set: { title, description, resourceType, updatedAt: new Date().toISOString() } },
+    );
+    if (!result.matchedCount) return res.status(404).json({ message: 'Class resource not found.' });
+    const saved = await classResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    return res.json(sanitizeClassResourceForResponse(saved));
+  } catch (error) {
+    console.error('PUT /api/class-resources/:groupId/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to update class resource.' });
+  }
+});
+
+app.delete('/api/class-resources/:groupId/:id', requireTeacher, async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await classResourcesCollection.deleteOne({
+      _id: new ObjectId(req.params.id),
+      groupId: (req.params.groupId || '').trim(),
+    });
+    if (!result.deletedCount) return res.status(404).json({ message: 'Class resource not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/class-resources/:groupId/:id failed:', error);
+    return res.status(400).json({ message: 'Unable to delete class resource.' });
   }
 });
 

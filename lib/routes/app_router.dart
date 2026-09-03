@@ -362,6 +362,11 @@ class AppRouter {
       AppRoutes.adminAddClasses => const CreateClassesScreen(),
       AppRoutes.adminMainEditGradePage => const GradeContentManagementScreen(),
       AppRoutes.adminMainEditContentEdit => const ContentEditScreen(),
+        _
+          when settings.name != null &&
+            RegExp(r'^/admin/other-groups/list-other-groups/[^/]+/group-menu/[^/]+$')
+              .hasMatch(settings.name!) =>
+        _adminGroupMenuPage(settings),
       _
           when settings.name?.startsWith(AppRoutes.adminOtherGroupDetails) ==
               true =>
@@ -458,10 +463,17 @@ class AppRouter {
         isViewOnly: _isViewOnly(settings.arguments),
       ),
       AppRoutes.teacherClassResources || AppRoutes.teacherEditClassResources =>
-        ClassResourcesPage(
-          group: _groupFromArguments(settings.arguments),
-          isViewOnly: _isViewOnly(settings.arguments),
-        ),
+        (() {
+          final selectedGroup = _groupFromArguments(settings.arguments);
+          final group = selectedGroup.id.toLowerCase() == 'unknown'
+              ? Group(id: 'NCC2022', name: 'NCC2022', year: '2022')
+              : selectedGroup;
+          return ClassResourcesPage(
+          group: group,
+          isViewOnly: settings.name == AppRoutes.teacherClassResources ||
+              _isViewOnly(settings.arguments),
+          );
+        })(),
       AppRoutes.teacherPhotosNews || AppRoutes.teacherEditPhotosNews =>
         ClassNewsPage(
           group: _groupFromArguments(settings.arguments),
@@ -586,5 +598,84 @@ class AppRouter {
         return FadeTransition(opacity: curved, child: child);
       },
     );
+  }
+
+  static Widget _adminGroupMenuPage(RouteSettings settings) {
+    final parts = settings.name!.split('/');
+    final feature = parts.last;
+    final arguments = settings.arguments;
+    final argumentGroup = arguments is Map ? arguments['group'] : null;
+    final group = arguments is Group
+      ? arguments
+      : argumentGroup is Group
+        ? argumentGroup
+        : Group(id: parts[4], name: parts[4]);
+    switch (feature) {
+      case 'group-menu':
+        return GroupMenuPage(group: group, isViewOnly: true);
+      case 'group-info':
+        return GroupInfoPage(group: group, isViewOnly: true);
+      case 'future-event-calendar':
+        return FutureEventCalendarPage(
+          groupId: _eventGroupId(group),
+          groupName: group.name,
+        );
+      case 'hw-today-in-class':
+        return HomeworkTodayInClassPage(
+          groupId: _eventGroupId(group),
+          groupName: group.name,
+          groupYear: group.year,
+        );
+      case 'group-messages':
+      case 'write-message':
+        return GroupMessagesPage(
+          groupId: generateGroupDatabaseId(group.name),
+          groupName: group.name,
+          groupYear: group.year,
+          isViewOnly: true,
+        );
+      case 'class-demography':
+        return ClassDemographyPage(group: group, isViewOnly: true);
+      case 'class-resources':
+        return ClassResourcesPage(group: group, isViewOnly: true);
+      case 'photo-news':
+        return ClassNewsPage(group: group, isViewOnly: true);
+      case 'class-timetable':
+        return ClassTimetablePage(group: group);
+      case 'class-planner':
+        return ClassPlannerPage(group: group, isViewOnly: true);
+      case 'video-conference':
+        return OnlineClassMeetingPage(group: group, isViewOnly: true);
+      case 'class-files':
+        return ClassFileplanPage(group: group, isViewOnly: true);
+      case 'online-assignment':
+        return OnlineAssignmentPage(group: group, isViewOnly: true);
+      case 'online-assessment':
+        return OnlineAssessmentPage(group: group, isViewOnly: true);
+      case 'group-dashboard':
+        return GroupDashboardPage(group: group);
+      case 'diary-summary':
+        return DiarySummaryPage(group: group);
+      case 'take-attendance':
+        return AbsencePage(group: group);
+      case 'appreciate-award':
+        return GroupAchievementAwardPage(group: group);
+      case 'leave-approval':
+        return LeaveApprovalPage(group: group);
+      case 'medical-event-list':
+        return MedicalEventListPage(group: group);
+      case 'happiness-report':
+        return HappinessReportPage(group: group);
+      case 'one-on-one-meeting':
+        return OneOnOneMeetingPage(group: group);
+      case 'pick-drop-entry':
+        return PickDropEntryPage(group: group);
+      case 'access-management':
+        return AccessManagementPage(group: group);
+      case 'class-fee-details':
+        return ClassFeeDetailsPage(group: group);
+      default:
+        return GroupDetailsPage(group: group, isViewOnly: true);
+    }
   }
 }

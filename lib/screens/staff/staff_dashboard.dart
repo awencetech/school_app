@@ -10,6 +10,7 @@ import '../../models/group.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
+import '../../services/staff_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/cards/important_news_marquee.dart';
@@ -41,6 +42,99 @@ class StaffDashboard extends StatefulWidget {
 
 class _StaffDashboardState extends State<StaffDashboard> {
   int _selectedBottomIndex = 0;
+  String _staffName = 'Staff name';
+  String _staffId = '';
+  String _staffImageUrl = '';
+  bool _staffLoading = true;
+  String? _staffError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStaffInformation();
+  }
+
+  Future<void> _loadStaffInformation() async {
+    final appState = context.read<AppState>();
+    try {
+      await appState.initialization.timeout(const Duration(seconds: 6));
+    } catch (_) {}
+    if (!mounted) return;
+    final userId = appState.currentUserId?.trim() ?? '';
+    final token = appState.currentAuthToken?.trim() ?? '';
+    if (userId.isEmpty || token.isEmpty) {
+      setState(() {
+        _staffLoading = false;
+        _staffError = 'Staff profile is not available.';
+      });
+      return;
+    }
+    try {
+      final staff = await StaffService().getCurrentProfile(token: token);
+      if (!mounted) return;
+      setState(() {
+        _staffName = staff.name.isEmpty ? userId : staff.name;
+        _staffId = staff.employeeId.isEmpty ? userId : staff.employeeId;
+        _staffImageUrl = staff.imageUrl;
+        _staffLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _staffLoading = false;
+        _staffError = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  Widget _staffPhoto() {
+    const fallback = CircleAvatar(
+      radius: 27,
+      backgroundColor: Colors.black,
+      child: Icon(Icons.person, size: 34, color: AppColors.white),
+    );
+    if (_staffImageUrl.isEmpty) return fallback;
+    if (_staffImageUrl.startsWith('data:')) {
+      try {
+        final comma = _staffImageUrl.indexOf(',');
+        if (comma < 0) return fallback;
+        return CircleAvatar(
+          radius: 27,
+          backgroundImage: MemoryImage(
+            base64Decode(_staffImageUrl.substring(comma + 1)),
+          ),
+        );
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final uri = Uri.tryParse(_staffImageUrl);
+    if (uri == null ||
+        !const ['http', 'https'].contains(uri.scheme.toLowerCase()) ||
+        uri.host.isEmpty) {
+      return fallback;
+    }
+    return ClipOval(
+      child: SizedBox(
+        width: 54,
+        height: 54,
+        child: Image.network(
+          _staffImageUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (_, child, progress) => progress == null
+              ? child
+              : const Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+          errorBuilder: (_, _, _) => fallback,
+        ),
+      ),
+    );
+  }
 
   Future<void> _openWebsite(BuildContext context) async {
     Navigator.of(context).pushNamed(AppRoutes.adminKnowYourSchoolWebsiteEdit);
@@ -60,7 +154,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
         ),
         automaticallyImplyLeading: false,
       ),
-        body: _selectedBottomIndex == 2
+      body: _selectedBottomIndex == 2
           ? const HelpMenuScreen()
           : _selectedBottomIndex == 3
           ? const SupportScreen()
@@ -278,49 +372,71 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 27,
-                              backgroundColor: Colors.black,
-                              child: Icon(
-                                Icons.person,
-                                size: 34,
-                                color: AppColors.white,
+                        if (_staffLoading)
+                          const SizedBox(
+                            height: 54,
+                            child: Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.watch<AppState>().currentUserId !=
-                                            null
-                                        ? context
-                                              .watch<AppState>()
-                                              .currentUserId!
-                                        : 'Staff name',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF222222),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Staff ID',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400,
-                                      color: const Color(0xFF5F6368),
-                                    ),
-                                  ),
-                                ],
+                          )
+                        else if (_staffError != null)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _staffError!,
+                                  style: GoogleFonts.poppins(fontSize: 12),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: _loadStaffInformation,
+                                icon: const Icon(Icons.refresh),
+                                tooltip: 'Retry',
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              _staffPhoto(),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _staffName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF222222),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      _staffId,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: const Color(0xFF5F6368),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -580,10 +696,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
           if (index == 4) {
             await context.read<AppState>().logout();
             if (!context.mounted) return;
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              AppRoutes.main,
-              (route) => false,
-            );
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
             return;
           }
 

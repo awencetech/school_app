@@ -44,6 +44,24 @@ class OneOnOneMeetingService {
         .toList();
   }
 
+  Future<List<OneOnOneMeeting>> getMyMeetings({required String token}) async {
+    final response = await http
+        .get(
+          _uri('/api/one-on-one-meetings/my-meetings'),
+          headers: {'Authorization': 'Bearer ${token.trim()}'},
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+    final decoded = jsonDecode(response.body);
+    final items = decoded is Map ? decoded['data'] : decoded;
+    if (items is! List) return const [];
+    return items
+        .map(
+          (item) => OneOnOneMeeting.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList();
+  }
+
   Future<OneOnOneMeeting> save(OneOnOneMeeting meeting) async {
     final editing = meeting.id != null && meeting.id!.isNotEmpty;
     final response =

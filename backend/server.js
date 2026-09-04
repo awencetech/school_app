@@ -3985,6 +3985,21 @@ app.get('/api/one-on-one-meetings', async (req, res) => {
   }
 });
 
+app.get('/api/one-on-one-meetings/my-meetings', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const staffId = String(req.auth.userId || '').trim();
+    const meetings = await oneOnOneMeetingsCollection
+      .find({ staffId })
+      .sort({ startDateTime: -1, _id: -1 })
+      .toArray();
+    return res.json({ data: meetings.map(sanitizeOneOnOneMeetingForResponse) });
+  } catch (error) {
+    console.error('GET /api/one-on-one-meetings/my-meetings failed:', error);
+    return res.status(500).json({ message: 'Unable to load your meeting information.' });
+  }
+});
+
 app.get('/api/one-on-one-meetings/staff/:staffId', async (req, res) => {
   try {
     await connectMongo();

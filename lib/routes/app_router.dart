@@ -68,6 +68,14 @@ import '../screens/admin/create_group_screen.dart';
 import '../screens/admin/create_class_screen.dart';
 import '../screens/admin/empty_admin_option_page.dart';
 import '../screens/admin/admin_write_message_page.dart';
+import '../screens/messages/messages_page.dart';
+import '../screens/staff/staff_campaigns_page.dart';
+import '../screens/staff/staff_request_message_page.dart';
+import '../screens/staff/staff_write_message_page.dart';
+import '../screens/student/student_check_approve_page.dart';
+import '../screens/student/student_group_class_bus_page.dart';
+import '../screens/student/student_ptm_page.dart';
+import '../screens/student/student_uni_route_page.dart';
 import '../screens/admin/emp_leave_approval_page.dart';
 import '../screens/admin/emp_leave_history_page.dart';
 import '../screens/admin/grade_content_management_screen.dart';
@@ -272,6 +280,27 @@ class AppRouter {
       AppRoutes.staffEventsCelebration => StaffEventsCelebrationPage(),
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
+      AppRoutes.adminQuickMessages => const MessagesPage(),
+      AppRoutes.adminQuickCalendar => const FutureEventCalendarPage(
+        groupId: 'grade-10-c',
+        groupName: 'Grade 10 C',
+        isStaffView: true,
+      ),
+      AppRoutes.adminQuickDashboardSummary =>
+        const StaffOverviewDashboardPage(),
+      AppRoutes.adminQuickWriteMessage => const StaffWriteMessagePage(),
+      AppRoutes.adminQuickRequest => const StaffRequestMessagePage(),
+      AppRoutes.adminQuickGroupClass => const StaffCampaignsPage(),
+      AppRoutes.adminQuickPtm => const StudentPtmPage(),
+      AppRoutes.adminQuickGroupsClassBus => const StudentGroupClassBusPage(),
+      AppRoutes.adminQuickCheckApproval => const StudentCheckApprovePage(),
+      AppRoutes.adminQuickTrackUniRoute => const StudentUniRoutePage(),
+      AppRoutes.adminQuickTrackSp => const StudentUniRoutePage(
+        routeName: 'UNI-Route-SP7',
+      ),
+      AppRoutes.adminQuickTrack => const StudentUniRoutePage(
+        routeName: 'Track',
+      ),
       AppRoutes.adminMedicalEventList => const AdminMedicalEventListPage(),
       AppRoutes.adminMedicalEventListView => AdminMedicalEventViewPage(
         event: settings.arguments is MedicalEvent

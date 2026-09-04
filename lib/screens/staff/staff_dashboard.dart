@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/group.dart';
@@ -11,6 +12,7 @@ import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
 import '../../services/staff_service.dart';
+import '../../services/social_url_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/cards/important_news_marquee.dart';
@@ -137,7 +139,88 @@ class _StaffDashboardState extends State<StaffDashboard> {
   }
 
   Future<void> _openWebsite(BuildContext context) async {
-    Navigator.of(context).pushNamed(AppRoutes.adminKnowYourSchoolWebsiteEdit);
+    await _openUrl(
+      context,
+      context.read<SchoolConfigService>().websiteUrl,
+      'School website link is not available.',
+    );
+  }
+
+  Future<void> _openSocialUrl(
+    BuildContext context,
+    Future<String> Function() fetcher,
+    String unavailableMessage,
+  ) async {
+    try {
+      final url = await fetcher();
+      if (!context.mounted) return;
+      await _openUrl(context, url, unavailableMessage);
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, unavailableMessage, error: true);
+      }
+    }
+  }
+
+  Future<void> _openWhatsapp(BuildContext context) async {
+    try {
+      final config = await SocialUrlService().getWhatsappConfig();
+      final phone = (config['phoneNumber'] ?? '').replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
+      if (phone.isEmpty) {
+        if (context.mounted) {
+          _showMessage(context, 'WhatsApp link is not available.', error: true);
+        }
+        return;
+      }
+      final text = (config['text'] ?? '').trim();
+      final uri = Uri.parse(
+        'https://wa.me/$phone${text.isEmpty ? '' : '?text=${Uri.encodeComponent(text)}'}',
+      );
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+          context.mounted) {
+        _showMessage(context, 'Unable to open WhatsApp.', error: true);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showMessage(context, 'WhatsApp link is not available.', error: true);
+      }
+    }
+  }
+
+  Future<void> _openUrl(
+    BuildContext context,
+    String value,
+    String unavailableMessage,
+  ) async {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null ||
+        !const ['http', 'https'].contains(uri.scheme.toLowerCase()) ||
+        uri.host.isEmpty) {
+      if (context.mounted) {
+        _showMessage(context, unavailableMessage, error: true);
+      }
+      return;
+    }
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+        context.mounted) {
+      _showMessage(context, 'Unable to open the link.', error: true);
+    }
+  }
+
+  void _showMessage(
+    BuildContext context,
+    String message, {
+    bool error = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? Colors.red.shade700 : null,
+      ),
+    );
   }
 
   @override
@@ -651,26 +734,45 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               icon: Icons.facebook,
                               label: 'Facebook',
                               color: Color(0xFF3B5998),
+                              onTap: () => _openSocialUrl(
+                                context,
+                                SocialUrlService().getFacebookUrl,
+                                'Facebook link is not available.',
+                              ),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.ondemand_video,
                               label: 'Youtube',
                               color: Color(0xFFD32F2F),
+                              onTap: () => _openSocialUrl(
+                                context,
+                                SocialUrlService().getYoutubeUrl,
+                                'YouTube link is not available.',
+                              ),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.chat,
                               label: 'Whatsapp',
                               color: Color(0xFF25D366),
+                              onTap: () => _openWhatsapp(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.camera_alt,
                               label: 'Instagram',
                               color: Color(0xFFE1306C),
+                              onTap: () => _openSocialUrl(
+                                context,
+                                SocialUrlService().getInstagramUrl,
+                                'Instagram link is not available.',
+                              ),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.library_books,
                               label: 'Library',
                               color: Color(0xFF795548),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.adminDashboardLibrary),
                             ),
                           ],
                         ),

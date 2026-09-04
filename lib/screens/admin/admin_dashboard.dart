@@ -20,15 +20,7 @@ import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../../widgets/user_action_menu.dart';
-import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
-import '../staff/staff_campaigns_page.dart';
-import '../staff/staff_request_message_page.dart';
-import '../staff/staff_write_message_page.dart';
-import '../student/student_check_approve_page.dart';
-import '../student/student_group_class_bus_page.dart';
-import '../student/student_ptm_page.dart';
-import '../student/student_uni_route_page.dart';
 
 /// Admin dashboard page matching the requested layout.
 class AdminDashboard extends StatefulWidget {
@@ -227,10 +219,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     icon: Icons.message,
                                     label: 'Messages HW, CW',
                                     color: Color(0xFFFF7043),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const MessagesPage(),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminQuickMessages,
                                     ),
                                   ),
                                   _QuickAction(
@@ -239,7 +229,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     color: Color(0xFFE53935),
                                     onTap: () => Navigator.of(
                                       context,
-                                    ).pushNamed(AppRoutes.staffEventCalendar),
+                                    ).pushNamed(AppRoutes.adminQuickCalendar),
                                   ),
                                   _QuickAction(
                                     icon: Icons.dashboard,
@@ -247,88 +237,52 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     color: Color(0xFF1E4D8F),
                                     onTap: () =>
                                         Navigator.of(context).pushNamed(
-                                          AppRoutes.staffOverviewDashboard,
+                                          AppRoutes.adminQuickDashboardSummary,
                                         ),
                                   ),
                                   _QuickAction(
                                     icon: Icons.edit,
                                     label: 'Write Message',
                                     color: Color(0xFFBF360C),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StaffWriteMessagePage(),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminQuickWriteMessage,
                                     ),
                                   ),
                                   _QuickAction(
                                     icon: Icons.assignment,
                                     label: 'Request',
                                     color: Color(0xFFF4B400),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StaffRequestMessagePage(),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminQuickRequest,
                                     ),
                                   ),
                                   _QuickAction(
                                     icon: Icons.fact_check,
                                     label: 'Campaign Survey',
                                     color: Color(0xFF8D6E63),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StaffCampaignsPage(),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminQuickGroupClass,
                                     ),
                                   ),
                                   _QuickAction(
                                     icon: Icons.assignment_turned_in,
                                     label: 'PTM',
                                     color: Color(0xFF5E7D1F),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const StudentPtmPage(),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminQuickPtm,
                                     ),
                                   ),
                                 ],
-                                onGroupClassBusTap: () =>
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StudentGroupClassBusPage(),
-                                      ),
-                                    ),
-                                onCheckApproveTap: () =>
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StudentCheckApprovePage(),
-                                      ),
-                                    ),
-                                onUniRouteZ2Tap: () =>
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StudentUniRoutePage(),
-                                      ),
-                                    ),
-                                onSp7Tap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const StudentUniRoutePage(
-                                      routeName: 'UNI-Route-SP7',
-                                    ),
-                                  ),
-                                ),
-                                onTrackTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const StudentUniRoutePage(
-                                      routeName: 'Track',
-                                    ),
-                                  ),
-                                ),
+                                onGroupClassBusTap: () => Navigator.of(context)
+                                    .pushNamed(AppRoutes.adminQuickGroupsClassBus),
+                                onCheckApproveTap: () => Navigator.of(context)
+                                    .pushNamed(AppRoutes.adminQuickCheckApproval),
+                                onUniRouteZ2Tap: () => Navigator.of(context)
+                                    .pushNamed(AppRoutes.adminQuickTrackUniRoute),
+                                onSp7Tap: () => Navigator.of(context)
+                                    .pushNamed(AppRoutes.adminQuickTrackSp),
+                                onTrackTap: () => Navigator.of(context)
+                                    .pushNamed(AppRoutes.adminQuickTrack),
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -352,11 +306,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     icon: Icons.language,
                                     label: 'Website',
                                     color: Color(0xFF4CAF50),
-                                    onTap: () =>
-                                        Navigator.of(context).pushNamed(
-                                          AppRoutes
-                                              .adminKnowYourSchoolWebsiteEdit,
-                                        ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminKnowYourSchoolWebsiteEdit,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.school,
@@ -405,26 +357,42 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     icon: Icons.facebook,
                                     label: 'Facebook',
                                     color: Color(0xFF3B5998),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminKnowYourSchoolFacebookEdit,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.ondemand_video,
                                     label: 'Youtube',
                                     color: Color(0xFFD32F2F),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminKnowYourSchoolYoutubeEdit,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.chat,
                                     label: 'Whatsapp',
                                     color: Color(0xFF25D366),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminKnowYourSchoolWhatsappEdit,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.camera_alt,
                                     label: 'Instagram',
                                     color: Color(0xFFE1306C),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminKnowYourSchoolInstagramEdit,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.library_books,
                                     label: 'Library',
                                     color: Color(0xFF795548),
+                                    onTap: () =>
+                                        Navigator.of(context).pushNamed(
+                                          AppRoutes.adminKnowYourSchoolLibraryEdit,
+                                        ),
                                   ),
                                 ],
                               ),

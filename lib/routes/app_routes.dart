@@ -28,6 +28,21 @@ class AppRoutes {
   static const staffEventsCelebration = '/staff-dashboard/events-celebration';
   static const staffTodoTasks = '/staff-dashboard/to-do-tasks';
   static const adminDashboard = '/admin-dashboard';
+  static const adminQuickAccess = '$adminDashboard/quick';
+  static const adminQuickMessages = '$adminQuickAccess/messages';
+  static const adminQuickCalendar = '$adminQuickAccess/calendar';
+  static const adminQuickDashboardSummary =
+      '$adminQuickAccess/dashboard-summary';
+  static const adminQuickWriteMessage = '$adminQuickAccess/write-message';
+  static const adminQuickRequest = '$adminQuickAccess/request';
+  static const adminQuickGroupClass = '$adminQuickAccess/group-class';
+  static const adminQuickPtm = '$adminQuickAccess/ptm';
+  static const adminQuickGroupsClassBus =
+      '$adminQuickAccess/groups-class-bus';
+  static const adminQuickCheckApproval = '$adminQuickAccess/check-approval';
+  static const adminQuickTrackUniRoute = '$adminQuickAccess/track-uni-route';
+  static const adminQuickTrackSp = '$adminQuickAccess/track-sp';
+  static const adminQuickTrack = '$adminQuickAccess/track';
   static const adminMedicalEventList =
       '$adminDashboard/other-options/medical-event-list';
   static const adminMedicalEventListView = '$adminMedicalEventList/view';

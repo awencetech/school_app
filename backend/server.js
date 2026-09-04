@@ -258,6 +258,7 @@ let busGpsCollection;
 let oneOnOneMeetingsCollection;
 let gateRegisterCollection;
 let employeeAttendanceCollection;
+let staffResourcesCollection;
 
 async function safeCreateIndex(collection, spec, options = {}) {
   try {
@@ -307,6 +308,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(gateRegisterCollection, { personType: 1, entryDate: -1 }),
     safeCreateIndex(employeeAttendanceCollection, { employeeId: 1, attendanceDate: 1 }, { unique: true }),
     safeCreateIndex(employeeAttendanceCollection, { attendanceDate: 1, status: 1 }),
+    safeCreateIndex(staffResourcesCollection, { staffId: 1, createdAt: -1 }),
   ]);
 }
 
@@ -361,6 +363,7 @@ async function connectMongo() {
     oneOnOneMeetingsCollection = db.collection('one-on-one-meetings');
     gateRegisterCollection = db.collection('gate-reg');
     employeeAttendanceCollection = db.collection('employee-attendance');
+    staffResourcesCollection = db.collection('staff-resources');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -513,8 +516,6 @@ function sanitizeStaffResourceForResponse(doc) {
 }
 
 function sanitizeStaffForResponse(doc) {
-    safeCreateIndex(staffResourcesCollection, { staffId: 1, createdAt: -1 }),
-    staffResourcesCollection = db.collection('staff-resources');
   if (!doc) return null;
   return {
     id: doc._id ? doc._id.toString() : doc.id || null,

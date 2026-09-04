@@ -23,8 +23,10 @@ class _AdminStaffResourcePageState extends State<AdminStaffResourcePage> {
   final _resourceService = StaffResourceService();
   List<StaffInfo> _staff = const [];
   List<StaffResource> _resources = const [];
-  bool _loading = true;
-  String? _error;
+  bool _staffLoading = true;
+  bool _resourcesLoading = true;
+  String? _staffError;
+  String? _resourcesError;
 
   String? get _token => context.read<AppState>().currentAuthToken;
 
@@ -35,26 +37,42 @@ class _AdminStaffResourcePageState extends State<AdminStaffResourcePage> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _staffLoading = true;
+      _resourcesLoading = true;
+      _staffError = null;
+      _resourcesError = null;
+    });
+    await Future.wait([_loadStaff(), _loadResources()]);
+  }
+
+  Future<void> _loadStaff() async {
     try {
-      final values = await Future.wait([
-        _staffService.getStaff(),
-        _resourceService.getAll(token: _token),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _staff = values[0] as List<StaffInfo>;
-        _resources = values[1] as List<StaffResource>;
-        _loading = false;
-      });
-    } catch (error) {
-      if (mounted) setState(() { _loading = false; _error = _message(error); });
+      final staff = await _staffService.getStaff();
+      if (mounted) setState(() { _staff = staff; _staffLoading = false; });
+    } catch (error, stackTrace) {
+      debugPrint('Unable to load staff information: $error\n$stackTrace');
+      if (mounted) setState(() { _staffLoading = false; _staffError = 'Unable to load staff information.'; });
+    }
+  }
+
+  Future<void> _loadResources() async {
+    try {
+      final resources = await _resourceService.getAll(token: _token);
+      if (mounted) setState(() { _resources = resources; _resourcesLoading = false; });
+    } catch (error, stackTrace) {
+      debugPrint('Unable to load staff resources: $error\n$stackTrace');
+      if (mounted) setState(() { _resourcesLoading = false; _resourcesError = _message(error); });
     }
   }
 
   String _message(Object error) => error.toString().replaceFirst('Exception: ', '');
 
   Future<void> _openForm([StaffResource? resource]) async {
+    if (_staffLoading) {
+      _toast('Staff members are still loading.', error: true);
+      return;
+    }
     if (_staff.isEmpty) {
       _toast('Add a staff profile before creating a resource.', error: true);
       return;
@@ -112,7 +130,7 @@ class _AdminStaffResourcePageState extends State<AdminStaffResourcePage> {
       appBar: AppBar(backgroundColor: AppColors.topBar, title: const Text('Staff Resources')),
       body: RefreshIndicator(
         onRefresh: _load,
-        child: _loading
+        child: _staffLoading
             ? const Center(child: CircularProgressIndicator())
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
@@ -126,36 +144,35 @@ class _AdminStaffResourcePageState extends State<AdminStaffResourcePage> {
                     child: FilledButton.icon(onPressed: () => _openForm(), icon: const Icon(Icons.add), label: const Text('Add Resource')),
                   ),
                   const SizedBox(height: 22),
-                  if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red))
-                  else ...[
-                    const Text('Staff Members', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    if (_staff.isEmpty)
-                      const _EmptyState('No staff members available.')
-                    else
-                      ..._staff.map((staff) => Card(
-                            child: ListTile(
-                              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                              title: Text(staff.name.isEmpty ? 'Unnamed staff' : staff.name),
-                              subtitle: Text(staff.employeeId.isEmpty ? 'Staff ID unavailable' : 'Staff ID: ${staff.employeeId}'),
-                              trailing: IconButton(
-                                tooltip: 'View resource history',
-                                icon: const Icon(Icons.arrow_forward_ios, size: 17),
-                                onPressed: () => Navigator.of(context).pushNamed(
-                                  AppRoutes.adminOtherStaffResourceHistory,
-                                  arguments: staff,
-                                ),
-                              ),
-                            ),
-                          )),
-                    const SizedBox(height: 22),
-                    const Text('All Resources', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    if (_resources.isEmpty)
-                      const _EmptyState('No staff resources available.')
-                    else
-                      ..._resources.map((resource) => _ResourceCard(resource: resource, onEdit: () => _openForm(resource), onDelete: () => _delete(resource))),
-                  ],
+                  const Text('Staff Members', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  const Text('Select a staff member to view their resources'),
+                  const SizedBox(height: 8),
+                  if (_staffError != null)
+                    _ErrorState(message: _staffError!, onRetry: _loadStaff)
+                  else if (_staff.isEmpty)
+                    const _EmptyState('No staff members available.')
+                  else
+                    ..._staff.map((staff) => Card(
+                          child: ListTile(
+                            onTap: () => _openHistory(staff),
+                            leading: _StaffAvatar(url: staff.imageUrl),
+                            title: Text(staff.name.isEmpty ? 'Unnamed staff' : staff.name),
+                            subtitle: Text(staff.employeeId.isEmpty ? 'Staff ID unavailable' : 'Staff ID: ${staff.employeeId}'),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 17),
+                          ),
+                        )),
+                  const SizedBox(height: 22),
+                  const Text('All Resources', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  if (_resourcesLoading)
+                    const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                  else if (_resourcesError != null)
+                    _ErrorState(message: _resourcesError!, onRetry: _loadResources)
+                  else if (_resources.isEmpty)
+                    const _EmptyState('No staff resources available.')
+                  else
+                    ..._resources.map((resource) => _ResourceCard(resource: resource, onEdit: () => _openForm(resource), onDelete: () => _delete(resource))),
                 ],
               ),
       ),
@@ -169,6 +186,41 @@ class _AdminStaffResourcePageState extends State<AdminStaffResourcePage> {
       ),
     );
   }
+
+  void _openHistory(StaffInfo staff) => Navigator.of(context).pushNamed(
+        AppRoutes.adminOtherStaffResourceHistory,
+        arguments: staff,
+      );
+}
+
+class _StaffAvatar extends StatelessWidget {
+  const _StaffAvatar({required this.url});
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = url.trim();
+    if (imageUrl.isEmpty) return const CircleAvatar(child: Icon(Icons.person_outline));
+    return CircleAvatar(
+      backgroundImage: NetworkImage(imageUrl),
+      child: const SizedBox.shrink(),
+      onBackgroundImageError: (_, error) {},
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      );
 }
 
 class _StaffResourceForm extends StatefulWidget {

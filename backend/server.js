@@ -254,6 +254,9 @@ let schoolNewsCollection;
 let medicalEventCollection;
 let staffLeaveCollection;
 let staffLeaveEntitlementsCollection;
+let busGpsCollection;
+let oneOnOneMeetingsCollection;
+let gateRegisterCollection;
 
 async function safeCreateIndex(collection, spec, options = {}) {
   try {
@@ -298,6 +301,9 @@ async function ensureIndexes(db) {
     safeCreateIndex(schoolNewsCollection, { isPublished: 1, date: -1, createdAt: -1 }),
     safeCreateIndex(staffLeaveCollection, { staffId: 1, createdAt: -1 }),
     safeCreateIndex(staffLeaveEntitlementsCollection, { staffId: 1, year: 1, leaveType: 1 }),
+    safeCreateIndex(busGpsCollection, { busRouteCode: 1 }),
+    safeCreateIndex(oneOnOneMeetingsCollection, { staffId: 1, startDateTime: -1 }),
+    safeCreateIndex(gateRegisterCollection, { personType: 1, entryDate: -1 }),
   ]);
 }
 
@@ -348,6 +354,9 @@ async function connectMongo() {
     medicalEventCollection = db.collection('medical-event');
     staffLeaveCollection = db.collection('emp-leave');
     staffLeaveEntitlementsCollection = db.collection('staff-leave-entitlements');
+    busGpsCollection = db.collection('bus gps');
+    oneOnOneMeetingsCollection = db.collection('one-on-one-meetings');
+    gateRegisterCollection = db.collection('gate-reg');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -411,6 +420,55 @@ function sanitizeUserForResponse(doc) {
     userId: doc.userId || doc.userID || '',
     email: doc.email || '',
     role: doc.role || 'student',
+  };
+}
+
+function sanitizeBusGpsForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    busRouteCode: doc.busRouteCode || '',
+    busRouteStatus: doc.busRouteStatus || 'Active',
+    year: doc.year || '',
+    busRouteDescription: doc.busRouteDescription || '',
+    busRouteDriver: doc.busRouteDriver || '',
+    busNo: doc.busNo || '',
+    hasGpsDevice: doc.hasGpsDevice || 'No',
+    gpsStatus: doc.gpsStatus || 'Offline',
+    engineStatus: doc.engineStatus || 'OFF',
+    isActive: doc.isActive !== false,
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeGateRegisterForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    gateNo: doc.gateNo || '',
+    customGateNo: doc.customGateNo || '',
+    personType: doc.personType || '',
+    entryDate: doc.entryDate || null,
+    status: doc.status || 'Registered',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeOneOnOneMeetingForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    staffId: doc.staffId || '',
+    staffName: doc.staffName || '',
+    startDateTime: doc.startDateTime || null,
+    endDateTime: doc.endDateTime || null,
+    meetingTime: doc.meetingTime || '',
+    meetingInfo: doc.meetingInfo || '',
+    meetingUrl: doc.meetingUrl || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
   };
 }
 
@@ -901,6 +959,204 @@ async function renumberGroups() {
     );
   }
 }
+
+// Gate Register CRUD
+function gateRegisterPayload(body) {
+  const gateNo = String(body.gateNo || '').trim();
+  const customGateNo = String(body.customGateNo || '').trim();
+  const personType = String(body.personType || '').trim();
+  const allowedGates = ['1', '2', '3', 'Other'];
+  const allowedPeople = ['Student', 'Staff', 'Parent', 'Others'];
+  if (!allowedGates.includes(gateNo)) return { error: 'Gate number must be 1, 2, 3, or Other.' };
+  if (gateNo === 'Other' && !customGateNo) return { error: 'Custom gate number is required for Other.' };
+  if (!allowedPeople.includes(personType)) return { error: 'Person type must be Student, Staff, Parent, or Others.' };
+  const entryDate = body.entryDate ? new Date(body.entryDate) : new Date();
+  if (Number.isNaN(entryDate.getTime())) return { error: 'Entry date is invalid.' };
+  return { values: { gateNo, customGateNo: gateNo === 'Other' ? customGateNo : '', personType, entryDate } };
+}
+
+function gateRegisterObjectId(id) {
+  return ObjectId.isValid(id) ? new ObjectId(id) : null;
+}
+
+app.get('/api/gate-register', async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = {};
+    if (req.query.personType) filter.personType = String(req.query.personType).trim();
+    const records = await gateRegisterCollection.find(filter).sort({ entryDate: -1, _id: -1 }).toArray();
+    return res.json(records.map(sanitizeGateRegisterForResponse));
+  } catch (error) {
+    console.error('GET /api/gate-register failed:', error);
+    return res.status(500).json({ message: 'Unable to load gate register records.' });
+  }
+});
+
+app.get('/api/gate-register/:id', async (req, res) => {
+  try {
+    const id = gateRegisterObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid gate register ID.' });
+    await connectMongo();
+    const record = await gateRegisterCollection.findOne({ _id: id });
+    if (!record) return res.status(404).json({ message: 'Gate register record not found.' });
+    return res.json(sanitizeGateRegisterForResponse(record));
+  } catch (error) {
+    console.error('GET /api/gate-register/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to load the gate register record.' });
+  }
+});
+
+app.post('/api/gate-register', async (req, res) => {
+  try {
+    const { values, error } = gateRegisterPayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const now = new Date();
+    const result = await gateRegisterCollection.insertOne({ ...values, status: 'Registered', createdAt: now, updatedAt: now });
+    return res.status(201).json(sanitizeGateRegisterForResponse(await gateRegisterCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/gate-register failed:', error);
+    return res.status(500).json({ message: 'Unable to create the gate register record.' });
+  }
+});
+
+app.put('/api/gate-register/:id', async (req, res) => {
+  try {
+    const id = gateRegisterObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid gate register ID.' });
+    const { values, error } = gateRegisterPayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const result = await gateRegisterCollection.updateOne({ _id: id }, { $set: { ...values, updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Gate register record not found.' });
+    return res.json(sanitizeGateRegisterForResponse(await gateRegisterCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PUT /api/gate-register/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update the gate register record.' });
+  }
+});
+
+app.delete('/api/gate-register/:id', async (req, res) => {
+  try {
+    const id = gateRegisterObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid gate register ID.' });
+    await connectMongo();
+    const result = await gateRegisterCollection.deleteOne({ _id: id });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Gate register record not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/gate-register/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete the gate register record.' });
+  }
+});
+
+// Bus GPS CRUD
+function busGpsPayload(body) {
+  const values = {
+    busRouteCode: String(body.busRouteCode || '').trim(),
+    busRouteStatus: String(body.busRouteStatus || '').trim(),
+    year: String(body.year || '').trim(),
+    busRouteDescription: String(body.busRouteDescription || '').trim(),
+    busRouteDriver: String(body.busRouteDriver || '').trim(),
+    busNo: String(body.busNo || '').trim(),
+    hasGpsDevice: String(body.hasGpsDevice || '').trim(),
+  };
+  const missing = Object.entries(values).filter(([, value]) => !value).map(([key]) => key);
+  if (missing.length > 0) return { error: `Required fields missing: ${missing.join(', ')}.` };
+  if (!['Active', 'Inactive'].includes(values.busRouteStatus)) return { error: 'Bus route status must be Active or Inactive.' };
+  if (!['Yes', 'No'].includes(values.hasGpsDevice)) return { error: 'hasGpsDevice must be Yes or No.' };
+  return { values };
+}
+
+function busGpsObjectId(id) {
+  return ObjectId.isValid(id) ? new ObjectId(id) : null;
+}
+
+app.get('/api/bus-gps', async (req, res) => {
+  try {
+    await connectMongo();
+    const routes = await busGpsCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(routes.map(sanitizeBusGpsForResponse));
+  } catch (error) {
+    console.error('GET /api/bus-gps failed:', error);
+    return res.status(500).json({ message: 'Unable to load bus routes.' });
+  }
+});
+
+app.get('/api/bus-gps/:id', async (req, res) => {
+  try {
+    const id = busGpsObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
+    await connectMongo();
+    const route = await busGpsCollection.findOne({ _id: id });
+    if (!route) return res.status(404).json({ message: 'Bus route not found.' });
+    return res.json(sanitizeBusGpsForResponse(route));
+  } catch (error) {
+    console.error('GET /api/bus-gps/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to load the bus route.' });
+  }
+});
+
+app.post('/api/bus-gps', async (req, res) => {
+  try {
+    const { values, error } = busGpsPayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const now = new Date().toISOString();
+    const payload = { ...values, gpsStatus: values.hasGpsDevice === 'Yes' ? 'Online' : 'Offline', engineStatus: 'OFF', isActive: values.busRouteStatus === 'Active', createdAt: now, updatedAt: now };
+    const result = await busGpsCollection.insertOne(payload);
+    return res.status(201).json(sanitizeBusGpsForResponse(await busGpsCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/bus-gps failed:', error);
+    return res.status(500).json({ message: 'Unable to create the bus route.' });
+  }
+});
+
+app.put('/api/bus-gps/:id', async (req, res) => {
+  try {
+    const id = busGpsObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
+    const { values, error } = busGpsPayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const result = await busGpsCollection.updateOne({ _id: id }, { $set: { ...values, isActive: values.busRouteStatus === 'Active', updatedAt: new Date().toISOString() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Bus route not found.' });
+    return res.json(sanitizeBusGpsForResponse(await busGpsCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PUT /api/bus-gps/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update the bus route.' });
+  }
+});
+
+app.delete('/api/bus-gps/:id', async (req, res) => {
+  try {
+    const id = busGpsObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
+    await connectMongo();
+    const result = await busGpsCollection.deleteOne({ _id: id });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Bus route not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/bus-gps/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete the bus route.' });
+  }
+});
+
+app.patch('/api/bus-gps/:id/gps-status', async (req, res) => {
+  try {
+    const id = busGpsObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
+    const gpsStatus = String(req.body?.gpsStatus || '').trim();
+    if (!['Online', 'Offline'].includes(gpsStatus)) return res.status(422).json({ message: 'GPS status must be Online or Offline.' });
+    await connectMongo();
+    const result = await busGpsCollection.updateOne({ _id: id }, { $set: { gpsStatus, updatedAt: new Date().toISOString() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Bus route not found.' });
+    return res.json(sanitizeBusGpsForResponse(await busGpsCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PATCH /api/bus-gps/:id/gps-status failed:', error);
+    return res.status(500).json({ message: 'Unable to update GPS status.' });
+  }
+});
 
 // Groups CRUD
 app.get('/api/groups', async (req, res) => {
@@ -3476,6 +3732,116 @@ app.post('/api/announcement/:id/remind', async (req, res) => {
   } catch (error) {
     console.error('POST /api/announcement/:id/remind failed:', error);
     return res.status(500).json({ message: 'Unable to save reminder.' });
+  }
+});
+
+// One-on-one meetings CRUD
+function oneOnOneMeetingPayload(body) {
+  const staffId = String(body.staffId || '').trim();
+  const staffName = String(body.staffName || '').trim();
+  const meetingTime = String(body.meetingTime || '').trim();
+  const meetingInfo = String(body.meetingInfo || '').trim();
+  const meetingUrl = String(body.meetingUrl || '').trim();
+  const startDateTime = new Date(body.startDateTime);
+  const endDateTime = new Date(body.endDateTime);
+  if (!staffId || !staffName || !meetingTime || !meetingInfo) {
+    return { error: 'Staff, meeting time, meeting info, start date/time, and end date/time are required.' };
+  }
+  if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+    return { error: 'Please provide valid meeting dates.' };
+  }
+  if (endDateTime <= startDateTime) return { error: 'End date/time must be later than start date/time.' };
+  if (meetingUrl && !/^https?:\/\//i.test(meetingUrl)) return { error: 'Meeting URL must be a valid HTTP or HTTPS URL.' };
+  return { values: { staffId, staffName, startDateTime, endDateTime, meetingTime, meetingInfo, meetingUrl } };
+}
+
+function meetingObjectId(id) {
+  return ObjectId.isValid(id) ? new ObjectId(id) : null;
+}
+
+app.get('/api/one-on-one-meetings', async (req, res) => {
+  try {
+    await connectMongo();
+    const meetings = await oneOnOneMeetingsCollection.find({}).sort({ startDateTime: -1, _id: -1 }).toArray();
+    return res.json(meetings.map(sanitizeOneOnOneMeetingForResponse));
+  } catch (error) {
+    console.error('GET /api/one-on-one-meetings failed:', error);
+    return res.status(500).json({ message: 'Unable to load meetings.' });
+  }
+});
+
+app.get('/api/one-on-one-meetings/staff/:staffId', async (req, res) => {
+  try {
+    await connectMongo();
+    const staffId = String(req.params.staffId || '').trim();
+    if (!staffId) return res.status(400).json({ message: 'Staff ID is required.' });
+    const meetings = await oneOnOneMeetingsCollection.find({ staffId }).sort({ startDateTime: -1, _id: -1 }).toArray();
+    return res.json({ data: meetings.map(sanitizeOneOnOneMeetingForResponse) });
+  } catch (error) {
+    console.error('GET /api/one-on-one-meetings/staff/:staffId failed:', error);
+    return res.status(500).json({ message: 'Unable to load staff meeting history.' });
+  }
+});
+
+app.get('/api/one-on-one-meetings/:id', async (req, res) => {
+  try {
+    const id = meetingObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid meeting ID.' });
+    await connectMongo();
+    const meeting = await oneOnOneMeetingsCollection.findOne({ _id: id });
+    if (!meeting) return res.status(404).json({ message: 'Meeting not found.' });
+    return res.json(sanitizeOneOnOneMeetingForResponse(meeting));
+  } catch (error) {
+    console.error('GET /api/one-on-one-meetings/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to load the meeting.' });
+  }
+});
+
+app.post('/api/one-on-one-meetings', async (req, res) => {
+  try {
+    const { values, error } = oneOnOneMeetingPayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const staff = await employeeInfoCollection.findOne({ employeeId: values.staffId });
+    if (!staff) return res.status(422).json({ message: 'The selected staff member no longer exists.' });
+    const now = new Date();
+    const result = await oneOnOneMeetingsCollection.insertOne({ ...values, staffName: staff.name, createdAt: now, updatedAt: now });
+    return res.status(201).json(sanitizeOneOnOneMeetingForResponse(await oneOnOneMeetingsCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/one-on-one-meetings failed:', error);
+    return res.status(500).json({ message: 'Unable to create the meeting.' });
+  }
+});
+
+app.put('/api/one-on-one-meetings/:id', async (req, res) => {
+  try {
+    const id = meetingObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid meeting ID.' });
+    const { values, error } = oneOnOneMeetingPayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const staff = await employeeInfoCollection.findOne({ employeeId: values.staffId });
+    if (!staff) return res.status(422).json({ message: 'The selected staff member no longer exists.' });
+    const result = await oneOnOneMeetingsCollection.updateOne({ _id: id }, { $set: { ...values, staffName: staff.name, updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Meeting not found.' });
+    return res.json(sanitizeOneOnOneMeetingForResponse(await oneOnOneMeetingsCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PUT /api/one-on-one-meetings/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update the meeting.' });
+  }
+});
+
+app.delete('/api/one-on-one-meetings/:id', async (req, res) => {
+  try {
+    const id = meetingObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid meeting ID.' });
+    await connectMongo();
+    const result = await oneOnOneMeetingsCollection.deleteOne({ _id: id });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Meeting not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/one-on-one-meetings/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete the meeting.' });
   }
 });
 

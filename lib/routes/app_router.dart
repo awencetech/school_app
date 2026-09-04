@@ -41,6 +41,9 @@ import '../screens/admin/library_edit_page.dart';
 import '../screens/admin/school_news_page.dart';
 import '../screens/admin/admin_medical_event_list_page.dart';
 import '../screens/admin/admin_medical_event_view_page.dart';
+import '../screens/admin/track_bus_gps_page.dart';
+import '../screens/admin/one_on_one_staff_meetings_page.dart';
+import '../screens/admin/gate_register_page.dart';
 import '../screens/admin/facebook_edit_page.dart';
 import '../screens/admin/youtube_edit_page.dart';
 import '../screens/admin/instagram_edit_page.dart';
@@ -274,20 +277,14 @@ class AppRouter {
             : null,
       ),
       AppRoutes.adminWrite => const AdminWriteMessagePage(),
-      AppRoutes.adminTrackBusGps => const EmptyAdminOptionPage(
-        title: 'Track Bus GPS',
-      ),
+      AppRoutes.adminTrackBusGps => const TrackBusGpsPage(),
       AppRoutes.adminEmployeeAttendance => const EmptyAdminOptionPage(
         title: 'Employee Attendance',
       ),
       AppRoutes.adminEmpLeaveApproval => const EmpLeaveApprovalPage(),
       AppRoutes.adminEmpLeaveApprovalHistory => const EmpLeaveHistoryPage(),
-      AppRoutes.adminOneOnOne => const EmptyAdminOptionPage(
-        title: 'One on One',
-      ),
-      AppRoutes.adminGateRegister => const EmptyAdminOptionPage(
-        title: 'Gate Register',
-      ),
+      AppRoutes.adminOneOnOne => const OneOnOneStaffMeetingsPage(),
+      AppRoutes.adminGateRegister => const GateRegisterPage(),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
       AppRoutes.adminDashboardLibrary => const LibraryPage(),
       AppRoutes.adminSchoolNews => const SchoolNewsPage(),

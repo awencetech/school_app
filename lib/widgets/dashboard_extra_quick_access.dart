@@ -14,6 +14,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
     this.onUniRouteZ2Tap,
     this.onSp7Tap,
     this.onTrackTap,
+    this.appBarTitle = 'Quick Access',
   });
 
   final int crossAxisCount;
@@ -23,6 +24,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
   final VoidCallback? onUniRouteZ2Tap;
   final VoidCallback? onSp7Tap;
   final VoidCallback? onTrackTap;
+  final String appBarTitle;
 
   static const _items = [
     _ExtraAction('Groups/class Bus', Icons.directions_bus, Color(0xffe85d4a)),
@@ -69,7 +71,10 @@ class DashboardExtraQuickAccess extends StatelessWidget {
               ? onTrackTap
               : () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => _ExtraQuickAccessDetailsPage(item: item),
+                    builder: (_) => _ExtraQuickAccessDetailsPage(
+                      item: item,
+                      appBarTitle: appBarTitle,
+                    ),
                   ),
                 ),
           child: Column(
@@ -85,13 +90,13 @@ class DashboardExtraQuickAccess extends StatelessWidget {
                 child: Icon(item.icon, size: 16, color: AppColors.white),
               ),
               const SizedBox(height: 4),
-              SizedBox(
-                height: 45,
+              Expanded(
                 child: Text(
                   item.label,
                   textAlign: TextAlign.center,
                   maxLines: 3,
                   softWrap: true,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w400,
@@ -116,9 +121,13 @@ class _ExtraAction {
 }
 
 class _ExtraQuickAccessDetailsPage extends StatelessWidget {
-  const _ExtraQuickAccessDetailsPage({required this.item});
+  const _ExtraQuickAccessDetailsPage({
+    required this.item,
+    required this.appBarTitle,
+  });
 
   final _ExtraAction item;
+  final String appBarTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +137,7 @@ class _ExtraQuickAccessDetailsPage extends StatelessWidget {
         backgroundColor: const Color(0xff34395f),
         foregroundColor: Colors.white,
         centerTitle: true,
-        title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),
+        title: Text(appBarTitle, style: const TextStyle(fontSize: 14)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

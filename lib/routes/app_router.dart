@@ -326,6 +326,7 @@ class AppRouter {
         isStaffView: true,
       ),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
+      AppRoutes.adminOtherStaffResource => const StaffResourcesPage(),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),

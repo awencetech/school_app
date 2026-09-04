@@ -646,19 +646,34 @@ class _SectionHeader extends StatelessWidget {
   final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        ...actions,
-      ],
-    ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final titleWidget = Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      );
+      final content = constraints.maxWidth < 600
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                titleWidget,
+                if (actions.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: actions),
+                ],
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(child: titleWidget),
+                ...actions,
+              ],
+            );
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: content,
+      );
+    },
   );
 }
 

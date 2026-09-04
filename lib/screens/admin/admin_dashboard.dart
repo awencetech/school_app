@@ -209,11 +209,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 ),
                               ),
                             ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+                              child: Text(
+                                'Access frequently used features quickly',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF666666),
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                               child: DashboardExtraQuickAccess(
                                 crossAxisCount: 5,
+                                appBarTitle: 'Quick Access',
                                 leadingItems: [
                                   _QuickAction(
                                     icon: Icons.message,
@@ -636,14 +648,13 @@ class _QuickAction extends StatelessWidget {
             child: Icon(icon, size: 16, color: AppColors.white),
           ),
           const SizedBox(height: 4),
-          SizedBox(
-            height: 45,
+          Expanded(
             child: Text(
               label,
               textAlign: TextAlign.center,
               maxLines: 3,
               softWrap: true,
-              overflow: TextOverflow.visible,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
                 fontSize: 10,
                 fontWeight: FontWeight.w400,

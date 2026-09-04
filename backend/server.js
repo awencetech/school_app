@@ -498,8 +498,23 @@ function sanitizeOneOnOneMeetingForResponse(doc) {
     updatedAt: doc.updatedAt || null,
   };
 }
+function sanitizeStaffResourceForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    staffId: doc.staffId || '',
+    staffName: doc.staffName || '',
+    description: doc.description || '',
+    link: doc.link || '',
+    slipReportImageUrl: doc.slipReportImageUrl || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
 
 function sanitizeStaffForResponse(doc) {
+    safeCreateIndex(staffResourcesCollection, { staffId: 1, createdAt: -1 }),
+    staffResourcesCollection = db.collection('staff-resources');
   if (!doc) return null;
   return {
     id: doc._id ? doc._id.toString() : doc.id || null,
@@ -4177,6 +4192,120 @@ app.put('/api/emp-leave/:id/reject', async (req, res) => {
     if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Pending leave request not found.' });
     return res.json({ success: true, message: 'Leave rejected successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: new ObjectId(req.params.id) })) });
   } catch (error) { return res.status(400).json({ success: false, message: 'Unable to reject leave request.' }); }
+});
+
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+function staffResourcePayload(body) {
+  return {
+    staffId: String(body.staffId || '').trim(),
+    description: String(body.description || '').trim(),
+    link: String(body.link || '').trim(),
+    slipReportImageUrl: String(body.slipReportImageUrl || '').trim(),
+  };
+}
+
+async function findStaffResourceStaff(staffId) {
+  const normalizedId = String(staffId || '').trim();
+  if (!normalizedId) return null;
+  return employeeInfoCollection.findOne({
+    $or: [{ employeeId: normalizedId }, { staffId: normalizedId }],
+  });
+}
+
+app.get('/api/staff-resources/my-resources', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const staffId = String(req.auth.userId || '').trim();
+    const resources = await staffResourcesCollection.find({ staffId }).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(resources.map(sanitizeStaffResourceForResponse));
+  } catch (error) {
+    console.error('GET /api/staff-resources/my-resources failed:', error);
+    return res.status(500).json({ message: 'Unable to load your staff resources.' });
+  }
+});
+
+app.get('/api/staff-resources', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = String(req.query.staffId || '').trim();
+    const resources = await staffResourcesCollection.find(filter ? { staffId: filter } : {}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(resources.map(sanitizeStaffResourceForResponse));
+  } catch (error) {
+    console.error('GET /api/staff-resources failed:', error);
+    return res.status(500).json({ message: 'Unable to load staff resources.' });
+  }
+});
+
+app.get('/api/staff-resources/:id', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    if (!ObjectId.isValid(req.params.id)) return res.status(404).json({ message: 'Staff resource not found.' });
+    const resource = await staffResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!resource) return res.status(404).json({ message: 'Staff resource not found.' });
+    return res.json(sanitizeStaffResourceForResponse(resource));
+  } catch (error) {
+    return res.status(404).json({ message: 'Staff resource not found.' });
+  }
+});
+
+app.post('/api/staff-resources', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const payload = staffResourcePayload(req.body || {});
+    if (!payload.staffId) return res.status(422).json({ message: 'Staff name is required.' });
+    if (!payload.description) return res.status(422).json({ message: 'Description is required.' });
+    if (payload.link && !isHttpUrl(payload.link)) return res.status(422).json({ message: 'Enter a valid resource URL.' });
+    const staff = await findStaffResourceStaff(payload.staffId);
+    if (!staff) return res.status(422).json({ message: 'Selected staff member was not found.' });
+    const now = new Date().toISOString();
+    const document = { ...payload, staffId: staff.employeeId || payload.staffId, staffName: staff.name || '', createdAt: now, updatedAt: now };
+    const result = await staffResourcesCollection.insertOne(document);
+    return res.status(201).json(sanitizeStaffResourceForResponse(await staffResourcesCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    console.error('POST /api/staff-resources failed:', error);
+    return res.status(500).json({ message: 'Unable to save staff resource.' });
+  }
+});
+
+app.put('/api/staff-resources/:id', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    if (!ObjectId.isValid(req.params.id)) return res.status(404).json({ message: 'Staff resource not found.' });
+    const payload = staffResourcePayload(req.body || {});
+    if (!payload.staffId) return res.status(422).json({ message: 'Staff name is required.' });
+    if (!payload.description) return res.status(422).json({ message: 'Description is required.' });
+    if (payload.link && !isHttpUrl(payload.link)) return res.status(422).json({ message: 'Enter a valid resource URL.' });
+    const staff = await findStaffResourceStaff(payload.staffId);
+    if (!staff) return res.status(422).json({ message: 'Selected staff member was not found.' });
+    const updates = { ...payload, staffId: staff.employeeId || payload.staffId, staffName: staff.name || '', updatedAt: new Date().toISOString() };
+    const result = await staffResourcesCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: updates });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Staff resource not found.' });
+    return res.json(sanitizeStaffResourceForResponse(await staffResourcesCollection.findOne({ _id: new ObjectId(req.params.id) })));
+  } catch (error) {
+    console.error('PUT /api/staff-resources/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update staff resource.' });
+  }
+});
+
+app.delete('/api/staff-resources/:id', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    if (!ObjectId.isValid(req.params.id)) return res.status(404).json({ message: 'Staff resource not found.' });
+    const result = await staffResourcesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Staff resource not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/staff-resources/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete staff resource.' });
+  }
 });
 
 app.get('/api/staff', async (req, res) => {

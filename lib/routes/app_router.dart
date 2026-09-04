@@ -68,6 +68,8 @@ import '../screens/admin/create_group_screen.dart';
 import '../screens/admin/create_class_screen.dart';
 import '../screens/admin/empty_admin_option_page.dart';
 import '../screens/admin/admin_write_message_page.dart';
+import '../screens/admin/admin_staff_resource_page.dart';
+import '../screens/admin/staff_resource_history_page.dart';
 import '../screens/messages/messages_page.dart';
 import '../screens/staff/staff_campaigns_page.dart';
 import '../screens/staff/staff_request_message_page.dart';
@@ -326,7 +328,12 @@ class AppRouter {
         isStaffView: true,
       ),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
-      AppRoutes.adminOtherStaffResource => const StaffResourcesPage(),
+      AppRoutes.adminOtherStaffResource => const AdminStaffResourcePage(),
+      AppRoutes.adminOtherStaffResourceHistory => StaffResourceHistoryPage(
+        staff: settings.arguments is StaffInfo
+            ? settings.arguments as StaffInfo
+            : null,
+      ),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
       AppRoutes.adminKnowYourSchool => const KnowYourSchoolPage(),

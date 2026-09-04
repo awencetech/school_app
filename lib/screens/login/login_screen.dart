@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // route based on authoritative backend role
           if (user.role == 'student') {
             navigator.pushNamedAndRemoveUntil(
-              AppRoutes.studentDashboardFor(user.userId),
+              AppRoutes.studentDashboard,
               (route) => false,
             );
           } else if (user.role == 'staff') {

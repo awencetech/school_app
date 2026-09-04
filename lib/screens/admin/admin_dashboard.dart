@@ -4,14 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
-import '../../services/social_url_service.dart';
 import '../../services/app_state.dart';
 import '../../services/user_menu_state.dart';
 import '../../theme/app_colors.dart';
@@ -43,105 +41,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedBottomIndex = 0;
 
-  Future<void> _openWebsite(BuildContext context) async {
-    final websiteUrl = context.read<SchoolConfigService>().websiteUrl.trim();
-    if (websiteUrl.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('School website is not configured yet.')),
-      );
-      return;
-    }
-
-    final uri = Uri.tryParse(websiteUrl);
-    if (uri == null || !uri.hasScheme) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('School website URL is invalid.')),
-      );
-      return;
-    }
-
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open the website right now.')),
-      );
-    }
-  }
-
-  Future<void> _openFacebook(BuildContext context) async {
-    try {
-      final url = await SocialUrlService().getFacebookUrl();
-      if (!context.mounted) return;
-      if (url.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Facebook link is not available.')));
-        return;
-      }
-      final uri = Uri.tryParse(url);
-      if (uri == null || !['http', 'https'].contains(uri.scheme.toLowerCase()) || uri.host.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Facebook link.')));
-      }
-    } catch (_) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Facebook link.')));
-    }
-  }
-
-  Future<void> _openYoutube(BuildContext context) async {
-    try {
-      final url = await SocialUrlService().getYoutubeUrl();
-      if (!context.mounted) return;
-      if (url.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('YouTube link is not available.')));
-        return;
-      }
-      final uri = Uri.tryParse(url);
-      if (uri == null || !['http', 'https'].contains(uri.scheme.toLowerCase()) || uri.host.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open YouTube link.')));
-      }
-    } catch (_) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open YouTube link.')));
-    }
-  }
-
-  Future<void> _openInstagram(BuildContext context) async {
-    try {
-      final url = await SocialUrlService().getInstagramUrl();
-      if (!context.mounted) return;
-      if (url.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Instagram link is not available.')));
-        return;
-      }
-      final uri = Uri.tryParse(url);
-      if (uri == null || !['http', 'https'].contains(uri.scheme.toLowerCase()) || uri.host.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Instagram link.')));
-      }
-    } catch (_) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open Instagram link.')));
-    }
-  }
-
-  Future<void> _openWhatsapp(BuildContext context) async {
-    try {
-      final config = await SocialUrlService().getWhatsappConfig();
-      if (!context.mounted) return;
-      final number = (config['phoneNumber'] ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-      final message = config['text'] ?? '';
-      if (number.isEmpty || message.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('WhatsApp link is not available.')));
-        return;
-      }
-      final uri = Uri.parse('https://wa.me/$number?text=${Uri.encodeComponent(message)}');
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open WhatsApp.')));
-      }
-    } catch (_) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open WhatsApp.')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -166,75 +65,102 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             // Main body content
             _selectedBottomIndex == 2
-              ? const HelpMenuScreen()
-              : _selectedBottomIndex == 3
-              ? const SupportScreen()
-              : FutureBuilder<SchoolInfo>(
-                  future: DummyDataService.getSchoolInfo(),
-                  builder: (context, snapshot) {
-                    final config = context.watch<SchoolConfigService>();
-                    final schoolName = config.schoolName.isNotEmpty
-                        ? config.schoolName
-                        : snapshot.data?.name ?? 'SCHOOL NAME';
-                    final welcomeText = config.welcome.isNotEmpty
-                        ? config.welcome
-                        : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
+                ? const HelpMenuScreen()
+                : _selectedBottomIndex == 3
+                ? const SupportScreen()
+                : FutureBuilder<SchoolInfo>(
+                    future: DummyDataService.getSchoolInfo(),
+                    builder: (context, snapshot) {
+                      final config = context.watch<SchoolConfigService>();
+                      final schoolName = config.schoolName.isNotEmpty
+                          ? config.schoolName
+                          : snapshot.data?.name ?? 'SCHOOL NAME';
+                      final welcomeText = config.welcome.isNotEmpty
+                          ? config.welcome
+                          : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';
 
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12, bottom: 12),
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 220,
-                              child: () {
-                            final posterSource = config.posterDisplaySource;
-                            if (posterSource != null &&
-                                posterSource.isNotEmpty) {
-                              final uri = Uri.tryParse(posterSource);
-                              if (uri != null &&
-                                  uri.hasScheme &&
-                                  (uri.scheme == 'http' ||
-                                      uri.scheme == 'https')) {
-                                return CachedNetworkImage(
-                                  imageUrl: posterSource,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  placeholder: (context, url) =>
-                                      Container(color: const Color(0xFF1AA596)),
-                                  errorWidget: (context, url, error) {
-                                    debugPrint(
-                                      'School poster loading error: $error',
-                                    );
-                                    debugPrint('Poster URL: $posterSource');
-                                    return Container(
-                                      color: const Color(0xFF1AA596),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'School Poster\\n(W-1920 x H-1080)',
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.primaryText,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              }
-
-                              return Image.memory(
-                                base64Decode(posterSource),
-                                fit: BoxFit.cover,
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 12,
+                                bottom: 12,
+                              ),
+                              child: SizedBox(
                                 width: double.infinity,
-                                height: double.infinity,
-                                errorBuilder: (context, error, stackTrace) {
+                                height: 220,
+                                child: () {
+                                  final posterSource =
+                                      config.posterDisplaySource;
+                                  if (posterSource != null &&
+                                      posterSource.isNotEmpty) {
+                                    final uri = Uri.tryParse(posterSource);
+                                    if (uri != null &&
+                                        uri.hasScheme &&
+                                        (uri.scheme == 'http' ||
+                                            uri.scheme == 'https')) {
+                                      return CachedNetworkImage(
+                                        imageUrl: posterSource,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        placeholder: (context, url) =>
+                                            Container(
+                                              color: const Color(0xFF1AA596),
+                                            ),
+                                        errorWidget: (context, url, error) {
+                                          debugPrint(
+                                            'School poster loading error: $error',
+                                          );
+                                          debugPrint(
+                                            'Poster URL: $posterSource',
+                                          );
+                                          return Container(
+                                            color: const Color(0xFF1AA596),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              'School Poster\\n(W-1920 x H-1080)',
+                                              textAlign: TextAlign.center,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.primaryText,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+
+                                    return Image.memory(
+                                      base64Decode(posterSource),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: const Color(0xFF1AA596),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            'School Poster\\n(W-1920 x H-1080)',
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primaryText,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }
+
                                   return Container(
+                                    width: double.infinity,
+                                    height: double.infinity,
                                     color: const Color(0xFF1AA596),
                                     alignment: Alignment.center,
                                     child: Text(
@@ -247,432 +173,418 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       ),
                                     ),
                                   );
-                                },
-                              );
-                            }
-
-                            return Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              color: const Color(0xFF1AA596),
-                              alignment: Alignment.center,
+                                }(),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              schoolName,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.sectionTitle,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              welcomeText,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Padding(
+                              padding: EdgeInsets.zero,
+                              child: ImportantNewsMarquee(
+                                items: config.runningItems
+                                    .map(
+                                      (t) =>
+                                          NewsItem(title: t, description: ''),
+                                    )
+                                    .toList(),
+                                height: 54,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                               child: Text(
-                                'School Poster\\n(W-1920 x H-1080)',
-                                textAlign: TextAlign.center,
+                                'Quick Access',
                                 style: GoogleFonts.poppins(
-                                  fontSize: 22,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryText,
-                                ),
-                              ),
-                            );
-                          }(),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        schoolName,
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.sectionTitle,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        welcomeText,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: EdgeInsets.zero,
-                        child: ImportantNewsMarquee(
-                          items: config.runningItems
-                              .map((t) => NewsItem(title: t, description: ''))
-                              .toList(),
-                          height: 54,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: Text(
-                          'Quick Access',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF222222),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: DashboardExtraQuickAccess(
-                          crossAxisCount: 5,
-                          leadingItems: [
-                            _QuickAction(
-                              icon: Icons.message,
-                              label: 'Messages HW, CW',
-                              color: Color(0xFFFF7043),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const MessagesPage(),
+                                  color: const Color(0xFF222222),
                                 ),
                               ),
                             ),
-                            _QuickAction(
-                              icon: Icons.calendar_month,
-                              label: 'Calendar',
-                              color: Color(0xFFE53935),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.staffEventCalendar),
-                            ),
-                            _QuickAction(
-                              icon: Icons.dashboard,
-                              label: 'Dashboard Summary Info',
-                              color: Color(0xFF1E4D8F),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.staffOverviewDashboard),
-                            ),
-                            _QuickAction(
-                              icon: Icons.edit,
-                              label: 'Write Message',
-                              color: Color(0xFFBF360C),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const StaffWriteMessagePage(),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                              child: DashboardExtraQuickAccess(
+                                crossAxisCount: 5,
+                                leadingItems: [
+                                  _QuickAction(
+                                    icon: Icons.message,
+                                    label: 'Messages HW, CW',
+                                    color: Color(0xFFFF7043),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const MessagesPage(),
+                                      ),
+                                    ),
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.calendar_month,
+                                    label: 'Calendar',
+                                    color: Color(0xFFE53935),
+                                    onTap: () => Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.staffEventCalendar),
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.dashboard,
+                                    label: 'Dashboard Summary Info',
+                                    color: Color(0xFF1E4D8F),
+                                    onTap: () =>
+                                        Navigator.of(context).pushNamed(
+                                          AppRoutes.staffOverviewDashboard,
+                                        ),
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.edit,
+                                    label: 'Write Message',
+                                    color: Color(0xFFBF360C),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StaffWriteMessagePage(),
+                                      ),
+                                    ),
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.assignment,
+                                    label: 'Request',
+                                    color: Color(0xFFF4B400),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StaffRequestMessagePage(),
+                                      ),
+                                    ),
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.fact_check,
+                                    label: 'Campaign Survey',
+                                    color: Color(0xFF8D6E63),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StaffCampaignsPage(),
+                                      ),
+                                    ),
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.assignment_turned_in,
+                                    label: 'PTM',
+                                    color: Color(0xFF5E7D1F),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const StudentPtmPage(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                onGroupClassBusTap: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StudentGroupClassBusPage(),
+                                      ),
+                                    ),
+                                onCheckApproveTap: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StudentCheckApprovePage(),
+                                      ),
+                                    ),
+                                onUniRouteZ2Tap: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const StudentUniRoutePage(),
+                                      ),
+                                    ),
+                                onSp7Tap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const StudentUniRoutePage(
+                                      routeName: 'UNI-Route-SP7',
+                                    ),
+                                  ),
+                                ),
+                                onTrackTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const StudentUniRoutePage(
+                                      routeName: 'Track',
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                            _QuickAction(
-                              icon: Icons.assignment,
-                              label: 'Request',
-                              color: Color(0xFFF4B400),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const StaffRequestMessagePage(),
+                            const SizedBox(height: 18),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                              child: Text(
+                                'Know your School',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF222222),
                                 ),
                               ),
                             ),
-                            _QuickAction(
-                              icon: Icons.fact_check,
-                              label: 'Campaign Survey',
-                              color: Color(0xFF8D6E63),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const StaffCampaignsPage(),
+                            const SizedBox(height: 10),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                              child: DashboardIconGrid(
+                                children: [
+                                  _SchoolLinkChip(
+                                    icon: Icons.language,
+                                    label: 'Website',
+                                    color: Color(0xFF4CAF50),
+                                    onTap: () =>
+                                        Navigator.of(context).pushNamed(
+                                          AppRoutes
+                                              .adminKnowYourSchoolWebsiteEdit,
+                                        ),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.school,
+                                    label: 'School handbook',
+                                    color: Color(0xFFF59E0B),
+                                    onTap: () => Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.staffHandbook),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.event,
+                                    label: 'Events Celebrations',
+                                    color: Color(0xFFF44336),
+                                    onTap: () =>
+                                        Navigator.of(context).pushNamed(
+                                          AppRoutes.staffEventsCelebration,
+                                        ),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.folder_copy_outlined,
+                                    label: 'School Res.',
+                                    color: Color(0xFF8D6E63),
+                                    onTap: () => Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.schoolResources),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.newspaper,
+                                    label: 'Newsletter',
+                                    color: Color(0xFF5C84C3),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.announcement,
+                                    label: 'Announcement',
+                                    color: Color(0xFF43A047),
+                                    onTap: () => Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.staffAnnouncements),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.people,
+                                    label: 'Demography',
+                                    color: Color(0xFF388E3C),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.facebook,
+                                    label: 'Facebook',
+                                    color: Color(0xFF3B5998),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.ondemand_video,
+                                    label: 'Youtube',
+                                    color: Color(0xFFD32F2F),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.chat,
+                                    label: 'Whatsapp',
+                                    color: Color(0xFF25D366),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.camera_alt,
+                                    label: 'Instagram',
+                                    color: Color(0xFFE1306C),
+                                  ),
+                                  _SchoolLinkChip(
+                                    icon: Icons.library_books,
+                                    label: 'Library',
+                                    color: Color(0xFF795548),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                              child: Text(
+                                'Other Options',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF222222),
                                 ),
                               ),
                             ),
-                            _QuickAction(
-                              icon: Icons.assignment_turned_in,
-                              label: 'PTM',
-                              color: Color(0xFF5E7D1F),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const StudentPtmPage(),
-                                ),
+                            const SizedBox(height: 10),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                              child: DashboardIconGrid(
+                                children: [
+                                  _QuickAction(
+                                    icon: Icons.menu,
+                                    label: 'Other\nMenu',
+                                    color: Color(0xFFB91C1C),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminOtherOptions);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.group,
+                                    label: 'List\nStudents',
+                                    color: Color(0xFFF59E0B),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminListStudents);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.person,
+                                    label: 'List\nTeachers',
+                                    color: Color(0xFFF43F5E),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminListTeachers);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.class_,
+                                    label: 'List\nClasses',
+                                    color: Color(0xFF16A34A),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminListClasses);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.group_work,
+                                    label: 'List Other\ngroups',
+                                    color: Color(0xFF7C3AED),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminOtherGroups);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.edit,
+                                    label: 'Write',
+                                    color: Color(0xFFF97316),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminWrite);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.newspaper,
+                                    label: 'School\nNews',
+                                    color: Color(0xFF3B82F6),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminSchoolNews);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.medical_services,
+                                    label: 'Medical Event\nList',
+                                    color: Color(0xFF92400E),
+                                    onTap: () {
+                                      Navigator.of(context).pushNamed(
+                                        AppRoutes.adminMedicalEventList,
+                                      );
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.location_on,
+                                    label: 'Track Bus\nGPS',
+                                    color: Color(0xFF0EA5E9),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminTrackBusGps);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.badge,
+                                    label: 'Employee\nAttendance',
+                                    color: Color(0xFF2563EB),
+                                    onTap: () {
+                                      Navigator.of(context).pushNamed(
+                                        AppRoutes.adminEmployeeAttendance,
+                                      );
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.approval,
+                                    label: 'Emp Leave\nApproval',
+                                    color: Color(0xFF16A34A),
+                                    onTap: () {
+                                      Navigator.of(context).pushNamed(
+                                        AppRoutes.adminEmpLeaveApproval,
+                                      );
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.people_alt,
+                                    label: 'One on\nOne',
+                                    color: Color(0xFF4F46E5),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminOneOnOne);
+                                    },
+                                  ),
+                                  _QuickAction(
+                                    icon: Icons.door_front_door,
+                                    label: 'Gate\nRegister',
+                                    color: Color(0xFF10B981),
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.adminGateRegister);
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                          onGroupClassBusTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StudentGroupClassBusPage(),
-                            ),
-                          ),
-                          onCheckApproveTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StudentCheckApprovePage(),
-                            ),
-                          ),
-                          onUniRouteZ2Tap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StudentUniRoutePage(),
-                            ),
-                          ),
-                          onSp7Tap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StudentUniRoutePage(
-                                routeName: 'UNI-Route-SP7',
-                              ),
-                            ),
-                          ),
-                          onTrackTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const StudentUniRoutePage(routeName: 'Track'),
-                            ),
-                          ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: Text(
-                          'Know your School',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF222222),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: DashboardIconGrid(
-                          children: [
-                            _SchoolLinkChip(
-                              icon: Icons.language,
-                              label: 'Website',
-                              color: Color(0xFF4CAF50),
-                              onTap: () => _openWebsite(context),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.school,
-                              label: 'School handbook',
-                              color: Color(0xFFF59E0B),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.staffHandbook),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.event,
-                              label: 'Events Celebrations',
-                              color: Color(0xFFF44336),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.staffEventsCelebration),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.folder_copy_outlined,
-                              label: 'School Res.',
-                              color: Color(0xFF8D6E63),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.schoolResources),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.newspaper,
-                              label: 'Newsletter',
-                              color: Color(0xFF5C84C3),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.adminDashboardNewsletter),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.announcement,
-                              label: 'Announcement',
-                              color: Color(0xFF43A047),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.staffAnnouncements),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.people,
-                              label: 'Demography',
-                              color: Color(0xFF6A1B9A),
-                              onTap: () => Navigator.of(context).pushNamed(
-                                AppRoutes.adminDashboardDemography,
-                              ),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.facebook,
-                              label: 'Facebook',
-                              color: Color(0xFF3B5998),
-                              onTap: () => _openFacebook(context),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.ondemand_video,
-                              label: 'Youtube',
-                              color: Color(0xFFD32F2F),
-                              onTap: () => _openYoutube(context),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.chat,
-                              label: 'Whatsapp',
-                              color: Color(0xFF25D366),
-                              onTap: () => _openWhatsapp(context),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.camera_alt,
-                              label: 'Instagram',
-                              color: Color(0xFFE1306C),
-                              onTap: () => _openInstagram(context),
-                            ),
-                            _SchoolLinkChip(
-                              icon: Icons.library_books,
-                              label: 'Library',
-                              color: Color(0xFF795548),
-                              onTap: () => Navigator.of(context).pushNamed(
-                                AppRoutes.adminDashboardLibrary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: Text(
-                          'Other Options',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF222222),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                        child: DashboardIconGrid(
-                          children: [
-                            _QuickAction(
-                              icon: Icons.menu,
-                              label: 'Other\nMenu',
-                              color: Color(0xFFB91C1C),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.adminOtherOptions);
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.group,
-                              label: 'List\nStudents',
-                              color: Color(0xFFF59E0B),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.adminListStudents);
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.person,
-                              label: 'List\nTeachers',
-                              color: Color(0xFFF43F5E),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.adminListTeachers);
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.class_,
-                              label: 'List\nClasses',
-                              color: Color(0xFF16A34A),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.adminListClasses);
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.group_work,
-                              label: 'List Other\ngroups',
-                              color: Color(0xFF7C3AED),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.adminOtherGroups);
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.edit,
-                              label: 'Write',
-                              color: Color(0xFFF97316),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminWrite,
-                                );
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.newspaper,
-                              label: 'School\nNews',
-                              color: Color(0xFF3B82F6),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(AppRoutes.adminSchoolNews);
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.medical_services,
-                              label: 'Medical Event\nList',
-                              color: Color(0xFF92400E),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminMedicalEventList,
-                                );
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.location_on,
-                              label: 'Track Bus\nGPS',
-                              color: Color(0xFF0EA5E9),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminTrackBusGps,
-                                );
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.badge,
-                              label: 'Employee\nAttendance',
-                              color: Color(0xFF2563EB),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminEmployeeAttendance,
-                                );
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.approval,
-                              label: 'Emp Leave\nApproval',
-                              color: Color(0xFF16A34A),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminEmpLeaveApproval,
-                                );
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.people_alt,
-                              label: 'One on\nOne',
-                              color: Color(0xFF4F46E5),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminOneOnOne,
-                                );
-                              },
-                            ),
-                            _QuickAction(
-                              icon: Icons.door_front_door,
-                              label: 'Gate\nRegister',
-                              color: Color(0xFF10B981),
-                              onTap: () {
-                                Navigator.of(context).pushNamed(
-                                  AppRoutes.adminGateRegister,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-            
+
             // Transparent overlay to close menu when tapping outside
             if (context.watch<UserMenuState>().isOpen)
               Positioned.fill(
@@ -681,19 +593,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: Container(color: Colors.transparent),
                 ),
               ),
-            
+
             // User action menu (appears above the navigation bar)
             if (context.watch<UserMenuState>().isOpen)
               UserActionMenu(
                 onProfileTap: () async {
                   context.read<UserMenuState>().close();
                   if (!mounted) return;
-                  await Navigator.of(context).pushNamed(AppRoutes.adminUserProfile);
+                  await Navigator.of(
+                    context,
+                  ).pushNamed(AppRoutes.adminUserProfile);
                 },
                 onPasswordTap: () async {
                   context.read<UserMenuState>().close();
                   if (!mounted) return;
-                  await Navigator.of(context).pushNamed(AppRoutes.adminChangePassword);
+                  await Navigator.of(
+                    context,
+                  ).pushNamed(AppRoutes.adminChangePassword);
                 },
               ),
           ],

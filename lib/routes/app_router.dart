@@ -236,14 +236,6 @@ class AppRouter {
       AppRoutes.forgotPassword => const ForgotPasswordScreen(),
       AppRoutes.createAccount => const CreateAccountScreen(),
       AppRoutes.studentDashboard => const StudentDashboard(),
-      _
-          when settings.name != null &&
-              settings.name!.startsWith('${AppRoutes.studentDashboard}/') =>
-        StudentDashboard(
-          studentId: settings.name!.substring(
-            '${AppRoutes.studentDashboard}/'.length,
-          ),
-        ),
       AppRoutes.studentInfo => const StudentInfoScreen(),
       AppRoutes.studentMoreOptions => const StudentMoreOptionsScreen(),
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),

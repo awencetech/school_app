@@ -39,9 +39,7 @@ import '../admin/class_demography_page.dart';
 
 /// Student dashboard screen following the supplied school ERP design system.
 class StudentDashboard extends StatefulWidget {
-  const StudentDashboard({super.key, this.studentId});
-
-  final String? studentId;
+  const StudentDashboard({super.key});
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
@@ -94,23 +92,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (!mounted) return;
     final userId = appState.currentUserId?.trim() ?? '';
     final token = appState.currentAuthToken?.trim() ?? '';
-    final routeStudentId = widget.studentId?.trim() ?? '';
-    if (userId.isEmpty ||
-        token.isEmpty ||
-        (routeStudentId.isNotEmpty && routeStudentId != userId)) {
+    if (userId.isEmpty || token.isEmpty) {
       if (mounted) {
-        if (userId.isEmpty || token.isEmpty) {
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
-          return;
-        }
-        setState(() {
-          _studentLoading = false;
-          _studentError = routeStudentId.isNotEmpty && routeStudentId != userId
-              ? 'This student dashboard is not available.'
-              : 'Student profile is not available.';
-        });
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+        return;
       }
       return;
     }

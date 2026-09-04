@@ -77,14 +77,9 @@ class _OneOnOneStaffMeetingsPageState extends State<OneOnOneStaffMeetingsPage> {
   }
 
   Future<void> _history(StaffInfo staff) async {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => MeetingHistoryDialog(
-        staff: staff,
-        service: _meetingService,
-        onEdit: _setup,
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.adminOneOnOneMeetingInfo, arguments: staff);
   }
 
   void _message(String message, {bool error = false}) =>
@@ -138,34 +133,40 @@ class _OneOnOneStaffMeetingsPageState extends State<OneOnOneStaffMeetingsPage> {
                   else if (_staff.isEmpty)
                     const _StateMessage(message: 'No staff members found.')
                   else
-                    Card(
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          _StaffTableHeader(
-                            actionWidth: constraints.maxWidth < 500 ? 145 : 210,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                    Column(
+                      children: [
+                        _Pagination(
+                          page: _page,
+                          pageCount: pageCount,
+                          onChanged: (page) => setState(() => _page = page),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFFD8DCE2)),
                           ),
-                          ...visible.map(
-                            (staff) => _StaffRow(
-                              actionWidth: constraints.maxWidth < 500
-                                  ? 145
-                                  : 210,
-                              staff: staff,
-                              onSet: () => _setup(staff),
-                              onView: () => _history(staff),
-                            ),
+                          child: Column(
+                            children: [
+                              _StaffTableHeader(
+                                actionWidth: constraints.maxWidth < 500
+                                    ? 112
+                                    : 210,
+                                color: const Color(0xFFE7EAEE),
+                              ),
+                              ...visible.map(
+                                (staff) => _StaffRow(
+                                  actionWidth: constraints.maxWidth < 500
+                                      ? 112
+                                      : 210,
+                                  staff: staff,
+                                  onSet: () => _setup(staff),
+                                  onView: () => _history(staff),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  if (!_loading && _error == null && _staff.isNotEmpty)
-                    _Pagination(
-                      page: _page,
-                      pageCount: pageCount,
-                      onChanged: (page) => setState(() => _page = page),
+                        ),
+                      ],
                     ),
                 ],
               ),
@@ -210,7 +211,7 @@ class _StaffRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: const BoxDecoration(
       border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
     ),
@@ -221,7 +222,7 @@ class _StaffRow extends StatelessWidget {
           child: Text(
             '${staff.name} - ${staff.employeeId}',
             softWrap: true,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           ),
         ),
         SizedBox(
@@ -233,8 +234,9 @@ class _StaffRow extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onSet,
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: const Size(0, 26),
+                    padding: const EdgeInsets.symmetric(horizontal: 9),
+                    visualDensity: VisualDensity.compact,
                   ),
                   child: const Text('Set'),
                 ),
@@ -244,8 +246,9 @@ class _StaffRow extends StatelessWidget {
                 child: TextButton(
                   onPressed: onView,
                   style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 26),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    visualDensity: VisualDensity.compact,
                   ),
                   child: const Text('View'),
                 ),
@@ -266,7 +269,7 @@ class _StaffTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     color: color,
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     child: Row(
       children: [
         const Expanded(
@@ -305,12 +308,14 @@ class _Pagination extends StatelessWidget {
       children: [
         IconButton(
           onPressed: page > 0 ? () => onChanged(page - 1) : null,
-          icon: const Icon(Icons.chevron_left),
+          icon: const Icon(Icons.chevron_left, size: 18),
         ),
         for (var index = 0; index < pageCount; index++)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: ChoiceChip(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 5),
               label: Text('${index + 1}'),
               selected: index == page,
               onSelected: (_) => onChanged(index),
@@ -318,7 +323,7 @@ class _Pagination extends StatelessWidget {
           ),
         IconButton(
           onPressed: page + 1 < pageCount ? () => onChanged(page + 1) : null,
-          icon: const Icon(Icons.chevron_right),
+          icon: const Icon(Icons.chevron_right, size: 18),
         ),
       ],
     ),

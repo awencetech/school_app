@@ -28,41 +28,56 @@ class AppRoutes {
   static const staffEventsCelebration = '/staff-dashboard/events-celebration';
   static const staffTodoTasks = '/staff-dashboard/to-do-tasks';
   static const adminDashboard = '/admin-dashboard';
-    static const adminMedicalEventList =
-            '$adminDashboard/other-options/medical-event-list';
-    static const adminMedicalEventListView = '$adminMedicalEventList/view';
+  static const adminMedicalEventList =
+      '$adminDashboard/other-options/medical-event-list';
+  static const adminMedicalEventListView = '$adminMedicalEventList/view';
   static const adminDashboardNewsletter = '$adminDashboard/news-letter';
   static const adminDashboardDemography = '$adminDashboard/demography';
   static const adminDashboardLibrary = '$adminDashboard/library';
   static const adminSchoolNews = '/admin/other-options/schoolnews';
   static const adminOtherOptions = '/admin/other-options';
-    static const adminWrite = '$adminDashboard/other-options/write';
-        static const adminTrackBusGps =
-            '$adminDashboard/other-options/track-bus-gps';
-    static const adminEmployeeAttendance =
-            '$adminDashboard/other-options/employee-attendance';
-        static const adminEmpLeaveApproval =
-            '$adminDashboard/other-options/emp-leave-approval';
-    static const adminEmpLeaveApprovalHistory = '$adminEmpLeaveApproval/history';
-    static const adminOneOnOne = '$adminDashboard/other-options/one-on-one';
-    static const adminGateRegister = '$adminDashboard/other-options/gate-register';
+  static const adminWrite = '$adminDashboard/other-options/write';
+  static const adminTrackBusGps = '$adminDashboard/other-options/track-bus-gps';
+  static const adminEmployeeAttendance =
+      '$adminDashboard/other-options/employee-attendance';
+  static const adminEmpLeaveApproval =
+      '$adminDashboard/other-options/emp-leave-approval';
+  static const adminEmpLeaveApprovalHistory = '$adminEmpLeaveApproval/history';
+  static const adminOneOnOne = '$adminDashboard/other-options/one-on-one';
+  static const adminOneOnOneMeetingInfo = '$adminOneOnOne/meeting-info';
+  static const adminGateRegister =
+      '$adminDashboard/other-options/gate-register';
   static const adminMainEdit = '$adminOtherOptions/main-edit';
   static const adminAdd = '$adminOtherOptions/add';
   static const adminKnowYourSchool = '$adminOtherOptions/know-your-school';
-  static const adminKnowYourSchoolWebsiteEdit = '$adminKnowYourSchool/website-edit';
-  static const adminKnowYourSchoolSchoolHandbookEdit = '$adminKnowYourSchool/school-handbook-edit';
-  static const adminKnowYourSchoolEventsCelebrationEdit = '$adminKnowYourSchool/events-celebration-edit';
-  static const adminKnowYourSchoolEventsCelebrationEditAddEvent = '$adminKnowYourSchoolEventsCelebrationEdit/add-event';
-  static const adminKnowYourSchoolEventsCelebrationEditEditEvent = '$adminKnowYourSchoolEventsCelebrationEdit/edit-event';
-  static const adminKnowYourSchoolSchoolResourcesEdit = '$adminKnowYourSchool/school-resources-edit';
-  static const adminKnowYourSchoolNewsletterEdit = '$adminKnowYourSchool/newsletter-edit';
-  static const adminKnowYourSchoolAnnouncementEdit = '$adminKnowYourSchool/announcement-edit';
-  static const adminKnowYourSchoolDemographyEdit = '$adminKnowYourSchool/demography-edit';
-  static const adminKnowYourSchoolFacebookEdit = '$adminKnowYourSchool/facebook-edit';
-  static const adminKnowYourSchoolYoutubeEdit = '$adminKnowYourSchool/youtube-edit';
-    static const adminKnowYourSchoolWhatsappEdit = '$adminKnowYourSchool/whatsapp';
-  static const adminKnowYourSchoolInstagramEdit = '$adminKnowYourSchool/instagram-edit';
-  static const adminKnowYourSchoolLibraryEdit = '$adminKnowYourSchool/library-edit';
+  static const adminKnowYourSchoolWebsiteEdit =
+      '$adminKnowYourSchool/website-edit';
+  static const adminKnowYourSchoolSchoolHandbookEdit =
+      '$adminKnowYourSchool/school-handbook-edit';
+  static const adminKnowYourSchoolEventsCelebrationEdit =
+      '$adminKnowYourSchool/events-celebration-edit';
+  static const adminKnowYourSchoolEventsCelebrationEditAddEvent =
+      '$adminKnowYourSchoolEventsCelebrationEdit/add-event';
+  static const adminKnowYourSchoolEventsCelebrationEditEditEvent =
+      '$adminKnowYourSchoolEventsCelebrationEdit/edit-event';
+  static const adminKnowYourSchoolSchoolResourcesEdit =
+      '$adminKnowYourSchool/school-resources-edit';
+  static const adminKnowYourSchoolNewsletterEdit =
+      '$adminKnowYourSchool/newsletter-edit';
+  static const adminKnowYourSchoolAnnouncementEdit =
+      '$adminKnowYourSchool/announcement-edit';
+  static const adminKnowYourSchoolDemographyEdit =
+      '$adminKnowYourSchool/demography-edit';
+  static const adminKnowYourSchoolFacebookEdit =
+      '$adminKnowYourSchool/facebook-edit';
+  static const adminKnowYourSchoolYoutubeEdit =
+      '$adminKnowYourSchool/youtube-edit';
+  static const adminKnowYourSchoolWhatsappEdit =
+      '$adminKnowYourSchool/whatsapp';
+  static const adminKnowYourSchoolInstagramEdit =
+      '$adminKnowYourSchool/instagram-edit';
+  static const adminKnowYourSchoolLibraryEdit =
+      '$adminKnowYourSchool/library-edit';
   static const adminStudentOptions = '$adminOtherOptions/student';
   static const adminListStudents = '$adminOtherOptions/list-students';
   static const adminStudentInfo = '$adminListStudents/student-info';
@@ -86,7 +101,7 @@ class AppRoutes {
   static const adminOtherGroupDetails = '$adminOtherGroups/';
   static const adminGroupDetails = '/admin/group-details';
   static const teacherGroupClasses = '/teacher/group-classes';
-    static const teacherGroupClassMenu = '$teacherGroupClasses/group-class-menu';
+  static const teacherGroupClassMenu = '$teacherGroupClasses/group-class-menu';
   static const teacherGroupInfo = '$teacherGroupClasses/group-info';
   static const teacherFutureEventCalendar =
       '$teacherGroupClasses/future-event-calendar';
@@ -106,7 +121,7 @@ class AppRoutes {
       '$teacherGroupClasses/online-assignment';
   static const teacherOnlineAssessment =
       '$teacherGroupClasses/online-assessment';
-    static const teacherGroupInfoEdit = '$teacherGroupClassMenu/group-info-edit';
+  static const teacherGroupInfoEdit = '$teacherGroupClassMenu/group-info-edit';
   static const teacherEditGroupInfo = teacherGroupInfoEdit;
   static const teacherEditFutureEventCalendar =
       '$teacherGroupClassMenu/future-event-calendar-edit';
@@ -122,7 +137,7 @@ class AppRoutes {
       '$teacherGroupClassMenu/class-demography-edit';
   static const teacherEditClassResources =
       '$teacherGroupClassMenu/class-resources-edit';
-    static const teacherEditPhotosNews = '$teacherGroupClassMenu/photo-news-edit';
+  static const teacherEditPhotosNews = '$teacherGroupClassMenu/photo-news-edit';
   static const teacherEditClassTimetable =
       '$teacherGroupClassMenu/class-timetable-edit';
   static const teacherEditClassPlanner =

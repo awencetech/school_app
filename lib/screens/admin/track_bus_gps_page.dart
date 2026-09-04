@@ -82,8 +82,13 @@ class _TrackBusGpsPageState extends State<TrackBusGpsPage> {
       if (!mounted) return;
       setState(() {
         final index = _routes.indexWhere((item) => item.id == result.id);
-        _routes = index == -1 ? [result, ..._routes] : [..._routes]
-          ..[index] = result;
+        if (index == -1) {
+          _routes = [result, ..._routes];
+        } else {
+          final updatedRoutes = [..._routes];
+          updatedRoutes[index] = result;
+          _routes = updatedRoutes;
+        }
       });
       _message(
         route == null

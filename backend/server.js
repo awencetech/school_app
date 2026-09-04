@@ -257,6 +257,7 @@ let staffLeaveEntitlementsCollection;
 let busGpsCollection;
 let oneOnOneMeetingsCollection;
 let gateRegisterCollection;
+let employeeAttendanceCollection;
 
 async function safeCreateIndex(collection, spec, options = {}) {
   try {
@@ -304,6 +305,8 @@ async function ensureIndexes(db) {
     safeCreateIndex(busGpsCollection, { busRouteCode: 1 }),
     safeCreateIndex(oneOnOneMeetingsCollection, { staffId: 1, startDateTime: -1 }),
     safeCreateIndex(gateRegisterCollection, { personType: 1, entryDate: -1 }),
+    safeCreateIndex(employeeAttendanceCollection, { employeeId: 1, attendanceDate: 1 }, { unique: true }),
+    safeCreateIndex(employeeAttendanceCollection, { attendanceDate: 1, status: 1 }),
   ]);
 }
 
@@ -357,6 +360,7 @@ async function connectMongo() {
     busGpsCollection = db.collection('bus gps');
     oneOnOneMeetingsCollection = db.collection('one-on-one-meetings');
     gateRegisterCollection = db.collection('gate-reg');
+    employeeAttendanceCollection = db.collection('employee-attendance');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -451,6 +455,29 @@ function sanitizeGateRegisterForResponse(doc) {
     personType: doc.personType || '',
     entryDate: doc.entryDate || null,
     status: doc.status || 'Registered',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function sanitizeEmployeeAttendanceForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || null,
+    employeeId: doc.employeeId || '',
+    teacherId: doc.teacherId || doc.employeeId || '',
+    employeeName: doc.employeeName || '',
+    attendanceDate: doc.attendanceDate || '',
+    timeRecorded: doc.timeRecorded || null,
+    attendanceType: doc.attendanceType || 'OnSite',
+    distance: doc.distance ?? null,
+    status: doc.status || 'Pending Approval',
+    approved: doc.approved === true,
+    present: doc.present !== false,
+    selfAttendance: doc.selfAttendance !== false,
+    isLate: doc.isLate === true,
+    approvedBy: doc.approvedBy || null,
+    approvedAt: doc.approvedAt || null,
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -959,6 +986,178 @@ async function renumberGroups() {
     );
   }
 }
+
+// Employee Attendance CRUD
+function employeeAttendancePayload(body) {
+  const employeeId = String(body.employeeId || '').trim();
+  const attendanceDate = String(body.attendanceDate || '').trim();
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  if (!employeeId || !attendanceDate) return { error: 'Employee ID and attendance date are required.' };
+  if (!datePattern.test(attendanceDate) || Number.isNaN(new Date(`${attendanceDate}T00:00:00Z`).getTime())) return { error: 'Attendance date must use YYYY-MM-DD format.' };
+  const timeRecorded = body.timeRecorded ? new Date(body.timeRecorded) : new Date();
+  if (Number.isNaN(timeRecorded.getTime())) return { error: 'Recorded time is invalid.' };
+  const attendanceType = String(body.attendanceType || 'OnSite').trim();
+  const distance = body.distance == null || body.distance === '' ? null : Number(body.distance);
+  if (distance !== null && !Number.isFinite(distance)) return { error: 'Distance must be a valid number.' };
+  return {
+    values: {
+      employeeId,
+      attendanceDate,
+      timeRecorded,
+      attendanceType,
+      distance,
+      present: body.present !== false,
+      selfAttendance: body.selfAttendance !== false,
+      isLate: body.isLate === true,
+    },
+  };
+}
+
+function employeeAttendanceObjectId(id) {
+  return ObjectId.isValid(id) ? new ObjectId(id) : null;
+}
+
+async function findEmployeeForAttendance(employeeId) {
+  return employeeInfoCollection.findOne({ employeeId });
+}
+
+app.get('/api/employee-attendance', async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = {};
+    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
+    if (req.query.employeeId) filter.employeeId = String(req.query.employeeId).trim();
+    const records = await employeeAttendanceCollection.find(filter).sort({ attendanceDate: -1, timeRecorded: -1, _id: -1 }).toArray();
+    return res.json(records.map(sanitizeEmployeeAttendanceForResponse));
+  } catch (error) {
+    console.error('GET /api/employee-attendance failed:', error);
+    return res.status(500).json({ message: 'Unable to load employee attendance.' });
+  }
+});
+
+app.get('/api/employee-attendance/summary', async (req, res) => {
+  try {
+    await connectMongo();
+    const date = String(req.query.date || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(422).json({ message: 'A valid date in YYYY-MM-DD format is required.' });
+    const [total, records] = await Promise.all([
+      employeeInfoCollection.countDocuments(),
+      employeeAttendanceCollection.find({ attendanceDate: date }).toArray(),
+    ]);
+    const present = records.filter((record) => record.present !== false && record.approved === true).length;
+    const pending = records.filter((record) => record.status === 'Pending Approval' || record.approved !== true).length;
+    return res.json({ date, total, present, absent: Math.max(total - present, 0), pending, recorded: records.length, late: records.filter((record) => record.isLate === true).length });
+  } catch (error) {
+    console.error('GET /api/employee-attendance/summary failed:', error);
+    return res.status(500).json({ message: 'Unable to calculate attendance summary.' });
+  }
+});
+
+app.get('/api/employee-attendance/pending', async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = { status: 'Pending Approval' };
+    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
+    const records = await employeeAttendanceCollection.find(filter).sort({ timeRecorded: 1, _id: 1 }).toArray();
+    return res.json({ data: records.map(sanitizeEmployeeAttendanceForResponse) });
+  } catch (error) {
+    console.error('GET /api/employee-attendance/pending failed:', error);
+    return res.status(500).json({ message: 'Unable to load pending attendance.' });
+  }
+});
+
+app.get('/api/employee-attendance/late', async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = { isLate: true };
+    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
+    const records = await employeeAttendanceCollection.find(filter).sort({ timeRecorded: -1, _id: -1 }).toArray();
+    return res.json({ data: records.map(sanitizeEmployeeAttendanceForResponse) });
+  } catch (error) {
+    console.error('GET /api/employee-attendance/late failed:', error);
+    return res.status(500).json({ message: 'Unable to load late attendance.' });
+  }
+});
+
+app.get('/api/employee-attendance/:id', async (req, res) => {
+  try {
+    const id = employeeAttendanceObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
+    await connectMongo();
+    const record = await employeeAttendanceCollection.findOne({ _id: id });
+    if (!record) return res.status(404).json({ message: 'Attendance record not found.' });
+    return res.json(sanitizeEmployeeAttendanceForResponse(record));
+  } catch (error) {
+    console.error('GET /api/employee-attendance/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to load the attendance record.' });
+  }
+});
+
+app.post('/api/employee-attendance', async (req, res) => {
+  try {
+    const { values, error } = employeeAttendancePayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const employee = await findEmployeeForAttendance(values.employeeId);
+    if (!employee) return res.status(422).json({ message: 'Employee ID does not exist.' });
+    const now = new Date();
+    const document = { ...values, teacherId: employee.employeeId, employeeName: employee.name, status: 'Pending Approval', approved: false, approvedBy: null, approvedAt: null, createdAt: now, updatedAt: now };
+    const result = await employeeAttendanceCollection.insertOne(document);
+    return res.status(201).json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: result.insertedId })));
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ message: 'Attendance is already recorded for this employee and date.' });
+    console.error('POST /api/employee-attendance failed:', error);
+    return res.status(500).json({ message: 'Unable to create employee attendance.' });
+  }
+});
+
+app.put('/api/employee-attendance/:id', async (req, res) => {
+  try {
+    const id = employeeAttendanceObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
+    const { values, error } = employeeAttendancePayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const employee = await findEmployeeForAttendance(values.employeeId);
+    if (!employee) return res.status(422).json({ message: 'Employee ID does not exist.' });
+    const result = await employeeAttendanceCollection.updateOne({ _id: id }, { $set: { ...values, teacherId: employee.employeeId, employeeName: employee.name, updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Attendance record not found.' });
+    return res.json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: id })));
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ message: 'Attendance is already recorded for this employee and date.' });
+    console.error('PUT /api/employee-attendance/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update employee attendance.' });
+  }
+});
+
+app.patch('/api/employee-attendance/:id/approve', async (req, res) => {
+  try {
+    const id = employeeAttendanceObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
+    await connectMongo();
+    const result = await employeeAttendanceCollection.updateOne({ _id: id }, { $set: { approved: true, status: 'Approved', approvedBy: req.auth?.userId || 'admin', approvedAt: new Date(), updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Attendance record not found.' });
+    return res.json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PATCH /api/employee-attendance/:id/approve failed:', error);
+    return res.status(500).json({ message: 'Unable to approve attendance.' });
+  }
+});
+
+app.patch('/api/employee-attendance/:id/late', async (req, res) => {
+  try {
+    const id = employeeAttendanceObjectId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
+    await connectMongo();
+    const isLate = req.body?.isLate === true;
+    const result = await employeeAttendanceCollection.updateOne({ _id: id }, { $set: { isLate, updatedAt: new Date() } });
+    if (result.matchedCount === 0) return res.status(404).json({ message: 'Attendance record not found.' });
+    return res.json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: id })));
+  } catch (error) {
+    console.error('PATCH /api/employee-attendance/:id/late failed:', error);
+    return res.status(500).json({ message: 'Unable to update late attendance.' });
+  }
+});
 
 // Gate Register CRUD
 function gateRegisterPayload(body) {

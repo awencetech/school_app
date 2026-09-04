@@ -79,7 +79,7 @@ class _AdminStaffResourcePageState extends State<AdminStaffResourcePage> {
     }
     final saved = await showDialog<bool>(
       context: context,
-      builder: (_) => _StaffResourceForm(
+      builder: (_) => StaffResourceForm(
         staff: _staff,
         resource: resource,
         onSave: (value) async {
@@ -223,17 +223,17 @@ class _ErrorState extends StatelessWidget {
       );
 }
 
-class _StaffResourceForm extends StatefulWidget {
-  const _StaffResourceForm({required this.staff, required this.onSave, this.resource});
+class StaffResourceForm extends StatefulWidget {
+  const StaffResourceForm({super.key, required this.staff, required this.onSave, this.resource});
   final List<StaffInfo> staff;
   final StaffResource? resource;
   final Future<void> Function(StaffResource value) onSave;
 
   @override
-  State<_StaffResourceForm> createState() => _StaffResourceFormState();
+  State<StaffResourceForm> createState() => _StaffResourceFormState();
 }
 
-class _StaffResourceFormState extends State<_StaffResourceForm> {
+class _StaffResourceFormState extends State<StaffResourceForm> {
   final _formKey = GlobalKey<FormState>();
   late StaffInfo? _selectedStaff;
   late final TextEditingController _description;

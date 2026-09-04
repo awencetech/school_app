@@ -55,6 +55,8 @@ class AppRoutes {
       '$adminOtherOptions/staff-resource';
   static const adminOtherStaffResourceHistory =
       '$adminOtherStaffResource/history';
+  static const adminOtherStaffResourceHistoryView =
+      '$adminOtherStaffResourceHistory/view';
   static const adminWrite = '$adminDashboard/other-options/write';
   static const adminTrackBusGps = '$adminDashboard/other-options/track-bus-gps';
   static const adminEmployeeAttendance =

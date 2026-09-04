@@ -59,6 +59,7 @@ import '../screens/admin/list_students_page.dart';
 import '../screens/admin/admin_student_menu_page.dart';
 import '../screens/admin/student_info_page.dart';
 import '../models/staff_info.dart';
+import '../models/staff_resource.dart';
 import '../services/student_service.dart';
 import '../screens/admin/add_options.dart';
 import '../screens/admin/student_create_id_screen.dart';
@@ -70,6 +71,7 @@ import '../screens/admin/empty_admin_option_page.dart';
 import '../screens/admin/admin_write_message_page.dart';
 import '../screens/admin/admin_staff_resource_page.dart';
 import '../screens/admin/staff_resource_history_page.dart';
+import '../screens/admin/staff_resource_image_page.dart';
 import '../screens/messages/messages_page.dart';
 import '../screens/staff/staff_campaigns_page.dart';
 import '../screens/staff/staff_request_message_page.dart';
@@ -333,6 +335,11 @@ class AppRouter {
         staff: settings.arguments is StaffInfo
             ? settings.arguments as StaffInfo
             : null,
+      ),
+      AppRoutes.adminOtherStaffResourceHistoryView => StaffResourceImagePage(
+        resource: settings.arguments is StaffResource
+        ? settings.arguments as StaffResource
+        : null,
       ),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),

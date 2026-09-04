@@ -40,43 +40,61 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
     setState(() => _isLoading = true);
     final svc = UserService();
-    svc.login(identifier: identifier, password: password).then((user) async {
-      if (!mounted) return;
-      await context.read<AppState>().setAuthenticatedUser(
-        userId: user.userId,
-        email: user.email,
-        role: user.role,
-        token: user.token,
-      );
+    svc
+        .login(identifier: identifier, password: password)
+        .then((user) async {
+          if (!mounted) return;
+          await context.read<AppState>().setAuthenticatedUser(
+            userId: user.userId,
+            email: user.email,
+            role: user.role,
+            token: user.token,
+          );
 
-      if (!mounted) return;
-      final navigator = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
+          if (!mounted) return;
+          final navigator = Navigator.of(context);
+          final messenger = ScaffoldMessenger.of(context);
 
-      // route based on authoritative backend role
-      if (user.role == 'student') {
-        navigator.pushNamedAndRemoveUntil(AppRoutes.studentDashboard, (route) => false);
-      } else if (user.role == 'staff') {
-        navigator.pushNamedAndRemoveUntil(AppRoutes.staffDashboard, (route) => false);
-      } else if (user.role == 'admin') {
-        navigator.pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
-      } else {
-        messenger.showSnackBar(const SnackBar(content: Text('Invalid user role')));
-      }
-    }).catchError((e) {
-      if (!mounted) return;
-      // Log error for debugging but show generic message to user
-      debugPrint('Login error: $e');
-      String message = 'Invalid username or password';
-      if (e is! Exception) {
-        message = 'Connection error. Please check your internet and try again.';
-      }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    }).whenComplete(() {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    });
+          // route based on authoritative backend role
+          if (user.role == 'student') {
+            navigator.pushNamedAndRemoveUntil(
+              AppRoutes.studentDashboardFor(user.userId),
+              (route) => false,
+            );
+          } else if (user.role == 'staff') {
+            navigator.pushNamedAndRemoveUntil(
+              AppRoutes.staffDashboard,
+              (route) => false,
+            );
+          } else if (user.role == 'admin') {
+            navigator.pushNamedAndRemoveUntil(
+              AppRoutes.adminDashboard,
+              (route) => false,
+            );
+          } else {
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Invalid user role')),
+            );
+          }
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          // Log error for debugging but show generic message to user
+          debugPrint('Login error: $e');
+          String message = 'Invalid username or password';
+          if (e is! Exception) {
+            message =
+                'Connection error. Please check your internet and try again.';
+          }
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        })
+        .whenComplete(() {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+        });
   }
 
   @override
@@ -90,7 +108,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoginEnabled = _usernameController.text.trim().isNotEmpty &&
+    final isLoginEnabled =
+        _usernameController.text.trim().isNotEmpty &&
         _passwordController.text.trim().isNotEmpty;
 
     final config = context.watch<SchoolConfigService>();
@@ -105,10 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
               width: double.infinity,
               color: AppColors.primary,
               alignment: Alignment.center,
-              child: Text(
-                config.schoolName,
-                style: AppTextStyles.appTitle,
-              ),
+              child: Text(config.schoolName, style: AppTextStyles.appTitle),
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -124,7 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.center,
                           child: Text(
                             'School name',
-                            style: AppTextStyles.pageTitle.copyWith(fontSize: 24),
+                            style: AppTextStyles.pageTitle.copyWith(
+                              fontSize: 24,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -144,23 +162,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton(
-                            onPressed: () => Navigator.of(context)
-                                .pushNamed(AppRoutes.forgotPassword),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).pushNamed(AppRoutes.forgotPassword),
                             child: Text(
                               'Forgot your password?',
-                              style: AppTextStyles.body.copyWith(color: AppColors.blueButton),
+                              style: AppTextStyles.body.copyWith(
+                                color: AppColors.blueButton,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 6),
                         SecondaryButton(
                           label: _isLoading ? 'Signing in...' : 'Sign In',
-                          onPressed: isLoginEnabled && !_isLoading ? _handleSignIn : null,
+                          onPressed: isLoginEnabled && !_isLoading
+                              ? _handleSignIn
+                              : null,
                         ),
                         const SizedBox(height: 12),
                         GestureDetector(
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(AppRoutes.createAccount),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.createAccount),
                           child: Text(
                             'Don\'t have an account? Register',
                             style: AppTextStyles.body.copyWith(
@@ -173,8 +197,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: 'Register',
                           backgroundColor: AppColors.orangeButton,
                           textColor: AppColors.white,
-                          onPressed: () => Navigator.of(context)
-                              .pushNamed(AppRoutes.createAccount),
+                          onPressed: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.createAccount),
                         ),
                         const SizedBox(height: 18),
                         Padding(
@@ -198,4 +223,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

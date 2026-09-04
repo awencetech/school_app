@@ -12,6 +12,7 @@ import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
 import '../../services/social_url_service.dart';
+import '../../services/student_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/cards/important_news_marquee.dart';
@@ -38,7 +39,9 @@ import '../admin/class_demography_page.dart';
 
 /// Student dashboard screen following the supplied school ERP design system.
 class StudentDashboard extends StatefulWidget {
-  const StudentDashboard({super.key});
+  const StudentDashboard({super.key, this.studentId});
+
+  final String? studentId;
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
@@ -46,6 +49,11 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedBottomIndex = 0;
+  String _studentName = 'Student name';
+  String _studentId = '';
+  String _studentImageUrl = '';
+  bool _studentLoading = true;
+  String? _studentError;
 
   Future<void> _openWebsite(BuildContext context) async {
     final websiteUrl = context.read<SchoolConfigService>().websiteUrl.trim();
@@ -72,6 +80,114 @@ class _StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentInformation();
+  }
+
+  Future<void> _loadStudentInformation() async {
+    final appState = context.read<AppState>();
+    try {
+      await appState.initialization.timeout(const Duration(seconds: 6));
+    } catch (_) {}
+    if (!mounted) return;
+    final userId = appState.currentUserId?.trim() ?? '';
+    final token = appState.currentAuthToken?.trim() ?? '';
+    final routeStudentId = widget.studentId?.trim() ?? '';
+    if (userId.isEmpty ||
+        token.isEmpty ||
+        (routeStudentId.isNotEmpty && routeStudentId != userId)) {
+      if (mounted) {
+        if (userId.isEmpty || token.isEmpty) {
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+          return;
+        }
+        setState(() {
+          _studentLoading = false;
+          _studentError = routeStudentId.isNotEmpty && routeStudentId != userId
+              ? 'This student dashboard is not available.'
+              : 'Student profile is not available.';
+        });
+      }
+      return;
+    }
+    setState(() {
+      _studentLoading = true;
+      _studentError = null;
+    });
+    try {
+      final student = await StudentService().getCurrentProfile(token: token);
+      if (!mounted) return;
+      setState(() {
+        _studentName = student.name.isEmpty ? userId : student.name;
+        _studentId = student.studentId.isEmpty ? userId : student.studentId;
+        _studentImageUrl = student.imageUrl;
+        _studentLoading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _studentLoading = false;
+          _studentError = error.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  Widget _studentPhoto() {
+    const fallback = CircleAvatar(
+      radius: 27,
+      backgroundColor: Colors.black,
+      child: Icon(Icons.person, size: 34, color: AppColors.white),
+    );
+    if (_studentImageUrl.isEmpty) {
+      return fallback;
+    }
+    if (_studentImageUrl.startsWith('data:')) {
+      try {
+        final comma = _studentImageUrl.indexOf(',');
+        if (comma < 0) return fallback;
+        return CircleAvatar(
+          radius: 27,
+          backgroundImage: MemoryImage(
+            base64Decode(_studentImageUrl.substring(comma + 1)),
+          ),
+        );
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final uri = Uri.tryParse(_studentImageUrl);
+    if (uri == null ||
+        !const ['http', 'https'].contains(uri.scheme.toLowerCase()) ||
+        uri.host.isEmpty) {
+      return fallback;
+    }
+    return ClipOval(
+      child: SizedBox(
+        width: 54,
+        height: 54,
+        child: Image.network(
+          _studentImageUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (_, child, progress) => progress == null
+              ? child
+              : const Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+          errorBuilder: (_, _, _) => fallback,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openNewsletter(BuildContext context) async {
     if (!context.mounted) return;
     Navigator.of(context).pushNamed(AppRoutes.adminDashboardNewsletter);
@@ -93,50 +209,58 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final url = (await fetcher()).trim();
       if (url.isEmpty) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(missingText)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(missingText)));
         return;
       }
 
       final uri = Uri.tryParse(url);
       if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(invalidText)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(invalidText)));
         return;
       }
 
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(openFailureText)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(openFailureText)));
       }
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(openFailureText)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(openFailureText)));
     }
   }
 
   Future<void> _openFacebook(BuildContext context) => _openSocialUrl(
-        context,
-        fetcher: SocialUrlService().getFacebookUrl,
-        missingText: 'Facebook link is not available.',
-        invalidText: 'Facebook link is invalid.',
-        openFailureText: 'Unable to open Facebook link.',
-      );
+    context,
+    fetcher: SocialUrlService().getFacebookUrl,
+    missingText: 'Facebook link is not available.',
+    invalidText: 'Facebook link is invalid.',
+    openFailureText: 'Unable to open Facebook link.',
+  );
 
   Future<void> _openYoutube(BuildContext context) => _openSocialUrl(
-        context,
-        fetcher: SocialUrlService().getYoutubeUrl,
-        missingText: 'YouTube link is not available.',
-        invalidText: 'YouTube link is invalid.',
-        openFailureText: 'Unable to open YouTube link.',
-      );
+    context,
+    fetcher: SocialUrlService().getYoutubeUrl,
+    missingText: 'YouTube link is not available.',
+    invalidText: 'YouTube link is invalid.',
+    openFailureText: 'Unable to open YouTube link.',
+  );
 
   Future<void> _openInstagram(BuildContext context) => _openSocialUrl(
-        context,
-        fetcher: SocialUrlService().getInstagramUrl,
-        missingText: 'Instagram link is not available.',
-        invalidText: 'Instagram link is invalid.',
-        openFailureText: 'Unable to open Instagram link.',
-      );
+    context,
+    fetcher: SocialUrlService().getInstagramUrl,
+    missingText: 'Instagram link is not available.',
+    invalidText: 'Instagram link is invalid.',
+    openFailureText: 'Unable to open Instagram link.',
+  );
 
   Future<void> _openWhatsapp(BuildContext context) async {
     try {
@@ -151,7 +275,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }
 
       final message = (config['text'] ?? '').trim();
-      final uri = Uri.parse('https://wa.me/$phone${message.isEmpty ? '' : '?text=${Uri.encodeComponent(message)}'}');
+      final uri = Uri.parse(
+        'https://wa.me/$phone${message.isEmpty ? '' : '?text=${Uri.encodeComponent(message)}'}',
+      );
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,9 +286,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open WhatsApp.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unable to open WhatsApp.')));
     }
   }
 
@@ -415,49 +541,71 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 27,
-                              backgroundColor: Colors.black,
-                              child: Icon(
-                                Icons.person,
-                                size: 34,
-                                color: AppColors.white,
+                        if (_studentLoading)
+                          const SizedBox(
+                            height: 54,
+                            child: Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.watch<AppState>().currentUserId !=
-                                            null
-                                        ? context
-                                              .watch<AppState>()
-                                              .currentUserId!
-                                        : 'Student name',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF222222),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Student ID',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400,
-                                      color: const Color(0xFF5F6368),
-                                    ),
-                                  ),
-                                ],
+                          )
+                        else if (_studentError != null)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _studentError!,
+                                  style: GoogleFonts.poppins(fontSize: 12),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: _loadStudentInformation,
+                                icon: const Icon(Icons.refresh),
+                                tooltip: 'Retry',
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              _studentPhoto(),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _studentName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF222222),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      _studentId,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: const Color(0xFF5F6368),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -702,10 +850,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
           if (index == 4) {
             await context.read<AppState>().logout();
             if (!context.mounted) return;
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              AppRoutes.main,
-              (route) => false,
-            );
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
             return;
           }
 
@@ -824,10 +971,9 @@ class _StudentQuickAccessDetailsPage extends StatelessWidget {
           if (index == 4) {
             await context.read<AppState>().logout();
             if (!context.mounted) return;
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              AppRoutes.main,
-              (route) => false,
-            );
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
           }
         },
         items: const [

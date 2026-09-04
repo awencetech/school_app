@@ -4320,6 +4320,21 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
+app.get('/api/students/profile', requireRecipientRole('student'), async (req, res) => {
+  try {
+    await connectMongo();
+    const userId = String(req.auth.userId || '').trim();
+    const student = await studentInfoCollection.findOne({
+      $or: [{ studentId: userId }, { admissionNumber: userId }],
+    });
+    if (!student) return res.status(404).json({ message: 'Student profile not found.' });
+    return res.json(sanitizeStudentForResponse(student));
+  } catch (error) {
+    console.error('GET /api/students/profile failed:', error);
+    return res.status(500).json({ message: 'Unable to load the student profile.' });
+  }
+});
+
 app.get('/api/students/next-id', async (req, res) => {
   try {
     await connectMongo();

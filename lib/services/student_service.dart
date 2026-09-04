@@ -53,20 +53,20 @@ class StudentRecord {
   }
 
   Map<String, dynamic> toJson() => {
-        if (id != null) 'id': id,
-        'name': name,
-        'className': className,
-        'section': section,
-        'studentId': studentId,
-        'admissionNumber': admissionNumber,
-        'parentName': parentName,
-        'mobileNumber': mobileNumber,
-        'address': address,
-        'about': about,
-        'hobbies': hobbies,
-        'role': role,
-        'imageUrl': imageUrl,
-      };
+    if (id != null) 'id': id,
+    'name': name,
+    'className': className,
+    'section': section,
+    'studentId': studentId,
+    'admissionNumber': admissionNumber,
+    'parentName': parentName,
+    'mobileNumber': mobileNumber,
+    'address': address,
+    'about': about,
+    'hobbies': hobbies,
+    'role': role,
+    'imageUrl': imageUrl,
+  };
 }
 
 class StudentService {
@@ -79,21 +79,47 @@ class StudentService {
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:3001';
+    if (defaultTargetPlatform == TargetPlatform.android)
+      return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Future<List<StudentRecord>> getStudents() async {
-    final response = await http.get(_uri('/api/students')).timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200) throw Exception('Unable to load student information.');
+    final response = await http
+        .get(_uri('/api/students'))
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200)
+      throw Exception('Unable to load student information.');
     final payload = jsonDecode(response.body) as List<dynamic>;
-    return payload.map((item) => StudentRecord.fromJson(Map<String, dynamic>.from(item as Map))).toList();
+    return payload
+        .map(
+          (item) =>
+              StudentRecord.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList();
+  }
+
+  Future<StudentRecord> getCurrentProfile({required String token}) async {
+    final response = await http
+        .get(
+          _uri('/api/students/profile'),
+          headers: {'Authorization': 'Bearer $token'},
+        )
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception(_message(response.statusCode, response.body));
+    }
+    return StudentRecord.fromJson(
+      Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+    );
   }
 
   Future<String> getNextStudentId() async {
-    final response = await http.get(_uri('/api/students/next-id')).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(_uri('/api/students/next-id'))
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception('Unable to generate student ID.');
     }
@@ -105,38 +131,49 @@ class StudentService {
   }
 
   Future<StudentRecord> createStudent(StudentRecord student) async {
-    final response = await http.post(
-      _uri('/api/students'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(student.toJson()),
-    ).timeout(const Duration(seconds: 20));
+    final response = await http
+        .post(
+          _uri('/api/students'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(student.toJson()),
+        )
+        .timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 201) {
       final msg = _message(response.statusCode, response.body);
       throw Exception(msg);
     }
 
-    return StudentRecord.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return StudentRecord.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   Future<StudentRecord> updateStudent(StudentRecord student) async {
-    if (student.id == null || student.id!.isEmpty) throw Exception('Student record ID is missing.');
-    final response = await http.put(
-      _uri('/api/students/${Uri.encodeComponent(student.id!)}'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(student.toJson()),
-    ).timeout(const Duration(seconds: 20));
+    if (student.id == null || student.id!.isEmpty)
+      throw Exception('Student record ID is missing.');
+    final response = await http
+        .put(
+          _uri('/api/students/${Uri.encodeComponent(student.id!)}'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(student.toJson()),
+        )
+        .timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200) {
       final msg = _message(response.statusCode, response.body);
       throw Exception(msg);
     }
 
-    return StudentRecord.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return StudentRecord.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   Future<void> deleteStudent(String id) async {
-    final response = await http.delete(_uri('/api/students/${Uri.encodeComponent(id)}')).timeout(const Duration(seconds: 15));
+    final response = await http
+        .delete(_uri('/api/students/${Uri.encodeComponent(id)}'))
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       final msg = _message(response.statusCode, response.body);
       throw Exception(msg);
@@ -146,10 +183,14 @@ class StudentService {
   String _message(int statusCode, String body) {
     try {
       final payload = jsonDecode(body);
-      if (payload is Map && payload['message'] != null) return payload['message'].toString();
+      if (payload is Map && payload['message'] != null)
+        return payload['message'].toString();
     } catch (_) {}
 
-    final plainText = body.replaceAll(RegExp(r'<[^>]*>'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    final plainText = body
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     if (plainText.isNotEmpty) {
       return 'Student request failed ($statusCode): ${plainText.length > 180 ? '${plainText.substring(0, 180)}...' : plainText}';
     }

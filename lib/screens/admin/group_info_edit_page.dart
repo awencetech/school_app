@@ -8,8 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../models/group.dart';
+import '../../models/staff_info.dart';
 import '../../services/group_service.dart';
 import '../../services/group_state_service.dart';
+import '../../services/staff_service.dart';
+import '../../services/student_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../routes/app_routes.dart';
@@ -26,6 +29,8 @@ class GroupInfoEditPage extends StatefulWidget {
 class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   final GroupService _groupService = GroupService();
   final GroupStateService _stateService = GroupStateService.instance;
+  final StudentService _studentService = StudentService();
+  final StaffService _staffService = StaffService();
 
   late final TextEditingController _nameController;
   late final TextEditingController _idController;
@@ -37,6 +42,32 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   bool _isLoading = true;
   List<GroupStudent> _students = <GroupStudent>[];
   List<GroupTeacher> _teachers = <GroupTeacher>[];
+
+  Future<List<StudentRecord>> _availableStudents({String? currentId}) async {
+    final records = await _studentService.getStudents();
+    final used = _students
+        .map((student) => student.admissionNo.trim().toLowerCase())
+        .where((id) => id.isNotEmpty && id != currentId?.trim().toLowerCase())
+        .toSet();
+    return records
+        .where((student) => student.studentId.trim().isNotEmpty)
+        .where(
+          (student) => !used.contains(student.studentId.trim().toLowerCase()),
+        )
+        .toList();
+  }
+
+  Future<List<StaffInfo>> _availableTeachers({String? currentId}) async {
+    final records = await _staffService.getStaff();
+    final used = _teachers
+        .map((teacher) => teacher.teacherId.trim().toLowerCase())
+        .where((id) => id.isNotEmpty && id != currentId?.trim().toLowerCase())
+        .toSet();
+    return records
+        .where((staff) => staff.employeeId.trim().isNotEmpty)
+        .where((staff) => !used.contains(staff.employeeId.trim().toLowerCase()))
+        .toList();
+  }
 
   @override
   void initState() {
@@ -82,16 +113,16 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
               ? widget.group.databaseId
               : _groupId,
         );
-          shouldMigrateMembers =
-              (remote.students.isEmpty && students.isNotEmpty) ||
-              (remote.teachers.isEmpty && teachers.isNotEmpty);
-          loadedStudents = remote.students.isEmpty && students.isNotEmpty
-              ? students
-              : remote.students;
-          loadedTeachers = remote.teachers.isEmpty && teachers.isNotEmpty
-              ? teachers
-              : remote.teachers;
-          loadedGroup = remote.group;
+        shouldMigrateMembers =
+            (remote.students.isEmpty && students.isNotEmpty) ||
+            (remote.teachers.isEmpty && teachers.isNotEmpty);
+        loadedStudents = remote.students.isEmpty && students.isNotEmpty
+            ? students
+            : remote.students;
+        loadedTeachers = remote.teachers.isEmpty && teachers.isNotEmpty
+            ? teachers
+            : remote.teachers;
+        loadedGroup = remote.group;
       } catch (_) {
         // Keep locally cached data when MongoDB is unavailable.
       }
@@ -123,9 +154,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   Future<void> _syncMembersToMongo() async {
     try {
       await _groupService.updateGroup(
-        widget.group.databaseId.isNotEmpty
-            ? widget.group.databaseId
-            : _groupId,
+        widget.group.databaseId.isNotEmpty ? widget.group.databaseId : _groupId,
         name: _nameController.text.trim(),
         id: _idController.text.trim(),
         type: _typeController.text.trim().isEmpty
@@ -168,10 +197,19 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<void> _showAddStudentDialog() async {
+    _showSnackBar('Loading student IDs...');
+    List<StudentRecord> availableStudents;
+    try {
+      availableStudents = await _availableStudents();
+    } catch (error) {
+      if (mounted) _showSnackBar('Unable to load student IDs: $error');
+      return;
+    }
+    if (!mounted) return;
     final nameCtrl = TextEditingController();
-    final idCtrl = TextEditingController();
     final classCtrl = TextEditingController();
     String? pickedImage;
+    StudentRecord? selectedStudent;
 
     await showDialog<void>(
       context: context,
@@ -186,13 +224,42 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                   children: [
                     TextField(
                       controller: nameCtrl,
+                      readOnly: selectedStudent != null,
                       decoration: const InputDecoration(labelText: 'Name'),
                     ),
-                    TextField(
-                      controller: idCtrl,
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedStudent?.studentId,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Student ID',
                       ),
+                      hint: Text(
+                        availableStudents.isEmpty
+                            ? 'No available students'
+                            : 'Select Student ID',
+                      ),
+                      items: availableStudents
+                          .map(
+                            (student) => DropdownMenuItem<String>(
+                              value: student.studentId,
+                              child: Text(student.studentId),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: availableStudents.isEmpty
+                          ? null
+                          : (value) {
+                              final match = availableStudents.firstWhere(
+                                (student) => student.studentId == value,
+                              );
+                              setStateDialog(() {
+                                selectedStudent = match;
+                                nameCtrl.text = match.name;
+                                classCtrl.text = match.className.isNotEmpty
+                                    ? match.className
+                                    : match.section;
+                              });
+                            },
                     ),
                     TextField(
                       controller: classCtrl,
@@ -255,14 +322,16 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                 ElevatedButton(
                   onPressed: () async {
                     final name = nameCtrl.text.trim();
-                    final sid = idCtrl.text.trim();
+                    final sid = selectedStudent?.studentId.trim() ?? '';
                     final cls = classCtrl.text.trim();
-                    if (name.isEmpty || sid.isEmpty) {
-                      _showSnackBar('Please enter name and student id.');
+                    if (selectedStudent == null ||
+                        name.isEmpty ||
+                        sid.isEmpty) {
+                      _showSnackBar('Please select a real student ID.');
                       return;
                     }
                     final student = GroupStudent(
-                      id: 'student-${DateTime.now().millisecondsSinceEpoch}',
+                      id: selectedStudent!.id ?? sid,
                       groupId: _groupId,
                       name: name,
                       admissionNo: sid,
@@ -290,11 +359,30 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<void> _showAddTeacherDialog({GroupTeacher? existing}) async {
+    _showSnackBar('Loading teacher IDs...');
+    List<StaffInfo> availableTeachers;
+    try {
+      availableTeachers = await _availableTeachers(
+        currentId: existing?.teacherId,
+      );
+    } catch (error) {
+      if (mounted) _showSnackBar('Unable to load teacher IDs: $error');
+      return;
+    }
+    if (!mounted) return;
     final nameCtrl = TextEditingController(text: existing?.name);
-    final teacherIdCtrl = TextEditingController(text: existing?.teacherId);
     final subjectCtrl = TextEditingController(text: existing?.subject);
     final roleCtrl = TextEditingController(text: existing?.role);
     String? pickedImage = existing?.imageUrl;
+    StaffInfo? selectedTeacher;
+    if (existing != null) {
+      for (final staff in availableTeachers) {
+        if (staff.employeeId == existing.teacherId) {
+          selectedTeacher = staff;
+          break;
+        }
+      }
+    }
 
     await showDialog<void>(
       context: context,
@@ -311,13 +399,47 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                   children: [
                     TextField(
                       controller: nameCtrl,
+                      readOnly: selectedTeacher != null,
                       decoration: const InputDecoration(labelText: 'Name'),
                     ),
-                    TextField(
-                      controller: teacherIdCtrl,
+                    DropdownButtonFormField<String>(
+                      initialValue:
+                          selectedTeacher?.employeeId ?? existing?.teacherId,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Teacher ID',
                       ),
+                      hint: Text(
+                        availableTeachers.isEmpty
+                            ? 'No available teachers'
+                            : 'Select Teacher ID',
+                      ),
+                      items: [
+                        if (existing != null && selectedTeacher == null)
+                          DropdownMenuItem<String>(
+                            value: existing.teacherId,
+                            child: Text(existing.teacherId),
+                          ),
+                        ...availableTeachers.map(
+                          (staff) => DropdownMenuItem<String>(
+                            value: staff.employeeId,
+                            child: Text(staff.employeeId),
+                          ),
+                        ),
+                      ],
+                      onChanged: availableTeachers.isEmpty && existing == null
+                          ? null
+                          : (value) {
+                              final match = availableTeachers.firstWhere(
+                                (staff) => staff.employeeId == value,
+                              );
+                              setStateDialog(() {
+                                selectedTeacher = match;
+                                nameCtrl.text = match.name;
+                                subjectCtrl.text = match.teaches;
+                                roleCtrl.text = match.role;
+                              });
+                            },
                     ),
                     TextField(
                       controller: subjectCtrl,
@@ -409,17 +531,20 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                 ElevatedButton(
                   onPressed: () async {
                     final name = nameCtrl.text.trim();
-                    final tid = teacherIdCtrl.text.trim();
+                    final tid =
+                        selectedTeacher?.employeeId.trim() ??
+                        existing?.teacherId.trim() ??
+                        '';
                     final subject = subjectCtrl.text.trim();
                     final role = roleCtrl.text.trim();
-                    if (name.isEmpty || tid.isEmpty) {
-                      _showSnackBar('Please enter name and teacher id.');
+                    if ((selectedTeacher == null && existing == null) ||
+                        name.isEmpty ||
+                        tid.isEmpty) {
+                      _showSnackBar('Please select a real teacher ID.');
                       return;
                     }
                     final teacher = GroupTeacher(
-                      id:
-                          existing?.id ??
-                          'teacher-${DateTime.now().millisecondsSinceEpoch}',
+                      id: selectedTeacher?.id ?? existing?.id ?? tid,
                       groupId: _groupId,
                       teacherId: tid,
                       name: name,
@@ -500,10 +625,27 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   Future<void> _showEditStudentDialog(GroupStudent student) async {
+    _showSnackBar('Loading student IDs...');
+    List<StudentRecord> availableStudents;
+    try {
+      availableStudents = await _availableStudents(
+        currentId: student.admissionNo,
+      );
+    } catch (error) {
+      if (mounted) _showSnackBar('Unable to load student IDs: $error');
+      return;
+    }
+    if (!mounted) return;
     final nameCtrl = TextEditingController(text: student.name);
-    final idCtrl = TextEditingController(text: student.admissionNo);
     final sectionCtrl = TextEditingController(text: student.section);
     String? pickedImage = student.imageUrl;
+    StudentRecord? selectedStudent;
+    for (final record in availableStudents) {
+      if (record.studentId == student.admissionNo) {
+        selectedStudent = record;
+        break;
+      }
+    }
 
     await showDialog<void>(
       context: context,
@@ -518,13 +660,41 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                   children: [
                     TextField(
                       controller: nameCtrl,
+                      readOnly: selectedStudent != null,
                       decoration: const InputDecoration(labelText: 'Name'),
                     ),
-                    TextField(
-                      controller: idCtrl,
+                    DropdownButtonFormField<String>(
+                      initialValue:
+                          selectedStudent?.studentId ?? student.admissionNo,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Student ID',
                       ),
+                      items: [
+                        if (selectedStudent == null)
+                          DropdownMenuItem<String>(
+                            value: student.admissionNo,
+                            child: Text(student.admissionNo),
+                          ),
+                        ...availableStudents.map(
+                          (record) => DropdownMenuItem<String>(
+                            value: record.studentId,
+                            child: Text(record.studentId),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        final match = availableStudents.firstWhere(
+                          (record) => record.studentId == value,
+                        );
+                        setStateDialog(() {
+                          selectedStudent = match;
+                          nameCtrl.text = match.name;
+                          sectionCtrl.text = match.className.isNotEmpty
+                              ? match.className
+                              : match.section;
+                        });
+                      },
                     ),
                     TextField(
                       controller: sectionCtrl,
@@ -607,10 +777,12 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
                 ElevatedButton(
                   onPressed: () async {
                     final name = nameCtrl.text.trim();
-                    final sid = idCtrl.text.trim();
+                    final sid = selectedStudent?.studentId.trim() ?? '';
                     final cls = sectionCtrl.text.trim();
-                    if (name.isEmpty || sid.isEmpty) {
-                      _showSnackBar('Please enter name and student id.');
+                    if (selectedStudent == null ||
+                        name.isEmpty ||
+                        sid.isEmpty) {
+                      _showSnackBar('Please select a real student ID.');
                       return;
                     }
                     await _stateService.updateStudent(_groupId, student.id, {

@@ -1,5 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
 const compression = require('compression');
 const dotenv = require('dotenv');
 const fs = require('fs');
@@ -16,7 +15,6 @@ app.set('trust proxy', true);
 const port = Number(process.env.PORT) || 3001;
 const mongoUri = process.env.MONGODB_URI;
 const uploadDirectory = path.join(__dirname, 'uploads');
-const authSecret = process.env.AUTH_SECRET || mongoUri || 'development-only-auth-secret';
 
 fs.mkdirSync(uploadDirectory, { recursive: true });
 
@@ -25,7 +23,7 @@ app.use(compression());
 app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin === '*' ? '*' : origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -52,405 +50,9 @@ app.use('/api/groups', (req, res, next) => {
   next();
 });
 
-function readAuthToken(req) {
-  const header = req.headers.authorization || '';
-  return header.startsWith('Bearer ') ? header.substring(7) : '';
-}
-
-function signAuthPayload(payload) {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
-  return `${encoded}.${signature}`;
-}
-
-function verifyAuthToken(token) {
-  const [encoded, signature] = token.split('.');
-  if (!encoded || !signature) return null;
-  const expected = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
-  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-  const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
-  return payload.exp > Math.floor(Date.now() / 1000) ? payload : null;
-}
-
-function requireTeacherMutation(req, res, next) {
-  const isGroupMenuMutation = req.method !== 'GET' && /\/(events|class-timetable|lesson-plans|homework|today-in-class|messages|photos|news)(\/|$)/.test(req.path);
-  if (!isGroupMenuMutation) return next();
-  try {
-    const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'staff' && role !== 'teacher') {
-      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only teachers may modify Group Menu data.' : 'Authentication required.' });
-    }
-    req.auth = auth;
-    return next();
-  } catch (_) {
-    return res.status(401).json({ message: 'Authentication required.' });
-  }
-}
-
-function requireTeacher(req, res, next) {
-  try {
-    const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'staff' && role !== 'teacher') {
-      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only teachers may modify class resources.' : 'Authentication required.' });
-    }
-    req.auth = auth;
-    return next();
-  } catch (_) {
-    return res.status(401).json({ message: 'Authentication required.' });
-  }
-}
-
-function requireDiaryAccess(req, res, next) {
-  try {
-    const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'staff' && role !== 'teacher' && role !== 'admin') {
-      return res.status(auth ? 403 : 401).json({
-        message: auth ? 'Only staff, teachers, or admins may access diary observations.' : 'Authentication required.',
-      });
-    }
-    req.auth = auth;
-    return next();
-  } catch (_) {
-    return res.status(401).json({ message: 'Authentication required.' });
-  }
-}
-
-function requireAdmin(req, res, next) {
-  try {
-    const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'admin') {
-      return res.status(auth ? 403 : 401).json({ message: auth ? 'Admin access required.' : 'Authentication required.' });
-    }
-    req.auth = auth;
-    return next();
-  } catch (_) {
-    return res.status(401).json({ message: 'Authentication required.' });
-  }
-}
-
-function requireRecipientRole(role) {
-  return (req, res, next) => {
-    try {
-      const auth = verifyAuthToken(readAuthToken(req));
-      if ((auth?.role || '').toLowerCase() !== role) {
-        return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
-      }
-      req.auth = auth;
-      return next();
-    } catch (_) {
-      return res.status(401).json({ message: 'Authentication required.' });
-    }
-  };
-}
-
-app.use('/api/groups', requireTeacherMutation);
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
-});
-app.post('/api/messages/admin', requireAdmin, async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const subject = String(body.subject || '').trim();
-    const message = String(body.message || '').trim();
-    const messageType = String(body.messageType || '').trim();
-    const sendToStudents = body.sendToStudents === true;
-    const sendToStaff = body.sendToStaff === true;
-    if (!subject || !message || !messageType) {
-      return res.status(422).json({ message: 'Subject, message, and message type are required.' });
-    }
-    if (!sendToStudents && !sendToStaff) {
-      return res.status(422).json({ message: 'At least one recipient is required.' });
-    }
-    const senderId = String(req.auth.userId || '').trim();
-    const admin = await usersCollection.findOne({ userId: senderId });
-    const senderName = String(admin?.name || admin?.fullName || admin?.email || 'Admin').split('@')[0];
-    const now = new Date().toISOString();
-    const document = {
-      subject,
-      title: subject,
-      message,
-      content: message,
-      messageType,
-      category: messageType,
-      senderId,
-      senderName,
-      senderRole: 'admin',
-      sendToStudents,
-      sendToStaff,
-      groupId: body.groupId ? String(body.groupId).trim() : null,
-      groupName: String(body.groupName || 'All Groups').trim() || 'All Groups',
-      createdAt: now,
-      updatedAt: now,
-    };
-    const result = await groupMessagesCollection.insertOne(document);
-    const saved = await groupMessagesCollection.findOne({ _id: result.insertedId });
-    return res.status(201).json({ success: true, message: 'Message sent successfully.', data: sanitizeAdminMessageForResponse(saved) });
-  } catch (error) {
-    console.error('POST /api/messages/admin failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to send message.' });
-  }
-});
-
-async function getAdminMessagesForRecipient(req, res, role) {
-  try {
-    await connectMongo();
-    const user = await usersCollection.findOne({ userId: req.auth.userId });
-    const profile = role === 'student'
-      ? await studentInfoCollection.findOne({ studentId: req.auth.userId })
-      : await employeeInfoCollection.findOne({ $or: [{ employeeId: req.auth.userId }, { staffId: req.auth.userId }] });
-    const groupValues = [
-      user?.groupId, user?.groupName, user?.className, user?.class,
-      profile?.groupId, profile?.groupName, profile?.className, profile?.class,
-    ].filter((value) => value).map((value) => String(value));
-    const groupFilter = groupValues.length
-      ? { $or: [{ groupId: null }, { groupId: '' }, { groupId: { $in: groupValues } }] }
-      : { $or: [{ groupId: null }, { groupId: '' }] };
-    const recipientField = role === 'student' ? 'sendToStudents' : 'sendToStaff';
-    const messages = await groupMessagesCollection.find({
-      senderRole: 'admin',
-      [recipientField]: true,
-      ...groupFilter,
-    }).sort({ createdAt: -1 }).toArray();
-    return res.json({ success: true, data: messages.map(sanitizeAdminMessageForResponse) });
-  } catch (error) {
-    console.error(`GET /api/messages/${role} failed:`, error);
-    return res.status(500).json({ success: false, message: 'Unable to load messages.' });
-  }
-}
-
-app.get('/api/messages/student', requireRecipientRole('student'), (req, res) => getAdminMessagesForRecipient(req, res, 'student'));
-app.get('/api/messages/staff', requireRecipientRole('staff'), (req, res) => getAdminMessagesForRecipient(req, res, 'staff'));
-app.get('/api/messages/group/:groupId', requireRecipientRole('student'), async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = String(req.params.groupId || '').trim();
-    const messages = await groupMessagesCollection.find({ senderRole: 'admin', groupId: { $in: [groupId, null, ''] }, sendToStudents: true }).sort({ createdAt: -1 }).toArray();
-    return res.json({ success: true, data: messages.map(sanitizeAdminMessageForResponse) });
-  } catch (_) {
-    return res.status(500).json({ success: false, message: 'Unable to load group messages.' });
-  }
-});
-
-function sanitizeDiaryForResponse(doc) {
-  if (!doc) return null;
-  return {
-    _id: doc._id ? doc._id.toString() : '',
-    id: doc._id ? doc._id.toString() : '',
-    studentId: doc.studentId || '',
-    studentName: doc.studentName || '',
-    diaryId: doc.diaryId || '',
-    groupId: doc.groupId || '',
-    classId: doc.classId || doc.groupId || '',
-    date: doc.date || '',
-    parentObservation: {
-      wentToBedAt: doc.parentObservation?.wentToBedAt || '',
-      gotUpAt: doc.parentObservation?.gotUpAt || '',
-      brushedTeeth: doc.parentObservation?.brushedTeeth || '',
-      didYoga: doc.parentObservation?.didYoga || '',
-      breakfast: doc.parentObservation?.breakfast || '',
-      homework: doc.parentObservation?.homework || '',
-      assignmentCompletion: doc.parentObservation?.assignmentCompletion || '',
-      helpfulAtHome: doc.parentObservation?.helpfulAtHome || '',
-      respectfulToElders: doc.parentObservation?.respectfulToElders || '',
-      parentsRemark: doc.parentObservation?.parentsRemark || '',
-    },
-    studentObservation: {
-      mood: doc.studentObservation?.mood || '',
-    },
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function diaryStudentMatch(student, studentId) {
-  const values = [student?.id, student?._id, student?.studentId, student?.admissionNo, student?.admissionNumber]
-    .filter((value) => value != null && String(value).trim())
-    .map((value) => String(value).trim());
-  return values.includes(studentId);
-}
-
-app.get('/api/diary', requireDiaryAccess, async (req, res) => {
-  try {
-    const groupId = String(req.query.groupId || '').trim();
-    const date = String(req.query.date || '').trim();
-    if (!groupId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(422).json({ message: 'groupId and a valid date are required.' });
-    }
-    await connectMongo();
-    const records = await diaryCollection.find({ groupId, date }).sort({ studentName: 1 }).toArray();
-    return res.json({ success: true, data: records.map(sanitizeDiaryForResponse) });
-  } catch (error) {
-    console.error('GET /api/diary failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load diary observations.' });
-  }
-});
-
-app.get('/api/diary/student-observation/:id', requireDiaryAccess, async (req, res) => {
-  try {
-    if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: 'Invalid diary record ID.' });
-    }
-    await connectMongo();
-    const record = await diaryCollection.findOne({ _id: new ObjectId(req.params.id) });
-    if (!record) return res.status(404).json({ message: 'Student observation not found.' });
-    return res.json({ success: true, data: sanitizeDiaryForResponse(record) });
-  } catch (error) {
-    console.error('GET /api/diary/student-observation/:id failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load student observation.' });
-  }
-});
-
-app.get('/api/diary/:id', requireDiaryAccess, async (req, res) => {
-  try {
-    if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: 'Invalid diary record ID.' });
-    }
-    await connectMongo();
-    const record = await diaryCollection.findOne({ _id: new ObjectId(req.params.id) });
-    if (!record) return res.status(404).json({ message: 'Diary observation not found.' });
-    return res.json({ success: true, data: sanitizeDiaryForResponse(record) });
-  } catch (error) {
-    console.error('GET /api/diary/:id failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load diary observation.' });
-  }
-});
-
-app.post('/api/diary', requireDiaryAccess, async (req, res) => {
-  try {
-    const body = req.body || {};
-    const studentId = String(body.studentId || '').trim();
-    const groupId = String(body.groupId || body.classId || '').trim();
-    const date = String(body.date || '').trim();
-    const observation = body.parentObservation || {};
-    const required = [
-      ['studentId', studentId],
-      ['groupId', groupId],
-      ['date', date],
-      ['wentToBedAt', observation.wentToBedAt],
-      ['gotUpAt', observation.gotUpAt],
-      ['brushedTeeth', observation.brushedTeeth],
-      ['didYoga', observation.didYoga],
-      ['breakfast', observation.breakfast],
-      ['homework', observation.homework],
-      ['assignmentCompletion', observation.assignmentCompletion],
-      ['helpfulAtHome', observation.helpfulAtHome],
-      ['respectfulToElders', observation.respectfulToElders],
-    ];
-    if (required.some(([, value]) => !String(value || '').trim()) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(422).json({ message: 'All required parent observation fields must be provided.' });
-    }
-
-    const allowed = {
-      brushedTeeth: ['once', 'twice'],
-      didYoga: ['yes', 'no'],
-      breakfast: ['had_breakfast', 'refused'],
-      homework: ['completed', 'did_not_do'],
-      assignmentCompletion: ['worked_independently', 'did_under_supervision', 'failed_to_do'],
-      helpfulAtHome: ['very_much', 'sometimes', 'never'],
-      respectfulToElders: ['very_much', 'sometimes', 'never'],
-    };
-    for (const [field, values] of Object.entries(allowed)) {
-      if (!values.includes(String(observation[field] || '').trim())) {
-        return res.status(422).json({ message: `Invalid value for ${field}.` });
-      }
-    }
-
-    await connectMongo();
-    const group = await findGroupByReference(groupId);
-    if (!group) return res.status(404).json({ message: 'Group not found.' });
-    const groupStudent = (Array.isArray(group.students) ? group.students : [])
-      .find((student) => diaryStudentMatch(student, studentId));
-    if (!groupStudent) return res.status(403).json({ message: 'Student is not a member of this group.' });
-
-    const now = new Date().toISOString();
-    const diaryId = String(body.diaryId || `${groupId}:${studentId}:${date}`).trim();
-    const document = {
-      studentId,
-      studentName: String(groupStudent.name || body.studentName || '').trim(),
-      diaryId,
-      groupId,
-      classId: groupId,
-      date,
-      parentObservation: {
-        wentToBedAt: String(observation.wentToBedAt).trim(),
-        gotUpAt: String(observation.gotUpAt).trim(),
-        brushedTeeth: String(observation.brushedTeeth).trim(),
-        didYoga: String(observation.didYoga).trim(),
-        breakfast: String(observation.breakfast).trim(),
-        homework: String(observation.homework).trim(),
-        assignmentCompletion: String(observation.assignmentCompletion).trim(),
-        helpfulAtHome: String(observation.helpfulAtHome).trim(),
-        respectfulToElders: String(observation.respectfulToElders).trim(),
-        parentsRemark: String(observation.parentsRemark || '').trim(),
-      },
-      updatedAt: now,
-    };
-    await diaryCollection.updateOne(
-      { studentId, groupId, date },
-      { $set: document, $setOnInsert: { createdAt: now } },
-      { upsert: true },
-    );
-    const saved = await diaryCollection.findOne({ studentId, groupId, date });
-    return res.status(200).json({ success: true, message: 'Parent observations saved successfully.', data: sanitizeDiaryForResponse(saved) });
-  } catch (error) {
-    console.error('POST /api/diary failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to save parent observations.' });
-  }
-});
-
-app.post('/api/diary/student-observation', requireDiaryAccess, async (req, res) => {
-  try {
-    const body = req.body || {};
-    const studentId = String(body.studentId || '').trim();
-    const groupId = String(body.groupId || body.classId || '').trim();
-    const classId = String(body.classId || groupId).trim();
-    const diaryId = String(body.diaryId || '').trim();
-    const date = String(body.date || '').trim();
-    const mood = String(body.mood || '').trim();
-    const moods = ['exciting', 'happy', 'lazy', 'sad', 'angry'];
-    if (!studentId || !groupId || !classId || !diaryId ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(date) || !moods.includes(mood)) {
-      return res.status(422).json({ message: 'studentId, diaryId, groupId, date, and a valid mood are required.' });
-    }
-
-    await connectMongo();
-    const group = await findGroupByReference(groupId);
-    if (!group) return res.status(404).json({ message: 'Group not found.' });
-    const groupStudent = (Array.isArray(group.students) ? group.students : [])
-      .find((student) => diaryStudentMatch(student, studentId));
-    if (!groupStudent) return res.status(403).json({ message: 'Student is not a member of this group.' });
-
-    const now = new Date().toISOString();
-    await diaryCollection.updateOne(
-      { studentId, diaryId },
-      {
-        $set: {
-          studentId,
-          studentName: String(groupStudent.name || body.studentName || '').trim(),
-          diaryId,
-          classId,
-          groupId,
-          date,
-          studentObservation: { mood },
-          updatedAt: now,
-        },
-        $setOnInsert: { createdAt: now },
-      },
-      { upsert: true },
-    );
-    const saved = await diaryCollection.findOne({ studentId, diaryId });
-    return res.status(200).json({ success: true, message: 'Student observation saved.', data: sanitizeDiaryForResponse(saved) });
-  } catch (error) {
-    console.error('POST /api/diary/student-observation failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to save student observation.' });
-  }
 });
 
 let client;
@@ -464,7 +66,6 @@ let eventsCollection;
 let legacyEventsCollection;
 let todayInClassCollection;
 let homeworkCollection;
-let diaryCollection;
 let groupMessagesCollection;
 let groupMessageCommentsCollection;
 let classTimetableCollection;
@@ -473,75 +74,33 @@ let studentInfoCollection;
 let schoolHandbookCollection;
 let eventCelebrationCollection;
 let schoolResourcesCollection;
-let classResourcesCollection;
 let newsLetterCollection;
 let announcementCollection;
 let demographyCollection;
 let libraryCollection;
 let socialUrlCollection;
-let classPhotosCollection;
-let classNewsCollection;
-let lessonPlansCollection;
-let schoolNewsCollection;
-let medicalEventCollection;
-let staffLeaveCollection;
-let staffLeaveEntitlementsCollection;
-let busGpsCollection;
-let oneOnOneMeetingsCollection;
-let gateRegisterCollection;
-let employeeAttendanceCollection;
-let staffResourcesCollection;
-
-async function safeCreateIndex(collection, spec, options = {}) {
-  try {
-    await collection.createIndex(spec, options);
-  } catch (error) {
-    const message = error && error.message ? error.message : String(error);
-    const isDuplicateIndex = /already exists|same name as the requested index/i.test(message);
-    if (!isDuplicateIndex) {
-      throw error;
-    }
-  }
-}
 
 async function ensureIndexes(db) {
   await Promise.all([
-    safeCreateIndex(groupsCollection, { id: 1 }, { sparse: true }),
-    safeCreateIndex(usersCollection, { userId: 1 }, { sparse: true }),
-    safeCreateIndex(usersCollection, { email: 1 }, { sparse: true }),
-    safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
-    safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
-    safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
-    safeCreateIndex(diaryCollection, { studentId: 1, groupId: 1, date: 1 }, { unique: true }),
-    safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
-    safeCreateIndex(groupMessageCommentsCollection, { groupId: 1, messageId: 1, createdAt: 1 }),
-    safeCreateIndex(classTimetableCollection, { groupId: 1, day: 1, startTime: 1 }),
-    safeCreateIndex(
-      studentInfoCollection,
-      { studentId: 1 },
-      { unique: true, sparse: true, collation: { locale: 'en', strength: 2 } },
-    ),
-    safeCreateIndex(studentInfoCollection, { admissionNumber: 1 }, { sparse: true }),
-    safeCreateIndex(schoolHandbookCollection, { schoolId: 1, handbookId: 1 }, { unique: true }),
-    safeCreateIndex(eventCelebrationCollection, { schoolId: 1, eventDate: 1 }),
-    safeCreateIndex(schoolResourcesCollection, { schoolId: 1, date: -1, createdAt: -1 }),
-    safeCreateIndex(classResourcesCollection, { groupId: 1, createdAt: -1 }),
-    safeCreateIndex(newsLetterCollection, { schoolId: 1, createdAt: -1 }),
-    safeCreateIndex(announcementCollection, { createdAt: -1 }),
-    safeCreateIndex(demographyCollection, { groupId: 1 }, { unique: false }),
-    safeCreateIndex(libraryCollection, { bookId: 1 }, { unique: false }),
-    safeCreateIndex(socialUrlCollection, { platform: 1 }, { unique: true }),
-    safeCreateIndex(classPhotosCollection, { groupId: 1, uploadedAt: -1 }),
-    safeCreateIndex(classNewsCollection, { groupId: 1, publishedAt: -1 }),
-    safeCreateIndex(schoolNewsCollection, { isPublished: 1, date: -1, createdAt: -1 }),
-    safeCreateIndex(staffLeaveCollection, { staffId: 1, createdAt: -1 }),
-    safeCreateIndex(staffLeaveEntitlementsCollection, { staffId: 1, year: 1, leaveType: 1 }),
-    safeCreateIndex(busGpsCollection, { busRouteCode: 1 }),
-    safeCreateIndex(oneOnOneMeetingsCollection, { staffId: 1, startDateTime: -1 }),
-    safeCreateIndex(gateRegisterCollection, { personType: 1, entryDate: -1 }),
-    safeCreateIndex(employeeAttendanceCollection, { employeeId: 1, attendanceDate: 1 }, { unique: true }),
-    safeCreateIndex(employeeAttendanceCollection, { attendanceDate: 1, status: 1 }),
-    safeCreateIndex(staffResourcesCollection, { staffId: 1, createdAt: -1 }),
+    groupsCollection.createIndex({ id: 1 }, { sparse: true }),
+    usersCollection.createIndex({ userId: 1 }, { sparse: true }),
+    usersCollection.createIndex({ email: 1 }, { sparse: true }),
+    eventsCollection.createIndex({ groupId: 1, startDate: 1 }),
+    todayInClassCollection.createIndex({ groupId: 1, date: 1 }),
+    homeworkCollection.createIndex({ groupId: 1, date: 1 }),
+    groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
+    groupMessageCommentsCollection.createIndex({ groupId: 1, messageId: 1, createdAt: 1 }),
+    classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
+    studentInfoCollection.createIndex({ studentId: 1 }, { sparse: true }),
+    studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
+    schoolHandbookCollection.createIndex({ schoolId: 1, handbookId: 1 }, { unique: true }),
+    eventCelebrationCollection.createIndex({ schoolId: 1, eventDate: 1 }),
+    schoolResourcesCollection.createIndex({ schoolId: 1, date: -1, createdAt: -1 }),
+    newsLetterCollection.createIndex({ schoolId: 1, createdAt: -1 }),
+    announcementCollection.createIndex({ createdAt: -1 }),
+    demographyCollection.createIndex({ groupId: 1 }, { unique: false }),
+    libraryCollection.createIndex({ bookId: 1 }, { unique: false }),
+    socialUrlCollection.createIndex({ platform: 1 }, { unique: true }),
   ]);
 }
 
@@ -571,7 +130,6 @@ async function connectMongo() {
     legacyEventsCollection = db.collection('events');
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
-    diaryCollection = db.collection('diary');
     groupMessagesCollection = db.collection('groupMessages');
     groupMessageCommentsCollection = db.collection('groupMessageComments');
     classTimetableCollection = db.collection('class-timetables');
@@ -580,24 +138,11 @@ async function connectMongo() {
     schoolHandbookCollection = db.collection('school-handbook');
     eventCelebrationCollection = db.collection('event-celebration');
     schoolResourcesCollection = db.collection('school-resources');
-    classResourcesCollection = db.collection('class-resources');
     newsLetterCollection = db.collection('news-letter');
     announcementCollection = db.collection('announcement');
     demographyCollection = db.collection('demography');
     libraryCollection = db.collection('lib');
     socialUrlCollection = db.collection('social-url');
-    classPhotosCollection = db.collection('class-photos');
-    classNewsCollection = db.collection('class-news');
-    lessonPlansCollection = db.collection('lesson-plans');
-    schoolNewsCollection = db.collection('schoolnews');
-    medicalEventCollection = db.collection('medical-event');
-    staffLeaveCollection = db.collection('emp-leave');
-    staffLeaveEntitlementsCollection = db.collection('staff-leave-entitlements');
-    busGpsCollection = db.collection('bus gps');
-    oneOnOneMeetingsCollection = db.collection('one-on-one-meetings');
-    gateRegisterCollection = db.collection('gate-reg');
-    employeeAttendanceCollection = db.collection('employee-attendance');
-    staffResourcesCollection = db.collection('staff-resources');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -664,91 +209,6 @@ function sanitizeUserForResponse(doc) {
   };
 }
 
-function sanitizeBusGpsForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    busRouteCode: doc.busRouteCode || '',
-    busRouteStatus: doc.busRouteStatus || 'Active',
-    year: doc.year || '',
-    busRouteDescription: doc.busRouteDescription || '',
-    busRouteDriver: doc.busRouteDriver || '',
-    busNo: doc.busNo || '',
-    hasGpsDevice: doc.hasGpsDevice || 'No',
-    gpsStatus: doc.gpsStatus || 'Offline',
-    engineStatus: doc.engineStatus || 'OFF',
-    isActive: doc.isActive !== false,
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function sanitizeGateRegisterForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    gateNo: doc.gateNo || '',
-    customGateNo: doc.customGateNo || '',
-    personType: doc.personType || '',
-    entryDate: doc.entryDate || null,
-    status: doc.status || 'Registered',
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function sanitizeEmployeeAttendanceForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    employeeId: doc.employeeId || '',
-    teacherId: doc.teacherId || doc.employeeId || '',
-    employeeName: doc.employeeName || '',
-    attendanceDate: doc.attendanceDate || '',
-    timeRecorded: doc.timeRecorded || null,
-    attendanceType: doc.attendanceType || 'OnSite',
-    distance: doc.distance ?? null,
-    status: doc.status || 'Pending Approval',
-    approved: doc.approved === true,
-    present: doc.present !== false,
-    selfAttendance: doc.selfAttendance !== false,
-    isLate: doc.isLate === true,
-    approvedBy: doc.approvedBy || null,
-    approvedAt: doc.approvedAt || null,
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function sanitizeOneOnOneMeetingForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    staffId: doc.staffId || '',
-    staffName: doc.staffName || '',
-    startDateTime: doc.startDateTime || null,
-    endDateTime: doc.endDateTime || null,
-    meetingTime: doc.meetingTime || '',
-    meetingInfo: doc.meetingInfo || '',
-    meetingUrl: doc.meetingUrl || '',
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-function sanitizeStaffResourceForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    staffId: doc.staffId || '',
-    staffName: doc.staffName || '',
-    description: doc.description || '',
-    link: doc.link || '',
-    slipReportImageUrl: doc.slipReportImageUrl || '',
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
 function sanitizeStaffForResponse(doc) {
   if (!doc) return null;
   return {
@@ -801,60 +261,6 @@ function sanitizeStudentForResponse(doc) {
   };
 }
 
-function sanitizeStaffLeaveForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    staffId: doc.staffId || '',
-    staffName: doc.staffName || '',
-    leaveType: doc.leaveType || '',
-    applicableYear: doc.applicableYear || null,
-    startDate: doc.startDate || null,
-    endDate: doc.endDate || null,
-    beginHalfDay: doc.beginHalfDay === true,
-    endHalfDay: doc.endHalfDay === true,
-    effectiveDays: Number(doc.effectiveDays || 0),
-    reason: doc.reason || '',
-    status: doc.status || 'Pending',
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function sanitizeStaffLeaveEntitlementForResponse(doc) {
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    staffId: doc.staffId || '',
-    leaveType: doc.leaveType || '',
-    year: Number(doc.year || 0),
-    totalLeaves: Number(doc.totalLeaves || 0),
-    adjustment: Number(doc.adjustment || 0),
-    leaveTaken: Number(doc.leaveTaken || 0),
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function sanitizeMedicalEventForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    studentId: doc.studentId || '',
-    studentName: doc.studentName || '',
-    className: doc.className || '',
-    description: doc.description || '',
-    firstObservations: {
-      symptomReported: doc.firstObservations?.symptomReported || '',
-      specialNeedsKnown: doc.firstObservations?.specialNeedsKnown || '',
-    },
-    reportImage: doc.reportImage || '',
-    reportedBy: doc.reportedBy || { userId: '', name: '' },
-    lastModifiedBy: doc.lastModifiedBy || { userId: '', name: '' },
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-    lastModifiedAt: doc.lastModifiedAt || null,
-  };
-}
-
 function sanitizeHandbookForResponse(doc) {
   if (!doc) return null;
   return {
@@ -874,34 +280,6 @@ function sanitizeHandbookForResponse(doc) {
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
-}
-
-function escapeRegex(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function formatStudentIdSequence(value) {
-  const numeric = Number.parseInt(String(value), 10);
-  if (!Number.isFinite(numeric) || numeric < 1) return 'STU0001';
-  return `STU${String(numeric).padStart(4, '0')}`;
-}
-
-async function generateNextStudentId() {
-  if (!studentInfoCollection) return 'STU0001';
-
-  const docs = await studentInfoCollection
-    .find({ studentId: { $regex: /^STU\d+$/i } }, { projection: { studentId: 1, _id: 0 } })
-    .toArray();
-
-  let max = 0;
-  for (const document of docs) {
-    const match = String(document.studentId || '').match(/^STU(\d+)$/i);
-    if (!match) continue;
-    const numeric = Number.parseInt(match[1], 10);
-    if (Number.isFinite(numeric) && numeric > max) max = numeric;
-  }
-
-  return formatStudentIdSequence(max + 1);
 }
 
 function sanitizeGroupForResponse(doc) {
@@ -977,26 +355,6 @@ function sanitizeSchoolResourceForResponse(doc) {
   };
 }
 
-function sanitizeClassResourceForResponse(doc) {
-  if (!doc) return null;
-  const id = doc._id ? doc._id.toString() : doc.id || '';
-  return {
-    id,
-    groupId: doc.groupId || '',
-    heading: doc.title || doc.heading || '',
-    date: doc.createdAt || doc.date || '',
-    resourceName: doc.description || doc.resourceName || '',
-    imageUrl: doc.fileUrl || doc.imageUrl || '',
-    resourceType: doc.resourceType || '',
-    fileName: doc.fileName || '',
-    fileSize: Number.isFinite(doc.fileSize) ? doc.fileSize : null,
-    mimeType: doc.mimeType || '',
-    createdBy: doc.createdBy || '',
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
 function sanitizeNewsLetterForResponse(doc) {
   if (!doc) return null;
   const id = doc._id ? doc._id.toString() : doc.id || '';
@@ -1011,21 +369,6 @@ function sanitizeNewsLetterForResponse(doc) {
       subHeading: section && section.subHeading ? String(section.subHeading) : '',
       content: section && section.content ? String(section.content) : '',
     })) : [],
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
-function sanitizeSchoolNewsForResponse(doc) {
-  if (!doc) return null;
-  const id = doc._id ? doc._id.toString() : doc.id || '';
-  return {
-    id,
-    _id: id,
-    title: doc.title || '',
-    date: doc.date instanceof Date ? doc.date.toISOString() : (doc.date ? String(doc.date) : null),
-    news: doc.news || '',
-    isPublished: Boolean(doc.isPublished),
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -1163,32 +506,8 @@ function sanitizeGroupMessageForResponse(doc) {
   };
 }
 
-function sanitizeAdminMessageForResponse(doc) {
-  if (!doc) return null;
-  const id = doc._id ? doc._id.toString() : doc.id || '';
-  return {
-    id,
-    subject: doc.subject || doc.title || '',
-    message: doc.message || doc.content || '',
-    messageType: doc.messageType || doc.category || 'General',
-    senderId: doc.senderId || '',
-    senderName: doc.senderName || 'Admin',
-    senderRole: 'admin',
-    sendToStudents: doc.sendToStudents === true,
-    sendToStaff: doc.sendToStaff === true,
-    groupId: doc.groupId || null,
-    groupName: doc.groupName || 'All Groups',
-    createdAt: doc.createdAt || null,
-    updatedAt: doc.updatedAt || null,
-  };
-}
-
 function groupIdVariants(groupId) {
   const variants = [groupId];
-  const doubleSeparatorId = groupId.replace(/^SAMUNI-2022-/i, 'SAMUNI-2022--');
-  if (!variants.includes(doubleSeparatorId)) {
-    variants.push(doubleSeparatorId);
-  }
   const singleSeparatorId = groupId.replace(/^SAMUNI-2022--/i, 'SAMUNI-2022-');
   if (!variants.includes(singleSeparatorId)) {
     variants.push(singleSeparatorId);
@@ -1236,376 +555,6 @@ async function renumberGroups() {
     );
   }
 }
-
-// Employee Attendance CRUD
-function employeeAttendancePayload(body) {
-  const employeeId = String(body.employeeId || '').trim();
-  const attendanceDate = String(body.attendanceDate || '').trim();
-  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-  if (!employeeId || !attendanceDate) return { error: 'Employee ID and attendance date are required.' };
-  if (!datePattern.test(attendanceDate) || Number.isNaN(new Date(`${attendanceDate}T00:00:00Z`).getTime())) return { error: 'Attendance date must use YYYY-MM-DD format.' };
-  const timeRecorded = body.timeRecorded ? new Date(body.timeRecorded) : new Date();
-  if (Number.isNaN(timeRecorded.getTime())) return { error: 'Recorded time is invalid.' };
-  const attendanceType = String(body.attendanceType || 'OnSite').trim();
-  const distance = body.distance == null || body.distance === '' ? null : Number(body.distance);
-  if (distance !== null && !Number.isFinite(distance)) return { error: 'Distance must be a valid number.' };
-  return {
-    values: {
-      employeeId,
-      attendanceDate,
-      timeRecorded,
-      attendanceType,
-      distance,
-      present: body.present !== false,
-      selfAttendance: body.selfAttendance !== false,
-      isLate: body.isLate === true,
-    },
-  };
-}
-
-function employeeAttendanceObjectId(id) {
-  return ObjectId.isValid(id) ? new ObjectId(id) : null;
-}
-
-async function findEmployeeForAttendance(employeeId) {
-  return employeeInfoCollection.findOne({ employeeId });
-}
-
-app.get('/api/employee-attendance', async (req, res) => {
-  try {
-    await connectMongo();
-    const filter = {};
-    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
-    if (req.query.employeeId) filter.employeeId = String(req.query.employeeId).trim();
-    const records = await employeeAttendanceCollection.find(filter).sort({ attendanceDate: -1, timeRecorded: -1, _id: -1 }).toArray();
-    return res.json(records.map(sanitizeEmployeeAttendanceForResponse));
-  } catch (error) {
-    console.error('GET /api/employee-attendance failed:', error);
-    return res.status(500).json({ message: 'Unable to load employee attendance.' });
-  }
-});
-
-app.get('/api/employee-attendance/summary', async (req, res) => {
-  try {
-    await connectMongo();
-    const date = String(req.query.date || '').trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(422).json({ message: 'A valid date in YYYY-MM-DD format is required.' });
-    const [total, records] = await Promise.all([
-      employeeInfoCollection.countDocuments(),
-      employeeAttendanceCollection.find({ attendanceDate: date }).toArray(),
-    ]);
-    const present = records.filter((record) => record.present !== false && record.approved === true).length;
-    const pending = records.filter((record) => record.status === 'Pending Approval' || record.approved !== true).length;
-    return res.json({ date, total, present, absent: Math.max(total - present, 0), pending, recorded: records.length, late: records.filter((record) => record.isLate === true).length });
-  } catch (error) {
-    console.error('GET /api/employee-attendance/summary failed:', error);
-    return res.status(500).json({ message: 'Unable to calculate attendance summary.' });
-  }
-});
-
-app.get('/api/employee-attendance/pending', async (req, res) => {
-  try {
-    await connectMongo();
-    const filter = { status: 'Pending Approval' };
-    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
-    const records = await employeeAttendanceCollection.find(filter).sort({ timeRecorded: 1, _id: 1 }).toArray();
-    return res.json({ data: records.map(sanitizeEmployeeAttendanceForResponse) });
-  } catch (error) {
-    console.error('GET /api/employee-attendance/pending failed:', error);
-    return res.status(500).json({ message: 'Unable to load pending attendance.' });
-  }
-});
-
-app.get('/api/employee-attendance/late', async (req, res) => {
-  try {
-    await connectMongo();
-    const filter = { isLate: true };
-    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
-    const records = await employeeAttendanceCollection.find(filter).sort({ timeRecorded: -1, _id: -1 }).toArray();
-    return res.json({ data: records.map(sanitizeEmployeeAttendanceForResponse) });
-  } catch (error) {
-    console.error('GET /api/employee-attendance/late failed:', error);
-    return res.status(500).json({ message: 'Unable to load late attendance.' });
-  }
-});
-
-app.get('/api/employee-attendance/:id', async (req, res) => {
-  try {
-    const id = employeeAttendanceObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
-    await connectMongo();
-    const record = await employeeAttendanceCollection.findOne({ _id: id });
-    if (!record) return res.status(404).json({ message: 'Attendance record not found.' });
-    return res.json(sanitizeEmployeeAttendanceForResponse(record));
-  } catch (error) {
-    console.error('GET /api/employee-attendance/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to load the attendance record.' });
-  }
-});
-
-app.post('/api/employee-attendance', async (req, res) => {
-  try {
-    const { values, error } = employeeAttendancePayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const employee = await findEmployeeForAttendance(values.employeeId);
-    if (!employee) return res.status(422).json({ message: 'Employee ID does not exist.' });
-    const now = new Date();
-    const document = { ...values, teacherId: employee.employeeId, employeeName: employee.name, status: 'Pending Approval', approved: false, approvedBy: null, approvedAt: null, createdAt: now, updatedAt: now };
-    const result = await employeeAttendanceCollection.insertOne(document);
-    return res.status(201).json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: result.insertedId })));
-  } catch (error) {
-    if (error?.code === 11000) return res.status(409).json({ message: 'Attendance is already recorded for this employee and date.' });
-    console.error('POST /api/employee-attendance failed:', error);
-    return res.status(500).json({ message: 'Unable to create employee attendance.' });
-  }
-});
-
-app.put('/api/employee-attendance/:id', async (req, res) => {
-  try {
-    const id = employeeAttendanceObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
-    const { values, error } = employeeAttendancePayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const employee = await findEmployeeForAttendance(values.employeeId);
-    if (!employee) return res.status(422).json({ message: 'Employee ID does not exist.' });
-    const result = await employeeAttendanceCollection.updateOne({ _id: id }, { $set: { ...values, teacherId: employee.employeeId, employeeName: employee.name, updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Attendance record not found.' });
-    return res.json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: id })));
-  } catch (error) {
-    if (error?.code === 11000) return res.status(409).json({ message: 'Attendance is already recorded for this employee and date.' });
-    console.error('PUT /api/employee-attendance/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to update employee attendance.' });
-  }
-});
-
-app.patch('/api/employee-attendance/:id/approve', async (req, res) => {
-  try {
-    const id = employeeAttendanceObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
-    await connectMongo();
-    const result = await employeeAttendanceCollection.updateOne({ _id: id }, { $set: { approved: true, status: 'Approved', approvedBy: req.auth?.userId || 'admin', approvedAt: new Date(), updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Attendance record not found.' });
-    return res.json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: id })));
-  } catch (error) {
-    console.error('PATCH /api/employee-attendance/:id/approve failed:', error);
-    return res.status(500).json({ message: 'Unable to approve attendance.' });
-  }
-});
-
-app.patch('/api/employee-attendance/:id/late', async (req, res) => {
-  try {
-    const id = employeeAttendanceObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid attendance ID.' });
-    await connectMongo();
-    const isLate = req.body?.isLate === true;
-    const result = await employeeAttendanceCollection.updateOne({ _id: id }, { $set: { isLate, updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Attendance record not found.' });
-    return res.json(sanitizeEmployeeAttendanceForResponse(await employeeAttendanceCollection.findOne({ _id: id })));
-  } catch (error) {
-    console.error('PATCH /api/employee-attendance/:id/late failed:', error);
-    return res.status(500).json({ message: 'Unable to update late attendance.' });
-  }
-});
-
-// Gate Register CRUD
-function gateRegisterPayload(body) {
-  const gateNo = String(body.gateNo || '').trim();
-  const customGateNo = String(body.customGateNo || '').trim();
-  const personType = String(body.personType || '').trim();
-  const allowedGates = ['1', '2', '3', 'Other'];
-  const allowedPeople = ['Student', 'Staff', 'Parent', 'Others'];
-  if (!allowedGates.includes(gateNo)) return { error: 'Gate number must be 1, 2, 3, or Other.' };
-  if (gateNo === 'Other' && !customGateNo) return { error: 'Custom gate number is required for Other.' };
-  if (!allowedPeople.includes(personType)) return { error: 'Person type must be Student, Staff, Parent, or Others.' };
-  const entryDate = body.entryDate ? new Date(body.entryDate) : new Date();
-  if (Number.isNaN(entryDate.getTime())) return { error: 'Entry date is invalid.' };
-  return { values: { gateNo, customGateNo: gateNo === 'Other' ? customGateNo : '', personType, entryDate } };
-}
-
-function gateRegisterObjectId(id) {
-  return ObjectId.isValid(id) ? new ObjectId(id) : null;
-}
-
-app.get('/api/gate-register', async (req, res) => {
-  try {
-    await connectMongo();
-    const filter = {};
-    if (req.query.personType) filter.personType = String(req.query.personType).trim();
-    const records = await gateRegisterCollection.find(filter).sort({ entryDate: -1, _id: -1 }).toArray();
-    return res.json(records.map(sanitizeGateRegisterForResponse));
-  } catch (error) {
-    console.error('GET /api/gate-register failed:', error);
-    return res.status(500).json({ message: 'Unable to load gate register records.' });
-  }
-});
-
-app.get('/api/gate-register/:id', async (req, res) => {
-  try {
-    const id = gateRegisterObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid gate register ID.' });
-    await connectMongo();
-    const record = await gateRegisterCollection.findOne({ _id: id });
-    if (!record) return res.status(404).json({ message: 'Gate register record not found.' });
-    return res.json(sanitizeGateRegisterForResponse(record));
-  } catch (error) {
-    console.error('GET /api/gate-register/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to load the gate register record.' });
-  }
-});
-
-app.post('/api/gate-register', async (req, res) => {
-  try {
-    const { values, error } = gateRegisterPayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const now = new Date();
-    const result = await gateRegisterCollection.insertOne({ ...values, status: 'Registered', createdAt: now, updatedAt: now });
-    return res.status(201).json(sanitizeGateRegisterForResponse(await gateRegisterCollection.findOne({ _id: result.insertedId })));
-  } catch (error) {
-    console.error('POST /api/gate-register failed:', error);
-    return res.status(500).json({ message: 'Unable to create the gate register record.' });
-  }
-});
-
-app.put('/api/gate-register/:id', async (req, res) => {
-  try {
-    const id = gateRegisterObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid gate register ID.' });
-    const { values, error } = gateRegisterPayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const result = await gateRegisterCollection.updateOne({ _id: id }, { $set: { ...values, updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Gate register record not found.' });
-    return res.json(sanitizeGateRegisterForResponse(await gateRegisterCollection.findOne({ _id: id })));
-  } catch (error) {
-    console.error('PUT /api/gate-register/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to update the gate register record.' });
-  }
-});
-
-app.delete('/api/gate-register/:id', async (req, res) => {
-  try {
-    const id = gateRegisterObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid gate register ID.' });
-    await connectMongo();
-    const result = await gateRegisterCollection.deleteOne({ _id: id });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'Gate register record not found.' });
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/gate-register/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to delete the gate register record.' });
-  }
-});
-
-// Bus GPS CRUD
-function busGpsPayload(body) {
-  const values = {
-    busRouteCode: String(body.busRouteCode || '').trim(),
-    busRouteStatus: String(body.busRouteStatus || '').trim(),
-    year: String(body.year || '').trim(),
-    busRouteDescription: String(body.busRouteDescription || '').trim(),
-    busRouteDriver: String(body.busRouteDriver || '').trim(),
-    busNo: String(body.busNo || '').trim(),
-    hasGpsDevice: String(body.hasGpsDevice || '').trim(),
-  };
-  const missing = Object.entries(values).filter(([, value]) => !value).map(([key]) => key);
-  if (missing.length > 0) return { error: `Required fields missing: ${missing.join(', ')}.` };
-  if (!['Active', 'Inactive'].includes(values.busRouteStatus)) return { error: 'Bus route status must be Active or Inactive.' };
-  if (!['Yes', 'No'].includes(values.hasGpsDevice)) return { error: 'hasGpsDevice must be Yes or No.' };
-  return { values };
-}
-
-function busGpsObjectId(id) {
-  return ObjectId.isValid(id) ? new ObjectId(id) : null;
-}
-
-app.get('/api/bus-gps', async (req, res) => {
-  try {
-    await connectMongo();
-    const routes = await busGpsCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json(routes.map(sanitizeBusGpsForResponse));
-  } catch (error) {
-    console.error('GET /api/bus-gps failed:', error);
-    return res.status(500).json({ message: 'Unable to load bus routes.' });
-  }
-});
-
-app.get('/api/bus-gps/:id', async (req, res) => {
-  try {
-    const id = busGpsObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
-    await connectMongo();
-    const route = await busGpsCollection.findOne({ _id: id });
-    if (!route) return res.status(404).json({ message: 'Bus route not found.' });
-    return res.json(sanitizeBusGpsForResponse(route));
-  } catch (error) {
-    console.error('GET /api/bus-gps/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to load the bus route.' });
-  }
-});
-
-app.post('/api/bus-gps', async (req, res) => {
-  try {
-    const { values, error } = busGpsPayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const now = new Date().toISOString();
-    const payload = { ...values, gpsStatus: values.hasGpsDevice === 'Yes' ? 'Online' : 'Offline', engineStatus: 'OFF', isActive: values.busRouteStatus === 'Active', createdAt: now, updatedAt: now };
-    const result = await busGpsCollection.insertOne(payload);
-    return res.status(201).json(sanitizeBusGpsForResponse(await busGpsCollection.findOne({ _id: result.insertedId })));
-  } catch (error) {
-    console.error('POST /api/bus-gps failed:', error);
-    return res.status(500).json({ message: 'Unable to create the bus route.' });
-  }
-});
-
-app.put('/api/bus-gps/:id', async (req, res) => {
-  try {
-    const id = busGpsObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
-    const { values, error } = busGpsPayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const result = await busGpsCollection.updateOne({ _id: id }, { $set: { ...values, isActive: values.busRouteStatus === 'Active', updatedAt: new Date().toISOString() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Bus route not found.' });
-    return res.json(sanitizeBusGpsForResponse(await busGpsCollection.findOne({ _id: id })));
-  } catch (error) {
-    console.error('PUT /api/bus-gps/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to update the bus route.' });
-  }
-});
-
-app.delete('/api/bus-gps/:id', async (req, res) => {
-  try {
-    const id = busGpsObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
-    await connectMongo();
-    const result = await busGpsCollection.deleteOne({ _id: id });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'Bus route not found.' });
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/bus-gps/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to delete the bus route.' });
-  }
-});
-
-app.patch('/api/bus-gps/:id/gps-status', async (req, res) => {
-  try {
-    const id = busGpsObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid bus route ID.' });
-    const gpsStatus = String(req.body?.gpsStatus || '').trim();
-    if (!['Online', 'Offline'].includes(gpsStatus)) return res.status(422).json({ message: 'GPS status must be Online or Offline.' });
-    await connectMongo();
-    const result = await busGpsCollection.updateOne({ _id: id }, { $set: { gpsStatus, updatedAt: new Date().toISOString() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Bus route not found.' });
-    return res.json(sanitizeBusGpsForResponse(await busGpsCollection.findOne({ _id: id })));
-  } catch (error) {
-    console.error('PATCH /api/bus-gps/:id/gps-status failed:', error);
-    return res.status(500).json({ message: 'Unable to update GPS status.' });
-  }
-});
 
 // Groups CRUD
 app.get('/api/groups', async (req, res) => {
@@ -1795,27 +744,6 @@ function sanitizeClassTimetableForResponse(doc) {
   };
 }
 
-function sanitizeLessonPlanForResponse(doc) {
-  if (!doc) return null;
-  return {
-    id: doc._id ? doc._id.toString() : doc.id || null,
-    groupId: doc.groupId || '',
-    date: doc.date || '',
-    subject: doc.subject || '',
-    topic: doc.topic || '',
-    startTime: doc.startTime || '',
-    endTime: doc.endTime || '',
-    learningObjectives: doc.learningObjectives || '',
-    notes: doc.notes || '',
-    room: doc.room || '',
-    status: doc.status || 'Planned',
-    attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
-    completionNotes: doc.completionNotes || '',
-    createdAt: doc.createdAt || '',
-    updatedAt: doc.updatedAt || '',
-  };
-}
-
 function timetableSelector(groupId, entryId) {
   return { groupId: { $in: groupIdVariants(groupId) }, ...recordIdSelector(entryId) };
 }
@@ -1877,116 +805,6 @@ app.delete('/api/groups/:groupId/class-timetable/:entryId', async (req, res) => 
   } catch (error) {
     console.error('DELETE class timetable failed:', error);
     return res.status(500).json({ message: 'Unable to delete class timetable.' });
-  }
-});
-
-// Lesson Plans API Endpoints
-app.get('/api/groups/:groupId/lesson-plans', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const date = (req.query.date || '').toString().trim();
-    
-    let query = { groupId: { $in: groupIdVariants(groupId) } };
-    if (date && !Number.isNaN(Date.parse(date))) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-      query.date = { $gte: startDate.toISOString(), $lt: endDate.toISOString() };
-    }
-    
-    const plans = await lessonPlansCollection.find(query).sort({ date: -1, startTime: -1 }).toArray();
-    return res.json(plans.map(sanitizeLessonPlanForResponse));
-  } catch (error) {
-    console.error('GET lesson plans failed:', error);
-    return res.status(500).json({ message: 'Unable to load lesson plans.' });
-  }
-});
-
-app.post('/api/groups/:groupId/lesson-plans', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const body = req.body || {};
-    const values = ['date', 'subject', 'topic', 'startTime', 'endTime'];
-    const plan = Object.fromEntries([...values, 'learningObjectives', 'notes', 'room', 'status', 'attachments', 'completionNotes'].map((field) => [field, (body[field] || '').toString().trim()]));
-    
-    if (!groupId || values.some((field) => !plan[field])) {
-      return res.status(422).json({ message: 'Date, subject, topic, start time, and end time are required.' });
-    }
-    
-    if (Number.isNaN(Date.parse(plan.date))) {
-      return res.status(422).json({ message: 'Invalid date format.' });
-    }
-    
-    const now = new Date().toISOString();
-    const result = await lessonPlansCollection.insertOne({ 
-      groupId, 
-      ...plan, 
-      date: plan.date,
-      status: plan.status || 'Planned',
-      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
-      createdAt: now, 
-      updatedAt: now 
-    });
-    return res.status(201).json(sanitizeLessonPlanForResponse(await lessonPlansCollection.findOne({ _id: result.insertedId })));
-  } catch (error) {
-    console.error('POST lesson plan failed:', error);
-    return res.status(500).json({ message: 'Unable to save lesson plan.' });
-  }
-});
-
-app.put('/api/groups/:groupId/lesson-plans/:planId', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const planId = (req.params.planId || '').trim();
-    const body = req.body || {};
-    const values = ['date', 'subject', 'topic', 'startTime', 'endTime'];
-    const plan = Object.fromEntries([...values, 'learningObjectives', 'notes', 'room', 'status', 'attachments', 'completionNotes'].map((field) => [field, (body[field] || '').toString().trim()]));
-    
-    if (values.some((field) => !plan[field])) {
-      return res.status(422).json({ message: 'Date, subject, topic, start time, and end time are required.' });
-    }
-    
-    if (Number.isNaN(Date.parse(plan.date))) {
-      return res.status(422).json({ message: 'Invalid date format.' });
-    }
-    
-    const selector = { groupId: { $in: groupIdVariants(groupId) }, ...recordIdSelector(planId) };
-    const update = {
-      date: plan.date,
-      subject: plan.subject,
-      topic: plan.topic,
-      startTime: plan.startTime,
-      endTime: plan.endTime,
-      learningObjectives: plan.learningObjectives,
-      notes: plan.notes,
-      room: plan.room,
-      status: plan.status || 'Planned',
-      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
-      completionNotes: plan.completionNotes,
-      updatedAt: new Date().toISOString(),
-    };
-    const result = await lessonPlansCollection.updateOne(selector, { $set: update });
-    if (!result.matchedCount) return res.status(404).json({ message: 'Lesson plan not found.' });
-    return res.json(sanitizeLessonPlanForResponse(await lessonPlansCollection.findOne(selector)));
-  } catch (error) {
-    console.error('PUT lesson plan failed:', error);
-    return res.status(500).json({ message: 'Unable to update lesson plan.' });
-  }
-});
-
-app.delete('/api/groups/:groupId/lesson-plans/:planId', async (req, res) => {
-  try {
-    await connectMongo();
-    const selector = { groupId: { $in: groupIdVariants((req.params.groupId || '').trim()) }, ...recordIdSelector(req.params.planId) };
-    const result = await lessonPlansCollection.deleteOne(selector);
-    if (!result.deletedCount) return res.status(404).json({ message: 'Lesson plan not found.' });
-    return res.sendStatus(204);
-  } catch (error) {
-    console.error('DELETE lesson plan failed:', error);
-    return res.status(500).json({ message: 'Unable to delete lesson plan.' });
   }
 });
 
@@ -2411,10 +1229,6 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
   try {
     await connectMongo();
     const requestedGroupId = (req.params.groupId || '').trim();
-    if (!requestedGroupId) {
-      return res.status(422).json({ message: 'Current group ID is required.' });
-    }
-
     const group = await findGroupByReference(requestedGroupId);
     if (!group) return res.status(404).json({ message: 'Group not found.' });
 
@@ -2426,24 +1240,9 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       return res.status(422).json({ message: 'Title, message, and message type are required.' });
     }
 
-    const senderId = (body.senderId || body.authorId || body.userId || '').toString().trim();
-    const senderRole = (body.senderRole || body.authorRole || '').toString().trim().toLowerCase();
-    if (!senderId) {
-      return res.status(422).json({ message: 'Logged-in student is required.' });
-    }
-    if (senderRole !== 'student') {
-      return res.status(403).json({ message: 'Only student accounts can create group messages.' });
-    }
-
-    const verifiedUser = await usersCollection.findOne({ userId: senderId, role: { $in: ['student', 'students'] } });
-    if (!verifiedUser) {
-      return res.status(403).json({ message: 'Student account not found.' });
-    }
-
-    const studentRecord = await studentInfoCollection.findOne({ studentId: senderId });
-    const senderName = (body.senderName || studentRecord?.name || '').toString().trim() || verifiedUser.email?.split('@')[0] || 'Student';
-    const senderEmail = (body.senderEmail || verifiedUser.email || '').toString().trim();
     const allowComments = body.allowComments !== undefined ? body.allowComments !== false : body.commentsAllowed !== false;
+    const senderName = (body.senderName || '').toString().trim();
+    const senderEmail = (body.senderEmail || '').toString().trim();
     const now = new Date().toISOString();
     const message = {
       groupId: requestedGroupId,
@@ -2451,12 +1250,10 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       title,
       content,
       message: content,
-      authorId: senderId,
-      createdBy: senderId,
-      authorRole: 'student',
-      senderId,
-      senderRole: 'student',
-      senderName,
+      authorId: (body.authorId || body.senderId || '').toString().trim(),
+      createdBy: (body.createdBy || body.authorId || body.senderId || '').toString().trim(),
+      authorRole: (body.authorRole || body.senderRole || '').toString().trim(),
+      senderName: senderName || 'Student',
       senderEmail,
       category,
       messageType: category,
@@ -3333,90 +2130,6 @@ app.delete('/api/events-celebration/:id', async (req, res) => {
   }
 });
 
-// Group-scoped class resources CRUD
-app.get('/api/class-resources/:groupId', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const items = await classResourcesCollection.find({ groupId }).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json(items.map(sanitizeClassResourceForResponse));
-  } catch (error) {
-    console.error('GET /api/class-resources/:groupId failed:', error);
-    return res.status(500).json({ message: 'Unable to load class resources.' });
-  }
-});
-
-app.post('/api/class-resources/:groupId', requireTeacher, upload.single('file'), async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const title = String(req.body.title || '').trim();
-    const description = String(req.body.description || '').trim();
-    const resourceType = String(req.body.resourceType || '').trim();
-    if (!groupId || !title || !req.file) {
-      return res.status(422).json({ message: 'Group, title, and file are required.' });
-    }
-
-    const savedFile = await saveFileToGridFS(req.file);
-    const now = new Date().toISOString();
-    const payload = {
-      groupId,
-      title,
-      description,
-      resourceType,
-      fileName: req.file.originalname,
-      fileUrl: `${req.protocol}://${req.get('host')}/api/images/${savedFile.id}`,
-      filePath: savedFile.filename,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype || 'application/octet-stream',
-      createdBy: req.auth.userId || '',
-      createdAt: now,
-      updatedAt: now,
-    };
-    const result = await classResourcesCollection.insertOne(payload);
-    const saved = await classResourcesCollection.findOne({ _id: result.insertedId });
-    return res.status(201).json(sanitizeClassResourceForResponse(saved));
-  } catch (error) {
-    console.error('POST /api/class-resources/:groupId failed:', error);
-    return res.status(500).json({ message: 'Unable to save class resource.' });
-  }
-});
-
-app.put('/api/class-resources/:groupId/:id', requireTeacher, async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const title = String(req.body.title || '').trim();
-    const description = String(req.body.description || '').trim();
-    const resourceType = String(req.body.resourceType || '').trim();
-    const result = await classResourcesCollection.updateOne(
-      { _id: new ObjectId(req.params.id), groupId },
-      { $set: { title, description, resourceType, updatedAt: new Date().toISOString() } },
-    );
-    if (!result.matchedCount) return res.status(404).json({ message: 'Class resource not found.' });
-    const saved = await classResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
-    return res.json(sanitizeClassResourceForResponse(saved));
-  } catch (error) {
-    console.error('PUT /api/class-resources/:groupId/:id failed:', error);
-    return res.status(400).json({ message: 'Unable to update class resource.' });
-  }
-});
-
-app.delete('/api/class-resources/:groupId/:id', requireTeacher, async (req, res) => {
-  try {
-    await connectMongo();
-    const result = await classResourcesCollection.deleteOne({
-      _id: new ObjectId(req.params.id),
-      groupId: (req.params.groupId || '').trim(),
-    });
-    if (!result.deletedCount) return res.status(404).json({ message: 'Class resource not found.' });
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/class-resources/:groupId/:id failed:', error);
-    return res.status(400).json({ message: 'Unable to delete class resource.' });
-  }
-});
-
 // School resources CRUD
 app.get('/api/school-resources', async (req, res) => {
   try {
@@ -3641,138 +2354,6 @@ app.delete('/api/news-letter/:id', async (req, res) => {
   }
 });
 
-app.get('/api/schoolnews', async (req, res) => {
-  try {
-    await connectMongo();
-    const filter = String(req.query.published || '').toLowerCase() === 'true' ? { isPublished: true } : {};
-    const items = await schoolNewsCollection
-      .find(filter)
-      .sort({ date: -1, isPublished: -1, createdAt: -1, _id: -1 })
-      .toArray();
-    return res.json(items.map(sanitizeSchoolNewsForResponse));
-  } catch (error) {
-    console.error('GET /api/schoolnews failed:', error);
-    return res.status(500).json({ message: 'Unable to load school news.' });
-  }
-});
-
-app.get('/api/schoolnews/:id', async (req, res) => {
-  try {
-    await connectMongo();
-    const item = await schoolNewsCollection.findOne({ _id: new ObjectId(req.params.id) });
-    if (!item) return res.status(404).json({ message: 'School news not found.' });
-    return res.json(sanitizeSchoolNewsForResponse(item));
-  } catch (error) {
-    console.error('GET /api/schoolnews/:id failed:', error);
-    return res.status(404).json({ message: 'School news not found.' });
-  }
-});
-
-app.post('/api/schoolnews', async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const title = String(body.title || '').trim();
-    const news = String(body.news || '').trim();
-    const rawDate = String(body.date || '').trim();
-    const isPublished = body.isPublished === true;
-
-    if (!title || !news || !rawDate) {
-      return res.status(422).json({ message: 'Title, date, and news are required.' });
-    }
-
-    const date = new Date(rawDate);
-    if (Number.isNaN(date.getTime())) {
-      return res.status(422).json({ message: 'Please provide a valid date.' });
-    }
-
-    const now = new Date();
-    const payload = {
-      title,
-      date,
-      news,
-      isPublished,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const result = await schoolNewsCollection.insertOne(payload);
-    const saved = await schoolNewsCollection.findOne({ _id: result.insertedId });
-    return res.status(201).json(sanitizeSchoolNewsForResponse(saved));
-  } catch (error) {
-    console.error('POST /api/schoolnews failed:', error);
-    return res.status(500).json({ message: 'Unable to create school news.' });
-  }
-});
-
-app.put('/api/schoolnews/:id', async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const title = String(body.title || '').trim();
-    const news = String(body.news || '').trim();
-    const rawDate = String(body.date || '').trim();
-
-    if (!title || !news || !rawDate) {
-      return res.status(422).json({ message: 'Title, date, and news are required.' });
-    }
-
-    const date = new Date(rawDate);
-    if (Number.isNaN(date.getTime())) {
-      return res.status(422).json({ message: 'Please provide a valid date.' });
-    }
-
-    const payload = {
-      title,
-      date,
-      news,
-      updatedAt: new Date(),
-    };
-
-    const result = await schoolNewsCollection.updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: payload },
-    );
-
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'School news not found.' });
-    const updated = await schoolNewsCollection.findOne({ _id: new ObjectId(req.params.id) });
-    return res.json(sanitizeSchoolNewsForResponse(updated));
-  } catch (error) {
-    console.error('PUT /api/schoolnews/:id failed:', error);
-    return res.status(400).json({ message: 'Unable to update school news.' });
-  }
-});
-
-app.patch('/api/schoolnews/:id/publish', async (req, res) => {
-  try {
-    await connectMongo();
-    const isPublished = req.body && req.body.isPublished === true;
-    const result = await schoolNewsCollection.updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: { isPublished, updatedAt: new Date() } },
-    );
-
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'School news not found.' });
-    const updated = await schoolNewsCollection.findOne({ _id: new ObjectId(req.params.id) });
-    return res.json(sanitizeSchoolNewsForResponse(updated));
-  } catch (error) {
-    console.error('PATCH /api/schoolnews/:id/publish failed:', error);
-    return res.status(400).json({ message: 'Unable to update publish status.' });
-  }
-});
-
-app.delete('/api/schoolnews/:id', async (req, res) => {
-  try {
-    await connectMongo();
-    const result = await schoolNewsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'School news not found.' });
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/schoolnews/:id failed:', error);
-    return res.status(400).json({ message: 'Unable to delete school news.' });
-  }
-});
-
 // Announcement CRUD
 app.get('/api/announcement', async (req, res) => {
   try {
@@ -3797,107 +2378,6 @@ app.get('/api/announcement/:id', async (req, res) => {
   } catch (error) {
     console.error('GET /api/announcement/:id failed:', error);
     return res.status(404).json({ message: 'Announcement not found.' });
-  }
-});
-
-app.get('/api/medical-events', async (req, res) => {
-  try {
-    await connectMongo();
-    const items = await medicalEventCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json({ success: true, data: items.map(sanitizeMedicalEventForResponse) });
-  } catch (error) {
-    console.error('GET /api/medical-events failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load medical events.' });
-  }
-});
-
-app.get('/api/medical-events/:id', async (req, res) => {
-  try {
-    await connectMongo();
-    const item = await medicalEventCollection.findOne({ _id: new ObjectId(req.params.id) });
-    if (!item) return res.status(404).json({ success: false, message: 'Medical event not found.' });
-    return res.json({ success: true, data: sanitizeMedicalEventForResponse(item) });
-  } catch (error) {
-    console.error('GET /api/medical-events/:id failed:', error);
-    return res.status(404).json({ success: false, message: 'Medical event not found.' });
-  }
-});
-
-app.post('/api/medical-events', async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const observations = body.firstObservations || {};
-    const payload = {
-      studentId: String(body.studentId || '').trim(),
-      studentName: String(body.studentName || '').trim(),
-      className: String(body.className || '').trim(),
-      description: String(body.description || '').trim(),
-      firstObservations: {
-        symptomReported: String(observations.symptomReported || body.symptomReported || '').trim(),
-        specialNeedsKnown: String(observations.specialNeedsKnown || body.specialNeedsKnown || '').trim(),
-      },
-      reportImage: String(body.reportImage || '').trim(),
-      reportedBy: body.reportedBy || {},
-      lastModifiedBy: body.lastModifiedBy || {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastModifiedAt: new Date(),
-    };
-    if (!payload.studentId || !payload.studentName || !payload.className || !payload.description || !payload.firstObservations.symptomReported || !String(payload.reportedBy.userId || payload.reportedBy.name || '').trim()) {
-      return res.status(422).json({ success: false, message: 'Student, class, description, symptom, and reported by are required.' });
-    }
-    const result = await medicalEventCollection.insertOne(payload);
-    const saved = await medicalEventCollection.findOne({ _id: result.insertedId });
-    return res.status(201).json({ success: true, message: 'Medical event saved successfully', data: sanitizeMedicalEventForResponse(saved) });
-  } catch (error) {
-    console.error('POST /api/medical-events failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to save medical event.' });
-  }
-});
-
-app.put('/api/medical-events/:id', async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const observations = body.firstObservations || {};
-    const payload = {
-      studentId: String(body.studentId || '').trim(),
-      studentName: String(body.studentName || '').trim(),
-      className: String(body.className || '').trim(),
-      description: String(body.description || '').trim(),
-      firstObservations: {
-        symptomReported: String(observations.symptomReported || body.symptomReported || '').trim(),
-        specialNeedsKnown: String(observations.specialNeedsKnown || body.specialNeedsKnown || '').trim(),
-      },
-      reportImage: String(body.reportImage || '').trim(),
-      reportedBy: body.reportedBy || {},
-      lastModifiedBy: body.lastModifiedBy || {},
-      updatedAt: new Date(),
-      lastModifiedAt: new Date(),
-    };
-    if (!payload.studentId || !payload.studentName || !payload.className || !payload.description || !payload.firstObservations.symptomReported || !String(payload.reportedBy.userId || payload.reportedBy.name || '').trim()) {
-      return res.status(422).json({ success: false, message: 'Student, class, description, symptom, and reported by are required.' });
-    }
-    const result = await medicalEventCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: payload });
-    if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Medical event not found.' });
-    const updated = await medicalEventCollection.findOne({ _id: new ObjectId(req.params.id) });
-    return res.json({ success: true, message: 'Medical event updated successfully', data: sanitizeMedicalEventForResponse(updated) });
-  } catch (error) {
-    console.error('PUT /api/medical-events/:id failed:', error);
-    return res.status(400).json({ success: false, message: 'Unable to update medical event.' });
-  }
-});
-
-app.delete('/api/medical-events/:id', async (req, res) => {
-  try {
-    await connectMongo();
-    const result = await medicalEventCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    if (result.deletedCount === 0) return res.status(404).json({ success: false, message: 'Medical event not found.' });
-    return res.json({ success: true, message: 'Medical event deleted successfully' });
-  } catch (error) {
-    console.error('DELETE /api/medical-events/:id failed:', error);
-    return res.status(400).json({ success: false, message: 'Unable to delete medical event.' });
   }
 });
 
@@ -3928,119 +2408,6 @@ app.post('/api/announcement', async (req, res) => {
       createdAt: now,
       updatedAt: now,
     };
-
-    app.get('/api/medical-events', async (req, res) => {
-      try {
-        await connectMongo();
-        const items = await medicalEventCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
-        return res.json({ success: true, data: items.map(sanitizeMedicalEventForResponse) });
-      } catch (error) {
-        console.error('GET /api/medical-events failed:', error);
-        return res.status(500).json({ success: false, message: 'Unable to load medical events.' });
-      }
-    });
-
-    app.get('/api/medical-events/:id', async (req, res) => {
-      try {
-        await connectMongo();
-        const item = await medicalEventCollection.findOne({ _id: new ObjectId(req.params.id) });
-        if (!item) return res.status(404).json({ success: false, message: 'Medical event not found.' });
-        return res.json({ success: true, data: sanitizeMedicalEventForResponse(item) });
-      } catch (error) {
-        console.error('GET /api/medical-events/:id failed:', error);
-        return res.status(404).json({ success: false, message: 'Medical event not found.' });
-      }
-    });
-
-    app.post('/api/medical-events', async (req, res) => {
-      try {
-        await connectMongo();
-        const body = req.body || {};
-        const observations = body.firstObservations || {};
-        const required = {
-          studentId: String(body.studentId || '').trim(),
-          studentName: String(body.studentName || '').trim(),
-          className: String(body.className || '').trim(),
-          description: String(body.description || '').trim(),
-          symptomReported: String(observations.symptomReported || body.symptomReported || '').trim(),
-          reportedBy: body.reportedBy || {},
-          lastModifiedBy: body.lastModifiedBy || {},
-        };
-        if (!required.studentId || !required.studentName || !required.className || !required.description ||
-            !required.symptomReported || !String(required.reportedBy.userId || required.reportedBy.name || '').trim()) {
-          return res.status(422).json({ success: false, message: 'Student, class, description, symptom, and reported by are required.' });
-        }
-        const now = new Date();
-        const payload = {
-          studentId: required.studentId,
-          studentName: required.studentName,
-          className: required.className,
-          description: required.description,
-          firstObservations: {
-            symptomReported: required.symptomReported,
-            specialNeedsKnown: String(observations.specialNeedsKnown || body.specialNeedsKnown || '').trim(),
-          },
-          reportImage: String(body.reportImage || '').trim(),
-          reportedBy: required.reportedBy,
-          lastModifiedBy: required.lastModifiedBy,
-          createdAt: now,
-          updatedAt: now,
-          lastModifiedAt: now,
-        };
-        const result = await medicalEventCollection.insertOne(payload);
-        const saved = await medicalEventCollection.findOne({ _id: result.insertedId });
-        return res.status(201).json({ success: true, message: 'Medical event saved successfully', data: sanitizeMedicalEventForResponse(saved) });
-      } catch (error) {
-        console.error('POST /api/medical-events failed:', error);
-        return res.status(500).json({ success: false, message: 'Unable to save medical event.' });
-      }
-    });
-
-    app.put('/api/medical-events/:id', async (req, res) => {
-      try {
-        await connectMongo();
-        const body = req.body || {};
-        const observations = body.firstObservations || {};
-        const payload = {
-          studentId: String(body.studentId || '').trim(),
-          studentName: String(body.studentName || '').trim(),
-          className: String(body.className || '').trim(),
-          description: String(body.description || '').trim(),
-          firstObservations: {
-            symptomReported: String(observations.symptomReported || body.symptomReported || '').trim(),
-            specialNeedsKnown: String(observations.specialNeedsKnown || body.specialNeedsKnown || '').trim(),
-          },
-          reportImage: String(body.reportImage || '').trim(),
-          reportedBy: body.reportedBy || {},
-          lastModifiedBy: body.lastModifiedBy || {},
-          updatedAt: new Date(),
-          lastModifiedAt: new Date(),
-        };
-        if (!payload.studentId || !payload.studentName || !payload.className || !payload.description ||
-            !payload.firstObservations.symptomReported || !String(payload.reportedBy.userId || payload.reportedBy.name || '').trim()) {
-          return res.status(422).json({ success: false, message: 'Student, class, description, symptom, and reported by are required.' });
-        }
-        const result = await medicalEventCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: payload });
-        if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Medical event not found.' });
-        const updated = await medicalEventCollection.findOne({ _id: new ObjectId(req.params.id) });
-        return res.json({ success: true, message: 'Medical event updated successfully', data: sanitizeMedicalEventForResponse(updated) });
-      } catch (error) {
-        console.error('PUT /api/medical-events/:id failed:', error);
-        return res.status(400).json({ success: false, message: 'Unable to update medical event.' });
-      }
-    });
-
-    app.delete('/api/medical-events/:id', async (req, res) => {
-      try {
-        await connectMongo();
-        const result = await medicalEventCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-        if (result.deletedCount === 0) return res.status(404).json({ success: false, message: 'Medical event not found.' });
-        return res.json({ success: true, message: 'Medical event deleted successfully' });
-      } catch (error) {
-        console.error('DELETE /api/medical-events/:id failed:', error);
-        return res.status(400).json({ success: false, message: 'Unable to delete medical event.' });
-      }
-    });
 
     const result = await announcementCollection.insertOne(payload);
     const saved = await announcementCollection.findOne({ _id: result.insertedId });
@@ -4184,380 +2551,7 @@ app.post('/api/announcement/:id/remind', async (req, res) => {
   }
 });
 
-// One-on-one meetings CRUD
-function oneOnOneMeetingPayload(body) {
-  const staffId = String(body.staffId || '').trim();
-  const staffName = String(body.staffName || '').trim();
-  const meetingTime = String(body.meetingTime || '').trim();
-  const meetingInfo = String(body.meetingInfo || '').trim();
-  const meetingUrl = String(body.meetingUrl || '').trim();
-  const startDateTime = new Date(body.startDateTime);
-  const endDateTime = new Date(body.endDateTime);
-  if (!staffId || !staffName || !meetingTime || !meetingInfo) {
-    return { error: 'Staff, meeting time, meeting info, start date/time, and end date/time are required.' };
-  }
-  if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
-    return { error: 'Please provide valid meeting dates.' };
-  }
-  if (endDateTime <= startDateTime) return { error: 'End date/time must be later than start date/time.' };
-  if (meetingUrl && !/^https?:\/\//i.test(meetingUrl)) return { error: 'Meeting URL must be a valid HTTP or HTTPS URL.' };
-  return { values: { staffId, staffName, startDateTime, endDateTime, meetingTime, meetingInfo, meetingUrl } };
-}
-
-function meetingObjectId(id) {
-  return ObjectId.isValid(id) ? new ObjectId(id) : null;
-}
-
-app.get('/api/one-on-one-meetings', async (req, res) => {
-  try {
-    await connectMongo();
-    const meetings = await oneOnOneMeetingsCollection.find({}).sort({ startDateTime: -1, _id: -1 }).toArray();
-    return res.json(meetings.map(sanitizeOneOnOneMeetingForResponse));
-  } catch (error) {
-    console.error('GET /api/one-on-one-meetings failed:', error);
-    return res.status(500).json({ message: 'Unable to load meetings.' });
-  }
-});
-
-app.get('/api/one-on-one-meetings/my-meetings', requireRecipientRole('staff'), async (req, res) => {
-  try {
-    await connectMongo();
-    const staffId = String(req.auth.userId || '').trim();
-    const meetings = await oneOnOneMeetingsCollection
-      .find({ staffId })
-      .sort({ startDateTime: -1, _id: -1 })
-      .toArray();
-    return res.json({ data: meetings.map(sanitizeOneOnOneMeetingForResponse) });
-  } catch (error) {
-    console.error('GET /api/one-on-one-meetings/my-meetings failed:', error);
-    return res.status(500).json({ message: 'Unable to load your meeting information.' });
-  }
-});
-
-app.get('/api/one-on-one-meetings/staff/:staffId', async (req, res) => {
-  try {
-    await connectMongo();
-    const staffId = String(req.params.staffId || '').trim();
-    if (!staffId) return res.status(400).json({ message: 'Staff ID is required.' });
-    const meetings = await oneOnOneMeetingsCollection.find({ staffId }).sort({ startDateTime: -1, _id: -1 }).toArray();
-    return res.json({ data: meetings.map(sanitizeOneOnOneMeetingForResponse) });
-  } catch (error) {
-    console.error('GET /api/one-on-one-meetings/staff/:staffId failed:', error);
-    return res.status(500).json({ message: 'Unable to load staff meeting history.' });
-  }
-});
-
-app.get('/api/one-on-one-meetings/:id', async (req, res) => {
-  try {
-    const id = meetingObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid meeting ID.' });
-    await connectMongo();
-    const meeting = await oneOnOneMeetingsCollection.findOne({ _id: id });
-    if (!meeting) return res.status(404).json({ message: 'Meeting not found.' });
-    return res.json(sanitizeOneOnOneMeetingForResponse(meeting));
-  } catch (error) {
-    console.error('GET /api/one-on-one-meetings/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to load the meeting.' });
-  }
-});
-
-app.post('/api/one-on-one-meetings', async (req, res) => {
-  try {
-    const { values, error } = oneOnOneMeetingPayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const staff = await employeeInfoCollection.findOne({ employeeId: values.staffId });
-    if (!staff) return res.status(422).json({ message: 'The selected staff member no longer exists.' });
-    const now = new Date();
-    const result = await oneOnOneMeetingsCollection.insertOne({ ...values, staffName: staff.name, createdAt: now, updatedAt: now });
-    return res.status(201).json(sanitizeOneOnOneMeetingForResponse(await oneOnOneMeetingsCollection.findOne({ _id: result.insertedId })));
-  } catch (error) {
-    console.error('POST /api/one-on-one-meetings failed:', error);
-    return res.status(500).json({ message: 'Unable to create the meeting.' });
-  }
-});
-
-app.put('/api/one-on-one-meetings/:id', async (req, res) => {
-  try {
-    const id = meetingObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid meeting ID.' });
-    const { values, error } = oneOnOneMeetingPayload(req.body || {});
-    if (error) return res.status(422).json({ message: error });
-    await connectMongo();
-    const staff = await employeeInfoCollection.findOne({ employeeId: values.staffId });
-    if (!staff) return res.status(422).json({ message: 'The selected staff member no longer exists.' });
-    const result = await oneOnOneMeetingsCollection.updateOne({ _id: id }, { $set: { ...values, staffName: staff.name, updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Meeting not found.' });
-    return res.json(sanitizeOneOnOneMeetingForResponse(await oneOnOneMeetingsCollection.findOne({ _id: id })));
-  } catch (error) {
-    console.error('PUT /api/one-on-one-meetings/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to update the meeting.' });
-  }
-});
-
-app.delete('/api/one-on-one-meetings/:id', async (req, res) => {
-  try {
-    const id = meetingObjectId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'Invalid meeting ID.' });
-    await connectMongo();
-    const result = await oneOnOneMeetingsCollection.deleteOne({ _id: id });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'Meeting not found.' });
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/one-on-one-meetings/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to delete the meeting.' });
-  }
-});
-
 // Staff information CRUD
-app.post('/api/emp-leave', async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const required = ['staffId', 'leaveType', 'applicableYear', 'startDate', 'endDate', 'reason'];
-    const missing = required.find((key) => !String(body[key] || '').trim());
-    if (missing) return res.status(422).json({ message: `${missing} is required.` });
-    const startDate = new Date(body.startDate);
-    const endDate = new Date(body.endDate);
-    const effectiveDays = Number(body.effectiveDays);
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate || !Number.isFinite(effectiveDays) || effectiveDays <= 0) {
-      return res.status(422).json({ message: 'Please provide valid leave dates and effective days.' });
-    }
-    const now = new Date();
-    const document = {
-      staffId: String(body.staffId).trim(),
-      staffName: String(body.staffName || '').trim(),
-      leaveType: String(body.leaveType).trim(),
-      applicableYear: Number(body.applicableYear),
-      startDate,
-      endDate,
-      beginHalfDay: body.beginHalfDay === true,
-      endHalfDay: body.endHalfDay === true,
-      effectiveDays,
-      reason: String(body.reason).trim(),
-      status: 'Pending',
-      createdAt: now,
-      updatedAt: now,
-    };
-    const result = await staffLeaveCollection.insertOne(document);
-    return res.status(201).json({ success: true, message: 'Leave request submitted successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: result.insertedId })) });
-  } catch (error) {
-    console.error('POST /api/emp-leave failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to submit leave request.' });
-  }
-});
-
-app.get('/api/emp-leave/:staffId/entitlements', async (req, res) => {
-  try {
-    await connectMongo();
-    const year = Number(req.query.year);
-    const filter = { staffId: String(req.params.staffId) };
-    if (Number.isFinite(year) && year > 0) filter.year = year;
-    const items = await staffLeaveEntitlementsCollection.find(filter).sort({ year: -1, leaveType: 1 }).toArray();
-    return res.json({ success: true, data: items.map(sanitizeStaffLeaveEntitlementForResponse) });
-  } catch (error) {
-    console.error('GET staff leave entitlements failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load leave entitlements.' });
-  }
-});
-
-app.get('/api/emp-leave/employee/:staffId', async (req, res) => {
-  try {
-    await connectMongo();
-    const items = await staffLeaveCollection.find({ staffId: String(req.params.staffId) }).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
-  } catch (error) {
-    console.error('GET /api/emp-leave/employee/:staffId failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load leave requests.' });
-  }
-});
-
-app.post('/api/emp-leave/adjust', async (req, res) => {
-  try {
-    await connectMongo();
-    const body = req.body || {};
-    const staffId = String(body.staffId || '').trim();
-    const leaveType = String(body.leaveType || '').trim();
-    const year = Number(body.year);
-    const days = Number(body.days);
-    if (!staffId || !leaveType || !Number.isFinite(year) || !Number.isFinite(days) || days <= 0) return res.status(422).json({ message: 'Staff, leave type, year, and positive days are required.' });
-    const updated = await staffLeaveEntitlementsCollection.findOneAndUpdate(
-      { staffId, leaveType, year },
-      { $inc: { adjustment: days }, $set: { updatedAt: new Date() }, $setOnInsert: { totalLeaves: 0, leaveTaken: 0 } },
-      { upsert: true, returnDocument: 'after' },
-    );
-    return res.json({ success: true, message: 'Leave adjusted successfully', data: sanitizeStaffLeaveEntitlementForResponse(updated) });
-  } catch (error) {
-    console.error('POST /api/staff-leave/adjust failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to adjust leave.' });
-  }
-});
-
-app.put('/api/emp-leave/:id/cancel', async (req, res) => {
-  try {
-    await connectMongo();
-    const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Cancelled', updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Pending leave request not found.' });
-    return res.json({ success: true, message: 'Leave request cancelled successfully' });
-  } catch (error) {
-    console.error('PUT /api/staff-leave/:id/cancel failed:', error);
-    return res.status(400).json({ message: 'Unable to cancel leave request.' });
-  }
-});
-
-app.get('/api/emp-leave', async (req, res) => {
-  try {
-    await connectMongo();
-    const items = await staffLeaveCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
-  } catch (error) {
-    console.error('GET /api/emp-leave failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load leave requests.' });
-  }
-});
-
-app.get('/api/emp-leave/history', async (req, res) => {
-  try {
-    await connectMongo();
-    const items = await staffLeaveCollection.find({ status: { $in: ['Approved', 'Rejected'] } }).sort({ updatedAt: -1, _id: -1 }).toArray();
-    return res.json({ success: true, data: items.map(sanitizeStaffLeaveForResponse) });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: 'Unable to load leave history.' });
-  }
-});
-
-app.put('/api/emp-leave/:id/approve', async (req, res) => {
-  try {
-    await connectMongo();
-    const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Approved', approvedBy: req.body?.approvedBy || null, approvedOn: new Date(), updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Pending leave request not found.' });
-    return res.json({ success: true, message: 'Leave approved successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: new ObjectId(req.params.id) })) });
-  } catch (error) { return res.status(400).json({ success: false, message: 'Unable to approve leave request.' }); }
-});
-
-app.put('/api/emp-leave/:id/reject', async (req, res) => {
-  try {
-    await connectMongo();
-    const result = await staffLeaveCollection.updateOne({ _id: new ObjectId(req.params.id), status: 'Pending' }, { $set: { status: 'Rejected', rejectedBy: req.body?.rejectedBy || null, rejectedOn: new Date(), rejectionReason: String(req.body?.reason || '').trim(), updatedAt: new Date() } });
-    if (result.matchedCount === 0) return res.status(404).json({ success: false, message: 'Pending leave request not found.' });
-    return res.json({ success: true, message: 'Leave rejected successfully', data: sanitizeStaffLeaveForResponse(await staffLeaveCollection.findOne({ _id: new ObjectId(req.params.id) })) });
-  } catch (error) { return res.status(400).json({ success: false, message: 'Unable to reject leave request.' }); }
-});
-
-function isHttpUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch (_) {
-    return false;
-  }
-}
-
-function staffResourcePayload(body) {
-  return {
-    staffId: String(body.staffId || '').trim(),
-    description: String(body.description || '').trim(),
-    link: String(body.link || '').trim(),
-    slipReportImageUrl: String(body.slipReportImageUrl || '').trim(),
-  };
-}
-
-async function findStaffResourceStaff(staffId) {
-  const normalizedId = String(staffId || '').trim();
-  if (!normalizedId) return null;
-  return employeeInfoCollection.findOne({
-    $or: [{ employeeId: normalizedId }, { staffId: normalizedId }],
-  });
-}
-
-app.get('/api/staff-resources/my-resources', requireRecipientRole('staff'), async (req, res) => {
-  try {
-    await connectMongo();
-    const staffId = String(req.auth.userId || '').trim();
-    const resources = await staffResourcesCollection.find({ staffId }).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json(resources.map(sanitizeStaffResourceForResponse));
-  } catch (error) {
-    console.error('GET /api/staff-resources/my-resources failed:', error);
-    return res.status(500).json({ message: 'Unable to load your staff resources.' });
-  }
-});
-
-app.get('/api/staff-resources', requireAdmin, async (req, res) => {
-  try {
-    await connectMongo();
-    const filter = String(req.query.staffId || '').trim();
-    const resources = await staffResourcesCollection.find(filter ? { staffId: filter } : {}).sort({ createdAt: -1, _id: -1 }).toArray();
-    return res.json(resources.map(sanitizeStaffResourceForResponse));
-  } catch (error) {
-    console.error('GET /api/staff-resources failed:', error);
-    return res.status(500).json({ message: 'Unable to load staff resources.' });
-  }
-});
-
-app.get('/api/staff-resources/:id', requireAdmin, async (req, res) => {
-  try {
-    await connectMongo();
-    if (!ObjectId.isValid(req.params.id)) return res.status(404).json({ message: 'Staff resource not found.' });
-    const resource = await staffResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
-    if (!resource) return res.status(404).json({ message: 'Staff resource not found.' });
-    return res.json(sanitizeStaffResourceForResponse(resource));
-  } catch (error) {
-    return res.status(404).json({ message: 'Staff resource not found.' });
-  }
-});
-
-app.post('/api/staff-resources', requireAdmin, async (req, res) => {
-  try {
-    await connectMongo();
-    const payload = staffResourcePayload(req.body || {});
-    if (!payload.staffId) return res.status(422).json({ message: 'Staff name is required.' });
-    if (!payload.description) return res.status(422).json({ message: 'Description is required.' });
-    if (payload.link && !isHttpUrl(payload.link)) return res.status(422).json({ message: 'Enter a valid resource URL.' });
-    const staff = await findStaffResourceStaff(payload.staffId);
-    if (!staff) return res.status(422).json({ message: 'Selected staff member was not found.' });
-    const now = new Date().toISOString();
-    const document = { ...payload, staffId: staff.employeeId || payload.staffId, staffName: staff.name || '', createdAt: now, updatedAt: now };
-    const result = await staffResourcesCollection.insertOne(document);
-    return res.status(201).json(sanitizeStaffResourceForResponse(await staffResourcesCollection.findOne({ _id: result.insertedId })));
-  } catch (error) {
-    console.error('POST /api/staff-resources failed:', error);
-    return res.status(500).json({ message: 'Unable to save staff resource.' });
-  }
-});
-
-app.put('/api/staff-resources/:id', requireAdmin, async (req, res) => {
-  try {
-    await connectMongo();
-    if (!ObjectId.isValid(req.params.id)) return res.status(404).json({ message: 'Staff resource not found.' });
-    const payload = staffResourcePayload(req.body || {});
-    if (!payload.staffId) return res.status(422).json({ message: 'Staff name is required.' });
-    if (!payload.description) return res.status(422).json({ message: 'Description is required.' });
-    if (payload.link && !isHttpUrl(payload.link)) return res.status(422).json({ message: 'Enter a valid resource URL.' });
-    const staff = await findStaffResourceStaff(payload.staffId);
-    if (!staff) return res.status(422).json({ message: 'Selected staff member was not found.' });
-    const updates = { ...payload, staffId: staff.employeeId || payload.staffId, staffName: staff.name || '', updatedAt: new Date().toISOString() };
-    const result = await staffResourcesCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: updates });
-    if (result.matchedCount === 0) return res.status(404).json({ message: 'Staff resource not found.' });
-    return res.json(sanitizeStaffResourceForResponse(await staffResourcesCollection.findOne({ _id: new ObjectId(req.params.id) })));
-  } catch (error) {
-    console.error('PUT /api/staff-resources/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to update staff resource.' });
-  }
-});
-
-app.delete('/api/staff-resources/:id', requireAdmin, async (req, res) => {
-  try {
-    await connectMongo();
-    if (!ObjectId.isValid(req.params.id)) return res.status(404).json({ message: 'Staff resource not found.' });
-    const result = await staffResourcesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'Staff resource not found.' });
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/staff-resources/:id failed:', error);
-    return res.status(500).json({ message: 'Unable to delete staff resource.' });
-  }
-});
-
 app.get('/api/staff', async (req, res) => {
   try {
     await connectMongo();
@@ -4566,23 +2560,6 @@ app.get('/api/staff', async (req, res) => {
   } catch (error) {
     console.error('GET /api/staff failed:', error);
     return res.status(500).json({ message: 'Unable to load staff information.' });
-  }
-});
-
-app.get('/api/staff/profile', requireRecipientRole('staff'), async (req, res) => {
-  try {
-    await connectMongo();
-    const staff = await employeeInfoCollection.findOne({
-      $or: [
-        { employeeId: String(req.auth.userId || '').trim() },
-        { staffId: String(req.auth.userId || '').trim() },
-      ],
-    });
-    if (!staff) return res.status(404).json({ message: 'Staff profile not found.' });
-    return res.json(sanitizeStaffForResponse(staff));
-  } catch (error) {
-    console.error('GET /api/staff/profile failed:', error);
-    return res.status(500).json({ message: 'Unable to load the staff profile.' });
   }
 });
 
@@ -4716,32 +2693,6 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-app.get('/api/students/profile', requireRecipientRole('student'), async (req, res) => {
-  try {
-    await connectMongo();
-    const userId = String(req.auth.userId || '').trim();
-    const student = await studentInfoCollection.findOne({
-      $or: [{ studentId: userId }, { admissionNumber: userId }],
-    });
-    if (!student) return res.status(404).json({ message: 'Student profile not found.' });
-    return res.json(sanitizeStudentForResponse(student));
-  } catch (error) {
-    console.error('GET /api/students/profile failed:', error);
-    return res.status(500).json({ message: 'Unable to load the student profile.' });
-  }
-});
-
-app.get('/api/students/next-id', async (req, res) => {
-  try {
-    await connectMongo();
-    const studentId = await generateNextStudentId();
-    return res.json({ studentId });
-  } catch (error) {
-    console.error('GET /api/students/next-id failed:', error);
-    return res.status(500).json({ message: 'Unable to generate student ID.' });
-  }
-});
-
 app.get('/api/students/:id', async (req, res) => {
   try {
     await connectMongo();
@@ -4763,9 +2714,7 @@ app.post('/api/students', async (req, res) => {
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
 
     const studentId = String(body.studentId).trim();
-    const existing = await studentInfoCollection.findOne({
-      studentId: { $regex: `^${escapeRegex(studentId)}$`, $options: 'i' }
-    });
+    const existing = await studentInfoCollection.findOne({ studentId });
     if (existing) return res.status(409).json({ message: 'This student ID is already assigned.' });
 
     const now = new Date().toISOString();
@@ -4785,17 +2734,7 @@ app.post('/api/students', async (req, res) => {
       createdAt: now,
       updatedAt: now,
     };
-
-    let result;
-    try {
-      result = await studentInfoCollection.insertOne(document);
-    } catch (error) {
-      if (error && (error.code === 11000 || /duplicate key|duplicate/i.test(error.message))) {
-        return res.status(409).json({ message: 'This student ID is already assigned.' });
-      }
-      throw error;
-    }
-
+    const result = await studentInfoCollection.insertOne(document);
     const saved = await studentInfoCollection.findOne({ _id: result.insertedId });
     return res.status(201).json(sanitizeStudentForResponse(saved));
   } catch (error) {
@@ -4814,10 +2753,7 @@ app.put('/api/students/:id', async (req, res) => {
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
 
     const nextStudentId = String(body.studentId).trim();
-    const existing = await studentInfoCollection.findOne({
-      studentId: { $regex: `^${escapeRegex(nextStudentId)}$`, $options: 'i' },
-      _id: { $ne: id },
-    });
+    const existing = await studentInfoCollection.findOne({ studentId: nextStudentId, _id: { $ne: id } });
     if (existing) return res.status(409).json({ message: 'This student ID is already assigned.' });
 
     const updates = {
@@ -4836,16 +2772,7 @@ app.put('/api/students/:id', async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    let result;
-    try {
-      result = await studentInfoCollection.updateOne({ _id: id }, { $set: updates });
-    } catch (error) {
-      if (error && (error.code === 11000 || /duplicate key|duplicate/i.test(error.message))) {
-        return res.status(409).json({ message: 'This student ID is already assigned.' });
-      }
-      throw error;
-    }
-
+    const result = await studentInfoCollection.updateOne({ _id: id }, { $set: updates });
     if (result.matchedCount === 0) return res.status(404).json({ message: 'Student not found.' });
     return res.json(sanitizeStudentForResponse(await studentInfoCollection.findOne({ _id: id })));
   } catch (error) {
@@ -4999,12 +2926,7 @@ app.post('/api/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid email or password' });
 
-    const token = signAuthPayload({
-      userId: user.userId,
-      role: user.role,
-      exp: Math.floor(Date.now() / 1000) + (8 * 60 * 60),
-    });
-    return res.json({ success: true, token, user: sanitizeUserForResponse(user) });
+    return res.json({ success: true, user: sanitizeUserForResponse(user) });
   } catch (error) {
     console.error('POST /api/login failed:', error);
     return res.status(500).json({ message: 'Unable to authenticate user.' });
@@ -5285,287 +3207,6 @@ app.get('/uploads/:filename', async (req, res) => {
   } catch (error) {
     console.error('GET /uploads/:filename fallback failed:', error);
     return res.status(500).json({ message: 'Unable to load the image.' });
-  }
-});
-
-// ============= CLASS PHOTOS ENDPOINTS =============
-
-app.get('/api/groups/:groupId/photos', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    if (!groupId) {
-      return res.status(400).json({ message: 'Group ID is required.' });
-    }
-    
-    const photos = await classPhotosCollection
-      .find({ groupId: { $in: groupIdVariants(groupId) } })
-      .sort({ uploadedAt: -1 })
-      .toArray();
-    return res.json(photos.map(photo => ({
-      id: photo._id ? photo._id.toString() : photo.id,
-      groupId: photo.groupId,
-      imageUrl: photo.imageUrl,
-      caption: photo.caption || '',
-      uploadedAt: photo.uploadedAt,
-      uploadedBy: photo.uploadedBy || '',
-    })));
-  } catch (error) {
-    console.error('GET /api/groups/:groupId/photos failed:', error);
-    return res.status(500).json({ message: 'Unable to load photos.' });
-  }
-});
-
-app.post('/api/groups/:groupId/photos', upload.single('file'), async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const caption = (req.body.caption || '').trim();
-    
-    if (!req.file) {
-      return res.status(400).json({ message: 'No photo file provided.' });
-    }
-
-    const now = new Date();
-    let imageUrl = '';
-    
-    // Try to upload to GridFS
-    try {
-      if (imageBucket) {
-        const uploadStream = imageBucket.openUploadStream(req.file.originalname, {
-          metadata: { contentType: req.file.mimetype }
-        });
-        
-        await new Promise((resolve, reject) => {
-          uploadStream.on('finish', resolve);
-          uploadStream.on('error', reject);
-          uploadStream.end(req.file.buffer);
-        });
-        
-        imageUrl = `${req.protocol}://${req.get('host')}/api/images/${uploadStream.id}`;
-      } else {
-        throw new Error('ImageBucket not initialized');
-      }
-    } catch (e) {
-      console.warn('GridFS upload failed:', e.message);
-      imageUrl = `/uploads/${Date.now()}-${req.file.originalname}`;
-    }
-
-    const photo = {
-      groupId,
-      imageUrl,
-      caption,
-      uploadedAt: now.toISOString(),
-      uploadedBy: req.body.uploadedBy || 'Teacher',
-    };
-
-    const result = await classPhotosCollection.insertOne(photo);
-    return res.status(201).json({
-      id: result.insertedId.toString(),
-      ...photo,
-    });
-  } catch (error) {
-    console.error('POST /api/groups/:groupId/photos failed:', error);
-    return res.status(500).json({ message: 'Unable to upload photo.' });
-  }
-});
-
-app.put('/api/groups/:groupId/photos/:photoId', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const photoId = (req.params.photoId || '').trim();
-    const caption = (req.body.caption || '').trim();
-
-    let selector;
-    try {
-      selector = { _id: new ObjectId(photoId), groupId: { $in: groupIdVariants(groupId) } };
-    } catch (_) {
-      selector = { id: photoId, groupId: { $in: groupIdVariants(groupId) } };
-    }
-
-    const result = await classPhotosCollection.findOneAndUpdate(
-      selector,
-      { $set: { caption } },
-      { returnDocument: 'after' }
-    );
-
-    if (!result.value) {
-      return res.status(404).json({ message: 'Photo not found.' });
-    }
-
-    const photo = result.value;
-    return res.json({
-      id: photo._id ? photo._id.toString() : photo.id,
-      groupId: photo.groupId,
-      imageUrl: photo.imageUrl,
-      caption: photo.caption || '',
-      uploadedAt: photo.uploadedAt,
-      uploadedBy: photo.uploadedBy || '',
-    });
-  } catch (error) {
-    console.error('PUT /api/groups/:groupId/photos/:photoId failed:', error);
-    return res.status(500).json({ message: 'Unable to update photo.' });
-  }
-});
-
-app.delete('/api/groups/:groupId/photos/:photoId', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const photoId = (req.params.photoId || '').trim();
-
-    let selector;
-    try {
-      selector = { _id: new ObjectId(photoId), groupId: { $in: groupIdVariants(groupId) } };
-    } catch (_) {
-      selector = { id: photoId, groupId: { $in: groupIdVariants(groupId) } };
-    }
-
-    const result = await classPhotosCollection.deleteOne(selector);
-    if (!result.deletedCount) {
-      return res.status(404).json({ message: 'Photo not found.' });
-    }
-    return res.status(204).send();
-  } catch (error) {
-    console.error('DELETE /api/groups/:groupId/photos/:photoId failed:', error);
-    return res.status(500).json({ message: 'Unable to delete photo.' });
-  }
-});
-
-// ============= CLASS NEWS ENDPOINTS =============
-
-app.get('/api/groups/:groupId/news', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const news = await classNewsCollection
-      .find({ groupId: { $in: groupIdVariants(groupId) } })
-      .sort({ publishedAt: -1 })
-      .toArray();
-    return res.json(news.map(item => ({
-      id: item._id ? item._id.toString() : item.id,
-      groupId: item.groupId,
-      title: item.title,
-      description: item.description || '',
-      imageUrl: item.imageUrl || '',
-      publishedAt: item.publishedAt,
-      publishedBy: item.publishedBy || '',
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    })));
-  } catch (error) {
-    console.error('GET /api/groups/:groupId/news failed:', error);
-    return res.status(500).json({ message: 'Unable to load news.' });
-  }
-});
-
-app.post('/api/groups/:groupId/news', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const title = (req.body.title || '').trim();
-    const description = (req.body.description || '').trim();
-    const imageUrl = (req.body.imageUrl || '').trim();
-    const publishedAt = req.body.publishedAt || new Date().toISOString();
-
-    if (!title) {
-      return res.status(422).json({ message: 'News title is required.' });
-    }
-
-    const now = new Date().toISOString();
-    const newsItem = {
-      groupId,
-      title,
-      description,
-      imageUrl,
-      publishedAt,
-      publishedBy: req.body.publishedBy || 'Teacher',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const result = await classNewsCollection.insertOne(newsItem);
-    return res.status(201).json({
-      id: result.insertedId.toString(),
-      ...newsItem,
-    });
-  } catch (error) {
-    console.error('POST /api/groups/:groupId/news failed:', error);
-    return res.status(500).json({ message: 'Unable to create news.' });
-  }
-});
-
-app.put('/api/groups/:groupId/news/:newsId', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const newsId = (req.params.newsId || '').trim();
-    const title = (req.body.title || '').trim();
-    const description = (req.body.description || '').trim();
-    const imageUrl = (req.body.imageUrl || '').trim();
-    const publishedAt = req.body.publishedAt || new Date().toISOString();
-
-    if (!title) {
-      return res.status(422).json({ message: 'News title is required.' });
-    }
-
-    let selector;
-    try {
-      selector = { _id: new ObjectId(newsId), groupId: { $in: groupIdVariants(groupId) } };
-    } catch (_) {
-      selector = { id: newsId, groupId: { $in: groupIdVariants(groupId) } };
-    }
-
-    const result = await classNewsCollection.findOneAndUpdate(
-      selector,
-      { $set: { title, description, imageUrl, publishedAt, updatedAt: new Date().toISOString() } },
-      { returnDocument: 'after' }
-    );
-
-    if (!result.value) {
-      return res.status(404).json({ message: 'News not found.' });
-    }
-
-    const item = result.value;
-    return res.json({
-      id: item._id ? item._id.toString() : item.id,
-      groupId: item.groupId,
-      title: item.title,
-      description: item.description || '',
-      imageUrl: item.imageUrl || '',
-      publishedAt: item.publishedAt,
-      publishedBy: item.publishedBy || '',
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    });
-  } catch (error) {
-    console.error('PUT /api/groups/:groupId/news/:newsId failed:', error);
-    return res.status(500).json({ message: 'Unable to update news.' });
-  }
-});
-
-app.delete('/api/groups/:groupId/news/:newsId', async (req, res) => {
-  try {
-    await connectMongo();
-    const groupId = (req.params.groupId || '').trim();
-    const newsId = (req.params.newsId || '').trim();
-
-    let selector;
-    try {
-      selector = { _id: new ObjectId(newsId), groupId: { $in: groupIdVariants(groupId) } };
-    } catch (_) {
-      selector = { id: newsId, groupId: { $in: groupIdVariants(groupId) } };
-    }
-
-    const result = await classNewsCollection.deleteOne(selector);
-    if (!result.deletedCount) {
-      return res.status(404).json({ message: 'News not found.' });
-    }
-    return res.status(204).send();
-  } catch (error) {
-    console.error('DELETE /api/groups/:groupId/news/:newsId failed:', error);
-    return res.status(500).json({ message: 'Unable to delete news.' });
   }
 });
 

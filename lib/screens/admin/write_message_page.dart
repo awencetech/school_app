@@ -50,14 +50,11 @@ class _WriteMessagePageState extends State<WriteMessagePage> {
 
   String? get _studentName {
     final appState = context.read<AppState>();
-    final email = (appState.currentUserEmail ?? '').trim();
-    final id = (appState.currentUserId ?? '').trim();
-    if (email.isNotEmpty) {
-      final localPart = email.split('@').first.trim();
-      return localPart.isNotEmpty ? localPart : 'Student';
-    }
-    return id.isEmpty ? 'Student' : id;
+    final name = (appState.currentUserEmail ?? appState.currentUserId ?? '').trim();
+    return name.isEmpty ? 'Student' : name;
   }
+
+  String? get _studentEmail => context.read<AppState>().currentUserEmail?.trim();
 
   String? get _studentId => context.read<AppState>().currentUserId?.trim();
 
@@ -96,11 +93,6 @@ class _WriteMessagePageState extends State<WriteMessagePage> {
 
     if (role != 'student') {
       setState(() => _submitError = 'Only students can send messages from this page.');
-      return;
-    }
-
-    if (userId.isEmpty) {
-      setState(() => _submitError = 'Logged-in student is missing. Please sign in again.');
       return;
     }
 

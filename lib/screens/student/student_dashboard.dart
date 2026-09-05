@@ -654,7 +654,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 GestureDetector(
                                   onTap: () => Navigator.of(
                                     context,
-                                  ).pushNamed(AppRoutes.studentMenu),
+                                  ).pushNamed(AppRoutes.studentDashboardMenu),
                                   child: const _InfoChip(
                                     icon: Icons.more_horiz,
                                     label: 'More Info',

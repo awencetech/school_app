@@ -258,6 +258,7 @@ class AppRouter {
       AppRoutes.studentDashboardDiary => const StudentDiaryPage(),
         AppRoutes.studentDashboardFacultyFeedback =>
           const StudentFacultyFeedbackPage(),
+          AppRoutes.studentDashboardMenu => const StudentMenuScreen(),
       AppRoutes.studentInfo => const StudentInfoScreen(),
       AppRoutes.studentMoreOptions => const StudentMoreOptionsScreen(),
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/school_config_service.dart';
@@ -134,7 +135,7 @@ class _StudentInfoPageState extends State<StudentInfoPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
         ),
         title: const Text('Student Info', style: TextStyle(fontSize: 15)),

@@ -16,7 +16,7 @@ class StudentGroupClassBusPage extends StatelessWidget {
         toolbarHeight: 43,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
@@ -39,7 +39,7 @@ class StudentGroupClassBusPage extends StatelessWidget {
                   ),
                 ),
                 InkWell(
-                  onTap: () => Navigator.of(context).maybePop(),
+                  onTap: () => navigateBack(context),
                   child: const Icon(
                     Icons.close,
                     size: 19,

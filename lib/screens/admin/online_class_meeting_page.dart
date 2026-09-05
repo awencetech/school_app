@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import '../../models/group.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -295,7 +296,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
         leading: IconButton(
           padding: const EdgeInsets.only(left: 9),
           alignment: Alignment.centerLeft,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 22, color: Colors.white),
         ),
         title: Column(
@@ -311,7 +312,7 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
             child: IconButton(
               padding: const EdgeInsets.only(right: 9),
               alignment: Alignment.centerRight,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close, size: 22, color: Colors.white),
             ),
           ),

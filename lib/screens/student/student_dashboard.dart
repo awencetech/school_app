@@ -892,7 +892,7 @@ class _StudentQuickAccessDetailsPage extends StatelessWidget {
           style: AppTextStyles.appTitle,
         ),
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),
       ),

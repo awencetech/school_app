@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -639,7 +640,7 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
         automaticallyImplyLeading: false,
         toolbarHeight: 64,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white),
         ),
         title: Column(
@@ -658,7 +659,7 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () => navigateBack(context),
             icon: const Icon(Icons.close, color: Colors.white),
           ),
         ],

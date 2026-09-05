@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
 import '../../models/user.dart';
@@ -62,7 +63,7 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
         leading: IconButton(
           padding: const EdgeInsets.only(left: 9),
           alignment: Alignment.centerLeft,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20, color: Colors.white),
         ),
         title: const Text(
@@ -79,7 +80,7 @@ class _AccessManagementPageState extends State<AccessManagementPage> {
             child: IconButton(
               padding: const EdgeInsets.only(right: 9),
               alignment: Alignment.centerRight,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close, size: 20, color: Colors.white),
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -61,7 +62,7 @@ class _StudentInfoScreenState extends State<StudentInfoScreen> {
         backgroundColor: AppColors.topBar,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
         ),
         title: Text(

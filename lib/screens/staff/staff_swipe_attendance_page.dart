@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../widgets/staff_footer.dart';
 
@@ -26,7 +27,7 @@ class _StaffSwipeAttendancePageState extends State<StaffSwipeAttendancePage> {
         toolbarHeight: 45,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
         title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),

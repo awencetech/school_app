@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
@@ -61,7 +62,7 @@ class _StudentFeeInformationPageState extends State<StudentFeeInformationPage> {
         toolbarHeight: 44,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
@@ -233,7 +234,7 @@ class StudentFeeDetailPage extends StatelessWidget {
         toolbarHeight: 44,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
@@ -420,7 +421,7 @@ class StudentFeeDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
+                  onPressed: () => navigateBack(context),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xff666666),
                     side: const BorderSide(color: Color(0xffbdbdbd)),

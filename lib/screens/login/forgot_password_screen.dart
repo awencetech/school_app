@@ -16,7 +16,7 @@ class ForgotPasswordScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
         ),
         title: const Text('SCHOOL NAME'),

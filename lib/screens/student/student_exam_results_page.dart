@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
@@ -65,7 +66,7 @@ class StudentExamResultsPage extends StatelessWidget {
         toolbarHeight: 44,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,

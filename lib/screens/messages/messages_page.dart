@@ -405,7 +405,7 @@ class _MessagesPageState extends State<MessagesPage> {
           backgroundColor: primaryColor,
           elevation: 0,
           leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => navigateBack(context),
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           ),
           title: Text(

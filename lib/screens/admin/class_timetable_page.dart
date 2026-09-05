@@ -209,7 +209,7 @@ class _ClassTimetablePageState extends State<ClassTimetablePage> {
         automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
         ),
         centerTitle: true,
         title: const Text(

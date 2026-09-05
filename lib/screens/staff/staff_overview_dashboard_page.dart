@@ -28,7 +28,7 @@ class _StaffOverviewDashboardPageState
         automaticallyImplyLeading: false,
         centerTitle: true,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         title: const Text(

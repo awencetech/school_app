@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
 import '../../models/parent_observation.dart';
@@ -200,7 +201,7 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
         automaticallyImplyLeading: false,
         centerTitle: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 17, color: Colors.white),
         ),
         title: const Text(
@@ -209,7 +210,7 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () => navigateBack(context),
             icon: const Icon(Icons.close, size: 16, color: Colors.white),
           ),
         ],

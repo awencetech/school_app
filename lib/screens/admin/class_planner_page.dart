@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -444,7 +445,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
         leading: IconButton(
           padding: const EdgeInsets.only(left: 9),
           alignment: Alignment.centerLeft,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20, color: Colors.white),
         ),
         title: Column(
@@ -462,7 +463,7 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
             child: IconButton(
               padding: const EdgeInsets.only(right: 9),
               alignment: Alignment.centerRight,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close, size: 20, color: Colors.white),
             ),
           ),

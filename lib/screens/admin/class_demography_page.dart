@@ -131,7 +131,7 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
         leading: IconButton(
           padding: const EdgeInsets.only(left: 9),
           alignment: Alignment.centerLeft,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20, color: Colors.white),
         ),
         title: const Text('Demography', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
@@ -141,7 +141,7 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
             child: IconButton(
               padding: const EdgeInsets.only(right: 9),
               alignment: Alignment.centerRight,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close, size: 20, color: Colors.white),
             ),
           ),

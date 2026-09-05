@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../routes/app_routes.dart';
 import '../../models/class_timetable.dart';
 import '../../models/group.dart';
 import '../../services/class_timetable_service.dart';
@@ -169,7 +171,7 @@ class _ClassTimetableFormPageState extends State<ClassTimetableFormPage> {
       ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => navigateBack(context),
       ),
     ),
     body: Form(

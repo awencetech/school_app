@@ -548,7 +548,7 @@ class _GroupMessagesPageState extends State<GroupMessagesPage> {
             // Use maybePop() to safely navigate back
             // If no previous route exists, this will keep the current page visible
             // instead of showing a blank screen
-            Navigator.of(context).maybePop();
+            navigateBack(context);
           },
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../routes/app_routes.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_icon_grid.dart';
@@ -31,7 +32,7 @@ class KnowYourSchoolPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),
         title: const Text('Know Your School'),

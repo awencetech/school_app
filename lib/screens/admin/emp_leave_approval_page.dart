@@ -31,7 +31,7 @@ class _EmpLeaveApprovalPageState extends State<EmpLeaveApprovalPage> {
       backgroundColor: AppColors.topBar,
       foregroundColor: Colors.white,
       title: const Text('Employee Leave Approval'),
-      leading: IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.arrow_back)),
+      leading: IconButton(onPressed: () => navigateBack(context), icon: const Icon(Icons.arrow_back)),
       actions: [TextButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.adminEmpLeaveApprovalHistory), child: const Text('History', style: TextStyle(color: Colors.white)))],
     ),
     body: RefreshIndicator(

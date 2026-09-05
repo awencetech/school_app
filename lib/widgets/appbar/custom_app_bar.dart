@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -23,7 +24,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppColors.topBar,
       leading: showBack
           ? IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.arrow_back_ios_new),
             )
           : null,

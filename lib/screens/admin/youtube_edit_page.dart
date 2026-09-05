@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../routes/app_routes.dart';
+
 import '../../services/social_url_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -61,7 +62,7 @@ class _YoutubeEditPageState extends State<YoutubeEditPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         title: const Text('YouTube Edit'),
-        leading: IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_back)),
+        leading: IconButton(onPressed: () => navigateBack(context), icon: const Icon(Icons.arrow_back)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

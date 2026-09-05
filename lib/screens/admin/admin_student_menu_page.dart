@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../routes/app_routes.dart';
 import '../../services/student_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -96,9 +97,7 @@ class AdminStudentMenuPage extends StatelessWidget {
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            }
+            navigateBack(context);
           },
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
         ),

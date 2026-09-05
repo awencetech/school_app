@@ -153,7 +153,7 @@ class _StaffDetailsPageState extends State<StaffDetailsPage> {
         title: const Text('Employee Info'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
         ),
       ),
       body: _editing ? _editBody() : SafeArea(

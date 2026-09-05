@@ -19,7 +19,7 @@ class StudentMoreOptionsScreen extends StatelessWidget {
         backgroundColor: AppColors.topBar,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
         ),
         title: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/announcement.dart';
@@ -174,7 +175,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new),
         ),
         title: const Text('Announcements'),

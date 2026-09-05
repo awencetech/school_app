@@ -44,6 +44,10 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   int _selectedBottomIndex = 2;
 
   void _goBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
     Navigator.of(context).pushReplacementNamed(
       widget.isStaffView
           ? AppRoutes.staffDashboard

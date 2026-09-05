@@ -143,7 +143,7 @@ class _SchoolNewsPageState extends State<SchoolNewsPage> {
         foregroundColor: Colors.white,
         title: const Text('School News update'),
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back),
         ),
       ),

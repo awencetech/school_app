@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
 import '../../theme/app_colors.dart';
@@ -179,7 +180,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
         toolbarHeight: 92,
         leadingWidth: 52,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.white),
         ),
         title: Align(
@@ -211,7 +212,7 @@ class _OnlineAssessmentPageState extends State<OnlineAssessmentPage> {
           SizedBox(
             width: 48,
             child: IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white),
             ),
           ),

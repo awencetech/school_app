@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
@@ -40,7 +41,7 @@ class _StudentResourcesPageState extends State<StudentResourcesPage> {
         toolbarHeight: 44,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
@@ -186,7 +187,7 @@ class _StudentResourceInsertPageState extends State<StudentResourceInsertPage> {
         toolbarHeight: 44,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,

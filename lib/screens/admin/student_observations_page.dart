@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
 import '../../services/group_state_service.dart';
@@ -110,7 +111,7 @@ class _StudentObservationsPageState extends State<StudentObservationsPage> {
         backgroundColor: const Color(0xff34395f),
         toolbarHeight: 43,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         title: const Text(

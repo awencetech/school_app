@@ -183,7 +183,7 @@ class _SchoolResourcesPageState extends State<SchoolResourcesPage> {
         toolbarHeight: 42,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
         title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),

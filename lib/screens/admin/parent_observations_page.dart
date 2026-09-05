@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
 import '../../models/parent_observation.dart';
@@ -212,7 +213,7 @@ class _ParentObservationsPageState extends State<ParentObservationsPage> {
         backgroundColor: const Color(0xff34395f),
         toolbarHeight: 43,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         title: Text(

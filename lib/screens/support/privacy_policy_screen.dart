@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../routes/app_routes.dart';
+
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
@@ -91,7 +93,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(),
+        leading: BackButton(onPressed: () => navigateBack(context)),
         title: const Text('Privacy Policy'),
       ),
       body: SingleChildScrollView(

@@ -92,7 +92,7 @@ class AdminMedicalEventViewPage extends StatelessWidget {
         foregroundColor: Colors.white,
         title: const Text('Medical Event Details'),
         leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back),
         ),
       );

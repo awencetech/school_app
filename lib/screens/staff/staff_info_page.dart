@@ -65,7 +65,7 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
         ),
         title: const Text('Staff Info', style: TextStyle(fontSize: 15)),

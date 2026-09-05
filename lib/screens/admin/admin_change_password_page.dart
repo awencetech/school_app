@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 
 class AdminChangePasswordPage extends StatefulWidget {
@@ -113,7 +115,7 @@ class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
         title: const Text('Change Password'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => navigateBack(context),
         ),
       ),
       body: SingleChildScrollView(

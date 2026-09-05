@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -138,7 +139,7 @@ class _MeetingAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 39,
       elevation: 0,
       leading: IconButton(
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed: () => navigateBack(context),
         icon: const Icon(Icons.arrow_back, size: 20),
       ),
       title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),

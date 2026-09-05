@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/staff_handbook.dart';
 import '../../services/staff_handbook_service.dart';
@@ -270,7 +271,7 @@ class _SchoolHandbookEditPageState extends State<SchoolHandbookEditPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Back',
         ),

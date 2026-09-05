@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/staff_leave.dart';
@@ -51,7 +52,7 @@ class _StaffApplyLeavePageState extends State<StaffApplyLeavePage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.white,
-    appBar: AppBar(backgroundColor: AppColors.topBar, foregroundColor: Colors.white, toolbarHeight: 45, leading: IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.arrow_back, size: 20)), title: const Text('Staff Leave', style: TextStyle(fontSize: 15)), centerTitle: true),
+    appBar: AppBar(backgroundColor: AppColors.topBar, foregroundColor: Colors.white, toolbarHeight: 45, leading: IconButton(onPressed: () => navigateBack(context), icon: const Icon(Icons.arrow_back, size: 20)), title: const Text('Staff Leave', style: TextStyle(fontSize: 15)), centerTitle: true),
     body: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.fromLTRB(10, 10, 10, 24), children: [
       Align(alignment: Alignment.centerRight, child: Wrap(spacing: 9, children: [TextButton(onPressed: _loading ? null : _openApply, child: const Text('Apply for Leave', style: TextStyle(fontSize: 10))), TextButton(onPressed: _loading ? null : _openAdjust, child: const Text('Adjust Leave', style: TextStyle(fontSize: 10)))])),
       if (_loading) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('Loading leave information...')))

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/group.dart';
@@ -126,7 +127,7 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
         title: const Text('Write Message'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: () => navigateBack(context),
         ),
       ),
       body: Form(

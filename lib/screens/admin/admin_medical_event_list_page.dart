@@ -80,7 +80,7 @@ class _AdminMedicalEventListPageState extends State<AdminMedicalEventListPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         title: const Text('Medical Event List'),
-        leading: IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.arrow_back)),
+        leading: IconButton(onPressed: () => navigateBack(context), icon: const Icon(Icons.arrow_back)),
       ),
       body: RefreshIndicator(
         onRefresh: _load,

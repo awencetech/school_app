@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -351,7 +352,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
         leading: IconButton(
           padding: const EdgeInsets.only(left: 9),
           alignment: Alignment.centerLeft,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20, color: Colors.white),
         ),
         title: Column(
@@ -383,7 +384,7 @@ class _ClassNewsPageState extends State<ClassNewsPage> {
             child: IconButton(
               padding: const EdgeInsets.only(right: 9),
               alignment: Alignment.centerRight,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close, size: 20, color: Colors.white),
             ),
           ),

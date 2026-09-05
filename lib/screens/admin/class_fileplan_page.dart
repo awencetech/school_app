@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import '../../models/group.dart';
 import '../../widgets/admin_bottom_nav.dart';
@@ -409,7 +410,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
         leading: IconButton(
           padding: const EdgeInsets.only(left: 9),
           alignment: Alignment.centerLeft,
-          onPressed: _currentFolder != null ? _goBack : () => Navigator.of(context).maybePop(),
+          onPressed: _currentFolder != null ? _goBack : () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 22, color: Colors.white),
         ),
         title: Column(
@@ -425,7 +426,7 @@ class _ClassFileplanPageState extends State<ClassFileplanPage> {
             child: IconButton(
               padding: const EdgeInsets.only(right: 9),
               alignment: Alignment.centerRight,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => navigateBack(context),
               icon: const Icon(Icons.close, size: 22, color: Colors.white),
             ),
           ),

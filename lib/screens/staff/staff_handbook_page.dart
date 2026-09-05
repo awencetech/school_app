@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 import '../../models/staff_handbook.dart';
 import '../../services/staff_handbook_service.dart';
@@ -436,7 +437,7 @@ class _HandbookScaffold extends StatelessWidget {
       toolbarHeight: 39,
       elevation: 0,
       leading: IconButton(
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed: () => navigateBack(context),
         icon: const Icon(Icons.arrow_back, size: 20),
       ),
       title: const Text('Handbook', style: TextStyle(fontSize: 14)),

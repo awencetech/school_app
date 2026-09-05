@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+
+import '../../routes/app_routes.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../theme/app_colors.dart';
 
@@ -218,7 +220,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
         title: const Text('User Profile'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => navigateBack(context),
         ),
       ),
       body: SingleChildScrollView(

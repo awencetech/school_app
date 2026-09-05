@@ -230,7 +230,7 @@ class _NewsletterEditPageState extends State<NewsletterEditPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back),
         ),
         title: const Text('Newsletter Edit'),

@@ -72,7 +72,7 @@ class StaffCampaignsPage extends StatelessWidget {
         toolbarHeight: 39,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
@@ -231,7 +231,7 @@ class _StaffCampaignDetailPage extends StatelessWidget {
         toolbarHeight: 39,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,

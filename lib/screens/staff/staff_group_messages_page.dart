@@ -153,7 +153,7 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
         toolbarHeight: 44,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,

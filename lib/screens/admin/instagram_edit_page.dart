@@ -61,7 +61,7 @@ class _InstagramEditPageState extends State<InstagramEditPage> {
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         title: const Text('Instagram Edit'),
-        leading: IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_back)),
+        leading: IconButton(onPressed: () => navigateBack(context), icon: const Icon(Icons.arrow_back)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

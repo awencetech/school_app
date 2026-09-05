@@ -1,3 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../services/app_state.dart';
+
 /// Central place for route names.
 class AppRoutes {
   AppRoutes._();
@@ -205,4 +210,22 @@ class AppRoutes {
   static const adminChangePassword = '/admin/change-password';
   static const supportQuery = '/support-query';
   static const privacyPolicy = '/privacy-policy';
+}
+
+/// Pops the current route, or leaves a directly opened page safely.
+Future<void> navigateBack(BuildContext context, {String? fallbackRoute}) async {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+        navigator.pop();
+        return;
+    }
+
+    final role = context.read<AppState>().currentUserRole?.trim().toLowerCase();
+    final route = fallbackRoute ?? switch (role) {
+        'student' => AppRoutes.studentDashboard,
+        'staff' => AppRoutes.staffDashboard,
+        'admin' => AppRoutes.adminDashboard,
+        _ => AppRoutes.main,
+    };
+    navigator.pushReplacementNamed(route);
 }

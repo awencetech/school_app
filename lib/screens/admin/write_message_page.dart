@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/app_state.dart';
@@ -152,7 +153,7 @@ class _WriteMessagePageState extends State<WriteMessagePage> {
         centerTitle: true,
         title: Text('Write Message', style: AppTextStyles.appTitle.copyWith(fontSize: 16)),
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
         ),
       ),

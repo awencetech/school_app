@@ -112,8 +112,13 @@ class GroupService {
   }
 
   Future<GroupRemoteData> getGroupDetails(String groupId) async {
+    final normalizedGroupId = groupId.trim();
+    if (normalizedGroupId.isEmpty ||
+        normalizedGroupId.toLowerCase() == 'unknown') {
+      throw ApiException(400, 'A valid group is required.', 'group-details');
+    }
     final resp = await http
-        .get(_uri('/api/groups/$groupId'))
+        .get(_uri('/api/groups/$normalizedGroupId'))
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       throw ApiException(

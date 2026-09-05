@@ -102,6 +102,22 @@ function requireTeacher(req, res, next) {
   }
 }
 
+function requireDiaryAccess(req, res, next) {
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (role !== 'staff' && role !== 'teacher' && role !== 'admin') {
+      return res.status(auth ? 403 : 401).json({
+        message: auth ? 'Only staff, teachers, or admins may access diary observations.' : 'Authentication required.',
+      });
+    }
+    req.auth = auth;
+    return next();
+  } catch (_) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+}
+
 function requireAdmin(req, res, next) {
   try {
     const auth = verifyAuthToken(readAuthToken(req));
@@ -260,7 +276,7 @@ function diaryStudentMatch(student, studentId) {
   return values.includes(studentId);
 }
 
-app.get('/api/diary', requireTeacher, async (req, res) => {
+app.get('/api/diary', requireDiaryAccess, async (req, res) => {
   try {
     const groupId = String(req.query.groupId || '').trim();
     const date = String(req.query.date || '').trim();
@@ -276,7 +292,7 @@ app.get('/api/diary', requireTeacher, async (req, res) => {
   }
 });
 
-app.get('/api/diary/student-observation/:id', requireTeacher, async (req, res) => {
+app.get('/api/diary/student-observation/:id', requireDiaryAccess, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid diary record ID.' });
@@ -291,7 +307,7 @@ app.get('/api/diary/student-observation/:id', requireTeacher, async (req, res) =
   }
 });
 
-app.get('/api/diary/:id', requireTeacher, async (req, res) => {
+app.get('/api/diary/:id', requireDiaryAccess, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid diary record ID.' });
@@ -306,7 +322,7 @@ app.get('/api/diary/:id', requireTeacher, async (req, res) => {
   }
 });
 
-app.post('/api/diary', requireTeacher, async (req, res) => {
+app.post('/api/diary', requireDiaryAccess, async (req, res) => {
   try {
     const body = req.body || {};
     const studentId = String(body.studentId || '').trim();
@@ -389,7 +405,7 @@ app.post('/api/diary', requireTeacher, async (req, res) => {
   }
 });
 
-app.post('/api/diary/student-observation', requireTeacher, async (req, res) => {
+app.post('/api/diary/student-observation', requireDiaryAccess, async (req, res) => {
   try {
     const body = req.body || {};
     const studentId = String(body.studentId || '').trim();

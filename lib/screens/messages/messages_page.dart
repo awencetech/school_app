@@ -6,7 +6,10 @@ import 'package:provider/provider.dart';
 import '../../models/admin_message.dart';
 import '../../services/admin_message_service.dart';
 import '../../services/app_state.dart';
+import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/staff_footer.dart';
 
 class MessageModel {
   MessageModel({
@@ -354,6 +357,11 @@ class _MessagesPageState extends State<MessagesPage> {
     final primaryColor = AppColors.topBar;
     final bgColor = const Color(0xFFF7F8FC);
     final greyText = const Color(0xFF757575);
+    final routeName = ModalRoute.of(context)?.settings.name;
+    final isStudentMessages = routeName == AppRoutes.studentDashboardMessages;
+    final isStaffMessages =
+        ModalRoute.of(context)?.settings.name ==
+        AppRoutes.staffDashboardMessages;
 
     return Theme(
       data: Theme.of(context),
@@ -629,6 +637,60 @@ class _MessagesPageState extends State<MessagesPage> {
                   },
                 ),
         ),
+          bottomNavigationBar: isStudentMessages
+              ? ReusableBottomNavigationBar(
+                  currentIndex: 0,
+                  onItemSelected: (index) {
+                    if (index == 0) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.studentDashboard,
+                        (route) => false,
+                      );
+                    }
+                  },
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.person),
+                      label: 'User',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.info),
+                      label: 'Help',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.help),
+                      label: 'Support',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.logout),
+                      label: 'Logout',
+                    ),
+                  ],
+                )
+              : isStaffMessages
+              ? StaffFooter(
+                  currentIndex: 0,
+                  onItemSelected: (index) async {
+                    if (index == 0) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.staffDashboard,
+                        (route) => false,
+                      );
+                    } else if (index == 4) {
+                      await context.read<AppState>().logout();
+                      if (!context.mounted) return;
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.main,
+                        (route) => false,
+                      );
+                    }
+                  },
+                )
+              : null,
       ),
     );
   }

@@ -8,7 +8,7 @@ class AppRoutes {
   static const forgotPassword = '/forgot-password';
   static const createAccount = '/create-account';
   static const studentDashboard = '/student-dashboard';
-    static const studentDashboardMessages = '$studentDashboard/msg-staff';
+    static const studentDashboardMessages = '$studentDashboard/msg-student';
     static const studentDashboardInfo = '$studentDashboard/student-info';
     static const studentDashboardAttendance = '$studentDashboard/attendance';
     static const studentDashboardExamResults = '$studentDashboard/exam-results';

@@ -76,7 +76,7 @@ function requireRecipientRole(role) {
   return (req, res, next) => {
     try {
       const auth = verifyAuthToken(readAuthToken(req));
-      if ((auth?.role || '').toLowerCase() !== role) {
+      if ((auth?.role || '').toString().trim().toLowerCase() !== role) {
         return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
       }
       req.auth = auth;
@@ -2754,7 +2754,9 @@ app.get('/api/staff', async (req, res) => {
 app.get('/api/staff/profile', requireRecipientRole('staff'), async (req, res) => {
   try {
     await connectMongo();
-    const staff = await employeeInfoCollection.findOne({ employeeId: req.auth.userId });
+    const staff = await employeeInfoCollection.findOne({
+      employeeId: String(req.auth.userId || '').trim(),
+    });
     if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
     return res.json(sanitizeStaffForResponse(staff));
   } catch (error) {

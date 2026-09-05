@@ -81,9 +81,19 @@ class _StaffDashboardState extends State<StaffDashboard> {
       });
     } catch (error) {
       if (!mounted) return;
+      final message = error.toString().replaceFirst('Exception: ', '');
+      if (message == 'Authentication required.') {
+        await appState.logout();
+        if (!mounted) return;
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.main,
+          (route) => false,
+        );
+        return;
+      }
       setState(() {
         _staffLoading = false;
-        _staffError = error.toString().replaceFirst('Exception: ', '');
+        _staffError = message;
       });
     }
   }

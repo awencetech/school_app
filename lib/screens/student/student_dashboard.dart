@@ -22,7 +22,6 @@ import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../support/support_screen.dart';
 import '../messages/messages_page.dart';
-import 'student_info_screen.dart';
 import 'student_attendance_page.dart';
 import 'student_exam_results_page.dart';
 import 'student_diary_page.dart';
@@ -601,11 +600,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             itemBuilder: (context, index) {
                               final items = [
                                 GestureDetector(
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const StudentInfoScreen(),
-                                    ),
-                                  ),
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pushNamed(AppRoutes.studentDashboardInfo),
                                   child: const _InfoChip(
                                     icon: Icons.info,
                                     label: 'Student Info',

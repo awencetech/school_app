@@ -248,6 +248,7 @@ class AppRouter {
       AppRoutes.forgotPassword => const ForgotPasswordScreen(),
       AppRoutes.createAccount => const CreateAccountScreen(),
       AppRoutes.studentDashboard => const StudentDashboard(),
+      AppRoutes.studentDashboardInfo => const StudentInfoScreen(),
       AppRoutes.studentInfo => const StudentInfoScreen(),
       AppRoutes.studentMoreOptions => const StudentMoreOptionsScreen(),
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),

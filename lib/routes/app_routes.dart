@@ -11,6 +11,7 @@ class AppRoutes {
     static const studentDashboardInfo = '$studentDashboard/student-info';
     static const studentDashboardAttendance = '$studentDashboard/attendance';
     static const studentDashboardExamResults = '$studentDashboard/exam-results';
+    static const studentDashboardDiary = '$studentDashboard/student-diary';
   static const studentInfo = '/student-info';
   static const studentMoreOptions = '/student-more-options';
   static const groupClassMenu = '/group-class-menu';

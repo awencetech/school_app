@@ -2600,6 +2600,18 @@ app.get('/api/staff', async (req, res) => {
   }
 });
 
+app.get('/api/staff/profile', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await employeeInfoCollection.findOne({ employeeId: req.auth.userId });
+    if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
+    return res.json(sanitizeStaffForResponse(staff));
+  } catch (error) {
+    console.error('GET /api/staff/profile failed:', error);
+    return res.status(500).json({ message: 'Unable to load the staff profile.' });
+  }
+});
+
 app.get('/api/staff/:id', async (req, res) => {
   try {
     await connectMongo();

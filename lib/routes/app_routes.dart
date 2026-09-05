@@ -8,6 +8,7 @@ class AppRoutes {
   static const forgotPassword = '/forgot-password';
   static const createAccount = '/create-account';
   static const studentDashboard = '/student-dashboard';
+    static const studentDashboardMessages = '$studentDashboard/msg-staff';
     static const studentDashboardInfo = '$studentDashboard/student-info';
     static const studentDashboardAttendance = '$studentDashboard/attendance';
     static const studentDashboardExamResults = '$studentDashboard/exam-results';
@@ -20,6 +21,7 @@ class AppRoutes {
   static const groupClassMenu = '/group-class-menu';
   static const studentMenu = '/student-menu';
   static const staffDashboard = '/staff-dashboard';
+    static const staffDashboardMessages = '$staffDashboard/msg-staff';
   static const staffOverviewDashboard = '/staff-dashboard/dashboard-summary';
   static const staffEventCalendar = '/staff-dashboard/event-calendar';
   static const staffInfo = '/staff-dashboard/staff-info';

@@ -21,7 +21,6 @@ import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
-import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
 import '../student/student_check_approve_page.dart';
 import '../student/student_group_class_bus_page.dart';
@@ -345,11 +344,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           icon: Icons.message,
                           label: 'Messages HW, CW',
                           color: Color(0xFFFF7043),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const MessagesPage(),
-                            ),
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffDashboardMessages),
                         ),
                         _QuickAction(
                           icon: Icons.calendar_month,

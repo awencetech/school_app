@@ -21,7 +21,6 @@ import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../support/support_screen.dart';
-import '../messages/messages_page.dart';
 import 'student_ptm_page.dart';
 import 'student_group_class_bus_page.dart';
 import 'student_check_approve_page.dart';
@@ -387,11 +386,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       crossAxisCount: 5,
                       leadingItems: [
                         GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const MessagesPage(),
-                            ),
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.studentDashboardMessages),
                           child: const _QuickAction(
                             icon: Icons.message,
                             label: 'Messages HW, CW',

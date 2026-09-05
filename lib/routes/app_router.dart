@@ -252,6 +252,7 @@ class AppRouter {
       AppRoutes.forgotPassword => const ForgotPasswordScreen(),
       AppRoutes.createAccount => const CreateAccountScreen(),
       AppRoutes.studentDashboard => const StudentDashboard(),
+      AppRoutes.studentDashboardMessages => const MessagesPage(),
       AppRoutes.studentDashboardInfo => const StudentInfoScreen(),
       AppRoutes.studentDashboardAttendance => const StudentAttendancePage(),
       AppRoutes.studentDashboardExamResults => const StudentExamResultsPage(),
@@ -264,6 +265,7 @@ class AppRouter {
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),
       AppRoutes.studentMenu => const StudentMenuScreen(),
       AppRoutes.staffDashboard => const StaffDashboard(),
+      AppRoutes.staffDashboardMessages => const MessagesPage(),
       AppRoutes.staffOverviewDashboard => const StaffOverviewDashboardPage(),
       AppRoutes.staffEventCalendar => const FutureEventCalendarPage(
         groupId: 'grade-10-c',

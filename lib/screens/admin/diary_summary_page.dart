@@ -6,6 +6,7 @@ import '../../models/parent_observation.dart';
 import '../../services/group_service.dart';
 import '../../services/group_state_service.dart';
 import '../../services/parent_observation_service.dart';
+import '../../services/student_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import 'parent_observations_page.dart';
 import 'student_observations_page.dart';
@@ -29,7 +30,7 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
   bool _isLoading = true;
 
   int _tab = 0;
-  DateTime _date = DateTime(2026, 8, 21);
+  DateTime _date = DateTime.now();
 
   @override
   void initState() {
@@ -55,6 +56,23 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
           students = remote.students;
         }
       } catch (_) {}
+      if (students.isEmpty) {
+        try {
+          final directoryStudents = await StudentService().getStudents();
+          students = directoryStudents
+              .map(
+                (student) => GroupStudent(
+                  id: student.studentId,
+                  groupId: groupId,
+                  name: student.name,
+                  admissionNo: student.admissionNumber,
+                  section: student.section,
+                  imageUrl: student.imageUrl,
+                ),
+              )
+              .toList();
+        } catch (_) {}
+      }
       if (mounted) {
         setState(() {
           _students = students;
@@ -174,6 +192,258 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
     }
   }
 
+  Future<void> _openCompleteEditor(GroupStudent student) async {
+    final record = _observations[_studentId(student)];
+    final controllers = <String, TextEditingController>{
+      'area': TextEditingController(text: record?.area ?? ''),
+      'status': TextEditingController(text: record?.status ?? ''),
+      'bed': TextEditingController(text: record?.wentToBedAt ?? ''),
+      'wake': TextEditingController(text: record?.gotUpAt ?? ''),
+      'parentRemark': TextEditingController(text: record?.parentsRemark ?? ''),
+      'teacherPunctuality': TextEditingController(
+        text: record?.teacherPunctuality ?? '',
+      ),
+      'teacherFood': TextEditingController(text: record?.teacherFood ?? ''),
+      'gkScore': TextEditingController(text: record?.gkScore ?? ''),
+      'subject': TextEditingController(text: record?.subject ?? ''),
+      'assignmentFeedback': TextEditingController(
+        text: record?.assignmentCompletionFeedback ?? '',
+      ),
+      'performance': TextEditingController(
+        text: record?.classPerformance ?? '',
+      ),
+      'subjectNote': TextEditingController(text: record?.subjectNote ?? ''),
+      'details': TextEditingController(text: record?.diaryDetails ?? ''),
+    };
+    final values = <String, String>{
+      'brushedTeeth': record?.brushedTeeth ?? '',
+      'didYoga': record?.didYoga ?? '',
+      'breakfast': record?.breakfast ?? '',
+      'homework': record?.homework ?? '',
+      'assignmentCompletion': record?.assignmentCompletion ?? '',
+      'helpfulAtHome': record?.helpfulAtHome ?? '',
+      'respectfulToElders': record?.respectfulToElders ?? '',
+      'mood': record?.studentMood ?? '',
+    };
+    const choices = <String, Map<String, String>>{
+      'brushedTeeth': {'once': 'Once', 'twice': 'Twice'},
+      'didYoga': {'yes': 'Yes', 'no': 'No'},
+      'breakfast': {'had_breakfast': 'Had breakfast', 'refused': 'Refused'},
+      'homework': {'completed': 'Completed', 'did_not_do': 'Did not do'},
+      'assignmentCompletion': {
+        'worked_independently': 'Worked independently',
+        'did_under_supervision': 'Did under supervision',
+        'failed_to_do': 'Failed to do the work',
+      },
+      'helpfulAtHome': {
+        'very_much': 'Very much',
+        'sometimes': 'Sometimes',
+        'never': 'Never',
+      },
+      'respectfulToElders': {
+        'very_much': 'Very much',
+        'sometimes': 'Sometimes',
+        'never': 'Never',
+      },
+      'mood': {
+        'exciting': 'Exciting',
+        'happy': 'Happy',
+        'lazy': 'Lazy',
+        'sad': 'Sad',
+        'angry': 'Angry',
+      },
+    };
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            '${student.name} - ${_dateText}',
+            style: const TextStyle(fontSize: 14),
+          ),
+          content: SizedBox(
+            width: 360,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _editorField(controllers['area']!, 'Area'),
+                  _editorField(controllers['status']!, 'Status'),
+                  const Divider(),
+                  const Text(
+                    'Parent Entry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  _editorField(controllers['bed']!, 'My Child went to bed at'),
+                  _editorField(controllers['wake']!, 'My Child got up at'),
+                  ...choices.entries
+                      .where((entry) => entry.key != 'mood')
+                      .map(
+                        (entry) => _editorChoice(
+                          entry.key,
+                          entry.value,
+                          values,
+                          setDialogState,
+                        ),
+                      ),
+                  _editorField(
+                    controllers['parentRemark']!,
+                    'Parents Remark',
+                    maxLines: 3,
+                  ),
+                  const Divider(),
+                  const Text(
+                    'Student Entry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  _editorChoice(
+                    'mood',
+                    choices['mood']!,
+                    values,
+                    setDialogState,
+                  ),
+                  const Divider(),
+                  const Text(
+                    'Teacher Entry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  _editorField(
+                    controllers['teacherPunctuality']!,
+                    'Punctuality',
+                  ),
+                  _editorField(controllers['teacherFood']!, 'Food'),
+                  const Divider(),
+                  const Text(
+                    'GK Score Entry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  _editorField(controllers['gkScore']!, 'GK Score'),
+                  const Divider(),
+                  const Text(
+                    'Subject Feedback Entry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  _editorField(controllers['subject']!, 'Subject'),
+                  _editorField(
+                    controllers['assignmentFeedback']!,
+                    'Completion of Due Assignment',
+                  ),
+                  _editorField(
+                    controllers['performance']!,
+                    'Performance in Class Today',
+                  ),
+                  _editorField(
+                    controllers['subjectNote']!,
+                    'Note',
+                    maxLines: 2,
+                  ),
+                  _editorField(
+                    controllers['details']!,
+                    'Diary Details',
+                    maxLines: 3,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final groupId = widget.group.id.isNotEmpty
+                      ? widget.group.id
+                      : widget.group.name;
+                  await _observationService.saveCompleteDiary(
+                    studentId: _studentId(student),
+                    studentName: student.name,
+                    groupId: groupId,
+                    date: _dateText,
+                    area: controllers['area']!.text,
+                    status: controllers['status']!.text,
+                    diaryDetails: controllers['details']!.text,
+                    wentToBedAt: controllers['bed']!.text,
+                    gotUpAt: controllers['wake']!.text,
+                    parentValues: values,
+                    parentsRemark: controllers['parentRemark']!.text,
+                    mood: values['mood']!,
+                    teacherObservation: {
+                      'punctuality': controllers['teacherPunctuality']!.text,
+                      'food': controllers['teacherFood']!.text,
+                    },
+                    subjectFeedback: {
+                      'subject': controllers['subject']!.text,
+                      'completionOfDueAssignment':
+                          controllers['assignmentFeedback']!.text,
+                      'performanceInClassToday':
+                          controllers['performance']!.text,
+                      'note': controllers['subjectNote']!.text,
+                    },
+                    gkScore: controllers['gkScore']!.text,
+                  );
+                  if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+                } catch (error) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(
+                      dialogContext,
+                    ).showSnackBar(SnackBar(content: Text(error.toString())));
+                  }
+                }
+              },
+              child: const Text('Save / Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+    for (final controller in controllers.values) controller.dispose();
+    if (saved == true) await _loadObservations();
+  }
+
+  Widget _editorField(
+    TextEditingController controller,
+    String label, {
+    int maxLines = 1,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        isDense: true,
+        border: const OutlineInputBorder(),
+      ),
+    ),
+  );
+
+  Widget _editorChoice(
+    String key,
+    Map<String, String> options,
+    Map<String, String> values,
+    StateSetter setDialogState,
+  ) => Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: DropdownButtonFormField<String>(
+      value: options.containsKey(values[key]) ? values[key] : null,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: key == 'mood' ? 'My Day at School' : key,
+        isDense: true,
+      ),
+      items: options.entries
+          .map(
+            (entry) =>
+                DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+          )
+          .toList(),
+      onChanged: (value) => setDialogState(() => values[key] = value ?? ''),
+    ),
+  );
+
   Future<void> _chooseDate() async {
     final selected = await showDatePicker(
       context: context,
@@ -185,6 +455,121 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
       setState(() => _date = selected);
       await _loadObservations();
     }
+  }
+
+  Future<void> _editSections(GroupStudent student, String section) async {
+    final record = _observations[_studentId(student)];
+    final controllers = <String, TextEditingController>{};
+    final fields = section == 'subject'
+        ? [
+            'Subject',
+            'Completion of Due Assignment',
+            'Performance in Class Today',
+            'Note',
+          ]
+        : section == 'teacher'
+        ? ['Punctuality', 'Food']
+        : section == 'details'
+        ? ['Area', 'Status', 'Diary Details']
+        : ['GK Score'];
+    for (final field in fields) {
+      final value = switch (field) {
+        'Subject' => record?.subject ?? '',
+        'Completion of Due Assignment' =>
+          record?.assignmentCompletionFeedback ?? '',
+        'Performance in Class Today' => record?.classPerformance ?? '',
+        'Note' => record?.subjectNote ?? '',
+        'Punctuality' => record?.teacherPunctuality ?? '',
+        'Food' => record?.teacherFood ?? '',
+        'Area' => record?.area ?? '',
+        'Status' => record?.status ?? '',
+        'Diary Details' => record?.diaryDetails ?? '',
+        _ => record?.gkScore ?? '',
+      };
+      controllers[field] = TextEditingController(text: value);
+    }
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$section entry', style: const TextStyle(fontSize: 14)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: fields
+                .map(
+                  (field) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: TextField(
+                      controller: controllers[field],
+                      decoration: InputDecoration(
+                        labelText: field,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final groupId = widget.group.id.isNotEmpty
+                    ? widget.group.id
+                    : widget.group.name;
+                await _observationService.updateDiarySections(
+                  studentId: _studentId(student),
+                  studentName: student.name,
+                  groupId: groupId,
+                  date: _dateText,
+                  teacherObservation: section == 'teacher'
+                      ? {
+                          'punctuality': controllers['Punctuality']!.text,
+                          'food': controllers['Food']!.text,
+                        }
+                      : null,
+                  subjectFeedback: section == 'subject'
+                      ? {
+                          'subject': controllers['Subject']!.text,
+                          'completionOfDueAssignment':
+                              controllers['Completion of Due Assignment']!.text,
+                          'performanceInClassToday':
+                              controllers['Performance in Class Today']!.text,
+                          'note': controllers['Note']!.text,
+                        }
+                      : null,
+                  gkScore: section == 'score'
+                      ? controllers['GK Score']!.text
+                      : null,
+                  area: section == 'details' ? controllers['Area']!.text : null,
+                  status: section == 'details'
+                      ? controllers['Status']!.text
+                      : null,
+                  diaryDetails: section == 'details'
+                      ? controllers['Diary Details']!.text
+                      : null,
+                );
+                if (context.mounted) Navigator.pop(context, true);
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(error.toString())));
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in controllers.values) controller.dispose();
+    if (saved == true) await _loadObservations();
   }
 
   String get _dateText =>
@@ -289,8 +674,8 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
     child: Row(
       children: [
         _tabButton('Student/parent', 0),
-        _tabButton('Subject', 1),
-        _tabButton('Teacher', 2),
+        _tabButton('Subject Feedback', 1),
+        _tabButton('Teacher Entry', 2),
         _tabButton('GK Score', 3),
       ],
     ),
@@ -316,8 +701,8 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
     return Column(
       children: [
         _tableHeader(
-          ['Id', 'Name', 'Parent', 'Student', 'Overview'],
-          const [38, 150, 48, 52, 55],
+          ['Id', 'Name', 'Status', 'Parent', 'Student', 'Overview', 'Edit'],
+          const [32, 105, 45, 42, 45, 48, 42],
         ),
         Expanded(
           child: _isLoading
@@ -332,15 +717,28 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
   }
 
   Widget _parentRow(GroupStudent student) => _row([
-    _cell(student.admissionNo, 38),
-    _cell(student.name, 150),
-    _actionCell(48, Icons.circle, Colors.red, () => _openParentForm(student)),
-    _actionCell(52, Icons.circle, Colors.red, () => _openStudentForm(student)),
+    _cell(student.admissionNo, 32),
+    _cell(student.name, 105),
+    GestureDetector(
+      onTap: () => _editSections(student, 'details'),
+      child: _cell(
+        _observations.containsKey(_studentId(student)) ? 'Updated' : 'Pending',
+        45,
+      ),
+    ),
+    _actionCell(42, Icons.circle, Colors.red, () => _openParentForm(student)),
+    _actionCell(45, Icons.circle, Colors.red, () => _openStudentForm(student)),
     _actionCell(
-      55,
+      48,
       Icons.visibility,
       Colors.blue,
       () => _viewParentObservation(student),
+    ),
+    _actionCell(
+      45,
+      Icons.edit,
+      Colors.deepPurple,
+      () => _openCompleteEditor(student),
     ),
   ]);
 
@@ -372,17 +770,27 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
         ),
       ),
       _tableHeader(
-        [
-          'Id-Name',
-          'Completion of Due Assignment',
-          'Performance in Class Today',
-          'Note',
-        ],
-        const [70, 110, 135, 45],
+        ['Id-Name', 'Subject feedback', 'Edit'],
+        const [150, 150, 55],
       ),
-      Padding(
-        padding: const EdgeInsets.only(top: 5, left: 1),
-        child: _blueButton('Submit'),
+      Expanded(
+        child: ListView.builder(
+          itemCount: _students.length,
+          itemBuilder: (_, index) {
+            final student = _students[index];
+            final record = _observations[_studentId(student)];
+            return _row([
+              _cell('${student.admissionNo}-${student.name}', 150),
+              _cell(record?.subjectNote ?? 'Not entered', 150),
+              _actionCell(
+                55,
+                Icons.edit,
+                Colors.blue,
+                () => _editSections(student, 'subject'),
+              ),
+            ]);
+          },
+        ),
       ),
     ],
   );
@@ -392,8 +800,8 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
     return Column(
       children: [
         _tableHeader(
-          ['Id-Name', 'Discipline', 'Food', ''],
-          const [75, 110, 110, 30],
+          ['Id-Name', 'Discipline', 'Food', 'Edit'],
+          const [75, 100, 100, 50],
         ),
         Expanded(
           child: ListView.builder(
@@ -407,16 +815,27 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
 
   Widget _teacherRow(GroupStudent student) => _row([
     _cell('${student.admissionNo}-${student.name}', 75),
-    _diaryFields('Punctuality:', ['On time', 'Smart today'], 110),
-    _diaryFields('Healthy:', ['Excellent', 'Excellent', 'Yes'], 110),
-    const SizedBox(width: 30),
+    _cell(
+      _observations[_studentId(student)]?.teacherPunctuality ?? 'Not entered',
+      100,
+    ),
+    _cell(
+      _observations[_studentId(student)]?.teacherFood ?? 'Not entered',
+      100,
+    ),
+    _actionCell(
+      50,
+      Icons.edit,
+      Colors.blue,
+      () => _editSections(student, 'teacher'),
+    ),
   ], height: 84);
 
   Widget _scoreTab() {
     final students = List<GroupStudent>.of(_students);
     return Column(
       children: [
-        _tableHeader(['Id-Name', 'Score'], const [165, 135]),
+        _tableHeader(['Id-Name', 'Score', 'Edit'], const [145, 100, 50]),
         Expanded(
           child: ListView.builder(
             itemCount: students.length,
@@ -425,16 +844,16 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
                 '${students[index].admissionNo}-${students[index].name}',
                 165,
               ),
-              SizedBox(
-                width: 135,
-                height: 25,
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: TextField(
-                    style: const TextStyle(fontSize: 9),
-                    decoration: _decoration(),
-                  ),
-                ),
+              _cell(
+                _observations[_studentId(students[index])]?.gkScore ??
+                    'Not entered',
+                100,
+              ),
+              _actionCell(
+                50,
+                Icons.edit,
+                Colors.blue,
+                () => _editSections(students[index], 'score'),
               ),
             ]),
           ),

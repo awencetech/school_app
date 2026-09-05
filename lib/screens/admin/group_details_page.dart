@@ -234,17 +234,6 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   },
                 ),
                 _IconGridItem(
-                  'Class FilePlan',
-                  Icons.folder,
-                  const Color(0xFF0EA5E9),
-                  onTap: () {
-                    Navigator.of(context).pushNamed(
-                      _groupMenuRoute('class-files'),
-                      arguments: widget.group,
-                    );
-                  },
-                ),
-                _IconGridItem(
                   'Online Assignment',
                   Icons.assignment,
                   const Color(0xFFF97316),
@@ -342,17 +331,6 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   onTap: () {
                     Navigator.of(context).pushNamed(
                       AppRoutes.teacherAppreciateAward,
-                      arguments: widget.group,
-                    );
-                  },
-                ),
-                _IconGridItem(
-                  'Class FilePlan',
-                  Icons.folder,
-                  const Color(0xFFDC2626),
-                  onTap: () {
-                    Navigator.of(context).pushNamed(
-                      AppRoutes.teacherClassFilePlan,
                       arguments: widget.group,
                     );
                   },

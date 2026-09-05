@@ -17,6 +17,16 @@ class ParentObservation {
     this.respectfulToElders = '',
     this.parentsRemark = '',
     this.studentMood = '',
+    this.teacherPunctuality = '',
+    this.teacherFood = '',
+    this.subject = '',
+    this.assignmentCompletionFeedback = '',
+    this.classPerformance = '',
+    this.subjectNote = '',
+    this.gkScore = '',
+    this.area = '',
+    this.status = '',
+    this.diaryDetails = '',
   });
 
   final String id;
@@ -36,6 +46,16 @@ class ParentObservation {
   final String respectfulToElders;
   final String parentsRemark;
   final String studentMood;
+  final String teacherPunctuality;
+  final String teacherFood;
+  final String subject;
+  final String assignmentCompletionFeedback;
+  final String classPerformance;
+  final String subjectNote;
+  final String gkScore;
+  final String area;
+  final String status;
+  final String diaryDetails;
 
   factory ParentObservation.fromJson(Map<String, dynamic> json) {
     final parent = json['parentObservation'] is Map
@@ -49,7 +69,7 @@ class ParentObservation {
       studentId: (json['studentId'] ?? '').toString(),
       studentName: (json['studentName'] ?? '').toString(),
       groupId: (json['groupId'] ?? json['classId'] ?? '').toString(),
-      date: (json['date'] ?? '').toString(),
+      date: (json['diaryDate'] ?? json['date'] ?? '').toString(),
       diaryId: (json['diaryId'] ?? '').toString(),
       wentToBedAt: (parent['wentToBedAt'] ?? '').toString(),
       gotUpAt: (parent['gotUpAt'] ?? '').toString(),
@@ -62,6 +82,21 @@ class ParentObservation {
       respectfulToElders: (parent['respectfulToElders'] ?? '').toString(),
       parentsRemark: (parent['parentsRemark'] ?? '').toString(),
       studentMood: (student['mood'] ?? '').toString(),
+      teacherPunctuality: (json['teacherObservation']?['punctuality'] ?? '')
+          .toString(),
+      teacherFood: (json['teacherObservation']?['food'] ?? '').toString(),
+      subject: (json['subjectFeedback']?['subject'] ?? '').toString(),
+      assignmentCompletionFeedback:
+          (json['subjectFeedback']?['completionOfDueAssignment'] ?? '')
+              .toString(),
+      classPerformance:
+          (json['subjectFeedback']?['performanceInClassToday'] ?? '')
+              .toString(),
+      subjectNote: (json['subjectFeedback']?['note'] ?? '').toString(),
+      gkScore: (json['gkScore'] ?? '').toString(),
+      area: (json['area'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+      diaryDetails: (json['diaryDetails'] ?? '').toString(),
     );
   }
 
@@ -71,6 +106,7 @@ class ParentObservation {
     'groupId': groupId,
     'classId': groupId,
     'date': date,
+    'diaryDate': date,
     'diaryId': diaryId,
     'parentObservation': {
       'wentToBedAt': wentToBedAt,
@@ -85,5 +121,19 @@ class ParentObservation {
       'parentsRemark': parentsRemark,
     },
     'studentObservation': {'mood': studentMood},
+    'teacherObservation': {
+      'punctuality': teacherPunctuality,
+      'food': teacherFood,
+    },
+    'subjectFeedback': {
+      'subject': subject,
+      'completionOfDueAssignment': assignmentCompletionFeedback,
+      'performanceInClassToday': classPerformance,
+      'note': subjectNote,
+    },
+    'gkScore': gkScore,
+    'area': area,
+    'status': status,
+    'diaryDetails': diaryDetails,
   };
 }

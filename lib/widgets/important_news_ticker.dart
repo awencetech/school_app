@@ -7,7 +7,7 @@ class ImportantNewsTicker extends StatefulWidget {
   const ImportantNewsTicker({
     super.key,
     required this.items,
-    this.height = 30,
+    this.height = 24,
     this.horizontalPadding = 16,
   });
 
@@ -93,12 +93,23 @@ class _ImportantNewsTickerState extends State<ImportantNewsTicker>
             onTapDown: (_) => _setPaused(true),
             onTapUp: (_) => _setPaused(false),
             onTapCancel: () => _setPaused(false),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.horizontalPadding,
+            child: Container(
+              height: widget.height,
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F4F4),
+                border: const Border.symmetric(
+                  horizontal: BorderSide(
+                    color: Color(0xFFDCDCDC),
+                    width: 0.5,
+                  ),
+                ),
+                borderRadius: BorderRadius.zero,
               ),
-              child: SizedBox(
-                height: widget.height,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.horizontalPadding,
+                ),
                 child: ClipRect(
                   child: AnimatedBuilder(
                     animation: _controller,

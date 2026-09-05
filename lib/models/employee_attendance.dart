@@ -4,6 +4,11 @@ class EmployeeAttendance {
     required this.employeeId,
     required this.teacherId,
     required this.employeeName,
+    this.groupId = '',
+    this.groupName = '',
+    this.subjectId = '',
+    this.subject = '',
+    this.classType = '',
     required this.attendanceDate,
     this.timeRecorded,
     this.attendanceType = 'OnSite',
@@ -23,6 +28,11 @@ class EmployeeAttendance {
   final String employeeId;
   final String teacherId;
   final String employeeName;
+  final String groupId;
+  final String groupName;
+  final String subjectId;
+  final String subject;
+  final String classType;
   final String attendanceDate;
   final DateTime? timeRecorded;
   final String attendanceType;
@@ -43,6 +53,11 @@ class EmployeeAttendance {
         employeeId: json['employeeId']?.toString() ?? '',
         teacherId: json['teacherId']?.toString() ?? '',
         employeeName: json['employeeName']?.toString() ?? '',
+        groupId: json['groupId']?.toString() ?? '',
+        groupName: json['groupName']?.toString() ?? '',
+        subjectId: json['subjectId']?.toString() ?? '',
+        subject: json['subject']?.toString() ?? '',
+        classType: json['classType']?.toString() ?? '',
         attendanceDate: json['attendanceDate']?.toString() ?? '',
         timeRecorded: _date(json['timeRecorded']),
         attendanceType: json['attendanceType']?.toString() ?? 'OnSite',
@@ -67,6 +82,11 @@ class EmployeeAttendance {
     'employeeId': employeeId,
     'teacherId': teacherId,
     'employeeName': employeeName,
+    'groupId': groupId,
+    'groupName': groupName,
+    'subjectId': subjectId,
+    'subject': subject,
+    'classType': classType,
     'attendanceDate': attendanceDate,
     'timeRecorded': (timeRecorded ?? DateTime.now()).toIso8601String(),
     'attendanceType': attendanceType,

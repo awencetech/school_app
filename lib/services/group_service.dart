@@ -13,11 +13,13 @@ class GroupRemoteData {
   const GroupRemoteData({
     required this.group,
     required this.students,
+    required this.studentCount,
     required this.teachers,
   });
 
   final Group group;
   final List<GroupStudent> students;
+  final int studentCount;
   final List<GroupTeacher> teachers;
 }
 
@@ -117,14 +119,15 @@ class GroupService {
         normalizedGroupId.toLowerCase() == 'unknown') {
       throw ApiException(400, 'A valid group is required.', 'group-details');
     }
+    final encodedGroupId = Uri.encodeComponent(normalizedGroupId);
     final resp = await http
-        .get(_uri('/api/groups/$normalizedGroupId'))
+      .get(_uri('/api/groups/$encodedGroupId'))
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       throw ApiException(
         resp.statusCode,
         'Failed to load group details',
-        _uri('/api/groups/$groupId').toString(),
+        _uri('/api/groups/$encodedGroupId').toString(),
       );
     }
 
@@ -140,6 +143,7 @@ class GroupService {
     return GroupRemoteData(
       group: Group.fromJson(payload),
       students: students,
+      studentCount: (payload['studentCount'] as num?)?.toInt() ?? students.length,
       teachers: teachers,
     );
   }

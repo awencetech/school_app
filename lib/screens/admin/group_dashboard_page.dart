@@ -2,12 +2,56 @@ import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
+import '../../services/group_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
-class GroupDashboardPage extends StatelessWidget {
+class GroupDashboardPage extends StatefulWidget {
   const GroupDashboardPage({super.key, required this.group});
 
   final Group group;
+
+  @override
+  State<GroupDashboardPage> createState() => _GroupDashboardPageState();
+}
+
+class _GroupDashboardPageState extends State<GroupDashboardPage> {
+  final GroupService _groupService = GroupService();
+  int _studentCount = 0;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentCount();
+  }
+
+  Future<void> _loadStudentCount() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final groupId = widget.group.databaseId.isNotEmpty
+          ? widget.group.databaseId
+          : widget.group.id.isNotEmpty
+          ? widget.group.id
+          : widget.group.name;
+      final details = await _groupService.getGroupDetails(groupId);
+      if (!mounted) return;
+      setState(() {
+        _studentCount = details.studentCount;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _studentCount = 0;
+        _isLoading = false;
+        _error = 'Unable to load student count.';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,16 +92,22 @@ class GroupDashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Dashboard for ${group.name} for Today', style: const TextStyle(fontSize: 11, color: Color(0xff1d3557))),
+              Text('Dashboard for ${widget.group.name} for Today', style: const TextStyle(fontSize: 11, color: Color(0xff1d3557))),
               const SizedBox(height: 7),
               const _DashboardPanel(
                 title: 'Student/s applied for Leave Today',
                 lines: ['Nobody on leave'],
               ),
               const SizedBox(height: 7),
-              const _DashboardPanel(
+              _DashboardPanel(
                 title: 'Student Count',
-                lines: ['Total: 17', 'Male:4 Female:13'],
+                lines: [
+                  if (_isLoading) 'Loading...',
+                  if (!_isLoading && _error != null) _error!,
+                  if (!_isLoading && _error == null)
+                    'Total: $_studentCount',
+                ],
+                onRetry: _error == null ? null : _loadStudentCount,
               ),
               const SizedBox(height: 7),
               const _DashboardPanel(
@@ -82,10 +132,15 @@ class GroupDashboardPage extends StatelessWidget {
 }
 
 class _DashboardPanel extends StatelessWidget {
-  const _DashboardPanel({required this.title, required this.lines});
+  const _DashboardPanel({
+    required this.title,
+    required this.lines,
+    this.onRetry,
+  });
 
   final String title;
   final List<String> lines;
+  final Future<void> Function()? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +168,14 @@ class _DashboardPanel extends StatelessWidget {
                   .toList(),
             ),
           ),
+          if (onRetry != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onRetry,
+                child: const Text('Retry', style: TextStyle(fontSize: 9)),
+              ),
+            ),
         ],
       ),
     );

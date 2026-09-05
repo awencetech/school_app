@@ -103,9 +103,11 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          color: const Color(0xFFF4F4F4),
+          borderRadius: BorderRadius.zero,
+          border: const Border.symmetric(
+            horizontal: BorderSide(color: Color(0xFFDCDCDC), width: 0.5),
+          ),
         ),
         child: Text(
           'No news available',
@@ -118,11 +120,14 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
     return SizedBox(
       height: widget.height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFF4F4F4),
+            borderRadius: BorderRadius.zero,
+            border: const Border.symmetric(
+              horizontal: BorderSide(color: Color(0xFFDCDCDC), width: 0.5),
+            ),
           ),
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(
@@ -132,7 +137,7 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
               controller: _controller,
               scrollDirection: Axis.horizontal,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               itemBuilder: (context, index) {
                 final item = widget.items[index % widget.items.length];
                 return Center(

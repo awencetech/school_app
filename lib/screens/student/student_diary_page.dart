@@ -1,10 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
 
+import '../../models/parent_observation.dart';
+import '../../services/parent_observation_service.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
-import 'student_faculty_feedback_page.dart';
 
 class StudentDiaryPage extends StatefulWidget {
   const StudentDiaryPage({super.key});
@@ -14,10 +14,35 @@ class StudentDiaryPage extends StatefulWidget {
 }
 
 class _StudentDiaryPageState extends State<StudentDiaryPage> {
-  DateTime _date = DateTime(2026, 8, 27);
+  DateTime _date = DateTime.now();
+  final ParentObservationService _service = ParentObservationService();
+  ParentObservation? _record;
+  bool _loading = true;
+  String? _error;
 
   String get _dateText =>
       '${_date.year.toString().padLeft(4, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDiary();
+  }
+
+  Future<void> _loadDiary() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final record = await _service.getForStudentDate(date: _dateText);
+      if (mounted) setState(() => _record = record);
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   Future<void> _changeDate() async {
     final selected = await showDatePicker(
@@ -26,25 +51,10 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (selected != null) setState(() => _date = selected);
-  }
-
-  void _openParentEntry() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const _ParentEntryPage()));
-  }
-
-  void _openStudentEntry() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const _StudentEntryPage()));
-  }
-
-  void _openReviewFeedback() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const StudentFacultyFeedbackPage()),
-    );
+    if (selected != null) {
+      setState(() => _date = selected);
+      await _loadDiary();
+    }
   }
 
   @override
@@ -57,7 +67,7 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
         toolbarHeight: 43,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          onPressed: () => navigateBack(context),
+          onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
@@ -77,10 +87,12 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
             ),
           ),
           const Divider(height: 1),
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(4, 7, 4, 5),
             child: Text(
-              'For MOHAMED AZEEMSHA A',
+              _record == null || _record!.studentName.isEmpty
+                  ? 'Student'
+                  : 'For ${_record!.studentName}',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ),
@@ -96,23 +108,30 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
               ),
             ),
           ),
-          _entryRow('Parent Entry', _openParentEntry),
-          _entryRow('Student Entry', _openStudentEntry),
-          _entryRow('Teacher Entry', null),
-          _entryRow('GK Score Entry', null),
-          _entryRow('Review Feedback', _openReviewFeedback),
           const Padding(
-            padding: EdgeInsets.fromLTRB(4, 8, 4, 2),
+            padding: EdgeInsets.fromLTRB(4, 5, 4, 4),
             child: Text(
-              'Diary for Diary Entry for SAMUNI-S1746 on 2026-08-27',
-              style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
+              'Staff updated diary details',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xff333333),
+              ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(4, 2, 4, 0),
-            child: Text('No details present', style: TextStyle(fontSize: 8)),
-          ),
-          const Expanded(child: SizedBox()),
+          if (_loading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (_error != null)
+            Expanded(
+              child: Center(
+                child: Text(
+                  'Unable to load diary. Pull to refresh or try again.',
+                  style: TextStyle(fontSize: 10, color: Colors.red),
+                ),
+              ),
+            )
+          else
+            Expanded(child: _readOnlyDetails()),
         ],
       ),
       bottomNavigationBar: const AppBottomNavigation(),
@@ -131,18 +150,18 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
             style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600),
           ),
         ),
-        _dateButton(
-          Icons.chevron_left,
-          () => setState(() => _date = _date.subtract(const Duration(days: 1))),
-        ),
+        _dateButton(Icons.chevron_left, () async {
+          setState(() => _date = _date.subtract(const Duration(days: 1)));
+          await _loadDiary();
+        }),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(_dateText, style: const TextStyle(fontSize: 9)),
         ),
-        _dateButton(
-          Icons.chevron_right,
-          () => setState(() => _date = _date.add(const Duration(days: 1))),
-        ),
+        _dateButton(Icons.chevron_right, () async {
+          setState(() => _date = _date.add(const Duration(days: 1)));
+          await _loadDiary();
+        }),
         const SizedBox(width: 8),
         SizedBox(
           height: 19,
@@ -150,6 +169,71 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
             onPressed: _changeDate,
             style: _buttonStyle,
             child: const Text('Change Date', style: TextStyle(fontSize: 7)),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _readOnlyDetails() {
+    final record = _record;
+    if (record == null) {
+      return const Center(
+        child: Text(
+          'No diary entry has been added by staff.',
+          style: TextStyle(fontSize: 10),
+        ),
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+      children: [
+        Text(
+          'Diary entry for ${record.studentName} on ${record.date}',
+          style: const TextStyle(fontSize: 11, color: Color(0xff1d3557)),
+        ),
+        const SizedBox(height: 8),
+        _detail('Bed time', record.wentToBedAt),
+        _detail('Wake up time', record.gotUpAt),
+        _detail('Brushed teeth', record.brushedTeeth),
+        _detail('Yoga', record.didYoga),
+        _detail('Breakfast', record.breakfast),
+        _detail('Homework', record.homework),
+        _detail('Assignments', record.assignmentCompletion),
+        _detail('Helpful at home', record.helpfulAtHome),
+        _detail('Respectful to elders', record.respectfulToElders),
+        _detail('Parent remark', record.parentsRemark),
+        _detail('Student mood', record.studentMood),
+        _detail('Teacher punctuality', record.teacherPunctuality),
+        _detail('Teacher food', record.teacherFood),
+        _detail('Subject', record.subject),
+        _detail('Assignment feedback', record.assignmentCompletionFeedback),
+        _detail('Class performance', record.classPerformance),
+        _detail('Subject note', record.subjectNote),
+        _detail('GK score', record.gkScore),
+        _detail('Area', record.area),
+        _detail('Status', record.status),
+        _detail('Diary details', record.diaryDetails),
+      ],
+    );
+  }
+
+  Widget _detail(String label, String value) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: Color(0xffdddddd))),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 140,
+          child: Text(label, style: const TextStyle(fontSize: 9)),
+        ),
+        Expanded(
+          child: Text(
+            value.isEmpty ? 'Not provided' : value,
+            style: const TextStyle(fontSize: 9),
           ),
         ),
       ],
@@ -165,46 +249,6 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
       child: Icon(icon, size: 13, color: const Color(0xff008ad8)),
     ),
   );
-
-  Widget _entryRow(String label, VoidCallback? onPressed) => Container(
-    height: 25,
-    decoration: const BoxDecoration(
-      border: Border(bottom: BorderSide(color: Color(0xffdddddd))),
-    ),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 158,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(label, style: const TextStyle(fontSize: 9)),
-          ),
-        ),
-        const Icon(Icons.circle, color: Colors.red, size: 10),
-        const SizedBox(width: 8),
-        if (onPressed != null)
-          SizedBox(
-            height: 18,
-            child: OutlinedButton(
-              onPressed: onPressed,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                minimumSize: Size.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              child: Text(
-                label == 'Review Feedback' ? label : 'Enter $label',
-                style: const TextStyle(fontSize: 7),
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
 }
 
 const _buttonStyle = ButtonStyle(
@@ -216,210 +260,3 @@ const _buttonStyle = ButtonStyle(
     RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(2))),
   ),
 );
-
-class _ParentEntryPage extends StatelessWidget {
-  const _ParentEntryPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return _DiaryFormScaffold(
-      title: "Parent’s Observations for S1746 MOHAMED AZEEMSHA A",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('Date : 27-Aug-2026', style: TextStyle(fontSize: 11)),
-          const SizedBox(height: 8),
-          _timeField('My Child went to bed at'),
-          _timeField('My Child got up at'),
-          _choices('Brushed teeth', ['Once', 'Twice']),
-          _choices('Did do Yoga?', ['Yes', 'No']),
-          _choices('Breakfast', ['Had breakfast', 'Refused']),
-          _choices('Homework', ['Completed', 'Did not do']),
-          _choices('Completion of Assignments', [
-            'Worked Independently',
-            'Did under Supervision',
-            'Failed to do the work',
-          ]),
-          _choices('Helpful at home', ['Very much', 'Sometimes', 'Never']),
-          _choices('Respectful to elders at home', [
-            'Very much',
-            'Sometimes',
-            'Never',
-          ]),
-          const Text('Parents Remark', style: TextStyle(fontSize: 11)),
-          const SizedBox(height: 4),
-          const TextField(
-            maxLines: 4,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-          ),
-          _formButtons(),
-        ],
-      ),
-    );
-  }
-}
-
-class _StudentEntryPage extends StatelessWidget {
-  const _StudentEntryPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return _DiaryFormScaffold(
-      title: "Student’s Observations for S1746 MOHAMED AZEEMSHA A",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Center(
-            child: Text(
-              'Date : 27-Aug-2026',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Text('My Day at School', style: TextStyle(fontSize: 11)),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
-              _Mood('🤪', 'Exciting'),
-              _Mood('🙂', 'Happy'),
-              _Mood('😴', 'Lazy'),
-              _Mood('😢', 'Sad'),
-              _Mood('😡', 'Angry'),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _formButtons(),
-        ],
-      ),
-    );
-  }
-}
-
-class _DiaryFormScaffold extends StatelessWidget {
-  const _DiaryFormScaffold({required this.title, required this.child});
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.white,
-    appBar: AppBar(
-      backgroundColor: const Color(0xff34395f),
-      elevation: 0,
-      toolbarHeight: 43,
-      automaticallyImplyLeading: false,
-      leading: IconButton(
-        onPressed: () => navigateBack(context),
-        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-      ),
-      centerTitle: true,
-      title: const Text(
-        'SAMUNI',
-        style: TextStyle(color: Colors.white, fontSize: 14),
-      ),
-    ),
-    body: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(9, 8, 9, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    ),
-    bottomNavigationBar: const AppBottomNavigation(),
-  );
-}
-
-Widget _timeField(String label) => Padding(
-  padding: const EdgeInsets.only(bottom: 10),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(fontSize: 11)),
-      const SizedBox(height: 3),
-      const TextField(
-        decoration: InputDecoration(
-          hintText: '--:-- --',
-          isDense: true,
-          border: OutlineInputBorder(),
-          suffixIcon: Icon(Icons.access_time, size: 14),
-        ),
-      ),
-    ],
-  ),
-);
-
-Widget _choices(String label, List<String> options) => Padding(
-  padding: const EdgeInsets.only(bottom: 9),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(fontSize: 11)),
-      Wrap(
-        spacing: 12,
-        children: options
-            .map(
-              (option) => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: Radio<bool>(
-                      value: false,
-                      groupValue: null,
-                      onChanged: (_) {},
-                    ),
-                  ),
-                  Text(option, style: const TextStyle(fontSize: 10)),
-                ],
-              ),
-            )
-            .toList(),
-      ),
-    ],
-  ),
-);
-
-Widget _formButtons() => Row(
-  children: [
-    ElevatedButton(
-      onPressed: () {},
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xff087ff5),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        minimumSize: Size.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-      ),
-      child: const Text('Insert', style: TextStyle(fontSize: 8)),
-    ),
-    const SizedBox(width: 10),
-    const Text('Reset', style: TextStyle(fontSize: 8)),
-  ],
-);
-
-class _Mood extends StatelessWidget {
-  const _Mood(this.emoji, this.label);
-  final String emoji;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Text(emoji, style: const TextStyle(fontSize: 28)),
-      Text(label, style: const TextStyle(fontSize: 8)),
-    ],
-  );
-}

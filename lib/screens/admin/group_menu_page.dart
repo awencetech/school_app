@@ -79,12 +79,6 @@ class GroupMenuPage extends StatelessWidget {
       AppRoutes.teacherEditVideoConference,
     ),
     _GroupMenuItem(
-      'Class File/Plan',
-      Icons.folder,
-      Color(0xff0ea5e9),
-      AppRoutes.teacherEditClassFilePlan,
-    ),
-    _GroupMenuItem(
       'Online Assignment',
       Icons.assignment_turned_in,
       Color(0xfff97316),

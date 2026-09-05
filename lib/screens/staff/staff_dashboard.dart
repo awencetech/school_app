@@ -21,6 +21,7 @@ import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
+import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
 import '../student/student_check_approve_page.dart';
 import '../student/student_group_class_bus_page.dart';
@@ -66,7 +67,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
     if (userId.isEmpty || token.isEmpty) {
       setState(() {
         _staffLoading = false;
-        _staffError = 'Staff profile is not available.';
+        _staffName = userId.isEmpty ? 'Staff name' : userId;
+        _staffId = userId;
+        _staffError = null;
       });
       return;
     }
@@ -81,19 +84,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
       });
     } catch (error) {
       if (!mounted) return;
-      final message = error.toString().replaceFirst('Exception: ', '');
-      if (message == 'Authentication required.') {
-        await appState.logout();
-        if (!mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          AppRoutes.main,
-          (route) => false,
-        );
-        return;
-      }
       setState(() {
         _staffLoading = false;
-        _staffError = message;
+        _staffName = userId.isEmpty ? 'Staff name' : userId;
+        _staffId = userId;
+        _staffError = null;
       });
     }
   }
@@ -354,9 +349,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           icon: Icons.message,
                           label: 'Messages HW, CW',
                           color: Color(0xFFFF7043),
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.staffDashboardMessages),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const MessagesPage(),
+                            ),
+                          ),
                         ),
                         _QuickAction(
                           icon: Icons.calendar_month,
@@ -587,6 +584,19 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 onTap: () => Navigator.of(
                                   context,
                                 ).pushNamed(AppRoutes.staffTodoTasks),
+                              ),
+                              _InfoChip(
+                                icon: Icons.edit_note,
+                                label: 'Student Diary Edit',
+                                iconColor: Color(0xFF7B1FA2),
+                                onTap: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.teacherDiarySummary,
+                                  arguments: Group(
+                                    id: 'grade-10-c',
+                                    name: 'Grade 10 C',
+                                    year: '2026-27',
+                                  ),
+                                ),
                               ),
                             ],
                           ),

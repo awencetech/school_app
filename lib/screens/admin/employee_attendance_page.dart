@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/employee_attendance.dart';
 import '../../models/staff_info.dart';
 import '../../routes/app_routes.dart';
+import 'employee_attendance_history_page.dart';
 import '../../services/employee_attendance_service.dart';
 import '../../services/staff_service.dart';
 import '../../theme/app_colors.dart';
@@ -338,6 +339,13 @@ class _DetailsTab extends StatelessWidget {
                 (record) => record?.employeeId == employee.employeeId,
                 orElse: () => null,
               ),
+              onTap: () => Navigator.of(context).pushNamed(
+                '${AppRoutes.adminEmployeeAttendance}/${_employeePathSegment(employee.name, employee.employeeId)}',
+                arguments: {
+                  'employeeId': employee.employeeId,
+                  'employeeName': employee.name,
+                },
+              ),
             ),
           ),
       ],
@@ -400,38 +408,148 @@ class _PendingCard extends StatelessWidget {
 }
 
 class _EmployeeDayCard extends StatelessWidget {
-  const _EmployeeDayCard({required this.employee, required this.record});
+  const _EmployeeDayCard({
+    required this.employee,
+    required this.record,
+    required this.onTap,
+  });
   final StaffInfo employee;
   final EmployeeAttendance? record;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 8),
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Expanded(child: Text('${employee.employeeId}\n${employee.name}')),
-          Text(
-            employee.employeeCategory.isEmpty
-                ? employee.designation
-                : employee.employeeCategory,
-          ),
-          const SizedBox(width: 16),
-          _Pill(
-            label: record == null
-                ? 'No'
-                : (record!.approved ? 'Yes' : 'Pending'),
-          ),
-          const SizedBox(width: 8),
-          _Pill(
-            label: record == null
-                ? 'NA'
-                : (record!.selfAttendance ? 'Yes' : 'No'),
-          ),
-        ],
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const Icon(Icons.chevron_right, size: 18),
+            const SizedBox(width: 6),
+            Expanded(child: Text('${employee.employeeId}\n${employee.name}')),
+            Text(
+              employee.employeeCategory.isEmpty
+                  ? employee.designation
+                  : employee.employeeCategory,
+            ),
+            const SizedBox(width: 16),
+            _Pill(
+              label: record == null
+                  ? 'No'
+                  : (record!.approved ? 'Yes' : 'Pending'),
+            ),
+            const SizedBox(width: 8),
+            _Pill(
+              label: record == null
+                  ? 'NA'
+                  : (record!.selfAttendance ? 'Yes' : 'No'),
+            ),
+          ],
+        ),
       ),
     ),
+  );
+}
+
+String _employeePathSegment(String name, String employeeId) {
+  final source = name.trim().isEmpty ? employeeId : name.trim();
+  final slug = source
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+  return slug.isEmpty ? Uri.encodeComponent(employeeId) : slug;
+}
+
+class _EmployeeAttendanceDetailsDialog extends StatefulWidget {
+  const _EmployeeAttendanceDetailsDialog({
+    required this.employeeId,
+    required this.employeeName,
+  });
+
+  final String employeeId;
+  final String employeeName;
+
+  @override
+  State<_EmployeeAttendanceDetailsDialog> createState() =>
+      _EmployeeAttendanceDetailsDialogState();
+}
+
+class _EmployeeAttendanceDetailsDialogState
+    extends State<_EmployeeAttendanceDetailsDialog> {
+  final _service = EmployeeAttendanceService();
+  late Future<List<EmployeeAttendance>> _records;
+
+  @override
+  void initState() {
+    super.initState();
+    _records = _service.getForEmployee(widget.employeeId);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text('${widget.employeeName} Attendance'),
+    content: SizedBox(
+      width: 680,
+      child: FutureBuilder<List<EmployeeAttendance>>(
+        future: _records,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              height: 120,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            return SizedBox(
+              height: 120,
+              child: Center(child: Text(snapshot.error.toString())),
+            );
+          }
+          final records = snapshot.data ?? const <EmployeeAttendance>[];
+          if (records.isEmpty) {
+            return const SizedBox(
+              height: 120,
+              child: Center(
+                child: Text('No attendance records found for this employee.'),
+              ),
+            );
+          }
+          return ListView.separated(
+            shrinkWrap: true,
+            itemCount: records.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final record = records[index];
+              final group = record.groupName.isEmpty
+                  ? 'Class not specified'
+                  : record.groupName;
+              final subject = record.subject.isEmpty
+                  ? 'Subject not specified'
+                  : record.subject;
+              return ListTile(
+                dense: true,
+                title: Text('${record.attendanceDate} | ${record.status}'),
+                subtitle: Text(
+                  '$group | $subject\n'
+                  'Check-in: ${_time(record.timeRecorded, context)} | '
+                  'Attendance: ${record.present ? 'Present' : 'Absent'} | '
+                  'Late: ${record.isLate ? 'Yes' : 'No'}',
+                ),
+              );
+            },
+          );
+        },
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Back'),
+      ),
+    ],
   );
 }
 
@@ -591,7 +709,7 @@ class _ListTab extends StatelessWidget {
               child: ListTile(
                 title: Text('${record.employeeName} - ${record.employeeId}'),
                 subtitle: Text(
-                  '${record.attendanceDate} ${_time(record.timeRecorded, context)} | ${record.attendanceType}',
+                  '${record.groupName.isEmpty ? 'Class not specified' : record.groupName} | ${record.subject.isEmpty ? 'Subject not specified' : record.subject} | ${record.attendanceDate} ${_time(record.timeRecorded, context)} | ${record.attendanceType}',
                 ),
                 trailing: _Pill(label: record.status),
               ),

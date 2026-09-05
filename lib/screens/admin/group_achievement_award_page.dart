@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 
 import '../../models/group.dart';
-import '../../services/user_service.dart';
+import '../../services/group_service.dart';
+import '../../services/group_state_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class GroupAchievementAwardPage extends StatefulWidget {
@@ -16,48 +17,68 @@ class GroupAchievementAwardPage extends StatefulWidget {
 }
 
 class _GroupAchievementAwardPageState extends State<GroupAchievementAwardPage> {
-  static const _fallbackStudents = [
-    'SADAF FATHIMA I - S1197',
-    'MIRASHI SINGH J - S1289',
-    'VEDARSH VISAKA MOORTHY TN - S1319',
-    'VAISHAVI K M - S1346',
-    'Aashish Kumar M - S1378',
-    'HARIPRAKASH M I - S1388',
-    'SURIYA VISWANATHAN K - S270',
-    'SHRIDHARSHINI M - S875',
-    'HARINI N - S1654',
-    'VAHINI k R - S1618',
-    'SANOFAR A - S1670',
-    'DWARAGA S - S1765',
-    'MITHUSHI SINGH J - S1288',
-    'MITHUSHI SINGH J - S1288',
-    'INEIYAA V.S - S1662',
-    'SAHANA SRI G - S1726',
-  ];
-
-  final UserService _userService = UserService();
-  List<String> _students = _fallbackStudents;
+  final GroupService _groupService = GroupService();
+  List<String> _students = const [];
+  List<GroupStudent> _classStudents = const [];
+  List<GroupTeacher> _classTeachers = const [];
+  String _groupName = '';
+  bool _membersLoading = true;
+  int _selectedTab = 0;
   final Map<String, String> _awards = {};
 
   @override
   void initState() {
     super.initState();
+    _groupName = widget.group.name;
     _loadStudents();
   }
 
   Future<void> _loadStudents() async {
-    try {
-      final users = await _userService.getUsers(role: 'student');
-      if (!mounted || users.isEmpty) return;
-      setState(() {
-        _students = users
-            .map((user) => user.userId)
-            .where((id) => id.isNotEmpty)
-            .toList();
-      });
-    } catch (_) {
-      // The reference roster remains useful while the backend is unavailable.
+    final groupId = widget.group.id.trim().isNotEmpty &&
+            widget.group.id.toLowerCase() != 'unknown'
+        ? widget.group.id.trim()
+        : widget.group.name.trim();
+    if (groupId.isEmpty || groupId.toLowerCase() == 'unknown') {
+      if (mounted) {
+        setState(() {
+          _membersLoading = false;
+        });
+      }
+      return;
     }
+    try {
+      final remote = await _groupService.getGroupDetails(
+        widget.group.databaseId.isNotEmpty ? widget.group.databaseId : groupId,
+      );
+      if (!mounted) return;
+      setState(() {
+        final remoteName = remote.group.name.trim();
+        if (remoteName.isNotEmpty && remoteName.toLowerCase() != 'unknown') {
+          _groupName = remoteName;
+        }
+        _classStudents = remote.students;
+        _classTeachers = remote.teachers;
+        _students = remote.students
+            .map(_studentLabel)
+            .where((label) => label.isNotEmpty)
+            .toList();
+        _membersLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _membersLoading = false;
+        _students = const [];
+        _classStudents = const [];
+        _classTeachers = const [];
+      });
+    }
+  }
+
+  String _studentLabel(GroupStudent student) {
+    final id = student.admissionNo.isNotEmpty ? student.admissionNo : student.id;
+    if (student.name.isEmpty) return id;
+    return id.isEmpty ? student.name : '${student.name} - $id';
   }
 
   Future<void> _addAward() async {
@@ -109,71 +130,14 @@ class _GroupAchievementAwardPageState extends State<GroupAchievementAwardPage> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 20),
           children: [
-            SizedBox(
-              height: 30,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 5, top: 6, right: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Awards/Appreciation for ${widget.group.name} - ${widget.group.year}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xff333333),
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _addAward,
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(28, 20),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        'Add',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Color(0xff0066cc),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            _TabBar(
+              selectedIndex: _selectedTab,
+              onChanged: (index) => setState(() => _selectedTab = index),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xffdddddd)),
-            const Padding(
-              padding: EdgeInsets.only(left: 5, top: 5, bottom: 6),
-              child: Text(
-                'Awards/Certificates/Appreciation for Students in the Class .......',
-                style: TextStyle(
-                  fontSize: 8,
-                  fontStyle: FontStyle.italic,
-                  color: Color(0xff333333),
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _students.length,
-                itemBuilder: (context, index) {
-                  final student = _students[index];
-                  final award = _awards[student];
-                  return _StudentAwardRow(
-                    student: student,
-                    award: award,
-                    onClassSummary: () {},
-                    onAllSummary: () {},
-                  );
-                },
-              ),
-            ),
+            if (_selectedTab == 0) _groupContent() else _classContent(),
           ],
         ),
       ),
@@ -183,6 +147,198 @@ class _GroupAchievementAwardPageState extends State<GroupAchievementAwardPage> {
       ),
     );
   }
+
+  Widget _groupContent() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (_groupName.trim().isNotEmpty && _groupName.toLowerCase() != 'unknown')
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+          child: Text(
+            'Group Name: $_groupName',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ),
+      SizedBox(
+        height: 30,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 5, top: 6, right: 4),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Awards/Appreciation for Students in the Class',
+                  style: TextStyle(fontSize: 11, color: Color(0xff333333)),
+                ),
+              ),
+              TextButton(
+                onPressed: _students.isEmpty ? null : _addAward,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(28, 20),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Add', style: TextStyle(fontSize: 10, color: Color(0xff0066cc))),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const Divider(height: 1, thickness: 1, color: Color(0xffdddddd)),
+      const Padding(
+        padding: EdgeInsets.only(left: 5, top: 5, bottom: 6),
+        child: Text(
+          'Awards/Certificates/Appreciation for Students in the Class .......',
+          style: TextStyle(fontSize: 8, fontStyle: FontStyle.italic, color: Color(0xff333333)),
+        ),
+      ),
+      if (_membersLoading)
+        const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()))
+      else if (_students.isEmpty)
+        const SizedBox.shrink()
+      else
+        ..._students.map(
+          (student) => _StudentAwardRow(
+            student: student,
+            award: _awards[student],
+            onClassSummary: () {},
+            onAllSummary: () {},
+          ),
+        ),
+    ],
+  );
+
+  Widget _classContent() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+        child: _groupName.trim().isEmpty || _groupName.toLowerCase() == 'unknown'
+            ? const SizedBox.shrink()
+            : Text('Class: $_groupName', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+      const _SubsectionHeader(title: 'Teachers'),
+      if (_membersLoading)
+        const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()))
+      else if (_classTeachers.isEmpty)
+        const SizedBox.shrink()
+      else
+        ..._classTeachers.map(
+          (teacher) => _MemberLine(
+            name: teacher.name,
+            detail: [teacher.teacherId, teacher.subject, teacher.role]
+                .where((value) => value.trim().isNotEmpty)
+                .join(' | '),
+          ),
+        ),
+      const _SubsectionHeader(title: 'Students'),
+      if (_membersLoading)
+        const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()))
+      else if (_classStudents.isEmpty)
+        const SizedBox.shrink()
+      else
+        ..._classStudents.map(
+          (student) => _MemberLine(
+            name: student.name,
+            detail: [student.admissionNo, student.section]
+                .where((value) => value.trim().isNotEmpty)
+                .join(' | '),
+          ),
+        ),
+    ],
+  );
+}
+
+class _TabBar extends StatelessWidget {
+  const _TabBar({required this.selectedIndex, required this.onChanged});
+
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.fromLTRB(5, 8, 5, 0),
+    height: 30,
+    decoration: BoxDecoration(
+      border: Border.all(color: const Color(0xffd5d9e2)),
+      borderRadius: BorderRadius.circular(3),
+    ),
+    child: Row(
+      children: [
+        _Tab(
+          label: 'Group',
+          selected: selectedIndex == 0,
+          onPressed: () => onChanged(0),
+        ),
+        _Tab(
+          label: 'Class',
+          selected: selectedIndex == 1,
+          onPressed: () => onChanged(1),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.selected, required this.onPressed});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        backgroundColor: selected ? const Color(0xff34395f) : Colors.white,
+        foregroundColor: selected ? Colors.white : const Color(0xff34395f),
+        padding: EdgeInsets.zero,
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+    ),
+  );
+}
+
+class _SubsectionHeader extends StatelessWidget {
+  const _SubsectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(8, 9, 8, 5),
+    child: Text(
+      title,
+      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
+class _MemberLine extends StatelessWidget {
+  const _MemberLine({required this.name, required this.detail});
+
+  final String name;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: Color(0xffeeeeee))),
+    ),
+    child: Row(
+      children: [
+        Expanded(child: Text(name.isEmpty ? 'Unnamed' : name, style: const TextStyle(fontSize: 10))),
+        if (detail.isNotEmpty)
+          Text(detail, style: const TextStyle(fontSize: 9, color: Color(0xff555555))),
+      ],
+    ),
+  );
 }
 
 class _AwardEntry {

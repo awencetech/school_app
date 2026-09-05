@@ -194,7 +194,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                           NewsItem(title: t, description: ''),
                                     )
                                     .toList(),
-                                height: 54,
+                                height: 30,
                               ),
                             ),
                             const SizedBox(height: 16),

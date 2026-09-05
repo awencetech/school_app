@@ -16,7 +16,8 @@ class EmployeeAttendanceService {
   static String _resolveBaseUrl() {
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kReleaseMode || kIsWeb) return _productionBaseUrl;
+    if (kReleaseMode) return _productionBaseUrl;
+    if (kIsWeb) return 'http://localhost:3001';
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }
@@ -28,6 +29,14 @@ class EmployeeAttendanceService {
     final query = date == null ? '' : '?date=${Uri.encodeQueryComponent(date)}';
     final response = await http
         .get(_uri('/api/employee-attendance$query'))
+        .timeout(const Duration(seconds: 20));
+    return _list(response);
+  }
+
+  Future<List<EmployeeAttendance>> getForEmployee(String employeeId) async {
+    final query = Uri(queryParameters: {'employeeId': employeeId}).query;
+    final response = await http
+        .get(_uri('/api/employee-attendance?$query'))
         .timeout(const Duration(seconds: 20));
     return _list(response);
   }

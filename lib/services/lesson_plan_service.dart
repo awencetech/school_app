@@ -14,7 +14,8 @@ class LessonPlanService {
   static String _resolveBaseUrl() {
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kIsWeb || kReleaseMode) return _productionBaseUrl;
+    if (kIsWeb) return kReleaseMode ? _productionBaseUrl : 'http://localhost:3001';
+    if (kReleaseMode) return _productionBaseUrl;
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }
@@ -24,6 +25,7 @@ class LessonPlanService {
   );
 
   Future<List<LessonPlan>> getForGroup(String groupId) async {
+    _requireGroupId(groupId);
     final uri = _uri(groupId);
     final response = await http.get(uri).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
@@ -35,14 +37,12 @@ class LessonPlanService {
     }
     final data = jsonDecode(response.body) as List;
     return data
-        .map(
-          (item) =>
-              LessonPlan.fromJson(Map<String, dynamic>.from(item)),
-        )
+        .map((item) => LessonPlan.fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
 
   Future<List<LessonPlan>> getForDate(String groupId, DateTime date) async {
+    _requireGroupId(groupId);
     final uri = Uri.parse(
       '$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/lesson-plans?date=${date.toIso8601String().split('T')[0]}',
     );
@@ -56,17 +56,12 @@ class LessonPlanService {
     }
     final data = jsonDecode(response.body) as List;
     return data
-        .map(
-          (item) =>
-              LessonPlan.fromJson(Map<String, dynamic>.from(item)),
-        )
+        .map((item) => LessonPlan.fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
 
-  Future<LessonPlan> save(
-    String groupId,
-    LessonPlan plan,
-  ) async {
+  Future<LessonPlan> save(String groupId, LessonPlan plan) async {
+    _requireGroupId(groupId);
     final uri = _uri(groupId, plan.id.isEmpty ? null : plan.id);
     final response = plan.id.isEmpty
         ? await http.post(
@@ -92,14 +87,24 @@ class LessonPlanService {
   }
 
   Future<void> delete(String groupId, String id) async {
+    _requireGroupId(groupId);
     final uri = _uri(groupId, id);
-    final response = await http.delete(uri, headers: await AuthHeaders.bearer());
+    final response = await http.delete(
+      uri,
+      headers: await AuthHeaders.bearer(),
+    );
     if (response.statusCode != 204) {
       throw ApiException(
         response.statusCode,
         'Unable to delete lesson plan.',
         uri.toString(),
       );
+    }
+  }
+
+  void _requireGroupId(String groupId) {
+    if (groupId.trim().isEmpty) {
+      throw ArgumentError.value(groupId, 'groupId', 'A group ID is required.');
     }
   }
 

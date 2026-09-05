@@ -50,6 +50,7 @@ import '../screens/admin/one_on_one_staff_meetings_page.dart';
 import '../screens/admin/one_on_one_meeting_info_page.dart';
 import '../screens/admin/gate_register_page.dart';
 import '../screens/admin/employee_attendance_page.dart';
+import '../screens/admin/employee_attendance_history_page.dart';
 import '../screens/admin/facebook_edit_page.dart';
 import '../screens/admin/youtube_edit_page.dart';
 import '../screens/admin/instagram_edit_page.dart';
@@ -161,7 +162,10 @@ class AppRouter {
         final values = Map<String, dynamic>.from(arguments);
 
         final nestedGroup = values['group'];
-        if (nestedGroup is Group) return nestedGroup;
+        if (nestedGroup is Group) {
+          rememberSelectedGroup(nestedGroup);
+          return nestedGroup;
+        }
         if (nestedGroup is Map) {
           final nestedValues = Map<String, dynamic>.from(nestedGroup);
           if (nestedValues.containsKey('name') ||
@@ -296,6 +300,22 @@ class AppRouter {
       AppRoutes.staffEventsCelebration => StaffEventsCelebrationPage(),
       AppRoutes.staffTodoTasks => const StaffTodoTasksPage(),
       AppRoutes.adminDashboard => const AdminDashboard(),
+      _
+          when settings.name != null &&
+              settings.name!.startsWith(
+                '${AppRoutes.adminEmployeeAttendance}/',
+              ) =>
+        (() {
+          final arguments = settings.arguments;
+          final values = arguments is Map
+              ? Map<String, dynamic>.from(arguments)
+              : const <String, dynamic>{};
+          final pathEmployee = settings.name!.split('/').last;
+          return EmployeeAttendanceHistoryPage(
+            employeeId: (values['employeeId'] ?? pathEmployee).toString(),
+            employeeName: (values['employeeName'] ?? pathEmployee).toString(),
+          );
+        })(),
       AppRoutes.adminQuickMessages => const MessagesPage(),
       AppRoutes.adminQuickCalendar => const FutureEventCalendarPage(
         groupId: 'grade-10-c',
@@ -350,8 +370,8 @@ class AppRouter {
       ),
       AppRoutes.adminOtherStaffResourceHistoryView => StaffResourceImagePage(
         resource: settings.arguments is StaffResource
-        ? settings.arguments as StaffResource
-        : null,
+            ? settings.arguments as StaffResource
+            : null,
       ),
       AppRoutes.adminMainEdit => const AdminDetailPage(),
       AppRoutes.adminAdd => const AddOptions(),
@@ -568,7 +588,7 @@ class AppRouter {
         isViewOnly: _isViewOnly(settings.arguments),
       ),
       AppRoutes.teacherClassFilePlan ||
-      AppRoutes.teacherEditClassFilePlan => ClassFileplanPage(
+      AppRoutes.teacherEditClassFilePlan => ClassPlannerPage(
         group: _groupFromArguments(settings.arguments),
         isViewOnly: _isViewOnly(settings.arguments),
       ),

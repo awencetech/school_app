@@ -4,206 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/group.dart';
+import '../../models/lesson_plan.dart';
+import '../../services/lesson_plan_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
-// ============================================================================
-// MOCK LESSON PLAN DATA
-// ============================================================================
-// This mock data is temporary and isolated for frontend development.
-// Once the backend API is ready, replace this with API calls.
-// See _initState() comment for INTEGRATION POINT.
-
-class LessonPlan {
-  final String id;
-  final String subject;
-  final String topic;
-  final DateTime date;
-  final String startTime; // "HH:mm" format
-  final String endTime;   // "HH:mm" format
-  final String teacher;
-  final String room;
-  final String status; // Planned, In Progress, Completed, Cancelled
-  final List<String> learningObjectives;
-  final String notes;
-
-  LessonPlan({
-    required this.id,
-    required this.subject,
-    required this.topic,
-    required this.date,
-    required this.startTime,
-    required this.endTime,
-    required this.teacher,
-    required this.room,
-    required this.status,
-    this.learningObjectives = const [],
-    this.notes = '',
-  });
-
-  LessonPlan copyWith({
-    String? id,
-    String? subject,
-    String? topic,
-    DateTime? date,
-    String? startTime,
-    String? endTime,
-    String? teacher,
-    String? room,
-    String? status,
-    List<String>? learningObjectives,
-    String? notes,
-  }) {
-    return LessonPlan(
-      id: id ?? this.id,
-      subject: subject ?? this.subject,
-      topic: topic ?? this.topic,
-      date: date ?? this.date,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      teacher: teacher ?? this.teacher,
-      room: room ?? this.room,
-      status: status ?? this.status,
-      learningObjectives: learningObjectives ?? this.learningObjectives,
-      notes: notes ?? this.notes,
-    );
-  }
-}
-
-// Mock data generator
-List<LessonPlan> _generateMockLessonPlans() {
-  final today = DateTime.now();
-  final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
-
-  return [
-    LessonPlan(
-      id: '1',
-      subject: 'Mathematics',
-      topic: 'Quadratic Equations',
-      date: startOfWeek,
-      startTime: '09:00',
-      endTime: '09:45',
-      teacher: 'Mr. Kumar',
-      room: '204',
-      status: 'Planned',
-      learningObjectives: [
-        'Understand quadratic formula',
-        'Solve problems using factorization'
-      ],
-      notes: 'Bring graphing calculators',
-    ),
-    LessonPlan(
-      id: '2',
-      subject: 'English',
-      topic: 'Shakespeare - Macbeth',
-      date: startOfWeek,
-      startTime: '10:00',
-      endTime: '10:45',
-      teacher: 'Ms. Smith',
-      room: '301',
-      status: 'In Progress',
-      learningObjectives: [
-        'Analyze character development',
-        'Discuss themes of ambition'
-      ],
-    ),
-    LessonPlan(
-      id: '3',
-      subject: 'Science',
-      topic: 'Photosynthesis',
-      date: startOfWeek,
-      startTime: '11:00',
-      endTime: '11:45',
-      teacher: 'Dr. Patel',
-      room: '105',
-      status: 'Planned',
-      learningObjectives: [
-        'Understand light reactions',
-        'Explain Calvin cycle'
-      ],
-    ),
-    LessonPlan(
-      id: '4',
-      subject: 'History',
-      topic: 'French Revolution',
-      date: startOfWeek,
-      startTime: '13:00',
-      endTime: '13:45',
-      teacher: 'Mr. Brown',
-      room: '208',
-      status: 'Completed',
-      learningObjectives: [
-        'Understand causes of revolution',
-        'Analyze key events and figures'
-      ],
-    ),
-    // Tuesday
-    LessonPlan(
-      id: '5',
-      subject: 'Physics',
-      topic: 'Motion and Forces',
-      date: startOfWeek.add(const Duration(days: 1)),
-      startTime: '09:00',
-      endTime: '09:45',
-      teacher: 'Dr. Johnson',
-      room: '110',
-      status: 'Planned',
-      learningObjectives: [
-        'Newton\'s Laws of Motion',
-        'Force calculations'
-      ],
-    ),
-    LessonPlan(
-      id: '6',
-      subject: 'Chemistry',
-      topic: 'Organic Chemistry Basics',
-      date: startOfWeek.add(const Duration(days: 1)),
-      startTime: '10:00',
-      endTime: '10:45',
-      teacher: 'Dr. Lee',
-      room: '115',
-      status: 'Planned',
-      learningObjectives: [
-        'Introduction to carbon bonds',
-        'Hydrocarbon classification'
-      ],
-    ),
-    LessonPlan(
-      id: '7',
-      subject: 'Computer Science',
-      topic: 'Data Structures',
-      date: startOfWeek.add(const Duration(days: 1)),
-      startTime: '11:00',
-      endTime: '11:45',
-      teacher: 'Mr. Singh',
-      room: '301',
-      status: 'In Progress',
-      learningObjectives: [
-        'Understand arrays and linked lists',
-        'Implement stack operations'
-      ],
-    ),
-    // Wednesday
-    LessonPlan(
-      id: '8',
-      subject: 'Mathematics',
-      topic: 'Trigonometry',
-      date: startOfWeek.add(const Duration(days: 2)),
-      startTime: '09:00',
-      endTime: '09:45',
-      teacher: 'Mr. Kumar',
-      room: '204',
-      status: 'Planned',
-      learningObjectives: [
-        'Sine, cosine, tangent ratios',
-        'Solve trigonometric equations'
-      ],
-    ),
-  ];
-}
-
 class ClassPlannerPage extends StatefulWidget {
-  const ClassPlannerPage({super.key, required this.group, this.isViewOnly = false});
+  const ClassPlannerPage({
+    super.key,
+    required this.group,
+    this.isViewOnly = false,
+  });
 
   final Group group;
   final bool isViewOnly;
@@ -213,20 +24,43 @@ class ClassPlannerPage extends StatefulWidget {
 }
 
 class _ClassPlannerPageState extends State<ClassPlannerPage> {
-  late List<LessonPlan> _allLessonPlans;
+  List<LessonPlan> _allLessonPlans = [];
   late DateTime _weekStart;
   late String _selectedDay;
   String _filterStatus = 'All';
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  final LessonPlanService _lessonPlanService = LessonPlanService();
+  bool _loading = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
-    // INTEGRATION POINT: To connect real API:
-    // Replace next line with: _allLessonPlans = await LessonPlanService().getForGroup(widget.group.id);
-    _allLessonPlans = _generateMockLessonPlans();
     _initializeWeek();
+    _loadPlans();
+  }
+
+  String get _groupId => widget.group.id.trim().isNotEmpty
+      ? widget.group.id.trim()
+      : widget.group.name.trim();
+
+  Future<void> _loadPlans() async {
+    try {
+      final plans = await _lessonPlanService.getForGroup(_groupId);
+      if (!mounted) return;
+      setState(() {
+        _allLessonPlans = plans;
+        _loading = false;
+        _loadError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = error.toString();
+      });
+    }
   }
 
   void _initializeWeek() {
@@ -235,112 +69,101 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
     _selectedDay = _getWeekdayName(today.weekday);
   }
 
+  String _getWeekdayName(int weekday) =>
+      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][weekday - 1];
+
+  int _getWeekdayIndex(String name) =>
+      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(name);
+
+  DateTime _getSelectedDate() =>
+      _weekStart.add(Duration(days: _getWeekdayIndex(_selectedDay)));
+
+  void _changeWeek(int offset) =>
+      setState(() => _weekStart = _weekStart.add(Duration(days: 7 * offset)));
+
+  void _goToToday() => setState(_initializeWeek);
+
+  void _selectDay(String day) => setState(() => _selectedDay = day);
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  String _getWeekdayName(int weekday) {
-    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return names[weekday - 1];
-  }
-
-  int _getWeekdayIndex(String name) {
-    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return names.indexOf(name);
-  }
-
-  DateTime _getSelectedDate() {
-    final index = _getWeekdayIndex(_selectedDay);
-    return _weekStart.add(Duration(days: index));
-  }
-
-  void _changeWeek(int offset) {
-    setState(() {
-      _weekStart = _weekStart.add(Duration(days: 7 * offset));
-    });
-  }
-
-  void _goToToday() {
-    setState(() {
-      _initializeWeek();
-    });
-  }
-
-  void _selectDay(String day) {
-    setState(() {
-      _selectedDay = day;
-    });
-  }
-
   List<LessonPlan> _getFilteredPlans() {
     final selectedDate = _getSelectedDate();
-    final startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final startOfDay = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
     final endOfDay = startOfDay.add(const Duration(days: 1));
-
-    var filtered = _allLessonPlans.where((plan) {
+    final filtered = _allLessonPlans.where((plan) {
       final planDate = DateTime(plan.date.year, plan.date.month, plan.date.day);
-      if (planDate.isBefore(startOfDay) || planDate.isAfter(endOfDay.subtract(const Duration(seconds: 1)))) {
+      if (planDate.isBefore(startOfDay) || !planDate.isBefore(endOfDay)) {
         return false;
       }
       if (_filterStatus != 'All' && plan.status != _filterStatus) {
         return false;
       }
-      if (_searchQuery.isNotEmpty) {
-        final lower = _searchQuery.toLowerCase();
-        if (!plan.subject.toLowerCase().contains(lower) &&
-            !plan.topic.toLowerCase().contains(lower)) {
-          return false;
-        }
+      if (_searchQuery.isNotEmpty &&
+          !plan.subject.toLowerCase().contains(_searchQuery.toLowerCase()) &&
+          !plan.topic.toLowerCase().contains(_searchQuery.toLowerCase())) {
+        return false;
       }
       return true;
     }).toList();
-
-    filtered.sort((a, b) => _timeToMinutes(a.startTime).compareTo(_timeToMinutes(b.startTime)));
+    filtered.sort(
+      (a, b) =>
+          _timeToMinutes(a.startTime).compareTo(_timeToMinutes(b.startTime)),
+    );
     return filtered;
   }
 
   List<LessonPlan> _getTodaySummaryPlans() {
     final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-
     return _allLessonPlans
-        .where((plan) {
-          final planDate = DateTime(plan.date.year, plan.date.month, plan.date.day);
-          return planDate.isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
-              planDate.isBefore(endOfDay);
-        })
+        .where(
+          (plan) =>
+              plan.date.year == today.year &&
+              plan.date.month == today.month &&
+              plan.date.day == today.day,
+        )
         .toList();
   }
 
   int _timeToMinutes(String time) {
     final parts = time.split(':');
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    if (parts.length != 2) return 0;
+    return (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
   }
 
   bool _isCurrentLesson(LessonPlan plan) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final planDate = DateTime(plan.date.year, plan.date.month, plan.date.day);
-
-    if (!planDate.isAtSameMomentAs(today)) return false;
-
-    final startMinutes = _timeToMinutes(plan.startTime);
-    final endMinutes = _timeToMinutes(plan.endTime);
-    final nowMinutes = now.hour * 60 + now.minute;
-
-    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+    if (plan.date.year != now.year ||
+      plan.date.month != now.month ||
+      plan.date.day != now.day) {
+      return false;
+    }
+    final minutes = now.hour * 60 + now.minute;
+    return minutes >= _timeToMinutes(plan.startTime) &&
+        minutes < _timeToMinutes(plan.endTime);
   }
 
   void _openAddDialog() async {
     final result = await showDialog<LessonPlan>(
       context: context,
-      builder: (context) => _AddLessonPlanDialog(initialDate: _getSelectedDate()),
+      builder: (context) =>
+          _AddLessonPlanDialog(initialDate: _getSelectedDate()),
     );
     if (result != null) {
-      setState(() => _allLessonPlans.add(result));
+      try {
+        final saved = await _lessonPlanService.save(_groupId, result);
+        if (mounted) setState(() => _allLessonPlans.add(saved));
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
     }
   }
 
@@ -350,10 +173,16 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
       builder: (context) => _EditLessonPlanDialog(plan: plan),
     );
     if (result != null) {
-      setState(() {
-        final index = _allLessonPlans.indexWhere((p) => p.id == plan.id);
-        if (index >= 0) _allLessonPlans[index] = result;
-      });
+      try {
+        final saved = await _lessonPlanService.save(_groupId, result);
+        if (!mounted) return;
+        setState(() {
+          final index = _allLessonPlans.indexWhere((p) => p.id == plan.id);
+          if (index >= 0) _allLessonPlans[index] = saved;
+        });
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
     }
   }
 
@@ -362,14 +191,38 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Lesson Plan?'),
-        content: const Text('Are you sure you want to delete this lesson plan?'),
+        content: const Text(
+          'Are you sure you want to delete this lesson plan?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
-    if (confirm == true) setState(() => _allLessonPlans.removeWhere((p) => p.id == plan.id));
+    if (confirm == true) {
+      try {
+        await _lessonPlanService.delete(_groupId, plan.id);
+        if (mounted) {
+          setState(() => _allLessonPlans.removeWhere((p) => p.id == plan.id));
+        }
+      } catch (error) {
+        if (mounted) _showError(error);
+      }
+    }
+  }
+
+  void _showError(Object error) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(error.toString())));
   }
 
   void _showLessonDetails(LessonPlan plan) {
@@ -391,12 +244,23 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
               _DetailRow('Status:', plan.status),
               if (plan.learningObjectives.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Text('Learning Objectives:', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Learning Objectives:',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
-                ...plan.learningObjectives.map((obj) => Padding(
-                  padding: const EdgeInsets.only(left: 12, bottom: 4),
-                  child: Text('• $obj', style: const TextStyle(fontSize: 13)),
-                )),
+                ...plan.learningObjectives
+                    .split('\n')
+                    .where((obj) => obj.isNotEmpty)
+                    .map(
+                      (obj) => Padding(
+                        padding: const EdgeInsets.only(left: 12, bottom: 4),
+                        child: Text(
+                          '• $obj',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
               ],
               if (plan.notes.isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -406,10 +270,26 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
           if (!widget.isViewOnly) ...[
-            TextButton(onPressed: () { Navigator.pop(context); _openEditDialog(plan); }, child: const Text('Edit')),
-            TextButton(onPressed: () { Navigator.pop(context); _deletePlan(plan); }, style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Delete')),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _openEditDialog(plan);
+              },
+              child: const Text('Edit'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _deletePlan(plan);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
           ],
         ],
       ),
@@ -418,18 +298,24 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Planned': return Colors.blue;
-      case 'In Progress': return Colors.amber;
-      case 'Completed': return Colors.green;
-      case 'Cancelled': return Colors.red;
-      default: return Colors.grey;
+      case 'Planned':
+        return Colors.blue;
+      case 'In Progress':
+        return Colors.amber;
+      case 'Completed':
+        return Colors.green;
+      case 'Cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final headerSubtitle = [
-      if (widget.group.type.isNotEmpty && widget.group.type != 'Other') widget.group.type,
+      if (widget.group.type.isNotEmpty && widget.group.type != 'Other')
+        widget.group.type,
       if (widget.group.code.isNotEmpty) widget.group.code,
       if (widget.group.year.isNotEmpty) widget.group.year,
     ].join(' • ');
@@ -452,9 +338,23 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Class Planner', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(
+              'Class Planner',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             if (headerSubtitle.isNotEmpty)
-              Text(headerSubtitle, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.normal)),
+              Text(
+                headerSubtitle,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
           ],
         ),
         actions: [
@@ -477,17 +377,49 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _changeWeek(-1), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 36, minHeight: 36)),
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => _changeWeek(-1),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                ),
                 GestureDetector(
                   onTap: _goToToday,
                   child: Column(
                     children: [
-                      Text('This Week', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primaryText)),
-                      Text(DateFormat('MMM d – ').format(_weekStart) + DateFormat('MMM d').format(_weekStart.add(const Duration(days: 6))), style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText)),
+                      Text(
+                        'This Week',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('MMM d – ').format(_weekStart) +
+                            DateFormat(
+                              'MMM d',
+                            ).format(_weekStart.add(const Duration(days: 6))),
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _changeWeek(1), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 36, minHeight: 36)),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _changeWeek(1),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                ),
               ],
             ),
           ),
@@ -502,7 +434,10 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                 final date = _weekStart.add(Duration(days: index));
                 final dayName = _getWeekdayName(date.weekday);
                 final isSelected = dayName == _selectedDay;
-                final isToday = DateTime.now().day == date.day && DateTime.now().month == date.month && DateTime.now().year == date.year;
+                final isToday =
+                    DateTime.now().day == date.day &&
+                    DateTime.now().month == date.month &&
+                    DateTime.now().year == date.year;
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -512,16 +447,43 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                       width: 56,
                       height: 70,
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.blueButton : (isToday ? Colors.blue.withValues(alpha: 0.1) : Colors.grey[100]),
+                        color: isSelected
+                            ? AppColors.blueButton
+                            : (isToday
+                                  ? Colors.blue.withValues(alpha: 0.1)
+                                  : Colors.grey[100]),
                         borderRadius: BorderRadius.circular(12),
-                        border: isToday && !isSelected ? Border.all(color: AppColors.blueButton, width: 1.5) : null,
+                        border: isToday && !isSelected
+                            ? Border.all(
+                                color: AppColors.blueButton,
+                                width: 1.5,
+                              )
+                            : null,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(dayName, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppColors.primaryText)),
+                          Text(
+                            dayName,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.primaryText,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(date.day.toString(), style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: isSelected ? Colors.white : AppColors.primaryText)),
+                          Text(
+                            date.day.toString(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.primaryText,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -548,30 +510,61 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                   onChanged: (value) => setState(() => _searchQuery = value),
                   decoration: InputDecoration(
                     hintText: '🔍 Search lessons...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xffE4E6EB))),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    suffixIcon: _searchQuery.isNotEmpty ? IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () { _searchController.clear(); setState(() => _searchQuery = ''); }) : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xffE4E6EB)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 12),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: ['All', 'Planned', 'In Progress', 'Completed', 'Cancelled'].map((status) {
-                      final isSelected = _filterStatus == status;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FilterChip(
-                          label: Text(status),
-                          selected: isSelected,
-                          onSelected: (_) => setState(() => _filterStatus = status),
-                          backgroundColor: Colors.white,
-                          selectedColor: AppColors.blueButton,
-                          labelStyle: GoogleFonts.poppins(fontSize: 12, color: isSelected ? Colors.white : AppColors.secondaryText),
-                          side: BorderSide(color: isSelected ? AppColors.blueButton : const Color(0xffE4E6EB)),
-                        ),
-                      );
-                    }).toList(),
+                    children:
+                        [
+                          'All',
+                          'Planned',
+                          'In Progress',
+                          'Completed',
+                          'Cancelled',
+                        ].map((status) {
+                          final isSelected = _filterStatus == status;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: FilterChip(
+                              label: Text(status),
+                              selected: isSelected,
+                              onSelected: (_) =>
+                                  setState(() => _filterStatus = status),
+                              backgroundColor: Colors.white,
+                              selectedColor: AppColors.blueButton,
+                              labelStyle: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.secondaryText,
+                              ),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.blueButton
+                                    : const Color(0xffE4E6EB),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                   ),
                 ),
               ],
@@ -582,24 +575,46 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
           Expanded(child: _buildLessonsList()),
         ],
       ),
-      floatingActionButton: widget.isViewOnly ? null : FloatingActionButton(backgroundColor: AppColors.blueButton, onPressed: _openAddDialog, child: const Icon(Icons.add, color: Colors.white)),
-      bottomNavigationBar: AdminBottomNavigationBar(currentIndex: 2, onItemSelected: (_) {}),
+      floatingActionButton: widget.isViewOnly
+          ? null
+          : FloatingActionButton(
+              backgroundColor: AppColors.blueButton,
+              onPressed: _openAddDialog,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+      bottomNavigationBar: AdminBottomNavigationBar(
+        currentIndex: 2,
+        onItemSelected: (_) {},
+      ),
     );
   }
 
   Widget _buildTodaySummary() {
     final todayPlans = _getTodaySummaryPlans();
     final completed = todayPlans.where((p) => p.status == 'Completed').length;
-    final inProgress = todayPlans.where((p) => p.status == 'In Progress').length;
+    final inProgress = todayPlans
+        .where((p) => p.status == 'In Progress')
+        .length;
     final upcoming = todayPlans.where((p) => p.status == 'Planned').length;
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withValues(alpha: 0.2))),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Today's Plan", style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryText)),
+          Text(
+            "Today's Plan",
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -618,6 +633,16 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
   Widget _buildLessonsList() {
     final plans = _getFilteredPlans();
 
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loadError != null) {
+      return Center(
+        child: Text(
+          'Unable to load lesson plans.\n$_loadError',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
     if (plans.isEmpty) {
       return Center(
         child: Padding(
@@ -625,18 +650,48 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.event_busy_outlined, size: 64, color: Colors.grey[300]),
-              const SizedBox(height: 24),
-              Text('No Lesson Plans Yet', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.primaryText)),
-              const SizedBox(height: 8),
-              Text('Create a lesson plan for this day\nto organize your classes.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText)),
-              const SizedBox(height: 24),
-              if (!widget.isViewOnly) ElevatedButton.icon(
-                onPressed: _openAddDialog,
-                icon: const Icon(Icons.add),
-                label: Text('+ Add Lesson Plan', style: GoogleFonts.poppins()),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.blueButton, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+              Icon(
+                Icons.event_busy_outlined,
+                size: 64,
+                color: Colors.grey[300],
               ),
+              const SizedBox(height: 24),
+              Text(
+                'No Lesson Plans Yet',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create a lesson plan for this day\nto organize your classes.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (!widget.isViewOnly)
+                ElevatedButton.icon(
+                  onPressed: _openAddDialog,
+                  icon: const Icon(Icons.add),
+                  label: Text(
+                    '+ Add Lesson Plan',
+                    style: GoogleFonts.poppins(),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.blueButton,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -660,7 +715,13 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xffE4E6EB)),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,39 +735,94 @@ class _ClassPlannerPageState extends State<ClassPlannerPage> {
                         children: [
                           Row(
                             children: [
-                              Text(plan.subject, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primaryText)),
+                              Text(
+                                plan.subject,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
                               if (isCurrent) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                                  child: Text('● NOW', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.red)),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '● NOW',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.red,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text(plan.topic, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.secondaryText)),
+                          Text(
+                            plan.topic,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                      child: Text(plan.status, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        plan.status,
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 14, color: AppColors.hintText),
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: AppColors.hintText,
+                    ),
                     const SizedBox(width: 6),
-                    Text('${plan.startTime} – ${plan.endTime}', style: GoogleFonts.poppins(fontSize: 12, color: AppColors.secondaryText)),
+                    Text(
+                      '${plan.startTime} – ${plan.endTime}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('${plan.teacher} • ${plan.room}', style: GoogleFonts.poppins(fontSize: 12, color: AppColors.hintText)),
+                Text(
+                  '${plan.teacher} • ${plan.room}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppColors.hintText,
+                  ),
+                ),
               ],
             ),
           ),
@@ -730,9 +846,22 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(count.toString(), style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.blueButton)),
+        Text(
+          count.toString(),
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.blueButton,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText)),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: AppColors.secondaryText,
+          ),
+        ),
       ],
     );
   }
@@ -753,11 +882,12 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 80,
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
           ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 13)),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );
@@ -813,26 +943,44 @@ class _AddLessonPlanDialogState extends State<_AddLessonPlanDialog> {
   }
 
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _selectedDate, firstDate: DateTime(2000), lastDate: DateTime(2100));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
   Future<void> _selectTime(bool isStart) async {
-    final picked = await showTimePicker(context: context, initialTime: isStart ? _startTime : _endTime);
-    if (picked != null) setState(() { isStart ? _startTime = picked : _endTime = picked; });
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _startTime : _endTime,
+    );
+    if (picked != null) {
+      setState(() {
+        isStart ? _startTime = picked : _endTime = picked;
+      });
+    }
   }
 
   bool _validateForm() {
     if (_subjectController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter subject')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter subject')));
       return false;
     }
     if (_topicController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter topic')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter topic')));
       return false;
     }
     if (_teacherController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter teacher name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter teacher name')),
+      );
       return false;
     }
     return true;
@@ -841,10 +989,15 @@ class _AddLessonPlanDialogState extends State<_AddLessonPlanDialog> {
   void _savePlan() {
     if (!_validateForm()) return;
 
-    final objectives = _objectivesController.text.split('\n').map((obj) => obj.trim()).where((obj) => obj.isNotEmpty).toList();
+    final objectives = _objectivesController.text
+        .split('\n')
+        .map((obj) => obj.trim())
+        .where((obj) => obj.isNotEmpty)
+        .toList();
 
     final newPlan = LessonPlan(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '',
+      groupId: '',
       subject: _subjectController.text.trim(),
       topic: _topicController.text.trim(),
       date: _selectedDate,
@@ -853,7 +1006,7 @@ class _AddLessonPlanDialogState extends State<_AddLessonPlanDialog> {
       teacher: _teacherController.text.trim(),
       room: _roomController.text.trim(),
       status: _status,
-      learningObjectives: objectives,
+      learningObjectives: objectives.join('\n'),
       notes: _notesController.text.trim(),
     );
 
@@ -868,37 +1021,124 @@ class _AddLessonPlanDialogState extends State<_AddLessonPlanDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(contentPadding: EdgeInsets.zero, title: const Text('Date', style: TextStyle(fontSize: 12)), trailing: TextButton(onPressed: _selectDate, child: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)))),
-            TextField(controller: _subjectController, decoration: const InputDecoration(labelText: 'Subject *', border: OutlineInputBorder())),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Date', style: TextStyle(fontSize: 12)),
+              trailing: TextButton(
+                onPressed: _selectDate,
+                child: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
+              ),
+            ),
+            TextField(
+              controller: _subjectController,
+              decoration: const InputDecoration(
+                labelText: 'Subject *',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _topicController, decoration: const InputDecoration(labelText: 'Topic *', border: OutlineInputBorder())),
+            TextField(
+              controller: _topicController,
+              decoration: const InputDecoration(
+                labelText: 'Topic *',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: ListTile(contentPadding: EdgeInsets.zero, title: const Text('Start Time', style: TextStyle(fontSize: 12)), trailing: TextButton(onPressed: () => _selectTime(true), child: Text(_formatTime(_startTime))))),
-                Expanded(child: ListTile(contentPadding: EdgeInsets.zero, title: const Text('End Time', style: TextStyle(fontSize: 12)), trailing: TextButton(onPressed: () => _selectTime(false), child: Text(_formatTime(_endTime))))),
+                Expanded(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Start Time',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => _selectTime(true),
+                      child: Text(_formatTime(_startTime)),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'End Time',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => _selectTime(false),
+                      child: Text(_formatTime(_endTime)),
+                    ),
+                  ),
+                ),
               ],
             ),
-            TextField(controller: _teacherController, decoration: const InputDecoration(labelText: 'Teacher *', border: OutlineInputBorder())),
+            TextField(
+              controller: _teacherController,
+              decoration: const InputDecoration(
+                labelText: 'Teacher *',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _roomController, decoration: const InputDecoration(labelText: 'Room', border: OutlineInputBorder())),
+            TextField(
+              controller: _roomController,
+              decoration: const InputDecoration(
+                labelText: 'Room',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _objectivesController, maxLines: 3, decoration: const InputDecoration(labelText: 'Learning Objectives (one per line)', border: OutlineInputBorder())),
+            TextField(
+              controller: _objectivesController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Learning Objectives (one per line)',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _status,
-              onChanged: (value) => setState(() => _status = value ?? 'Planned'),
-              decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
-              items: ['Planned', 'In Progress', 'Completed', 'Cancelled'].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+              onChanged: (value) =>
+                  setState(() => _status = value ?? 'Planned'),
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
+              ),
+              items: ['Planned', 'In Progress', 'Completed', 'Cancelled']
+                  .map(
+                    (status) =>
+                        DropdownMenuItem(value: status, child: Text(status)),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _notesController, maxLines: 2, decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder())),
+            TextField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notes',
+                border: OutlineInputBorder(),
+              ),
+            ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ElevatedButton(onPressed: _savePlan, style: ElevatedButton.styleFrom(backgroundColor: AppColors.blueButton), child: const Text('Save Plan')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _savePlan,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.blueButton,
+          ),
+          child: const Text('Save Plan'),
+        ),
       ],
     );
   }
@@ -939,7 +1179,7 @@ class _EditLessonPlanDialogState extends State<_EditLessonPlanDialog> {
     _topicController.text = widget.plan.topic;
     _teacherController.text = widget.plan.teacher;
     _roomController.text = widget.plan.room;
-    _objectivesController.text = widget.plan.learningObjectives.join('\n');
+    _objectivesController.text = widget.plan.learningObjectives;
     _notesController.text = widget.plan.notes;
     _status = widget.plan.status;
   }
@@ -965,26 +1205,44 @@ class _EditLessonPlanDialogState extends State<_EditLessonPlanDialog> {
   }
 
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _selectedDate, firstDate: DateTime(2000), lastDate: DateTime(2100));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
   Future<void> _selectTime(bool isStart) async {
-    final picked = await showTimePicker(context: context, initialTime: isStart ? _startTime : _endTime);
-    if (picked != null) setState(() { isStart ? _startTime = picked : _endTime = picked; });
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _startTime : _endTime,
+    );
+    if (picked != null) {
+      setState(() {
+        isStart ? _startTime = picked : _endTime = picked;
+      });
+    }
   }
 
   bool _validateForm() {
     if (_subjectController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter subject')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter subject')));
       return false;
     }
     if (_topicController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter topic')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter topic')));
       return false;
     }
     if (_teacherController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter teacher name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter teacher name')),
+      );
       return false;
     }
     return true;
@@ -993,7 +1251,11 @@ class _EditLessonPlanDialogState extends State<_EditLessonPlanDialog> {
   void _savePlan() {
     if (!_validateForm()) return;
 
-    final objectives = _objectivesController.text.split('\n').map((obj) => obj.trim()).where((obj) => obj.isNotEmpty).toList();
+    final objectives = _objectivesController.text
+        .split('\n')
+        .map((obj) => obj.trim())
+        .where((obj) => obj.isNotEmpty)
+        .toList();
 
     final updatedPlan = widget.plan.copyWith(
       subject: _subjectController.text.trim(),
@@ -1004,7 +1266,7 @@ class _EditLessonPlanDialogState extends State<_EditLessonPlanDialog> {
       teacher: _teacherController.text.trim(),
       room: _roomController.text.trim(),
       status: _status,
-      learningObjectives: objectives,
+      learningObjectives: objectives.join('\n'),
       notes: _notesController.text.trim(),
     );
 
@@ -1019,37 +1281,124 @@ class _EditLessonPlanDialogState extends State<_EditLessonPlanDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(contentPadding: EdgeInsets.zero, title: const Text('Date', style: TextStyle(fontSize: 12)), trailing: TextButton(onPressed: _selectDate, child: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)))),
-            TextField(controller: _subjectController, decoration: const InputDecoration(labelText: 'Subject *', border: OutlineInputBorder())),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Date', style: TextStyle(fontSize: 12)),
+              trailing: TextButton(
+                onPressed: _selectDate,
+                child: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
+              ),
+            ),
+            TextField(
+              controller: _subjectController,
+              decoration: const InputDecoration(
+                labelText: 'Subject *',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _topicController, decoration: const InputDecoration(labelText: 'Topic *', border: OutlineInputBorder())),
+            TextField(
+              controller: _topicController,
+              decoration: const InputDecoration(
+                labelText: 'Topic *',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: ListTile(contentPadding: EdgeInsets.zero, title: const Text('Start Time', style: TextStyle(fontSize: 12)), trailing: TextButton(onPressed: () => _selectTime(true), child: Text(_formatTime(_startTime))))),
-                Expanded(child: ListTile(contentPadding: EdgeInsets.zero, title: const Text('End Time', style: TextStyle(fontSize: 12)), trailing: TextButton(onPressed: () => _selectTime(false), child: Text(_formatTime(_endTime))))),
+                Expanded(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Start Time',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => _selectTime(true),
+                      child: Text(_formatTime(_startTime)),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'End Time',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => _selectTime(false),
+                      child: Text(_formatTime(_endTime)),
+                    ),
+                  ),
+                ),
               ],
             ),
-            TextField(controller: _teacherController, decoration: const InputDecoration(labelText: 'Teacher *', border: OutlineInputBorder())),
+            TextField(
+              controller: _teacherController,
+              decoration: const InputDecoration(
+                labelText: 'Teacher *',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _roomController, decoration: const InputDecoration(labelText: 'Room', border: OutlineInputBorder())),
+            TextField(
+              controller: _roomController,
+              decoration: const InputDecoration(
+                labelText: 'Room',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _objectivesController, maxLines: 3, decoration: const InputDecoration(labelText: 'Learning Objectives (one per line)', border: OutlineInputBorder())),
+            TextField(
+              controller: _objectivesController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Learning Objectives (one per line)',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _status,
-              onChanged: (value) => setState(() => _status = value ?? 'Planned'),
-              decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
-              items: ['Planned', 'In Progress', 'Completed', 'Cancelled'].map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+              onChanged: (value) =>
+                  setState(() => _status = value ?? 'Planned'),
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
+              ),
+              items: ['Planned', 'In Progress', 'Completed', 'Cancelled']
+                  .map(
+                    (status) =>
+                        DropdownMenuItem(value: status, child: Text(status)),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _notesController, maxLines: 2, decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder())),
+            TextField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notes',
+                border: OutlineInputBorder(),
+              ),
+            ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ElevatedButton(onPressed: _savePlan, style: ElevatedButton.styleFrom(backgroundColor: AppColors.blueButton), child: const Text('Save Changes')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _savePlan,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.blueButton,
+          ),
+          child: const Text('Save Changes'),
+        ),
       ],
     );
   }

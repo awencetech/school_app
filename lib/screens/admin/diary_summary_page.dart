@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/group.dart';
+import '../../models/parent_observation.dart';
+import '../../services/group_service.dart';
+import '../../services/group_state_service.dart';
+import '../../services/parent_observation_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
+import 'parent_observations_page.dart';
+import 'student_observations_page.dart';
 
 class DiarySummaryPage extends StatefulWidget {
   const DiarySummaryPage({super.key, required this.group});
@@ -13,28 +19,159 @@ class DiarySummaryPage extends StatefulWidget {
 }
 
 class _DiarySummaryPageState extends State<DiarySummaryPage> {
-  static const _students = [
-    ['S1197', 'SADAF FATHIMA.I'],
-    ['S1289', 'MIRASHI SINGH.J'],
-    ['S1319', 'VEDARSH VISAKA MOORTHY T N'],
-    ['S1346', 'VAISHAVI K M'],
-    ['S1378', 'Aashish Kumar M'],
-    ['S1388', 'HARIPRAKASH M I'],
-    ['S270', 'SURIYA VISWANATHAN K'],
-    ['S875', 'SHRIDHARSHINI M'],
-    ['S1654', 'HARINI N'],
-    ['S1618', 'VAHINI K R'],
-    ['S1670', 'SANOFAR A'],
-    ['S1765', 'DWARAGA S'],
-    ['S1288', 'MITHUSHI SINGH J'],
-    ['S1288', 'MITHUSHI SINGH J'],
-    ['S1662', 'INEIYAA V.S'],
-    ['S1726', 'SAHANA SRI G'],
-    ['S1603', 'RICHIKKA R'],
-  ];
+  final GroupStateService _stateService = GroupStateService.instance;
+  final GroupService _groupService = GroupService();
+  final ParentObservationService _observationService =
+      ParentObservationService();
+  List<GroupStudent> _students = [];
+  Map<String, ParentObservation> _observations = {};
+  bool _isLoading = true;
 
   int _tab = 0;
   DateTime _date = DateTime(2026, 8, 21);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudents();
+  }
+
+  Future<void> _loadStudents() async {
+    try {
+      await _stateService.initialize();
+      final groupId = widget.group.id.isNotEmpty
+          ? widget.group.id
+          : widget.group.name;
+      final localStudents = await _stateService.getGroupStudents(groupId);
+      var students = localStudents;
+      try {
+        final remote = await _groupService.getGroupDetails(
+          widget.group.databaseId.isNotEmpty
+              ? widget.group.databaseId
+              : groupId,
+        );
+        if (remote.students.isNotEmpty || localStudents.isEmpty) {
+          students = remote.students;
+        }
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _students = students;
+          _isLoading = false;
+        });
+        await _loadObservations();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _students = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadObservations() async {
+    final groupId = widget.group.id.isNotEmpty
+        ? widget.group.id
+        : widget.group.name;
+    try {
+      final records = await _observationService.getForGroupDate(
+        groupId: groupId,
+        date: _dateText,
+      );
+      if (!mounted) return;
+      setState(() {
+        _observations = {
+          for (final record in records) record.studentId: record,
+        };
+      });
+    } catch (_) {
+      if (mounted) setState(() => _observations = {});
+    }
+  }
+
+  String _studentId(GroupStudent student) =>
+      student.id.isNotEmpty ? student.id : student.admissionNo;
+
+  Future<void> _openParentForm(GroupStudent student) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ParentObservationsPage(
+          group: widget.group,
+          student: student,
+          date: _date,
+        ),
+      ),
+    );
+    if (saved == true) {
+      await _loadObservations();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Parent observations saved successfully.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _viewParentObservation(GroupStudent student) async {
+    final record = _observations[_studentId(student)];
+    if (record == null || record.id.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No observation saved for this date.')),
+        );
+      }
+      return;
+    }
+    if (record.studentMood.isNotEmpty) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => StudentObservationsPage(
+            group: widget.group,
+            student: student,
+            date: _date,
+            recordId: record.id,
+          ),
+        ),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ParentObservationsPage(
+          group: widget.group,
+          student: student,
+          date: _date,
+          recordId: record.id,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openStudentForm(GroupStudent student) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => StudentObservationsPage(
+          group: widget.group,
+          student: student,
+          date: _date,
+        ),
+      ),
+    );
+    if (saved == true) {
+      await _loadObservations();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Student observation saved successfully.'),
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _chooseDate() async {
     final selected = await showDatePicker(
@@ -43,7 +180,10 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (selected != null) setState(() => _date = selected);
+    if (selected != null) {
+      setState(() => _date = selected);
+      await _loadObservations();
+    }
   }
 
   String get _dateText =>
@@ -108,18 +248,18 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
           padding: EdgeInsets.only(left: 4, right: 7),
           child: Text('Diary on:', style: TextStyle(fontSize: 9)),
         ),
-        _smallButton(
-          Icons.chevron_left,
-          () => setState(() => _date = _date.subtract(const Duration(days: 1))),
-        ),
+        _smallButton(Icons.chevron_left, () async {
+          setState(() => _date = _date.subtract(const Duration(days: 1)));
+          await _loadObservations();
+        }),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(_dateText, style: const TextStyle(fontSize: 9)),
         ),
-        _smallButton(
-          Icons.chevron_right,
-          () => setState(() => _date = _date.add(const Duration(days: 1))),
-        ),
+        _smallButton(Icons.chevron_right, () async {
+          setState(() => _date = _date.add(const Duration(days: 1)));
+          await _loadObservations();
+        }),
         const SizedBox(width: 8),
         SizedBox(
           height: 19,
@@ -170,36 +310,36 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
     ),
   );
 
-  Widget _parentTab() => Column(
-    children: [
-      _tableHeader(
-        ['Id', 'Name', 'Parent', 'Student', 'Overview'],
-        const [38, 150, 48, 52, 55],
-      ),
-      Expanded(
-        child: ListView.builder(
-          itemCount: _students.length,
-          itemBuilder: (_, index) => _parentRow(_students[index]),
+  Widget _parentTab() {
+    final students = List<GroupStudent>.of(_students);
+    return Column(
+      children: [
+        _tableHeader(
+          ['Id', 'Name', 'Parent', 'Student', 'Overview'],
+          const [38, 150, 48, 52, 55],
         ),
-      ),
-    ],
-  );
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  itemCount: students.length,
+                  itemBuilder: (_, index) => _parentRow(students[index]),
+                ),
+        ),
+      ],
+    );
+  }
 
-  Widget _parentRow(List<String> student) => _row([
-    _cell(student[0], 38),
-    _cell(student[1], 150),
-    _dotCell(48),
-    _dotCell(52),
-    SizedBox(
-      width: 55,
-      height: 20,
-      child: GestureDetector(
-        onTap: () {},
-        behavior: HitTestBehavior.opaque,
-        child: const Center(
-          child: Icon(Icons.visibility, size: 12, color: Colors.blue),
-        ),
-      ),
+  Widget _parentRow(GroupStudent student) => _row([
+    _cell(student.admissionNo, 38),
+    _cell(student.name, 150),
+    _actionCell(48, Icons.circle, Colors.red, () => _openParentForm(student)),
+    _actionCell(52, Icons.circle, Colors.red, () => _openStudentForm(student)),
+    _actionCell(
+      55,
+      Icons.visibility,
+      Colors.blue,
+      () => _viewParentObservation(student),
     ),
   ]);
 
@@ -246,59 +386,68 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
     ],
   );
 
-  Widget _teacherTab() => Column(
-    children: [
-      _tableHeader(
-        ['Id-Name', 'Discipline', 'Food', ''],
-        const [75, 110, 110, 30],
-      ),
-      Expanded(
-        child: ListView.builder(
-          itemCount: _students.length,
-          itemBuilder: (_, index) => _teacherRow(_students[index]),
+  Widget _teacherTab() {
+    final students = List<GroupStudent>.of(_students);
+    return Column(
+      children: [
+        _tableHeader(
+          ['Id-Name', 'Discipline', 'Food', ''],
+          const [75, 110, 110, 30],
         ),
-      ),
-    ],
-  );
+        Expanded(
+          child: ListView.builder(
+            itemCount: students.length,
+            itemBuilder: (_, index) => _teacherRow(students[index]),
+          ),
+        ),
+      ],
+    );
+  }
 
-  Widget _teacherRow(List<String> student) => _row([
-    _cell('${student[0]}-${student[1]}', 75),
+  Widget _teacherRow(GroupStudent student) => _row([
+    _cell('${student.admissionNo}-${student.name}', 75),
     _diaryFields('Punctuality:', ['On time', 'Smart today'], 110),
     _diaryFields('Healthy:', ['Excellent', 'Excellent', 'Yes'], 110),
     const SizedBox(width: 30),
   ], height: 84);
 
-  Widget _scoreTab() => Column(
-    children: [
-      _tableHeader(['Id-Name', 'Score'], const [165, 135]),
-      Expanded(
-        child: ListView.builder(
-          itemCount: _students.length,
-          itemBuilder: (_, index) => _row([
-            _cell('${_students[index][0]}-${_students[index][1]}', 165),
-            SizedBox(
-              width: 135,
-              height: 25,
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: TextField(
-                  style: const TextStyle(fontSize: 9),
-                  decoration: _decoration(),
+  Widget _scoreTab() {
+    final students = List<GroupStudent>.of(_students);
+    return Column(
+      children: [
+        _tableHeader(['Id-Name', 'Score'], const [165, 135]),
+        Expanded(
+          child: ListView.builder(
+            itemCount: students.length,
+            itemBuilder: (_, index) => _row([
+              _cell(
+                '${students[index].admissionNo}-${students[index].name}',
+                165,
+              ),
+              SizedBox(
+                width: 135,
+                height: 25,
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: TextField(
+                    style: const TextStyle(fontSize: 9),
+                    decoration: _decoration(),
+                  ),
                 ),
               ),
-            ),
-          ]),
+            ]),
+          ),
         ),
-      ),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 1, bottom: 5),
-          child: _blueButton('Submit'),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 1, bottom: 5),
+            child: _blueButton('Submit'),
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 
   Widget _diaryFields(String label, List<String> values, double width) =>
       SizedBox(
@@ -367,9 +516,19 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
       ),
     ),
   );
-  Widget _dotCell(double width) => SizedBox(
+  Widget _actionCell(
+    double width,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) => SizedBox(
     width: width,
-    child: const Center(child: Icon(Icons.circle, size: 8, color: Colors.red)),
+    height: 20,
+    child: GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Center(child: Icon(icon, size: 10, color: color)),
+    ),
   );
   Widget _selectBox(String value, double width) => SizedBox(
     width: width,

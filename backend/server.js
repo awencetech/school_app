@@ -222,6 +222,221 @@ app.get('/api/messages/group/:groupId', requireRecipientRole('student'), async (
   }
 });
 
+function sanitizeDiaryForResponse(doc) {
+  if (!doc) return null;
+  return {
+    _id: doc._id ? doc._id.toString() : '',
+    id: doc._id ? doc._id.toString() : '',
+    studentId: doc.studentId || '',
+    studentName: doc.studentName || '',
+    diaryId: doc.diaryId || '',
+    groupId: doc.groupId || '',
+    classId: doc.classId || doc.groupId || '',
+    date: doc.date || '',
+    parentObservation: {
+      wentToBedAt: doc.parentObservation?.wentToBedAt || '',
+      gotUpAt: doc.parentObservation?.gotUpAt || '',
+      brushedTeeth: doc.parentObservation?.brushedTeeth || '',
+      didYoga: doc.parentObservation?.didYoga || '',
+      breakfast: doc.parentObservation?.breakfast || '',
+      homework: doc.parentObservation?.homework || '',
+      assignmentCompletion: doc.parentObservation?.assignmentCompletion || '',
+      helpfulAtHome: doc.parentObservation?.helpfulAtHome || '',
+      respectfulToElders: doc.parentObservation?.respectfulToElders || '',
+      parentsRemark: doc.parentObservation?.parentsRemark || '',
+    },
+    studentObservation: {
+      mood: doc.studentObservation?.mood || '',
+    },
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
+function diaryStudentMatch(student, studentId) {
+  const values = [student?.id, student?._id, student?.studentId, student?.admissionNo, student?.admissionNumber]
+    .filter((value) => value != null && String(value).trim())
+    .map((value) => String(value).trim());
+  return values.includes(studentId);
+}
+
+app.get('/api/diary', requireTeacher, async (req, res) => {
+  try {
+    const groupId = String(req.query.groupId || '').trim();
+    const date = String(req.query.date || '').trim();
+    if (!groupId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(422).json({ message: 'groupId and a valid date are required.' });
+    }
+    await connectMongo();
+    const records = await diaryCollection.find({ groupId, date }).sort({ studentName: 1 }).toArray();
+    return res.json({ success: true, data: records.map(sanitizeDiaryForResponse) });
+  } catch (error) {
+    console.error('GET /api/diary failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load diary observations.' });
+  }
+});
+
+app.get('/api/diary/student-observation/:id', requireTeacher, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid diary record ID.' });
+    }
+    await connectMongo();
+    const record = await diaryCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!record) return res.status(404).json({ message: 'Student observation not found.' });
+    return res.json({ success: true, data: sanitizeDiaryForResponse(record) });
+  } catch (error) {
+    console.error('GET /api/diary/student-observation/:id failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load student observation.' });
+  }
+});
+
+app.get('/api/diary/:id', requireTeacher, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid diary record ID.' });
+    }
+    await connectMongo();
+    const record = await diaryCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!record) return res.status(404).json({ message: 'Diary observation not found.' });
+    return res.json({ success: true, data: sanitizeDiaryForResponse(record) });
+  } catch (error) {
+    console.error('GET /api/diary/:id failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load diary observation.' });
+  }
+});
+
+app.post('/api/diary', requireTeacher, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const studentId = String(body.studentId || '').trim();
+    const groupId = String(body.groupId || body.classId || '').trim();
+    const date = String(body.date || '').trim();
+    const observation = body.parentObservation || {};
+    const required = [
+      ['studentId', studentId],
+      ['groupId', groupId],
+      ['date', date],
+      ['wentToBedAt', observation.wentToBedAt],
+      ['gotUpAt', observation.gotUpAt],
+      ['brushedTeeth', observation.brushedTeeth],
+      ['didYoga', observation.didYoga],
+      ['breakfast', observation.breakfast],
+      ['homework', observation.homework],
+      ['assignmentCompletion', observation.assignmentCompletion],
+      ['helpfulAtHome', observation.helpfulAtHome],
+      ['respectfulToElders', observation.respectfulToElders],
+    ];
+    if (required.some(([, value]) => !String(value || '').trim()) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(422).json({ message: 'All required parent observation fields must be provided.' });
+    }
+
+    const allowed = {
+      brushedTeeth: ['once', 'twice'],
+      didYoga: ['yes', 'no'],
+      breakfast: ['had_breakfast', 'refused'],
+      homework: ['completed', 'did_not_do'],
+      assignmentCompletion: ['worked_independently', 'did_under_supervision', 'failed_to_do'],
+      helpfulAtHome: ['very_much', 'sometimes', 'never'],
+      respectfulToElders: ['very_much', 'sometimes', 'never'],
+    };
+    for (const [field, values] of Object.entries(allowed)) {
+      if (!values.includes(String(observation[field] || '').trim())) {
+        return res.status(422).json({ message: `Invalid value for ${field}.` });
+      }
+    }
+
+    await connectMongo();
+    const group = await findGroupByReference(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+    const groupStudent = (Array.isArray(group.students) ? group.students : [])
+      .find((student) => diaryStudentMatch(student, studentId));
+    if (!groupStudent) return res.status(403).json({ message: 'Student is not a member of this group.' });
+
+    const now = new Date().toISOString();
+    const diaryId = String(body.diaryId || `${groupId}:${studentId}:${date}`).trim();
+    const document = {
+      studentId,
+      studentName: String(groupStudent.name || body.studentName || '').trim(),
+      diaryId,
+      groupId,
+      classId: groupId,
+      date,
+      parentObservation: {
+        wentToBedAt: String(observation.wentToBedAt).trim(),
+        gotUpAt: String(observation.gotUpAt).trim(),
+        brushedTeeth: String(observation.brushedTeeth).trim(),
+        didYoga: String(observation.didYoga).trim(),
+        breakfast: String(observation.breakfast).trim(),
+        homework: String(observation.homework).trim(),
+        assignmentCompletion: String(observation.assignmentCompletion).trim(),
+        helpfulAtHome: String(observation.helpfulAtHome).trim(),
+        respectfulToElders: String(observation.respectfulToElders).trim(),
+        parentsRemark: String(observation.parentsRemark || '').trim(),
+      },
+      updatedAt: now,
+    };
+    await diaryCollection.updateOne(
+      { studentId, groupId, date },
+      { $set: document, $setOnInsert: { createdAt: now } },
+      { upsert: true },
+    );
+    const saved = await diaryCollection.findOne({ studentId, groupId, date });
+    return res.status(200).json({ success: true, message: 'Parent observations saved successfully.', data: sanitizeDiaryForResponse(saved) });
+  } catch (error) {
+    console.error('POST /api/diary failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to save parent observations.' });
+  }
+});
+
+app.post('/api/diary/student-observation', requireTeacher, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const studentId = String(body.studentId || '').trim();
+    const groupId = String(body.groupId || body.classId || '').trim();
+    const classId = String(body.classId || groupId).trim();
+    const diaryId = String(body.diaryId || '').trim();
+    const date = String(body.date || '').trim();
+    const mood = String(body.mood || '').trim();
+    const moods = ['exciting', 'happy', 'lazy', 'sad', 'angry'];
+    if (!studentId || !groupId || !classId || !diaryId ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(date) || !moods.includes(mood)) {
+      return res.status(422).json({ message: 'studentId, diaryId, groupId, date, and a valid mood are required.' });
+    }
+
+    await connectMongo();
+    const group = await findGroupByReference(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found.' });
+    const groupStudent = (Array.isArray(group.students) ? group.students : [])
+      .find((student) => diaryStudentMatch(student, studentId));
+    if (!groupStudent) return res.status(403).json({ message: 'Student is not a member of this group.' });
+
+    const now = new Date().toISOString();
+    await diaryCollection.updateOne(
+      { studentId, diaryId },
+      {
+        $set: {
+          studentId,
+          studentName: String(groupStudent.name || body.studentName || '').trim(),
+          diaryId,
+          classId,
+          groupId,
+          date,
+          studentObservation: { mood },
+          updatedAt: now,
+        },
+        $setOnInsert: { createdAt: now },
+      },
+      { upsert: true },
+    );
+    const saved = await diaryCollection.findOne({ studentId, diaryId });
+    return res.status(200).json({ success: true, message: 'Student observation saved.', data: sanitizeDiaryForResponse(saved) });
+  } catch (error) {
+    console.error('POST /api/diary/student-observation failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to save student observation.' });
+  }
+});
+
 let client;
 let mainPageInfoCollection;
 let imageBucket;
@@ -233,6 +448,7 @@ let eventsCollection;
 let legacyEventsCollection;
 let todayInClassCollection;
 let homeworkCollection;
+let diaryCollection;
 let groupMessagesCollection;
 let groupMessageCommentsCollection;
 let classTimetableCollection;
@@ -280,6 +496,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
     safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
     safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
+    safeCreateIndex(diaryCollection, { studentId: 1, groupId: 1, date: 1 }, { unique: true }),
     safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
     safeCreateIndex(groupMessageCommentsCollection, { groupId: 1, messageId: 1, createdAt: 1 }),
     safeCreateIndex(classTimetableCollection, { groupId: 1, day: 1, startTime: 1 }),
@@ -338,6 +555,7 @@ async function connectMongo() {
     legacyEventsCollection = db.collection('events');
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
+    diaryCollection = db.collection('diary');
     groupMessagesCollection = db.collection('groupMessages');
     groupMessageCommentsCollection = db.collection('groupMessageComments');
     classTimetableCollection = db.collection('class-timetables');

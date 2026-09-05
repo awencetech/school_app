@@ -8,6 +8,7 @@ import '../../services/admin_message_service.dart';
 import '../../services/app_state.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 import '../../widgets/staff_footer.dart';
 
@@ -394,8 +395,8 @@ class _MessagesPageState extends State<MessagesPage> {
     final routeName = ModalRoute.of(context)?.settings.name;
     final isStudentMessages = routeName == AppRoutes.studentDashboardMessages;
     final isStaffMessages =
-        ModalRoute.of(context)?.settings.name ==
-        AppRoutes.staffDashboardMessages;
+      routeName == AppRoutes.staffDashboardMessages;
+    final isAdminMessages = routeName == AppRoutes.adminQuickMessages;
 
     return Theme(
       data: Theme.of(context),
@@ -753,6 +754,18 @@ class _MessagesPageState extends State<MessagesPage> {
                       if (!context.mounted) return;
                       Navigator.of(context).pushNamedAndRemoveUntil(
                         AppRoutes.main,
+                        (route) => false,
+                      );
+                    }
+                  },
+                )
+              : isAdminMessages
+              ? AdminBottomNavigationBar(
+                  currentIndex: 0,
+                  onItemSelected: (index) {
+                    if (index == 0) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.adminDashboard,
                         (route) => false,
                       );
                     }

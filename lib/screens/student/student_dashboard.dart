@@ -352,7 +352,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Welcome ${context.watch<AppState>().currentUserId ?? 'Student'}',
+                    'Welcome $_studentName',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 14,

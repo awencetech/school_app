@@ -162,7 +162,7 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
             ? const [
                 _NewsDataCard(
                   title: 'No school news available',
-                  message: 'There are no published news items at the moment.',
+                  message: 'There are no public school news at the moment.',
                 ),
               ]
             : publishedNews.take(3).map((news) {
@@ -179,7 +179,7 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Section(
-              title: 'New Messages 114',
+              title: 'New Messages 141',
               lines: [
                 '27-Aug-26 - from Employee Leaves to Approve',
                 '27-Aug-26 - from Employee Leaves to Approve',

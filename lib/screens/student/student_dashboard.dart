@@ -22,7 +22,6 @@ import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../support/support_screen.dart';
 import '../messages/messages_page.dart';
-import 'student_attendance_page.dart';
 import 'student_exam_results_page.dart';
 import 'student_diary_page.dart';
 import 'student_faculty_feedback_page.dart';
@@ -610,11 +609,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const StudentAttendancePage(),
-                                    ),
+                                  onTap: () => Navigator.of(
+                                    context,
+                                  ).pushNamed(
+                                    AppRoutes.studentDashboardAttendance,
                                   ),
                                   child: const _InfoChip(
                                     icon: Icons.calendar_today,

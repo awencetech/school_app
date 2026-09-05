@@ -1,16 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../services/app_state.dart';
+import '../../services/student_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
 import 'student_full_details_page.dart';
 
 /// Student information screen matching the provided school ERP reference design.
-class StudentInfoScreen extends StatelessWidget {
+class StudentInfoScreen extends StatefulWidget {
   const StudentInfoScreen({super.key});
 
   @override
+  State<StudentInfoScreen> createState() => _StudentInfoScreenState();
+}
+
+class _StudentInfoScreenState extends State<StudentInfoScreen> {
+  StudentRecord? _student;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudent();
+  }
+
+  Future<void> _loadStudent() async {
+    try {
+      final appState = context.read<AppState>();
+      await appState.initialization;
+      final token = appState.currentAuthToken?.trim() ?? '';
+      if (token.isEmpty) return;
+      final student = await StudentService().getCurrentProfile(token: token);
+      if (mounted) setState(() => _student = student);
+    } catch (_) {
+      // Keep the screen available when opened outside an authenticated route.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final student = _student;
+    final studentName = student?.name.trim().isNotEmpty == true
+        ? student!.name
+        : 'Student name';
+    final studentId = student?.studentId.trim().isNotEmpty == true
+        ? student!.studentId
+        : student?.admissionNumber ?? '';
+    final mobileNumber = student?.mobileNumber ?? '';
+    final address = student?.address.trim().isNotEmpty == true
+        ? student!.address
+        : 'Address not available';
+    final className = [student?.className ?? '', student?.section ?? '']
+        .where((value) => value.trim().isNotEmpty)
+        .join(' - ');
+
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
@@ -48,15 +92,18 @@ class StudentInfoScreen extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _InfoLabel('Student name'),
-                        _InfoLabel('Student ID'),
-                        _InfoLabel('Mail ID :'),
-                        _InfoLabel('Mobile No :'),
-                        _InfoLabel('Special Needs :'),
+                        _InfoValue(label: 'Student name', value: studentName),
+                        _InfoValue(label: 'Student ID', value: studentId),
+                        _InfoValue(
+                          label: 'Mail ID :',
+                          value: '',
+                        ),
+                        _InfoValue(label: 'Mobile No :', value: mobileNumber),
+                        const _InfoValue(label: 'Special Needs :', value: ''),
                       ],
                     ),
                   ),
@@ -73,6 +120,12 @@ class StudentInfoScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(4),
+                            image: student?.imageUrl.trim().isNotEmpty == true
+                                ? DecorationImage(
+                                    image: NetworkImage(student!.imageUrl),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
                         ),
                         Column(
@@ -131,8 +184,8 @@ class StudentInfoScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'PLOT NO - XX\nDistrict :\nCity :',
+              Text(
+                address,
                 style: TextStyle(
                   fontSize: 12,
                   color: Color(0xFF4B5563),
@@ -140,7 +193,7 @@ class StudentInfoScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Groups and Classes of Student name',
+                'Groups and Classes of $studentName',
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -244,7 +297,7 @@ class StudentInfoScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              '20XX - 20XX',
+                              className.isEmpty ? 'Not available' : className,
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 color: const Color(0xFF1F2937),
@@ -313,7 +366,7 @@ class StudentInfoScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              'GRADE - XX | 20XX - 20XX',
+                              className.isEmpty ? 'Not available' : className,
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 color: const Color(0xFF1F2937),
@@ -418,6 +471,46 @@ class _InfoLabel extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: const Color(0xFF1F2937),
         ),
+      ),
+    );
+  }
+}
+
+class _InfoValue extends StatelessWidget {
+  const _InfoValue({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF1F2937),
+            ),
+          ),
+          if (value.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

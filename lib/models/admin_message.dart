@@ -7,6 +7,9 @@ class AdminMessage {
     required this.senderName,
     required this.createdAt,
     this.groupName = 'All Groups',
+    this.recipientTypes = const [],
+    this.targetType = 'all',
+    this.targetClassId,
   });
 
   final String id;
@@ -16,6 +19,9 @@ class AdminMessage {
   final String senderName;
   final DateTime? createdAt;
   final String groupName;
+  final List<String> recipientTypes;
+  final String targetType;
+  final String? targetClassId;
 
   factory AdminMessage.fromJson(Map<String, dynamic> json) {
     return AdminMessage(
@@ -27,6 +33,11 @@ class AdminMessage {
       senderName: (json['senderName'] ?? 'Admin').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
       groupName: (json['groupName'] ?? 'All Groups').toString(),
+      recipientTypes: (json['recipientTypes'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      targetType: (json['targetType'] ?? 'all').toString(),
+      targetClassId: json['targetClassId']?.toString(),
     );
   }
 }

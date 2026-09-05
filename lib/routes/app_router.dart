@@ -79,7 +79,6 @@ import '../screens/admin/staff_resource_image_page.dart';
 import '../screens/messages/messages_page.dart';
 import '../screens/staff/staff_campaigns_page.dart';
 import '../screens/staff/staff_request_message_page.dart';
-import '../screens/staff/staff_write_message_page.dart';
 import '../screens/student/student_check_approve_page.dart';
 import '../screens/student/student_group_class_bus_page.dart';
 import '../screens/student/student_ptm_page.dart';
@@ -305,7 +304,7 @@ class AppRouter {
       ),
       AppRoutes.adminQuickDashboardSummary =>
         const StaffOverviewDashboardPage(),
-      AppRoutes.adminQuickWriteMessage => const StaffWriteMessagePage(),
+      AppRoutes.adminQuickWriteMessage => const AdminWriteMessagePage(),
       AppRoutes.adminQuickRequest => const StaffRequestMessagePage(),
       AppRoutes.adminQuickGroupClass => const StaffCampaignsPage(),
       AppRoutes.adminQuickPtm => const StudentPtmPage(),

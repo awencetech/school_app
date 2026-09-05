@@ -55,9 +55,14 @@ class AdminMessageService {
   }
 
   Future<List<AdminMessage>> getMessagesForRole(String role) async {
+    final endpoint = switch (role.trim().toLowerCase()) {
+      'admin' || 'administrator' => 'admin',
+      'staff' || 'teacher' => 'staff',
+      _ => 'student',
+    };
     final response = await http
         .get(
-          _uri('/api/messages/${role == 'staff' ? 'staff' : 'student'}'),
+          _uri('/api/messages/$endpoint'),
           headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 15));

@@ -22,6 +22,8 @@ class MessageModel {
     required this.profileImage,
     required this.isViewed,
     required this.category,
+    this.groupName = 'All Groups',
+    this.recipientLabel = '',
   });
 
   final String id;
@@ -33,6 +35,8 @@ class MessageModel {
   final String? profileImage;
   final bool isViewed;
   final String category;
+  final String groupName;
+  final String recipientLabel;
 }
 
 class MessagesPage extends StatefulWidget {
@@ -43,8 +47,10 @@ class MessagesPage extends StatefulWidget {
 }
 
 class _MessagesPageState extends State<MessagesPage> {
-  late List<MessageModel> _allMessages;
-  late List<MessageModel> _messages;
+  List<MessageModel> _allMessages = [];
+  List<MessageModel> _messages = [];
+  bool _isLoading = true;
+  String? _loadError;
   String _selectedFilter = 'All';
   String _searchQuery = '';
   final Map<String, TextEditingController> _commentControllers = {};
@@ -54,33 +60,43 @@ class _MessagesPageState extends State<MessagesPage> {
   void initState() {
     super.initState();
     _allMessages = _buildDemoMessages();
-    _messages = List.from(_allMessages);
-    for (final message in _allMessages) {
-      _commentControllers[message.id] = TextEditingController();
-    }
     _loadAdminMessages();
   }
 
   Future<void> _loadAdminMessages() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadError = null;
+      });
+    }
     try {
-      final role = context.read<AppState>().currentUserRole?.toLowerCase();
-      if (role != 'student') return;
-      final adminMessages = await _adminMessageService.getMessagesForRole(
-        'student',
-      );
-      if (!mounted || adminMessages.isEmpty) return;
+      final role = context.read<AppState>().currentUserRole?.trim().toLowerCase() ?? '';
+      if (role != 'student' && role != 'staff' && role != 'teacher' && role != 'admin' && role != 'administrator') {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+      final adminMessages = await _adminMessageService.getMessagesForRole(role);
+      if (!mounted) return;
       final liveMessages = adminMessages.map(_toMessageModel).toList();
       setState(() {
-        _allMessages = [
-          ...liveMessages,
-          ..._allMessages.where((message) => !message.id.startsWith('admin-')),
-        ];
-        _messages = List.from(_allMessages);
+        _allMessages = liveMessages;
+        _messages = List.from(liveMessages);
+        _isLoading = false;
         for (final message in liveMessages) {
           _commentControllers[message.id] = TextEditingController();
         }
       });
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'Unable to load messages. Please try again.';
+          _allMessages = [];
+          _messages = [];
+        });
+      }
+    }
   }
 
   MessageModel _toMessageModel(AdminMessage message) {
@@ -97,6 +113,10 @@ class _MessagesPageState extends State<MessagesPage> {
       profileImage: null,
       isViewed: false,
       category: message.messageType,
+      groupName: message.groupName,
+      recipientLabel: message.recipientTypes
+          .map((type) => type == 'students' ? 'Students' : 'Staff / Teachers')
+          .join(', '),
     );
   }
 
@@ -124,7 +144,8 @@ class _MessagesPageState extends State<MessagesPage> {
   }
 
   List<MessageModel> _buildDemoMessages() {
-    return [
+    return [];
+    /* return [
       MessageModel(
         id: '1',
         title: 'Homework - Mathematics',
@@ -301,7 +322,7 @@ class _MessagesPageState extends State<MessagesPage> {
         isViewed: true,
         category: 'Announcements',
       ),
-    ];
+    ]; */
   }
 
   void _applyFilters() {
@@ -315,7 +336,10 @@ class _MessagesPageState extends State<MessagesPage> {
             query.isEmpty ||
             message.title.toLowerCase().contains(query) ||
             message.teacherName.toLowerCase().contains(query) ||
-            message.message.toLowerCase().contains(query);
+            message.message.toLowerCase().contains(query) ||
+            message.category.toLowerCase().contains(query) ||
+            message.recipientLabel.toLowerCase().contains(query) ||
+            message.groupName.toLowerCase().contains(query);
         return matchesFilter && matchesSearch;
       }).toList();
     });
@@ -324,6 +348,16 @@ class _MessagesPageState extends State<MessagesPage> {
   Future<void> _refreshMessages() async {
     await _loadAdminMessages();
   }
+
+  Widget _statusList(Widget child) => ListView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    children: [
+      SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Center(child: child),
+      ),
+    ],
+  );
 
   Future<void> _openSearch() async {
     final result = await showSearch<String>(
@@ -418,31 +452,39 @@ class _MessagesPageState extends State<MessagesPage> {
         body: RefreshIndicator(
           onRefresh: _refreshMessages,
           color: primaryColor,
-          child: _messages.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.6,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.mail_outline, size: 56, color: greyText),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No Messages Available',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: greyText,
-                              ),
-                            ),
-                          ],
+          child: _isLoading
+              ? _statusList(const CircularProgressIndicator())
+              : _loadError != null
+              ? _statusList(
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_loadError!, style: TextStyle(color: greyText)),
+                      const SizedBox(height: 10),
+                      FilledButton(
+                        onPressed: _loadAdminMessages,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _messages.isEmpty
+              ? _statusList(
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.mail_outline, size: 56, color: greyText),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No messages available',
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: greyText,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.only(top: 8, bottom: 16),
@@ -511,6 +553,15 @@ class _MessagesPageState extends State<MessagesPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
+                                          message.category,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: primaryColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
                                           message.title,
                                           style: GoogleFonts.poppins(
                                             fontSize: 15,
@@ -543,6 +594,23 @@ class _MessagesPageState extends State<MessagesPage> {
                                             color: const Color(0xFF444444),
                                           ),
                                         ),
+                                        if (message.recipientLabel.isNotEmpty) ...[
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Sent to: ${message.recipientLabel}',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11,
+                                              color: greyText,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Class: ${message.groupName}',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11,
+                                              color: greyText,
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),

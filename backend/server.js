@@ -87,6 +87,22 @@ function requireRecipientRole(role) {
   };
 }
 
+function requireAnyRole(roles) {
+  return (req, res, next) => {
+    try {
+      const auth = verifyAuthToken(readAuthToken(req));
+      const role = (auth?.role || '').toLowerCase();
+      if (!auth || !roles.includes(role)) {
+        return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
+      }
+      req.auth = auth;
+      return next();
+    } catch (_) {
+      return res.status(401).json({ message: 'Authentication required.' });
+    }
+  };
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -105,6 +121,7 @@ let todayInClassCollection;
 let homeworkCollection;
 let groupMessagesCollection;
 let groupMessageCommentsCollection;
+let adminMessagesCollection;
 let classTimetableCollection;
 let legacyClassTimetableCollection;
 let studentInfoCollection;
@@ -127,6 +144,8 @@ async function ensureIndexes(db) {
     homeworkCollection.createIndex({ groupId: 1, date: 1 }),
     groupMessagesCollection.createIndex({ groupId: 1, createdAt: -1 }),
     groupMessageCommentsCollection.createIndex({ groupId: 1, messageId: 1, createdAt: 1 }),
+    adminMessagesCollection.createIndex({ recipientTypes: 1, createdAt: -1 }),
+    adminMessagesCollection.createIndex({ createdAt: -1 }),
     classTimetableCollection.createIndex({ groupId: 1, day: 1, startTime: 1 }),
     studentInfoCollection.createIndex({ studentId: 1 }, { sparse: true }),
     studentInfoCollection.createIndex({ admissionNumber: 1 }, { sparse: true }),
@@ -169,6 +188,7 @@ async function connectMongo() {
     homeworkCollection = db.collection('home-work');
     groupMessagesCollection = db.collection('groupMessages');
     groupMessageCommentsCollection = db.collection('groupMessageComments');
+    adminMessagesCollection = db.collection('admin-msgwrite');
     classTimetableCollection = db.collection('class-timetables');
     legacyClassTimetableCollection = db.collection('class-timetable');
     studentInfoCollection = db.collection('stud-in');
@@ -296,6 +316,50 @@ function sanitizeStudentForResponse(doc) {
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
+}
+
+function sanitizeAdminMessageForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || '',
+    subject: doc.subject || '',
+    message: doc.message || '',
+    messageType: doc.messageType || 'General',
+    recipientTypes: Array.isArray(doc.recipientTypes) ? doc.recipientTypes : [],
+    targetType: doc.targetType || 'all',
+    targetClassId: doc.targetClassId || null,
+    targetClassName: doc.targetClassName || 'All Groups',
+    groupName: doc.targetClassName || doc.groupName || 'All Groups',
+    senderId: doc.senderId || '',
+    senderName: doc.senderName || 'Admin',
+    createdAt: doc.createdAt || null,
+  };
+}
+
+function normalizedMessageValue(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function compactMessageValue(value) {
+  return normalizedMessageValue(value).replace(/[^a-z0-9]/g, '');
+}
+
+function studentMatchesAdminMessage(message, student) {
+  if (message.targetType !== 'group') return true;
+  const targetValues = [message.targetClassId, message.targetClassName]
+    .map(normalizedMessageValue)
+    .filter(Boolean);
+  const studentValues = [
+    student.groupId,
+    student.groupName,
+    student.classId,
+    student.className,
+    student.section,
+    `${student.className || ''} - ${student.section || ''}`,
+  ].map(normalizedMessageValue).filter(Boolean);
+  return targetValues.some((target) => studentValues.some((value) => (
+    value === target || compactMessageValue(value) === compactMessageValue(target)
+  )));
 }
 
 function sanitizeHandbookForResponse(doc) {
@@ -1022,6 +1086,93 @@ app.delete('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => 
   } catch (error) {
     console.error('DELETE /api/groups/:groupId/today-in-class/:recordId failed:', error);
     return res.status(500).json({ message: 'Unable to delete Today in Class.' });
+  }
+});
+
+app.post('/api/messages/admin', requireAnyRole(['admin', 'administrator']), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const subject = String(body.subject || '').trim();
+    const message = String(body.message || '').trim();
+    const messageType = String(body.messageType || 'General').trim();
+    const allowedTypes = ['General', 'Important', 'Announcement', 'Reminder'];
+    const recipientTypes = [
+      body.sendToStudents === true ? 'students' : null,
+      body.sendToStaff === true ? 'staff' : null,
+    ].filter(Boolean);
+    const groupId = String(body.groupId || '').trim();
+    const groupName = String(body.groupName || 'All Groups').trim() || 'All Groups';
+
+    if (!subject || !message) return res.status(422).json({ message: 'Subject and message are required.' });
+    if (!allowedTypes.includes(messageType)) return res.status(422).json({ message: 'Invalid message type.' });
+    if (recipientTypes.length === 0) return res.status(422).json({ message: 'At least one recipient is required.' });
+
+    const sender = await usersCollection.findOne({ userId: String(req.auth.userId || '').trim() });
+    const senderName = String(sender?.name || sender?.email?.split('@')[0] || 'Admin').trim() || 'Admin';
+    const now = new Date().toISOString();
+    const document = {
+      subject,
+      message,
+      messageType,
+      recipientTypes,
+      targetType: groupId ? 'group' : 'all',
+      targetClassId: groupId || null,
+      targetClassName: groupId ? groupName : 'All Groups',
+      senderId: String(req.auth.userId || '').trim(),
+      senderName,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await adminMessagesCollection.insertOne(document);
+    return res.status(201).json(sanitizeAdminMessageForResponse({ ...document, _id: result.insertedId }));
+  } catch (error) {
+    console.error('POST /api/messages/admin failed:', error);
+    return res.status(500).json({ message: 'Unable to send message.' });
+  }
+});
+
+app.get('/api/messages/admin', requireAnyRole(['admin', 'administrator']), async (req, res) => {
+  try {
+    await connectMongo();
+    const messages = await adminMessagesCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json(messages.map(sanitizeAdminMessageForResponse));
+  } catch (error) {
+    console.error('GET /api/messages/admin failed:', error);
+    return res.status(500).json({ message: 'Unable to load messages.' });
+  }
+});
+
+app.get('/api/messages/student', requireRecipientRole('student'), async (req, res) => {
+  try {
+    await connectMongo();
+    const userId = String(req.auth.userId || '').trim();
+    const student = await studentInfoCollection.findOne({
+      $or: [{ studentId: userId }, { admissionNumber: userId }],
+    });
+    if (!student) return res.status(404).json({ message: 'Student profile not found.' });
+    const messages = await adminMessagesCollection
+      .find({ recipientTypes: 'students' })
+      .sort({ createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(messages.filter((message) => studentMatchesAdminMessage(message, student)).map(sanitizeAdminMessageForResponse));
+  } catch (error) {
+    console.error('GET /api/messages/student failed:', error);
+    return res.status(500).json({ message: 'Unable to load messages.' });
+  }
+});
+
+app.get('/api/messages/staff', requireAnyRole(['staff', 'teacher']), async (req, res) => {
+  try {
+    await connectMongo();
+    const messages = await adminMessagesCollection
+      .find({ recipientTypes: 'staff' })
+      .sort({ createdAt: -1, _id: -1 })
+      .toArray();
+    return res.json(messages.map(sanitizeAdminMessageForResponse));
+  } catch (error) {
+    console.error('GET /api/messages/staff failed:', error);
+    return res.status(500).json({ message: 'Unable to load messages.' });
   }
 });
 

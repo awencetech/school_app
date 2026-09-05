@@ -54,8 +54,6 @@ class _WriteMessagePageState extends State<WriteMessagePage> {
     return name.isEmpty ? 'Student' : name;
   }
 
-  String? get _studentEmail => context.read<AppState>().currentUserEmail?.trim();
-
   String? get _studentId => context.read<AppState>().currentUserId?.trim();
 
   bool get _hasCurrentGroup => widget.groupId.trim().isNotEmpty;

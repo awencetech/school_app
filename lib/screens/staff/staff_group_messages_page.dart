@@ -32,23 +32,7 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
     'Search String',
   ];
 
-  static const _defaultMessages = [
-    _StaffMessage(
-      'R.S.VELSIRIRAM was absent on 2026-08-27 in class 10-C (All Day) - had notified',
-      'Created on: Aug 27, 2026 9:41 AM\nMessage for R.S.VELSIRAM by GURU GANESH S (SAMUNIT0500)',
-      'Absent Student Id : 1500',
-    ),
-    _StaffMessage(
-      'PAUL IMMANUEL was absent on 2026-08-27 in class 10-C (All Day) - had notified',
-      'Created on: Aug 27, 2026 9:41 AM\nMessage for PAUL IMMANUEL by GURU GANESH S (SAMUNIT0500)',
-      'Absent Student Id : 3111',
-    ),
-    _StaffMessage(
-      'GOPIHAN was absent on 2026-08-27 in class 10-C (All Day) - had notified',
-      'Created on: Aug 27, 2026 9:41 AM\nMessage for GOPIHAN by GURU GANESH S (SAMUNIT0500)',
-      'Absent Student Id : 3117',
-    ),
-  ];
+  static const _defaultMessages = <_StaffMessage>[];
   final _adminMessageService = AdminMessageService();
   late List<_StaffMessage> _messages;
 
@@ -61,13 +45,14 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
 
   Future<void> _loadAdminMessages() async {
     try {
-      if (context.read<AppState>().currentUserRole?.toLowerCase() != 'staff') {
+      final role = context.read<AppState>().currentUserRole?.toLowerCase();
+      if (role != 'staff' && role != 'teacher') {
         return;
       }
       final messages = await _adminMessageService.getMessagesForRole('staff');
       if (!mounted) return;
       setState(() {
-        _messages = [...messages.map(_toStaffMessage), ..._messages];
+        _messages = messages.map(_toStaffMessage).toList();
       });
     } catch (_) {}
   }

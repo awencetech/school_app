@@ -341,6 +341,8 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
         Text(
           'Sent to: ${[_students ? 'Students' : '', _staff ? 'Staff / Teachers' : ''].where((value) => value.isNotEmpty).join(', ')}',
         ),
+        const SizedBox(height: 4),
+        Text('Class: ${_selectedGroup?.name ?? 'All Groups'}'),
       ],
     ),
   );

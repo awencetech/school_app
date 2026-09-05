@@ -18,12 +18,15 @@ class _StaffApplyLeavePageState extends State<StaffApplyLeavePage> {
   List<StaffLeaveEntitlement> _entitlements = const [];
   bool _loading = true;
   String? _error;
-  int _year = DateTime.now().year;
+  final int _year = DateTime.now().year;
 
   @override void initState() { super.initState(); _load(); }
   Future<void> _load() async {
     final staffId = context.read<AppState>().currentUserId?.trim() ?? '';
-    if (staffId.isEmpty) { setState(() { _loading = false; _error = 'No signed-in staff member was found.'; }); return; }
+    if (staffId.isEmpty) {
+      setState(() { _loading = false; _error = 'No signed-in staff member was found.'; });
+      return;
+    }
     setState(() { _loading = true; _error = null; });
     try {
       final results = await Future.wait([_service.requests(staffId), _service.entitlements(staffId, _year)]);
@@ -111,7 +114,7 @@ class _ApplyLeaveDialogState extends State<_ApplyLeaveDialog> {
   List<String> get _types => _availableLeaveTypes(widget.entitlements);
   List<int> get _years { final values = widget.entitlements.map((item) => item.year).where((item) => item > 0).toSet(); values.add(DateTime.now().year); return values.toList()..sort(); }
   double get _days { if (_start == null || _end == null || _end!.isBefore(_start!)) return 0; var value = _end!.difference(_start!).inDays + 1.0; if (_begin) value -= .5; if (_endHalf) value -= .5; return value; }
-  Future<void> _pick(bool start) async { final picked = await showDatePicker(context: context, initialDate: (start ? _start : _end) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100)); if (picked != null && mounted) setState(() { if (start) _start = picked; else _end = picked; }); }
+  Future<void> _pick(bool start) async { final picked = await showDatePicker(context: context, initialDate: (start ? _start : _end) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100)); if (picked != null && mounted) setState(() { if (start) { _start = picked; } else { _end = picked; } }); }
   Future<void> _submit() async { if (!_key.currentState!.validate() || _type == null || _year == null || _start == null || _end == null || _days <= 0 || _end!.isBefore(_start!)) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete valid leave details.'))); return; } setState(() => _saving = true); try { final state = context.read<AppState>(); await _service.submit({'staffId': state.currentUserId, 'staffName': state.currentUserEmail ?? state.currentUserId, 'leaveType': _type, 'applicableYear': _year, 'startDate': _start!.toIso8601String(), 'endDate': _end!.toIso8601String(), 'beginHalfDay': _begin, 'endHalfDay': _endHalf, 'effectiveDays': _days, 'reason': _reason.text.trim()}); if (mounted) Navigator.pop(context, true); } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString()))); } finally { if (mounted) setState(() => _saving = false); } }
   @override
   Widget build(BuildContext context) => _DialogShell(
@@ -208,7 +211,7 @@ class _StateBox extends StatelessWidget {
   final String text;
   final Widget? action;
   @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD9DEE7)), borderRadius: BorderRadius.circular(4)), child: Row(children: [Expanded(child: Text(text, style: const TextStyle(fontSize: 10))), if (action != null) action!]));
+  Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD9DEE7)), borderRadius: BorderRadius.circular(4)), child: Row(children: [Expanded(child: Text(text, style: const TextStyle(fontSize: 10))), ?action]));
 }
 String _date(DateTime? value) => value == null ? 'Not available' : '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
 String _number(double value) => value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);

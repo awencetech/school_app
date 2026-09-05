@@ -19,7 +19,7 @@ class _EmpLeaveApprovalPageState extends State<EmpLeaveApprovalPage> {
   Future<void> _load() async { try { final items = await _service.all(); if (mounted) setState(() { _items = items.where((item) => item.status == 'Pending').toList(); _loading = false; }); } catch (_) { if (mounted) setState(() => _loading = false); } }
   Future<void> _decide(StaffLeaveRequest item, bool approve) async {
     final confirmed = await showDialog<bool>(context: context, builder: (_) => AlertDialog(title: Text(approve ? 'Approve Leave Request?' : 'Reject Leave Request?'), content: Text('Are you sure you want to ${approve ? 'approve' : 'reject'} this leave request?'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(approve ? 'Approve' : 'Reject'))]));
-    if (confirmed != true || item.id == null) return;
+    if (confirmed != true || item.id == null || !mounted) return;
     final state = context.read<AppState>();
     final actor = {'userId': state.currentUserId ?? '', 'name': state.currentUserEmail ?? state.currentUserId ?? ''};
     try { if (approve) { await _service.approve(item.id!, actor); } else { await _service.reject(item.id!, actor, ''); } await _load(); } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString()))); }

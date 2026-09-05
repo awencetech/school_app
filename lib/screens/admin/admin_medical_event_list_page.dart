@@ -133,7 +133,7 @@ class _MessageBox extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFDFE7F1)), borderRadius: BorderRadius.circular(10)),
-    child: Column(children: [Icon(icon, size: 42, color: AppColors.topBar), const SizedBox(height: 10), Text(text, textAlign: TextAlign.center), if (action != null) action!]),
+    child: Column(children: [Icon(icon, size: 42, color: AppColors.topBar), const SizedBox(height: 10), Text(text, textAlign: TextAlign.center), ?action]),
   );
 }
 
@@ -242,41 +242,60 @@ class _MedicalEventFormState extends State<_MedicalEventForm> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _student == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete all required fields.'))); return; }
+    if (!_formKey.currentState!.validate() || _student == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete all required fields.')));
+      return;
+    }
     setState(() => _saving = true);
     try {
       var imageUrl = _imageUrl;
-      if (_file != null && _fileBytes != null) imageUrl = await _service.uploadReport(_file!.name, _fileBytes!);
       final state = context.read<AppState>();
       final userId = (state.currentUserId ?? '').trim();
       final name = (state.currentUserEmail ?? '').trim();
       final actor = {'userId': userId, 'name': name.isEmpty ? userId : name};
+      if (_file != null && _fileBytes != null) {
+        imageUrl = await _service.uploadReport(_file!.name, _fileBytes!);
+      }
       await _service.save(MedicalEvent(id: widget.existing?.id, studentId: _student!.studentId, studentName: _student!.name, className: _classController.text.trim(), description: _descriptionController.text.trim(), symptomReported: _symptomController.text.trim(), specialNeedsKnown: _needsController.text.trim(), reportImage: imageUrl, reportedBy: widget.existing?.reportedBy ?? actor, lastModifiedBy: actor));
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
+      final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Medical event saved successfully.')));
-    } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString()))); }
-    finally { if (mounted) setState(() => _saving = false); }
+      messenger.showSnackBar(const SnackBar(content: Text('Medical event saved successfully.')));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     Widget content;
-    if (_loading) content = const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
-    else if (_loadError != null) content = Text(_loadError!);
-    else content = Form(key: _formKey, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      DropdownButtonFormField<StudentRecord>(value: _student, isExpanded: true, decoration: const InputDecoration(labelText: 'Student', border: OutlineInputBorder()), items: _students.map((student) => DropdownMenuItem(value: student, child: Text('${student.name} (${student.studentId})'))).toList(), onChanged: _saving ? null : (value) => setState(() => _student = value), validator: (value) => value == null ? 'Student is required.' : null),
+    if (_loading) {
+      content = const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
+    } else if (_loadError != null) {
+      content = Text(_loadError!);
+    } else {
+      content = Form(key: _formKey, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      DropdownButtonFormField<StudentRecord>(initialValue: _student, isExpanded: true, decoration: const InputDecoration(labelText: 'Student', border: OutlineInputBorder()), items: _students.map((student) => DropdownMenuItem(value: student, child: Text('${student.name} (${student.studentId})'))).toList(), onChanged: _saving ? null : (value) => setState(() => _student = value), validator: (value) => value == null ? 'Student is required.' : null),
       const SizedBox(height: 12), _field(_classController, 'Class', true), const SizedBox(height: 12), _field(_descriptionController, 'Description', true, 3), const SizedBox(height: 16),
       const Text('First Observations', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)), const SizedBox(height: 10), _field(_symptomController, 'Symptom Reported', true, 3), const SizedBox(height: 12), _field(_needsController, 'Special Needs Known', false, 3), const SizedBox(height: 12),
       OutlinedButton.icon(onPressed: _saving ? null : _pickImage, icon: const Icon(Icons.upload_file), label: const Text('Upload Medical Report Image (Optional)')),
       if (_fileBytes != null) _imagePreview(_fileBytes!, _file!.name, () => setState(() { _file = null; _fileBytes = null; })) else if (_imageUrl.isNotEmpty) _networkPreview(),
-    ])));
+      ])));
+    }
     return AlertDialog(title: Text(widget.existing == null ? 'Add Medical Event' : 'Edit Medical Event'), content: SizedBox(width: 540, child: content), actions: [TextButton(onPressed: _saving ? null : () => Navigator.pop(context), child: const Text('Cancel')), FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save), label: Text(_saving ? 'Saving...' : 'Save Medical Event'))]);
   }
 
   Widget _field(TextEditingController controller, String label, bool required, [int lines = 1]) => TextFormField(controller: controller, minLines: lines, maxLines: lines == 1 ? 1 : 5, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()), validator: required ? (value) => (value ?? '').trim().isEmpty ? '$label is required.' : null : null);
   Widget _imagePreview(Uint8List bytes, String name, VoidCallback remove) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const SizedBox(height: 10), Image.memory(bytes, height: 140, fit: BoxFit.contain), Row(children: [Expanded(child: Text(name, overflow: TextOverflow.ellipsis)), IconButton(onPressed: remove, icon: const Icon(Icons.close))])]);
-  Widget _networkPreview() => Column(children: [const SizedBox(height: 10), Image.network(_imageUrl, height: 140, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Text('Unable to load image')), Align(alignment: Alignment.centerRight, child: IconButton(onPressed: () => setState(() => _imageUrl = ''), icon: const Icon(Icons.close)))]);
+  Widget _networkPreview() => Column(children: [const SizedBox(height: 10), Image.network(_imageUrl, height: 140, fit: BoxFit.contain, errorBuilder: (_, _, _) => const Text('Unable to load image')), Align(alignment: Alignment.centerRight, child: IconButton(onPressed: () => setState(() => _imageUrl = ''), icon: const Icon(Icons.close)))]);
 }
 
 String _formatShortDate(DateTime? date) => date == null ? 'date unavailable' : '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';

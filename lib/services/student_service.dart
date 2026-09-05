@@ -79,8 +79,9 @@ class StudentService {
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
-    if (defaultTargetPlatform == TargetPlatform.android)
+    if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:3001';
+    }
     return 'http://localhost:3001';
   }
 
@@ -90,8 +91,9 @@ class StudentService {
     final response = await http
         .get(_uri('/api/students'))
         .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('Unable to load student information.');
+    }
     final payload = jsonDecode(response.body) as List<dynamic>;
     return payload
         .map(
@@ -150,8 +152,9 @@ class StudentService {
   }
 
   Future<StudentRecord> updateStudent(StudentRecord student) async {
-    if (student.id == null || student.id!.isEmpty)
+    if (student.id == null || student.id!.isEmpty) {
       throw Exception('Student record ID is missing.');
+    }
     final response = await http
         .put(
           _uri('/api/students/${Uri.encodeComponent(student.id!)}'),
@@ -183,8 +186,9 @@ class StudentService {
   String _message(int statusCode, String body) {
     try {
       final payload = jsonDecode(body);
-      if (payload is Map && payload['message'] != null)
+      if (payload is Map && payload['message'] != null) {
         return payload['message'].toString();
+      }
     } catch (_) {}
 
     final plainText = body

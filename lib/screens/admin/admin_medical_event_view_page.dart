@@ -61,7 +61,7 @@ class AdminMedicalEventViewPage extends StatelessWidget {
                       item.reportImage,
                       width: double.infinity,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Padding(
+                      errorBuilder: (_, _, _) => const Padding(
                         padding: EdgeInsets.all(12),
                         child: Text('Unable to load medical report image.'),
                       ),

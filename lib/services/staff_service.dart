@@ -26,8 +26,9 @@ class StaffService {
     final response = await http
         .get(_uri('/api/staff'))
         .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('Unable to load staff information.');
+    }
     final payload = jsonDecode(response.body) as List<dynamic>;
     return payload
         .map(
@@ -55,8 +56,9 @@ class StaffService {
       _save('/api/staff', staff, create: true);
 
   Future<StaffInfo> updateStaff(StaffInfo staff) async {
-    if (staff.id == null || staff.id!.isEmpty)
+    if (staff.id == null || staff.id!.isEmpty) {
       throw Exception('Staff record ID is missing.');
+    }
     return _save('/api/staff/${Uri.encodeComponent(staff.id!)}', staff);
   }
 
@@ -83,8 +85,9 @@ class StaffService {
     final response = await http
         .delete(_uri('/api/staff/${Uri.encodeComponent(id)}'))
         .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception(_message(response.statusCode, response.body));
+    }
   }
 
   Future<String> uploadImage({
@@ -100,12 +103,14 @@ class StaffService {
     );
     final response = await request.send().timeout(const Duration(seconds: 30));
     final body = await response.stream.bytesToString();
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception(_message(response.statusCode, body));
+    }
     final payload = jsonDecode(body) as Map<String, dynamic>;
     final url = payload['url']?.toString();
-    if (url == null || url.isEmpty)
+    if (url == null || url.isEmpty) {
       throw Exception('Invalid staff image upload response.');
+    }
     return _normalizeUrl(url);
   }
 
@@ -116,8 +121,9 @@ class StaffService {
   String _message(int statusCode, String body) {
     try {
       final payload = jsonDecode(body);
-      if (payload is Map && payload['message'] != null)
+      if (payload is Map && payload['message'] != null) {
         return payload['message'].toString();
+      }
     } catch (_) {}
     final plainText = body
         .replaceAll(RegExp(r'<[^>]*>'), ' ')

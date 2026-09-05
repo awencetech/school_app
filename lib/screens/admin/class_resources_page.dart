@@ -226,11 +226,9 @@ class _ClassResourcesPageState extends State<ClassResourcesPage> {
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: () async {
-                      final result = await FilePicker.pickFiles(
-                        allowMultiple: false,
-                      );
-                      if (result.isEmpty) return;
-                      setState(() => selectedFile = result.first);
+                      final result = await FilePicker.pickFile();
+                      if (result == null || !context.mounted) return;
+                      setState(() => selectedFile = result);
                     },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(

@@ -23,6 +23,7 @@ import '../screens/staff/staff_placeholder_page.dart';
 import '../screens/student/student_dashboard.dart';
 import '../screens/student/student_info_screen.dart';
 import '../screens/student/student_attendance_page.dart';
+import '../screens/student/student_exam_results_page.dart';
 import '../screens/student/student_more_options_screen.dart';
 import '../screens/student/group_class_menu_screen.dart';
 import '../screens/student/student_menu_screen.dart';
@@ -251,6 +252,7 @@ class AppRouter {
       AppRoutes.studentDashboard => const StudentDashboard(),
       AppRoutes.studentDashboardInfo => const StudentInfoScreen(),
       AppRoutes.studentDashboardAttendance => const StudentAttendancePage(),
+      AppRoutes.studentDashboardExamResults => const StudentExamResultsPage(),
       AppRoutes.studentInfo => const StudentInfoScreen(),
       AppRoutes.studentMoreOptions => const StudentMoreOptionsScreen(),
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),

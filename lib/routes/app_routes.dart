@@ -10,6 +10,7 @@ class AppRoutes {
   static const studentDashboard = '/student-dashboard';
     static const studentDashboardInfo = '$studentDashboard/student-info';
     static const studentDashboardAttendance = '$studentDashboard/attendance';
+    static const studentDashboardExamResults = '$studentDashboard/exam-results';
   static const studentInfo = '/student-info';
   static const studentMoreOptions = '/student-more-options';
   static const groupClassMenu = '/group-class-menu';

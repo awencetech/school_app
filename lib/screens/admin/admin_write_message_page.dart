@@ -19,6 +19,7 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
   final _formKey = GlobalKey<FormState>();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
+  final _recipientController = TextEditingController();
   final _service = AdminMessageService();
   static const _types = ['General', 'Important', 'Announcement', 'Reminder'];
   String _type = 'General';
@@ -50,6 +51,7 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
   void dispose() {
     _subjectController.dispose();
     _messageController.dispose();
+    _recipientController.dispose();
     super.dispose();
   }
 
@@ -91,6 +93,7 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
         sendToStaff: _staff,
         groupId: _selectedGroup?.id,
         groupName: _selectedGroup?.name ?? 'All Groups',
+        recipientUsername: _recipientController.text.trim(),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,9 +120,7 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
 
   @override
   Widget build(BuildContext context) {
-    final adminName = (context.read<AppState>().currentUserEmail ?? '')
-        .split('@')
-        .first;
+    final adminName = (context.read<AppState>().currentUserId ?? '').trim();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -158,6 +159,12 @@ class _AdminWriteMessagePageState extends State<AdminWriteMessagePage> {
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'Message content cannot be empty.'
                   : null,
+            ),
+            const SizedBox(height: 16),
+            const _Heading('Recipient Username (optional)'),
+            TextFormField(
+              controller: _recipientController,
+              decoration: _decoration('Leave empty for selected role/group'),
             ),
             const SizedBox(height: 16),
             const _Heading('Message Type'),

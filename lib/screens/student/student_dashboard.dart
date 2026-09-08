@@ -465,9 +465,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       onGroupClassBusTap: () => Navigator.of(context).pushNamed(
                         AppRoutes.studentDashboardGroupsClassDiscussion,
                       ),
-                      onCheckApproveTap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.staffCheckApprove,
-                      ),
+                      showCheckApprove: false,
                       onUniRouteZ2Tap: () => Navigator.of(context).pushNamed(
                         AppRoutes.studentDashboardTrackUniRoute22,
                       ),

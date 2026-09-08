@@ -17,38 +17,6 @@ class StaffWriteMessagePage extends StatelessWidget {
   final String? quickAccessTitle;
   final bool studentMode;
 
-  static const _userGroups = [
-    _MessageGroup(
-      'UNI Route Z1',
-      'UNI Route Z1\n2025(2025)',
-      'MOHAMED TAJDEEHEN R in UNI Route Z1 2025(2025)',
-    ),
-  ];
-
-  static const _studentGroups = [
-    _MessageGroup(
-      '10 C Grade 10 C',
-      '10 C Grade 10 C -\n2026-27 (2026)',
-      'MOHAMED AZEEMSHA A in 10 C Grade 10 C - 2026-27 (2026)',
-    ),
-    _MessageGroup(
-      'UNI-Route Z2',
-      'UNI-Route Z2\nUN Route 2026-27',
-      'Parent of MOHAMED AZEEMSHA A in UNI-Route-Z2 UNI Route Z2 2026(2026)',
-    ),
-    _MessageGroup(
-      'SP7 UNI - Route',
-      'SP7 UNI - Route\nS7 - 2025(2026)',
-      'MOHAMED AZEEMSHA A in SP7 UNI - Route SP7 - 2025(2026)',
-    ),
-  ];
-
-  void _selectGroup(BuildContext context, _MessageGroup group) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => _StaffMessageComposePage(group: group)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (studentMode) {
@@ -56,102 +24,8 @@ class StaffWriteMessagePage extends StatelessWidget {
         title: quickAccessTitle ?? 'Write Message',
       );
     }
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-        appBar: quickAccessTitle != null
-          ? QuickAccessAppBar(title: quickAccessTitle!)
-          : AppBar(
-        backgroundColor: const Color(0xff34395f),
-        elevation: 0,
-        toolbarHeight: 46,
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: const Text(
-          'Write Message',
-          style: TextStyle(color: Colors.white, fontSize: 14),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(10, 17, 10, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Write Message',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff444444),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => navigateBack(context),
-                        child: const Icon(
-                          Icons.close,
-                          size: 19,
-                          color: Color(0xff333333),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'First Select a group or class to Write a Message',
-                    style: TextStyle(fontSize: 11, color: Color(0xff444444)),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Groups/Classes of MOHAMED TAJDEEHEN R',
-                    style: TextStyle(fontSize: 11, color: Color(0xff444444)),
-                  ),
-                  const SizedBox(height: 4),
-                  _GroupRow(
-                    groups: _userGroups,
-                    onTap: (group) => _selectGroup(context, group),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Groups/Classes of Student MOHAMED AZEEMSHA A',
-                    style: TextStyle(fontSize: 11, color: Color(0xff444444)),
-                  ),
-                  const SizedBox(height: 4),
-                  _GroupRow(
-                    groups: _studentGroups,
-                    onTap: (group) => _selectGroup(context, group),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: ReusableBottomNavigationBar(
-        currentIndex: 2,
-        onItemSelected: (index) {
-          if (index == 4) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
-          BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.logout),
-            label: 'Quick Menu',
-          ),
-        ],
-      ),
+    return const _StaffMessageComposePage(
+      group: _MessageGroup('All Groups', '', ''),
     );
   }
 }
@@ -381,27 +255,68 @@ class _StaffMessageComposePage extends StatefulWidget {
 }
 
 class _StaffMessageComposePageState extends State<_StaffMessageComposePage> {
-  String _selectedMessageType = '(Select One)';
+  final _service = AdminMessageService();
+  final _subjectController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _isSending = false;
+  String? _error;
+
+  String get _username {
+    final username = (context.read<AppState>().currentUserId ?? '').trim();
+    return username.isEmpty ? 'Staff' : username;
+  }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final subject = _subjectController.text.trim();
+    final message = _messageController.text.trim();
+    if (subject.isEmpty || message.isEmpty) {
+      setState(() => _error = 'Please enter a subject and message.');
+      return;
+    }
+    final appState = context.read<AppState>();
+    if ((appState.currentUserId ?? '').trim().isEmpty ||
+        (appState.currentUserRole ?? '').trim().toLowerCase() != 'staff') {
+      setState(() => _error = 'Please log in with a staff account.');
+      return;
+    }
+    if (_isSending) return;
+    setState(() {
+      _isSending = true;
+      _error = null;
+    });
+    try {
+      await _service.createStaffMessage(
+        subject: subject,
+        message: message,
+        groupName: widget.group.title,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message sent successfully.')),
+      );
+      Navigator.of(context).pushReplacementNamed(AppRoutes.staffDashboard);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+          _error = error.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xff34395f),
-        elevation: 0,
-        toolbarHeight: 46,
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          onPressed: () => navigateBack(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
-        ),
-      ),
+      appBar: const QuickAccessAppBar(title: 'Write Message'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
         child: Column(
@@ -412,71 +327,79 @@ class _StaffMessageComposePageState extends State<_StaffMessageComposePage> {
               style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
             ),
             const SizedBox(height: 9),
-            Text(
-              widget.group.messageHeading,
-              style: const TextStyle(fontSize: 11, height: 1.25),
-            ),
             const Text(
-              'Message for',
+              'From',
               style: TextStyle(fontSize: 11, color: Color(0xff222222)),
             ),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedMessageType,
-              isExpanded: true,
-              iconSize: 15,
-              style: const TextStyle(fontSize: 10, color: Color(0xff333333)),
-              decoration: const InputDecoration(
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Text(
+                  _username,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(3)),
-                  borderSide: BorderSide(color: Color(0xffcccccc)),
+                const SizedBox(width: 10),
+                const Text(
+                  'Staff',
+                  style: TextStyle(fontSize: 11, color: Color(0xff555555)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _subjectController,
+              decoration: const InputDecoration(
+                labelText: 'Subject',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _messageController,
+              minLines: 4,
+              maxLines: 8,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            if (_messageController.text.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Message Preview',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xfff7f8fc),
+                  border: Border.all(color: const Color(0xffdddddd)),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  _messageController.text,
+                  style: const TextStyle(fontSize: 10, height: 1.3),
                 ),
               ),
-              items: const [
-                DropdownMenuItem(
-                  value: '(Select One)',
-                  child: Text('(Select One)'),
-                ),
-                DropdownMenuItem(value: 'School', child: Text('School')),
-                DropdownMenuItem(value: 'Class/es', child: Text('Class/es')),
-                DropdownMenuItem(value: 'Teacher/s', child: Text('Teacher/s')),
-                DropdownMenuItem(value: 'Student/s', child: Text('Student/s')),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedMessageType = value);
-                }
-              },
-            ),
-            const SizedBox(height: 9),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                height: 19,
-                width: 29,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Message sent successfully.'),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    backgroundColor: const Color(0xff087ff5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  child: const Text('Send', style: TextStyle(fontSize: 8)),
-                ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 10)),
+            ],
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isSending ? null : _send,
+                icon: const Icon(Icons.send),
+                label: Text(_isSending ? 'Sending...' : 'Send'),
               ),
             ),
           ],
@@ -506,51 +429,3 @@ class _StaffMessageComposePageState extends State<_StaffMessageComposePage> {
   }
 }
 
-class _GroupRow extends StatelessWidget {
-  const _GroupRow({required this.groups, required this.onTap});
-
-  final List<_MessageGroup> groups;
-  final ValueChanged<_MessageGroup> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: groups
-          .map(
-            (group) => SizedBox(
-              width: 72,
-              child: InkWell(
-                onTap: () => onTap(group),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.directions_bus_filled,
-                        size: 28,
-                        color: Colors.black,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        group.subtitle,
-                        textAlign: TextAlign.center,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 7,
-                          height: 1.15,
-                          color: Color(0xff777777),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-}

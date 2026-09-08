@@ -117,14 +117,14 @@ class _MessagesPageState extends State<MessagesPage> {
     return MessageModel(
       id: 'admin-${message.id}',
       title: message.subject,
-      teacherName: 'From: ${message.senderName}',
+      teacherName: 'From: ${message.senderName}${message.senderRole.isEmpty ? '' : ' (${_displayRole(message.senderRole)})'}',
       createdDate: date == null
           ? ''
           : '${date.day.toString().padLeft(2, '0')} ${_month(date.month)} ${date.year}',
       createdTime: '',
       message: message.message,
       profileImage: null,
-      isViewed: false,
+      isViewed: message.read,
       category: message.messageType,
       groupName: message.groupName,
       recipientLabel: message.recipientTypes
@@ -138,7 +138,7 @@ class _MessagesPageState extends State<MessagesPage> {
     return MessageModel(
       id: 'student-${message.id}',
       title: message.subject,
-      teacherName: 'From: ${message.senderName}',
+      teacherName: 'From: ${message.senderName}${message.senderRole.isEmpty ? '' : ' (${_displayRole(message.senderRole)})'}',
       createdDate: date == null
           ? ''
           : '${date.day.toString().padLeft(2, '0')} ${_month(date.month)} ${date.year}',
@@ -147,7 +147,7 @@ class _MessagesPageState extends State<MessagesPage> {
           : '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
       message: message.message,
       profileImage: null,
-      isViewed: false,
+      isViewed: message.read,
       category: message.messageType,
       groupName: message.groupName,
       recipientLabel: message.groupName,
@@ -168,6 +168,14 @@ class _MessagesPageState extends State<MessagesPage> {
     'Nov',
     'Dec',
   ][month - 1];
+
+  String _displayRole(String role) {
+    final normalized = role.trim().toLowerCase();
+    if (normalized == 'student' || normalized == 'students') return 'Student';
+    if (normalized == 'staff' || normalized == 'teacher') return 'Staff';
+    if (normalized == 'admin' || normalized == 'administrator') return 'Admin';
+    return role;
+  }
 
   @override
   void dispose() {
@@ -640,7 +648,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                           'Message From\n${message.teacherName}',
                                           style: GoogleFonts.poppins(
                                             fontSize: 12,
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w600,
                                             color: primaryColor,
                                           ),
                                         ),

@@ -5,7 +5,9 @@ class AdminMessage {
     required this.message,
     required this.messageType,
     required this.senderName,
+    this.senderRole = '',
     required this.createdAt,
+    this.read = false,
     this.groupName = 'All Groups',
     this.recipientTypes = const [],
     this.targetType = 'all',
@@ -17,7 +19,9 @@ class AdminMessage {
   final String message;
   final String messageType;
   final String senderName;
+  final String senderRole;
   final DateTime? createdAt;
+  final bool read;
   final String groupName;
   final List<String> recipientTypes;
   final String targetType;
@@ -31,7 +35,9 @@ class AdminMessage {
       messageType: (json['messageType'] ?? json['category'] ?? 'General')
           .toString(),
       senderName: (json['senderName'] ?? 'Admin').toString(),
+      senderRole: (json['senderRole'] ?? '').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
+      read: json['read'] == true || json['isViewed'] == true,
       groupName: (json['groupName'] ?? 'All Groups').toString(),
       recipientTypes: (json['recipientTypes'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())

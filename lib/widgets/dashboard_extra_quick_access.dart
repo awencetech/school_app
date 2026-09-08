@@ -14,6 +14,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
     this.onUniRouteZ2Tap,
     this.onSp7Tap,
     this.onTrackTap,
+    this.showCheckApprove = true,
     this.appBarTitle = 'Quick Access',
   });
 
@@ -24,6 +25,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
   final VoidCallback? onUniRouteZ2Tap;
   final VoidCallback? onSp7Tap;
   final VoidCallback? onTrackTap;
+  final bool showCheckApprove;
   final String appBarTitle;
 
   static const _items = [
@@ -40,6 +42,13 @@ class DashboardExtraQuickAccess extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final extraIndexes = [
+      0,
+      if (showCheckApprove) 1,
+      2,
+      3,
+      4,
+    ];
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -50,24 +59,25 @@ class DashboardExtraQuickAccess extends StatelessWidget {
         mainAxisSpacing: DashboardIconGrid.mainAxisSpacing,
         childAspectRatio: DashboardIconGrid.childAspectRatio,
       ),
-      itemCount: leadingItems.length + _items.length,
+      itemCount: leadingItems.length + extraIndexes.length,
       itemBuilder: (context, index) {
         if (index < leadingItems.length) {
           return leadingItems[index];
         }
 
         final extraIndex = index - leadingItems.length;
-        final item = _items[extraIndex];
+        final itemIndex = extraIndexes[extraIndex];
+        final item = _items[itemIndex];
         return InkWell(
-          onTap: extraIndex == 0 && onGroupClassBusTap != null
+          onTap: itemIndex == 0 && onGroupClassBusTap != null
               ? onGroupClassBusTap
-              : extraIndex == 1 && onCheckApproveTap != null
+              : itemIndex == 1 && onCheckApproveTap != null
               ? onCheckApproveTap
-              : extraIndex == 2 && onUniRouteZ2Tap != null
+              : itemIndex == 2 && onUniRouteZ2Tap != null
               ? onUniRouteZ2Tap
-              : extraIndex == 3 && onSp7Tap != null
+              : itemIndex == 3 && onSp7Tap != null
               ? onSp7Tap
-              : extraIndex == 4 && onTrackTap != null
+              : itemIndex == 4 && onTrackTap != null
               ? onTrackTap
               : () => Navigator.of(context).push(
                   MaterialPageRoute<void>(

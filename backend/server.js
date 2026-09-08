@@ -189,8 +189,189 @@ async function requireGroupAccess(req, res, next) {
   }
 }
 
+function requireCampaignReader(req, res, next) {
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (!['student', 'staff', 'teacher'].includes(role)) {
+      return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
+    }
+    req.auth = auth;
+    return next();
+  } catch (_) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+}
+
+function requirePtmReader(req, res, next) {
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (!['student', 'staff', 'teacher', 'admin'].includes(role)) {
+      return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
+    }
+    req.auth = auth;
+    return next();
+  } catch (_) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+}
+
 app.use('/api/groups', requireTeacherMutation);
 app.use('/api/groups/:groupId', requireGroupAccess);
+
+function sanitizeStudentCampaignForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || '',
+    title: doc.title || '',
+    description: doc.description || '',
+    type: doc.type || 'Campaign',
+    className: doc.className || '',
+    startDate: doc.startDate || null,
+    endDate: doc.endDate || null,
+    instructions: doc.instructions || '',
+    imageUrl: doc.imageUrl || '',
+    status: doc.status || 'Active',
+    createdBy: doc.createdBy || '',
+    createdAt: doc.createdAt || null,
+  };
+}
+
+app.get('/api/student-campaigns', requireCampaignReader, async (req, res) => {
+  try {
+    await connectMongo();
+    const now = new Date().toISOString();
+    const filter = { status: 'Active', startDate: { $lte: now }, endDate: { $gte: now } };
+    if ((req.auth.role || '').toLowerCase() === 'student') {
+      const student = await studentInfoCollection.findOne({ $or: [{ studentId: req.auth.userId }, { admissionNumber: req.auth.userId }] });
+      const className = [student?.className, student?.section].filter(Boolean).join('-');
+      filter.$or = [{ className: '' }, { className: className }];
+    }
+    const campaigns = await studentCampaignCollection.find(filter).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: campaigns.map(sanitizeStudentCampaignForResponse) });
+  } catch (error) {
+    console.error('GET /api/student-campaigns failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load campaigns.' });
+  }
+});
+
+app.post('/api/student-campaigns', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const description = String(body.description || '').trim();
+    const type = String(body.type || '').trim();
+    const className = String(body.className || '').trim();
+    const startDate = String(body.startDate || '').trim();
+    const endDate = String(body.endDate || '').trim();
+    if (!title || !description || !type || !className || !startDate || !endDate) {
+      return res.status(422).json({ message: 'Title, description, type, class, and dates are required.' });
+    }
+    if (Number.isNaN(Date.parse(startDate)) || Number.isNaN(Date.parse(endDate)) || Date.parse(endDate) < Date.parse(startDate)) {
+      return res.status(422).json({ message: 'Please provide a valid date range.' });
+    }
+    const document = {
+      title, description, type, className, startDate, endDate,
+      instructions: String(body.instructions || '').trim(),
+      imageUrl: String(body.imageUrl || '').trim(),
+      status: 'Active',
+      createdBy: String(req.auth.userId || '').trim(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const result = await studentCampaignCollection.insertOne(document);
+    return res.status(201).json({ success: true, data: sanitizeStudentCampaignForResponse(await studentCampaignCollection.findOne({ _id: result.insertedId })) });
+  } catch (error) {
+    console.error('POST /api/student-campaigns failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to save campaign.' });
+  }
+});
+
+function sanitizePtmForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || '',
+    title: doc.title || '',
+    message: doc.message || '',
+    className: doc.className || '',
+    section: doc.section || '',
+    date: doc.date || '',
+    time: doc.time || '',
+    venue: doc.venue || '',
+    instructions: doc.instructions || '',
+    imageUrl: doc.imageUrl || '',
+    status: doc.status || 'Active',
+    createdBy: doc.createdBy || '',
+    createdAt: doc.createdAt || null,
+  };
+}
+
+app.get('/api/student-ptm', requirePtmReader, async (req, res) => {
+  try {
+    await connectMongo();
+    const filter = { status: { $ne: 'Cancelled' } };
+    if ((req.auth.role || '').toLowerCase() === 'student') {
+      const student = await studentInfoCollection.findOne({
+        $or: [{ studentId: req.auth.userId }, { admissionNumber: req.auth.userId }],
+      });
+      if (!student?.className || !student?.section) {
+        return res.status(422).json({ message: 'Student class and section are not available.' });
+      }
+      filter.$or = [
+        { className: '' },
+        { className: String(student.className).trim(), section: String(student.section).trim() },
+      ];
+    }
+    const records = await studentPtmCollection.find(filter).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: records.map(sanitizePtmForResponse) });
+  } catch (error) {
+    console.error('GET /api/student-ptm failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load PTMs.' });
+  }
+});
+
+app.post('/api/student-ptm', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const message = String(body.message || '').trim();
+    const className = String(body.className || '').trim();
+    const section = String(body.section || '').trim();
+    const date = String(body.date || '').trim();
+    const time = String(body.time || '').trim();
+    const venue = String(body.venue || '').trim();
+    if (!title || !message || !className || !section || !date || !time || !venue) {
+      return res.status(422).json({ message: 'Title, message, class, section, date, time, and venue are required.' });
+    }
+    if (Number.isNaN(Date.parse(date))) {
+      return res.status(422).json({ message: 'Please provide a valid PTM date.' });
+    }
+    const now = new Date().toISOString();
+    const document = {
+      title,
+      message,
+      className,
+      section,
+      date,
+      time,
+      venue,
+      instructions: String(body.instructions || '').trim(),
+      imageUrl: String(body.imageUrl || '').trim(),
+      status: 'Active',
+      createdBy: String(req.auth.userId || '').trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await studentPtmCollection.insertOne(document);
+    return res.status(201).json({ success: true, data: sanitizePtmForResponse(await studentPtmCollection.findOne({ _id: result.insertedId })) });
+  } catch (error) {
+    console.error('POST /api/student-ptm failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to publish PTM.' });
+  }
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -212,10 +393,14 @@ app.post('/api/messages/admin', requireAdmin, async (req, res) => {
       return res.status(422).json({ message: 'At least one recipient is required.' });
     }
     const senderId = String(req.auth.userId || '').trim();
-    const admin = await usersCollection.findOne({ userId: senderId });
-    const senderName = String(admin?.name || admin?.fullName || admin?.email || 'Admin').split('@')[0];
+    const senderName = senderId;
+    const recipientUsername = String(body.recipientUsername || '').trim();
     const now = new Date().toISOString();
-    const document = {
+    const recipientRoles = [
+      ...(sendToStudents ? ['student'] : []),
+      ...(sendToStaff ? ['staff'] : []),
+    ];
+    const documents = recipientRoles.map((recipientRole) => ({
       subject,
       title: subject,
       message,
@@ -225,18 +410,62 @@ app.post('/api/messages/admin', requireAdmin, async (req, res) => {
       senderId,
       senderName,
       senderRole: 'admin',
-      sendToStudents,
-      sendToStaff,
-      groupId: body.groupId ? String(body.groupId).trim() : null,
+      recipientId: recipientUsername,
+      recipientUsername,
+      recipientRole,
+      groupId: body.groupId ? String(body.groupId).trim() : '',
       groupName: String(body.groupName || 'All Groups').trim() || 'All Groups',
+      read: false,
+      isViewed: false,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    const result = await studentMessagesCollection.insertMany(documents);
+    const firstId = result.insertedIds[0];
+    const saved = await studentMessagesCollection.findOne({ _id: firstId });
+    return res.status(201).json({ success: true, message: 'Message sent successfully.', data: sanitizeStudentMessageForResponse(saved) });
+  } catch (error) {
+    console.error('POST /api/messages/admin failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to send message.' });
+  }
+});
+
+app.post('/api/messages/staff', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const subject = String(req.body?.subject || '').trim();
+    const message = String(req.body?.message || '').trim();
+    const groupName = String(req.body?.groupName || 'All Groups').trim() || 'All Groups';
+    if (!subject || !message) {
+      return res.status(422).json({ message: 'Subject and message are required.' });
+    }
+    const senderId = String(req.auth.userId || '').trim();
+    const now = new Date().toISOString();
+    const document = {
+      subject,
+      title: subject,
+      message,
+      content: message,
+      messageType: String(req.body?.messageType || 'General').trim(),
+      category: String(req.body?.messageType || 'General').trim(),
+      senderId,
+      senderName: senderId,
+      senderRole: 'staff',
+      recipientId: String(req.body?.recipientId || '').trim(),
+      recipientUsername: String(req.body?.recipientUsername || req.body?.recipientId || '').trim(),
+      recipientRole: String(req.body?.recipientRole || '').trim().toLowerCase(),
+      read: false,
+      isViewed: false,
+      groupId: req.body?.groupId ? String(req.body.groupId).trim() : '',
+      groupName,
       createdAt: now,
       updatedAt: now,
     };
-    const result = await groupMessagesCollection.insertOne(document);
-    const saved = await groupMessagesCollection.findOne({ _id: result.insertedId });
-    return res.status(201).json({ success: true, message: 'Message sent successfully.', data: sanitizeAdminMessageForResponse(saved) });
+    const result = await studentMessagesCollection.insertOne(document);
+    const saved = await studentMessagesCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({ success: true, message: 'Message sent successfully.', data: sanitizeStudentMessageForResponse(saved) });
   } catch (error) {
-    console.error('POST /api/messages/admin failed:', error);
+    console.error('POST /api/messages/staff failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to send message.' });
   }
 });
@@ -269,6 +498,89 @@ async function getAdminMessagesForRecipient(req, res, role) {
 }
 
 app.get('/api/messages/student', requireRecipientRole('student'), (req, res) => getAdminMessagesForRecipient(req, res, 'student'));
+
+function performanceNumber(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const parsed = Number.parseFloat(String(value ?? '').replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function nestedPerformanceValue(student, names) {
+  const normalizedNames = names.map((name) => name.toLowerCase());
+  const visit = (value, path = '') => {
+    if (!value || typeof value !== 'object') return null;
+    for (const [key, child] of Object.entries(value)) {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizedPath = `${path}${normalizedKey}`;
+      if (normalizedNames.some((name) => normalizedPath.includes(name))) {
+        const number = performanceNumber(child);
+        if (number != null) return number;
+      }
+      const nested = visit(child, `${normalizedPath}.`);
+      if (nested != null) return nested;
+    }
+    return null;
+  };
+  return visit(student);
+}
+
+function performanceTotalMark(student, testNames) {
+  return nestedPerformanceValue(student, testNames) || 100;
+}
+
+function performancePhoto(student) {
+  return student.imageUrl || student.photo || student.profileImage || '';
+}
+
+app.get('/api/campaign-performance', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const students = await studentInfoCollection.find({ role: { $in: ['student', 'Student', ''] } }).toArray();
+    const makeResults = (testNames, testName) => students
+      .map((student) => {
+        const mark = nestedPerformanceValue(student, testNames);
+        if (mark == null) return null;
+        const totalMark = performanceTotalMark(student, [...testNames, 'totalmark', 'maxmark']);
+        return {
+          name: student.name || student.studentId || '',
+          className: [student.className, student.section].filter(Boolean).join('-'),
+          photoUrl: performancePhoto(student),
+          testName,
+          mark,
+          totalMark,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.mark - a.mark);
+
+    const classTestResults = makeResults(['classtest', 'class_test'], 'Class Test');
+    const monthlyTestResults = makeResults(['monthlytest', 'monthly_test'], 'Monthly Test');
+    const withRanks = (results) => {
+      if (!results.length) return [];
+      const highest = results[0].mark;
+      return results
+        .filter((item) => item.mark === highest)
+        .map((item) => ({ ...item, rank: 1 }));
+    };
+    const explicitAchievement = students.filter((student) =>
+      student.achieved === true || String(student.status || '').toLowerCase() === 'achieved',
+    ).length;
+    const totalStudents = students.length;
+    return res.json({
+      success: true,
+      data: {
+        totalStudents,
+        achievedStudents: explicitAchievement,
+        achievementPercentage: totalStudents ? (explicitAchievement / totalStudents) * 100 : 0,
+        classTestToppers: withRanks(classTestResults),
+        monthlyTestToppers: withRanks(monthlyTestResults),
+      },
+    });
+  } catch (error) {
+    console.error('GET /api/campaign-performance failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load class performance.' });
+  }
+});
 
 function sanitizeStudentRequestForResponse(doc) {
   if (!doc) return null;
@@ -391,6 +703,107 @@ function sanitizeStudentMessageForResponse(doc) {
   };
 }
 
+function normalizedMessageRole(role) {
+  const value = String(role || '').trim().toLowerCase();
+  if (value === 'administrator') return 'admin';
+  if (value === 'teacher') return 'staff';
+  return value;
+}
+
+function messageRecipientFilter(req) {
+  const userId = String(req.auth.userId || '').trim();
+  const role = normalizedMessageRole(req.auth.role);
+  const roleValues = role === 'admin'
+    ? ['admin', 'administrator', '']
+    : role === 'staff'
+    ? ['staff', 'teacher', '']
+    : ['student', 'students', ''];
+  return {
+    $or: [
+      { recipientId: userId },
+      { recipientUsername: userId },
+      { recipientId: '', recipientRole: { $in: roleValues } },
+      { recipientId: null, recipientRole: { $in: roleValues } },
+    ],
+  };
+}
+
+app.get('/api/messages/inbox', requirePtmReader, async (req, res) => {
+  try {
+    await connectMongo();
+    const role = normalizedMessageRole(req.auth.role);
+    const profile = role === 'student'
+      ? await studentInfoCollection.findOne({ $or: [{ studentId: req.auth.userId }, { admissionNumber: req.auth.userId }] })
+      : await employeeInfoCollection.findOne({ $or: [{ employeeId: req.auth.userId }, { staffId: req.auth.userId }] });
+    const groupValues = [
+      profile?.groupId,
+      profile?.groupName,
+      profile?.className,
+      profile?.class,
+      [profile?.className, profile?.section].filter(Boolean).join('-'),
+    ]
+      .filter(Boolean).map((value) => String(value));
+    const currentUserId = String(req.auth.userId || '').trim();
+    const recipientScope = {
+      $or: [
+        messageRecipientFilter(req),
+        ...(role === 'student' ? [{ senderId: currentUserId }] : []),
+      ],
+    };
+    const direct = await studentMessagesCollection.find({
+      $and: [
+        recipientScope,
+        {
+          $or: [
+            { recipientId: currentUserId },
+            { recipientUsername: currentUserId },
+            { senderId: currentUserId },
+            { groupId: null },
+            { groupId: '' },
+            { groupName: null },
+            { groupName: '' },
+            ...groupValues.map((value) => ({ groupId: value })),
+            ...groupValues.map((value) => ({ groupName: value })),
+          ],
+        },
+      ],
+    }).toArray();
+    const recipientField = role === 'student' ? 'sendToStudents' : 'sendToStaff';
+    const legacyFilter = {
+      senderRole: { $in: ['admin', 'staff', 'teacher'] },
+      [recipientField]: true,
+      $or: [
+        { groupId: null },
+        { groupId: '' },
+        ...(groupValues.length ? [{ groupId: { $in: groupValues } }, { groupName: { $in: groupValues } }] : []),
+      ],
+    };
+    const legacy = await groupMessagesCollection.find(legacyFilter).toArray();
+    const messages = [...direct, ...legacy]
+      .map((message) => sanitizeStudentMessageForResponse(message))
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    return res.json({ success: true, data: messages });
+  } catch (error) {
+    console.error('GET /api/messages/inbox failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load messages.' });
+  }
+});
+
+app.patch('/api/messages/:id/read', requirePtmReader, async (req, res) => {
+  try {
+    await connectMongo();
+    const selector = { _id: new ObjectId(req.params.id), ...messageRecipientFilter(req) };
+    const result = await studentMessagesCollection.updateOne(selector, {
+      $set: { read: true, isViewed: true, updatedAt: new Date().toISOString() },
+    });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Message not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('PATCH /api/messages/:id/read failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to mark message as read.' });
+  }
+});
+
 app.post('/api/messages/student-message', requireRecipientRole('student'), async (req, res) => {
   try {
     await connectMongo();
@@ -415,10 +828,12 @@ app.post('/api/messages/student-message', requireRecipientRole('student'), async
       studentId,
       studentName,
       senderId: studentId,
-      senderName: studentName,
+      senderName: studentId,
       senderEmail: studentEmail,
       senderRole: 'student',
       recipientId: String(body.recipientId || '').trim(),
+      recipientUsername: String(body.recipientUsername || body.recipientId || '').trim(),
+      recipientRole: String(body.recipientRole || '').trim().toLowerCase(),
       recipientLabel: groupName,
       groupId,
       groupName,
@@ -825,6 +1240,8 @@ let studentDiaryCollection;
 let groupMessagesCollection;
 let studentMessagesCollection;
 let studentRequestsCollection;
+let studentCampaignCollection;
+let studentPtmCollection;
 let groupMessageCommentsCollection;
 let classTimetableCollection;
 let legacyClassTimetableCollection;
@@ -844,6 +1261,7 @@ let lessonPlansCollection;
 let schoolNewsCollection;
 let medicalEventCollection;
 let staffLeaveCollection;
+let staffRequestCollection;
 let staffLeaveEntitlementsCollection;
 let busGpsCollection;
 let oneOnOneMeetingsCollection;
@@ -879,6 +1297,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
     safeCreateIndex(studentMessagesCollection, { studentId: 1, createdAt: -1 }),
     safeCreateIndex(studentRequestsCollection, { status: 1, createdAt: -1 }),
+    safeCreateIndex(studentPtmCollection, { className: 1, section: 1, createdAt: -1 }),
     safeCreateIndex(groupMessageCommentsCollection, { groupId: 1, messageId: 1, createdAt: 1 }),
     safeCreateIndex(classTimetableCollection, { groupId: 1, day: 1, startTime: 1 }),
     safeCreateIndex(
@@ -901,6 +1320,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(classNewsCollection, { groupId: 1, publishedAt: -1 }),
     safeCreateIndex(schoolNewsCollection, { isPublished: 1, date: -1, createdAt: -1 }),
     safeCreateIndex(staffLeaveCollection, { staffId: 1, createdAt: -1 }),
+    safeCreateIndex(staffRequestCollection, { username: 1, createdAt: -1 }),
     safeCreateIndex(staffLeaveEntitlementsCollection, { staffId: 1, year: 1, leaveType: 1 }),
     safeCreateIndex(busGpsCollection, { busRouteCode: 1 }),
     safeCreateIndex(oneOnOneMeetingsCollection, { staffId: 1, startDateTime: -1 }),
@@ -936,6 +1356,8 @@ async function connectMongo() {
     groupMessagesCollection = db.collection('groupMessages');
     studentMessagesCollection = db.collection('student-message');
     studentRequestsCollection = db.collection('student-request');
+    studentCampaignCollection = db.collection('student-campaign');
+    studentPtmCollection = db.collection('student-ptm');
     groupMessageCommentsCollection = db.collection('groupMessageComments');
     classTimetableCollection = db.collection('class-timetables');
     legacyClassTimetableCollection = db.collection('class-timetable');
@@ -955,6 +1377,7 @@ async function connectMongo() {
     schoolNewsCollection = db.collection('schoolnews');
     medicalEventCollection = db.collection('medical-event');
     staffLeaveCollection = db.collection('emp-leave');
+    staffRequestCollection = db.collection('staff-request');
     staffLeaveEntitlementsCollection = db.collection('staff-leave-entitlements');
     busGpsCollection = db.collection('bus gps');
     oneOnOneMeetingsCollection = db.collection('one-on-one-meetings');
@@ -4863,6 +5286,90 @@ app.delete('/api/one-on-one-meetings/:id', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/one-on-one-meetings/:id failed:', error);
     return res.status(500).json({ message: 'Unable to delete the meeting.' });
+  }
+});
+
+function sanitizeStaffRequestForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || '',
+    username: doc.username || doc.staffId || '',
+    staffId: doc.staffId || doc.username || '',
+    staffName: doc.staffName || doc.username || '',
+    leaveType: doc.leaveType || '',
+    startDate: doc.startDate || null,
+    endDate: doc.endDate || null,
+    reason: doc.reason || '',
+    notes: doc.notes || '',
+    status: doc.status || 'Pending',
+    createdAt: doc.createdAt || null,
+  };
+}
+
+app.post('/api/staff-request', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const leaveType = String(body.leaveType || '').trim();
+    const startDate = String(body.startDate || '').trim();
+    const endDate = String(body.endDate || '').trim();
+    const reason = String(body.reason || '').trim();
+    const username = String(req.auth.userId || '').trim();
+    if (!username || !leaveType || !startDate || !endDate || !reason) {
+      return res.status(422).json({ message: 'Username, leave type, dates, and reason are required.' });
+    }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+      return res.status(422).json({ message: 'Please provide valid leave dates.' });
+    }
+    const now = new Date().toISOString();
+    const document = {
+      username,
+      staffId: username,
+      staffName: username,
+      leaveType,
+      startDate,
+      endDate,
+      reason,
+      notes: String(body.notes || '').trim(),
+      status: 'Pending',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await staffRequestCollection.insertOne(document);
+    return res.status(201).json({ success: true, message: 'Leave request sent successfully', data: sanitizeStaffRequestForResponse(await staffRequestCollection.findOne({ _id: result.insertedId })) });
+  } catch (error) {
+    console.error('POST /api/staff-request failed:', error);
+    return res.status(500).json({ success: false, message: 'Failed to send leave request.' });
+  }
+});
+
+app.get('/api/staff-request', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const items = await staffRequestCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: items.map(sanitizeStaffRequestForResponse) });
+  } catch (error) {
+    console.error('GET /api/staff-request failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load staff leave requests.' });
+  }
+});
+
+app.patch('/api/staff-request/:id/status', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const status = String(req.body?.status || '').trim();
+    if (!['Approved', 'Rejected'].includes(status)) return res.status(422).json({ message: 'Status must be Approved or Rejected.' });
+    const result = await staffRequestCollection.updateOne(
+      { _id: new ObjectId(req.params.id), status: 'Pending' },
+      { $set: { status, updatedAt: new Date().toISOString(), decidedBy: req.auth.userId, decisionReason: String(req.body?.reason || '').trim() } },
+    );
+    if (!result.matchedCount) return res.status(404).json({ message: 'Pending leave request not found.' });
+    return res.json({ success: true, data: sanitizeStaffRequestForResponse(await staffRequestCollection.findOne({ _id: new ObjectId(req.params.id) })) });
+  } catch (error) {
+    console.error('PATCH /api/staff-request/:id/status failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to update leave request.' });
   }
 });
 

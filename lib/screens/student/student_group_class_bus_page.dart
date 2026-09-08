@@ -9,10 +9,12 @@ class StudentGroupClassBusPage extends StatelessWidget {
     super.key,
     this.headerTitle = 'SAMUNI',
     this.quickAccessTitle,
+    this.comingSoon = false,
   });
 
   final String headerTitle;
   final String? quickAccessTitle;
+  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,9 @@ class StudentGroupClassBusPage extends StatelessWidget {
           style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
-      body: SingleChildScrollView(
+        body: comingSoon
+          ? const Center(child: Text('Coming soon...!!'))
+          : SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(10, 14, 10, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -34,6 +34,7 @@ class AdminMessageService {
     required bool sendToStaff,
     String? groupId,
     String? groupName,
+    String recipientUsername = '',
   }) async {
     final response = await http
         .post(
@@ -47,11 +48,44 @@ class AdminMessageService {
             'sendToStaff': sendToStaff,
             'groupId': groupId,
             'groupName': groupName ?? 'All Groups',
+            'recipientUsername': recipientUsername,
           }),
         )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Unable to send message');
+    }
+  }
+
+  Future<void> createStaffMessage({
+    required String subject,
+    required String message,
+    required String groupName,
+    String recipientUsername = '',
+    String recipientRole = '',
+  }) async {
+    final response = await http
+        .post(
+          _uri('/api/messages/staff'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode({
+            'subject': subject,
+            'message': message,
+            'groupName': groupName,
+            'recipientId': recipientUsername,
+            'recipientUsername': recipientUsername,
+            'recipientRole': recipientRole,
+            'messageType': 'General',
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final payload = jsonDecode(response.body);
+      throw Exception(payload is Map ? payload['message'] ?? 'Unable to send message.' : 'Unable to send message.');
+    }
+    final payload = jsonDecode(response.body);
+    if (payload is! Map || payload['success'] != true) {
+      throw Exception('Message was not confirmed by the server.');
     }
   }
 
@@ -61,6 +95,8 @@ class AdminMessageService {
     required String subject,
     required String message,
     String messageType = 'General',
+    String recipientUsername = '',
+    String recipientRole = 'staff',
   }) async {
     final response = await http
         .post(
@@ -72,6 +108,9 @@ class AdminMessageService {
             'subject': subject,
             'message': message,
             'messageType': messageType,
+            'recipientId': recipientUsername,
+            'recipientUsername': recipientUsername,
+            'recipientRole': recipientRole,
           }),
         )
         .timeout(const Duration(seconds: 20));
@@ -89,7 +128,7 @@ class AdminMessageService {
   Future<List<AdminMessage>> getStudentMessages() async {
     final response = await http
         .get(
-          _uri('/api/messages/student-message'),
+          _uri('/api/messages/inbox'),
           headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 15));
@@ -104,14 +143,9 @@ class AdminMessageService {
   }
 
   Future<List<AdminMessage>> getMessagesForRole(String role) async {
-    final endpoint = switch (role.trim().toLowerCase()) {
-      'admin' || 'administrator' => 'admin',
-      'staff' || 'teacher' => 'staff',
-      _ => 'student',
-    };
     final response = await http
         .get(
-          _uri('/api/messages/$endpoint'),
+          _uri('/api/messages/inbox'),
           headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 15));

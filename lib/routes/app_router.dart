@@ -84,11 +84,13 @@ import '../screens/admin/staff_resource_image_page.dart';
 import '../screens/messages/messages_page.dart';
 import '../screens/staff/staff_campaigns_page.dart';
 import '../screens/staff/staff_request_message_page.dart';
+import '../screens/staff/staff_leave_request_page.dart';
 import '../screens/student/student_check_approve_page.dart';
 import '../screens/student/student_group_class_bus_page.dart';
 import '../screens/student/student_ptm_page.dart';
 import '../screens/student/student_uni_route_page.dart';
 import '../screens/admin/emp_leave_approval_page.dart';
+import '../screens/admin/staff_request_approval_page.dart';
 import '../screens/admin/emp_leave_history_page.dart';
 import '../screens/admin/grade_content_management_screen.dart';
 import '../screens/admin/content_edit_screen.dart';
@@ -343,6 +345,7 @@ class AppRouter {
       AppRoutes.studentDashboardGroupsClassDiscussion =>
         const StudentGroupClassBusPage(
           quickAccessTitle: 'Groups/Class Discussion',
+            comingSoon: true,
         ),
       AppRoutes.studentDashboardCheckApprove => const StudentCheckApprovePage(
         quickAccessTitle: 'Check Approve',
@@ -372,9 +375,12 @@ class AppRouter {
       AppRoutes.staffDashboard => const StaffDashboard(),
       AppRoutes.staffDashboardMessages => const MessagesPage(),
       AppRoutes.staffWriteMessage => const StaffWriteMessagePage(),
-      AppRoutes.staffRequest => const StaffRequestMessagePage(),
+      AppRoutes.staffRequest => const StaffLeaveRequestPage(),
       AppRoutes.staffCampaignSurvey => const StaffCampaignsPage(),
-      AppRoutes.staffPtm => const StudentPtmPage(headerTitle: 'PTM'),
+      AppRoutes.staffPtm => const StudentPtmPage(
+        headerTitle: 'PTM',
+        staffMode: true,
+      ),
       AppRoutes.staffGroupsBuses => const StudentGroupClassBusPage(
         headerTitle: 'Groups/Class Buses',
       ),
@@ -458,10 +464,9 @@ class AppRouter {
       AppRoutes.adminQuickPtm => const StudentPtmPage(headerTitle: 'PTM'),
       AppRoutes.adminQuickGroupsClassBus => const StudentGroupClassBusPage(
         headerTitle: 'Groups/Class Bus',
+        comingSoon: true,
       ),
-      AppRoutes.adminQuickCheckApproval => const StudentCheckApprovePage(
-        headerTitle: 'Check Approval',
-      ),
+      AppRoutes.adminQuickCheckApproval => const StaffRequestApprovalPage(),
       AppRoutes.adminQuickTrackUniRoute => const StudentUniRoutePage(
         headerTitle: 'UNI Route',
         showComingSoon: true,

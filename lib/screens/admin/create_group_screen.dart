@@ -54,14 +54,19 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       final groups = await _groupService.getGroups(refresh: refresh);
       if (!mounted) return;
       setState(() {
-        _groups = groups..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        _groups = groups
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
         _isLoading = false;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = error is ApiException ? error.message : 'Unable to load groups.';
+        _errorMessage = error is ApiException
+            ? error.message
+            : 'Unable to load groups.';
       });
     }
   }
@@ -86,7 +91,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       final duplicateExists = _groups.any((group) {
         final sameId = group.id.toLowerCase() == id.toLowerCase();
         if (!_isEditing) return sameId;
-        final sameDocument = group.databaseId.isNotEmpty && _editingGroupId != null && group.databaseId == _editingGroupId;
+        final sameDocument =
+            group.databaseId.isNotEmpty &&
+            _editingGroupId != null &&
+            group.databaseId == _editingGroupId;
         return !sameDocument && sameId;
       });
 
@@ -162,7 +170,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
     if (confirmed != true) return;
 
-    final databaseId = group.databaseId.isNotEmpty ? group.databaseId : group.id;
+    final databaseId = group.databaseId.isNotEmpty
+        ? group.databaseId
+        : group.id;
     setState(() => _isLoading = true);
     try {
       await _groupService.deleteGroup(databaseId);
@@ -176,7 +186,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = error is ApiException ? error.message : 'Unable to delete group.';
+        _errorMessage = error is ApiException
+            ? error.message
+            : 'Unable to delete group.';
       });
     }
   }
@@ -185,12 +197,16 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     setState(() {
       _showForm = true;
       _isEditing = true;
-      _editingGroupId = group.databaseId.isNotEmpty ? group.databaseId : group.id;
+      _editingGroupId = group.databaseId.isNotEmpty
+          ? group.databaseId
+          : group.id;
       _selectedStatus = group.status.isNotEmpty ? group.status : 'Active';
       _nameController.text = group.name;
       _idController.text = group.id;
       _typeController.text = group.type;
-      _descriptionController.text = group.description.isNotEmpty ? group.description : group.code;
+      _descriptionController.text = group.description.isNotEmpty
+          ? group.description
+          : group.code;
       _yearController.text = group.year;
       _errorMessage = null;
     });
@@ -281,7 +297,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           label: 'Name',
                           controller: _nameController,
                           validator: (value) {
-                            if ((value ?? '').trim().isEmpty) return 'Name is required';
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'Name is required';
+                            }
                             return null;
                           },
                         ),
@@ -289,7 +307,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           label: 'ID',
                           controller: _idController,
                           validator: (value) {
-                            if ((value ?? '').trim().isEmpty) return 'ID is required';
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'ID is required';
+                            }
                             return null;
                           },
                         ),
@@ -297,7 +317,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           label: 'Type',
                           controller: _typeController,
                           validator: (value) {
-                            if ((value ?? '').trim().isEmpty) return 'Type is required';
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'Type is required';
+                            }
                             return null;
                           },
                         ),
@@ -306,7 +328,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           controller: _descriptionController,
                           maxLines: 2,
                           validator: (value) {
-                            if ((value ?? '').trim().isEmpty) return 'Description is required';
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'Description is required';
+                            }
                             return null;
                           },
                         ),
@@ -323,13 +347,24 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         DropdownButtonFormField<String>(
                           initialValue: _selectedStatus,
                           items: const [
-                            DropdownMenuItem(value: 'Active', child: Text('Active')),
-                            DropdownMenuItem(value: 'Not Active', child: Text('Not Active')),
+                            DropdownMenuItem(
+                              value: 'Active',
+                              child: Text('Active'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Not Active',
+                              child: Text('Not Active'),
+                            ),
                           ],
-                          onChanged: (value) => setState(() => _selectedStatus = value ?? 'Active'),
+                          onChanged: (value) => setState(
+                            () => _selectedStatus = value ?? 'Active',
+                          ),
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -338,7 +373,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           controller: _yearController,
                           keyboardType: TextInputType.number,
                           validator: (value) {
-                            if ((value ?? '').trim().isEmpty) return 'Year is required';
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'Year is required';
+                            }
                             return null;
                           },
                         ),
@@ -346,7 +383,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           const SizedBox(height: 12),
                           Text(
                             _errorMessage!,
-                            style: GoogleFonts.poppins(fontSize: 12, color: Colors.red),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.red,
+                            ),
                           ),
                         ],
                         const SizedBox(height: 16),
@@ -366,7 +406,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                 ? const SizedBox(
                                     width: 18,
                                     height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
                                   )
                                 : Text(
                                     _isEditing ? 'Save Changes' : 'Save Group',
@@ -418,10 +461,22 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text('ID: ${group.id}', style: GoogleFonts.poppins(fontSize: 12)),
-                        Text('Type: ${group.type}', style: GoogleFonts.poppins(fontSize: 12)),
-                        Text('Status: ${group.status}', style: GoogleFonts.poppins(fontSize: 12)),
-                        Text('Year: ${group.year}', style: GoogleFonts.poppins(fontSize: 12)),
+                        Text(
+                          'ID: ${group.id}',
+                          style: GoogleFonts.poppins(fontSize: 12),
+                        ),
+                        Text(
+                          'Type: ${group.type}',
+                          style: GoogleFonts.poppins(fontSize: 12),
+                        ),
+                        Text(
+                          'Status: ${group.status}',
+                          style: GoogleFonts.poppins(fontSize: 12),
+                        ),
+                        Text(
+                          'Year: ${group.year}',
+                          style: GoogleFonts.poppins(fontSize: 12),
+                        ),
                         const SizedBox(height: 10),
                         Row(
                           children: [
@@ -481,7 +536,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             validator: validator,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
           ),
         ],

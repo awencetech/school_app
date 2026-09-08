@@ -45,33 +45,64 @@ class GroupService {
   Future<List<Group>> getGroups({
     bool refresh = false,
     void Function(List<Group>)? onRefresh,
+    String? typeFilter,
+    String schoolId = 'default-school',
   }) async {
-    final cached = await _readCachedGroups();
+    final cacheKey = _cacheKey(typeFilter, schoolId);
+    final cached = await _readCachedGroups(cacheKey);
     if (cached != null && !refresh) {
-      if (onRefresh != null) _refreshGroups(onRefresh);
+      if (onRefresh != null) {
+        _refreshGroups(onRefresh, typeFilter: typeFilter, schoolId: schoolId);
+      }
       return cached;
     }
 
-    return _fetchGroups();
+    return _fetchGroups(
+      typeFilter: typeFilter,
+      schoolId: schoolId,
+      cacheKey: cacheKey,
+    );
   }
 
-  Future<void> _refreshGroups(void Function(List<Group>) onRefresh) async {
+  Future<void> _refreshGroups(
+    void Function(List<Group>) onRefresh, {
+    String? typeFilter,
+    required String schoolId,
+  }) async {
     try {
-      onRefresh(await _fetchGroups());
+      onRefresh(
+        await _fetchGroups(
+          typeFilter: typeFilter,
+          schoolId: schoolId,
+          cacheKey: _cacheKey(typeFilter, schoolId),
+        ),
+      );
     } catch (_) {
       // Keep cached data when the background refresh fails.
     }
   }
 
-  Future<List<Group>> _fetchGroups() {
+  Future<List<Group>> _fetchGroups({
+    String? typeFilter,
+    required String schoolId,
+    required String cacheKey,
+  }) {
     if (_groupsRequest != null) return _groupsRequest!;
-    _groupsRequest = _requestGroups().whenComplete(() => _groupsRequest = null);
+    _groupsRequest = _requestGroups(
+      typeFilter: typeFilter,
+      schoolId: schoolId,
+      cacheKey: cacheKey,
+    ).whenComplete(() => _groupsRequest = null);
     return _groupsRequest!;
   }
 
-  Future<List<Group>?> _readCachedGroups() async {
-    final raw = await PreferencesService.getString(_groupsCacheKey);
-    if (raw == null || raw.isEmpty) return null;
+  String _cacheKey(String? typeFilter, String schoolId) =>
+      '${_groupsCacheKey}_${typeFilter ?? 'all'}_$schoolId';
+
+  Future<List<Group>?> _readCachedGroups(String cacheKey) async {
+    final rawValue = await PreferencesService.getString(cacheKey);
+    final raw = rawValue?.toString() ?? '';
+    if (raw.isEmpty) return null;
     try {
       final payload = jsonDecode(raw);
       if (payload is! List) return null;
@@ -84,10 +115,29 @@ class GroupService {
     }
   }
 
-  Future<List<Group>> _requestGroups() async {
+  Future<List<Group>> _requestGroups({
+    String? typeFilter,
+    required String schoolId,
+    required String cacheKey,
+  }) async {
+    final query = <String, String>{'schoolId': schoolId};
+    if (typeFilter?.isNotEmpty == true) {
+      query['type'] = typeFilter!;
+    }
     final resp = await http
-        .get(_uri('/api/groups'), headers: await AuthHeaders.bearer())
+        .get(
+          _uri('/api/groups').replace(queryParameters: query),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
+    if (kDebugMode) {
+      debugPrint('GroupService.getGroups -> ${resp.request?.url}');
+      debugPrint('GroupService.getGroups -> status=${resp.statusCode}');
+      final responsePreview = resp.body.length > 4000
+          ? '${resp.body.substring(0, 4000)}...'
+          : resp.body;
+      debugPrint('GroupService.getGroups -> response=$responsePreview');
+    }
     if (resp.statusCode != 200) {
       throw ApiException(
         resp.statusCode,
@@ -106,8 +156,11 @@ class GroupService {
         .toList();
 
     groups.sort((a, b) => a.order.compareTo(b.order));
+    if (kDebugMode) {
+      debugPrint('GroupService.getGroups -> records=${groups.length}');
+    }
     await PreferencesService.setString(
-      _groupsCacheKey,
+      cacheKey,
       jsonEncode(groups.map((group) => group.toJson()).toList()),
     );
     return groups;
@@ -121,7 +174,7 @@ class GroupService {
     }
     final encodedGroupId = Uri.encodeComponent(normalizedGroupId);
     final resp = await http
-      .get(_uri('/api/groups/$encodedGroupId'))
+        .get(_uri('/api/groups/$encodedGroupId'))
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       throw ApiException(
@@ -143,7 +196,8 @@ class GroupService {
     return GroupRemoteData(
       group: Group.fromJson(payload),
       students: students,
-      studentCount: (payload['studentCount'] as num?)?.toInt() ?? students.length,
+      studentCount:
+          (payload['studentCount'] as num?)?.toInt() ?? students.length,
       teachers: teachers,
     );
   }
@@ -155,6 +209,7 @@ class GroupService {
     required String description,
     required String status,
     required String year,
+    String schoolId = 'default-school',
   }) async {
     // Log the outgoing request for local debugging (safe to remove in production)
     try {
@@ -175,6 +230,7 @@ class GroupService {
             'description': description.trim(),
             'status': status,
             'year': year.trim(),
+            'schoolId': schoolId,
           }),
         )
         .timeout(const Duration(seconds: 20));
@@ -188,8 +244,8 @@ class GroupService {
       );
     }
 
-    final payload = jsonDecode(resp.body) as Map<String, dynamic>;
-    return Group.fromJson(payload);
+    final responsePayload = jsonDecode(resp.body) as Map<String, dynamic>;
+    return Group.fromJson(responsePayload);
   }
 
   Future<Group> updateGroup(
@@ -200,23 +256,26 @@ class GroupService {
     required String description,
     required String status,
     required String year,
+    String schoolId = 'default-school',
     List<GroupStudent> students = const [],
     List<GroupTeacher> teachers = const [],
   }) async {
+    final payload = <String, dynamic>{
+      'name': name.trim(),
+      'id': id.trim(),
+      'type': type.trim(),
+      'description': description.trim(),
+      'status': status,
+      'year': year.trim(),
+      'schoolId': schoolId,
+      'students': students.map((student) => student.toJson()).toList(),
+      'teachers': teachers.map((teacher) => teacher.toJson()).toList(),
+    };
     final resp = await http
         .put(
           _uri('/api/groups/$databaseId'),
           headers: await AuthHeaders.json(),
-          body: jsonEncode({
-            'name': name.trim(),
-            'id': id.trim(),
-            'type': type.trim(),
-            'description': description.trim(),
-            'status': status,
-            'year': year.trim(),
-            'students': students.map((student) => student.toJson()).toList(),
-            'teachers': teachers.map((teacher) => teacher.toJson()).toList(),
-          }),
+          body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 20));
 
@@ -229,13 +288,21 @@ class GroupService {
       );
     }
 
-    final payload = jsonDecode(resp.body) as Map<String, dynamic>;
-    return Group.fromJson(payload);
+    final responsePayload = jsonDecode(resp.body) as Map<String, dynamic>;
+    return Group.fromJson(responsePayload);
   }
 
-  Future<void> deleteGroup(String databaseId) async {
+  Future<void> deleteGroup(
+    String databaseId, {
+    String? typeFilter,
+    String schoolId = 'default-school',
+  }) async {
+    final query = <String, String>{'schoolId': schoolId};
+    if (typeFilter?.isNotEmpty == true) {
+      query['type'] = typeFilter!;
+    }
     final resp = await http
-        .delete(_uri('/api/groups/$databaseId'))
+        .delete(_uri('/api/groups/$databaseId').replace(queryParameters: query))
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       final message = _errorMessage(resp.body);

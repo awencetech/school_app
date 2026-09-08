@@ -815,6 +815,7 @@ let usersCollection;
 let employeeInfoCollection;
 let legacyStaffInfoCollection;
 let groupsCollection;
+let classesCollection;
 let eventsCollection;
 let legacyEventsCollection;
 let todayInClassCollection;
@@ -866,6 +867,8 @@ async function safeCreateIndex(collection, spec, options = {}) {
 async function ensureIndexes(db) {
   await Promise.all([
     safeCreateIndex(groupsCollection, { id: 1 }, { sparse: true }),
+    safeCreateIndex(classesCollection, { id: 1 }, { sparse: true }),
+    safeCreateIndex(classesCollection, { schoolId: 1, id: 1 }, { sparse: true }),
     safeCreateIndex(usersCollection, { userId: 1 }, { sparse: true }),
     safeCreateIndex(usersCollection, { email: 1 }, { sparse: true }),
     safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
@@ -923,6 +926,7 @@ async function connectMongo() {
     employeeInfoCollection = db.collection('employee-info');
     legacyStaffInfoCollection = db.collection('staff-info');
     groupsCollection = db.collection('groups');
+    classesCollection = db.collection('classes');
     eventsCollection = db.collection('future-events-calender');
     legacyEventsCollection = db.collection('events');
     todayInClassCollection = db.collection('todayInClass');
@@ -963,9 +967,31 @@ async function connectMongo() {
     await migrateLegacyStaffInfo();
     await migrateLegacyEvents();
     await migrateLegacyClassTimetable();
+    await migrateLegacyClasses();
   }
 
   return mainPageInfoCollection;
+}
+
+async function migrateLegacyClasses() {
+  const legacyClasses = await groupsCollection.find({
+    type: { $regex: '^class$', $options: 'i' },
+  }).toArray();
+  for (const legacyClass of legacyClasses) {
+    const exists = await classesCollection.findOne({
+      $or: [
+        { id: legacyClass.id },
+        { _id: legacyClass._id },
+      ],
+    });
+    if (!exists) {
+      await classesCollection.insertOne({
+        ...legacyClass,
+        migratedFrom: 'groups',
+        migratedAt: new Date().toISOString(),
+      });
+    }
+  }
 }
 
 async function migrateLegacyStaffInfo() {
@@ -1257,6 +1283,7 @@ function sanitizeGroupForResponse(doc) {
     code: doc.code || doc.description || '',
     description: doc.description || doc.code || '',
     type: doc.type || 'Other',
+    schoolId: doc.schoolId || 'default-school',
     status: doc.status || 'Active',
     year: doc.year || '',
     order: Number.isFinite(doc.order) ? Number(doc.order) : 0,
@@ -1970,11 +1997,140 @@ app.patch('/api/bus-gps/:id/gps-status', async (req, res) => {
   }
 });
 
+// Classes CRUD
+app.get('/api/classes', async (req, res) => {
+  try {
+    await connectMongo();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    const classes = await classesCollection.find({
+      type: { $regex: '^class$', $options: 'i' },
+      $or: [{ schoolId }, { schoolId: { $exists: false } }],
+    }).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
+    console.log(`GET /api/classes school=${schoolId} returned=${classes.length}`);
+    return res.json(classes.map(sanitizeGroupForResponse));
+  } catch (error) {
+    console.error('GET /api/classes failed:', error);
+    return res.status(500).json({ message: 'Unable to load classes.' });
+  }
+});
+
+app.post('/api/classes', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const name = String(body.name || '').trim();
+    const id = String(body.id || '').trim();
+    const type = String(body.type || '').trim();
+    const description = String(body.description || body.code || '').trim();
+    const status = String(body.status || 'Active').trim();
+    const year = String(body.year || '').trim();
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    if (type.toLowerCase() !== 'class') {
+      return res.status(422).json({ message: 'Class type must be class.' });
+    }
+    if (!name || !id || !description || !year) {
+      return res.status(422).json({ message: 'All fields are required.' });
+    }
+    const exists = await classesCollection.findOne({ id, schoolId });
+    if (exists) return res.status(409).json({ message: 'Class ID already exists.' });
+    const now = new Date().toISOString();
+    const toSave = {
+      name,
+      id,
+      type: 'class',
+      description,
+      code: description,
+      status,
+      year,
+      schoolId,
+      order: await classesCollection.countDocuments({ schoolId }) + 1,
+      createdAt: now,
+      updatedAt: now,
+      students: [],
+      teachers: [],
+    };
+    const result = await classesCollection.insertOne(toSave);
+    return res.status(201).json(sanitizeGroupForResponse(
+      await classesCollection.findOne({ _id: result.insertedId }),
+    ));
+  } catch (error) {
+    console.error('POST /api/classes failed:', error);
+    return res.status(500).json({ message: 'Unable to create class.' });
+  }
+});
+
+app.put('/api/classes/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
+    const idParam = req.params.id;
+    const selector = ObjectId.isValid(idParam)
+      ? { _id: new ObjectId(idParam) }
+      : { id: idParam, schoolId };
+    const existing = await classesCollection.findOne(selector);
+    if (!existing || String(existing.type || '').toLowerCase() !== 'class') {
+      return res.status(404).json({ message: 'Class not found.' });
+    }
+    if ((existing.schoolId || 'default-school') !== schoolId) {
+      return res.status(404).json({ message: 'Class not found.' });
+    }
+    const name = String(body.name || '').trim();
+    const id = String(body.id || '').trim();
+    const type = String(body.type || '').trim();
+    const description = String(body.description || body.code || '').trim();
+    const status = String(body.status || 'Active').trim();
+    const year = String(body.year || '').trim();
+    if (type.toLowerCase() !== 'class' || !name || !id || !description || !year) {
+      return res.status(422).json({ message: 'All class fields are required.' });
+    }
+    const duplicate = await classesCollection.findOne({
+      id,
+      schoolId,
+      _id: { $ne: existing._id },
+    });
+    if (duplicate) return res.status(409).json({ message: 'Class ID already exists.' });
+    await classesCollection.updateOne({ _id: existing._id }, {
+      $set: { name, id, type: 'class', description, code: description, status, year, updatedAt: new Date().toISOString() },
+    });
+    return res.json(sanitizeGroupForResponse(await classesCollection.findOne({ _id: existing._id })));
+  } catch (error) {
+    console.error('PUT /api/classes/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to update class.' });
+  }
+});
+
+app.delete('/api/classes/:id', async (req, res) => {
+  try {
+    await connectMongo();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    const idParam = req.params.id;
+    const selector = ObjectId.isValid(idParam)
+      ? { _id: new ObjectId(idParam), schoolId }
+      : { id: idParam, schoolId };
+    const result = await classesCollection.deleteOne({ ...selector, type: { $regex: '^class$', $options: 'i' } });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Class not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/classes/:id failed:', error);
+    return res.status(500).json({ message: 'Unable to delete class.' });
+  }
+});
+
 // Groups CRUD
 app.get('/api/groups', async (req, res) => {
   try {
     await connectMongo();
-    let groups = await groupsCollection.find({}).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
+    const type = String(req.query.type || '').trim().toLowerCase();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    const filter = {};
+    if (type === 'class') {
+      filter.type = { $regex: '^class$', $options: 'i' };
+      filter.$or = [{ schoolId }, { schoolId: { $exists: false } }];
+    } else if (type) {
+      filter.type = { $regex: `^${type.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' };
+    }
+    let groups = await groupsCollection.find(filter).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
     const auth = verifyAuthToken(readAuthToken(req));
     const role = (auth?.role || '').toLowerCase();
     if (role === 'staff' || role === 'teacher') {
@@ -1986,6 +2142,7 @@ app.get('/api/groups', async (req, res) => {
         groups = groups.filter((group) => allowed.has(String(group.id || group._id)));
       }
     }
+    console.log(`GET /api/groups type=${type || 'all'} school=${schoolId} returned=${groups.length}`);
     return res.json(groups.map(sanitizeGroupForResponse));
   } catch (error) {
     console.error('GET /api/groups failed:', error);
@@ -2945,6 +3102,7 @@ app.post('/api/groups', async (req, res) => {
     const description = (body.description || body.code || '').toString().trim();
     const status = (body.status || 'Active').toString().trim();
     const year = (body.year || '').toString().trim();
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
 
     if (!name || !groupId || !type || !description || !year) {
       return res.status(422).json({ message: 'All fields are required.' });
@@ -2963,6 +3121,7 @@ app.post('/api/groups', async (req, res) => {
       type,
       description,
       code: description,
+      schoolId,
       status,
       year,
       order: totalCount + 1,
@@ -2992,6 +3151,7 @@ app.put('/api/groups/:id', async (req, res) => {
     const description = (body.description || body.code || '').toString().trim();
     const status = (body.status || 'Active').toString().trim();
     const year = (body.year || '').toString().trim();
+    const schoolId = String(body.schoolId || 'default-school').trim() || 'default-school';
 
     if (!name || !groupId || !type || !description || !year) {
       return res.status(422).json({ message: 'All fields are required.' });
@@ -3008,6 +3168,14 @@ app.put('/api/groups/:id', async (req, res) => {
       return res.status(404).json({ message: 'Group not found.' });
     }
 
+    const existingType = String(existing.type || '').trim().toLowerCase();
+    if (type === 'class' && existingType !== 'class') {
+      return res.status(404).json({ message: 'Record does not belong to the requested type.' });
+    }
+    if (existingType === 'class' && (existing.schoolId || 'default-school') !== schoolId) {
+      return res.status(404).json({ message: 'Class not found.' });
+    }
+
     const duplicate = await groupsCollection.findOne({ id: groupId, _id: { $ne: existing._id } });
     if (duplicate) {
       return res.status(409).json({ message: 'Group ID already exists' });
@@ -3020,6 +3188,7 @@ app.put('/api/groups/:id', async (req, res) => {
       type,
       description,
       code: description,
+      schoolId: existing.schoolId || schoolId,
       status,
       year,
       updatedAt,
@@ -3053,6 +3222,16 @@ app.delete('/api/groups/:id', async (req, res) => {
 
     if (!existing) {
       return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    const requestedType = String(req.query.type || '').trim().toLowerCase();
+    const existingType = String(existing.type || '').trim().toLowerCase();
+    const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
+    if (requestedType && requestedType === 'class' && existingType !== 'class') {
+      return res.status(404).json({ message: 'Record does not belong to the requested type.' });
+    }
+    if (existingType === 'class' && (existing.schoolId || 'default-school') !== schoolId) {
+      return res.status(404).json({ message: 'Class not found.' });
     }
 
     await groupsCollection.deleteOne({ _id: existing._id });

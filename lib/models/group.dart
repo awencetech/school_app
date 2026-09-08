@@ -44,7 +44,9 @@ class Group {
       type: (json['type'] ?? 'Other').toString(),
       status: (json['status'] ?? 'Active').toString(),
       year: (json['year'] ?? '2022').toString(),
-      order: orderValue is int ? orderValue : int.tryParse(orderValue?.toString() ?? '') ?? 0,
+      order: orderValue is int
+          ? orderValue
+          : int.tryParse(orderValue?.toString() ?? '') ?? 0,
       createdAt: _parseDate(json['createdAt']),
       updatedAt: _parseDate(json['updatedAt']),
     );

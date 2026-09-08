@@ -239,6 +239,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
           : _selectedBottomIndex == 3
           ? const SupportScreen()
           : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
               child: Column(
                 children: [
                   const SizedBox(height: 4),
@@ -246,8 +247,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       config.posterDisplaySource!.isNotEmpty)
                     Padding(
                       padding: EdgeInsets.zero,
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 220,
                         child: () {
                           final posterSource = config.posterDisplaySource!;
                           final uri = Uri.tryParse(posterSource);
@@ -307,7 +309,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       items: config.runningItems
                           .map((t) => NewsItem(title: t, description: ''))
                           .toList(),
-                      height: 54,
+                      height: 30,
                     ),
                   ),
                   const SizedBox(height: 16),

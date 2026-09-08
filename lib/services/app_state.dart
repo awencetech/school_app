@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/language_option.dart';
 import 'preferences_service.dart';
+import 'staff_access_service.dart';
 
 /// Global app state (language + bottom navigation) backed by SharedPreferences.
 class AppState extends ChangeNotifier {
@@ -20,6 +21,10 @@ class AppState extends ChangeNotifier {
   String? _currentUserEmail;
   String? _currentUserRole;
   String? _currentAuthToken;
+  Set<String>? _staffAccessGroups;
+
+  static Set<String>? cachedStaffAccessGroups;
+  static String? cachedUserRole;
 
   late final Future<void> initialization;
 
@@ -37,6 +42,7 @@ class AppState extends ChangeNotifier {
   String? get currentUserEmail => _currentUserEmail;
   String? get currentUserRole => _currentUserRole;
   String? get currentAuthToken => _currentAuthToken;
+  Set<String>? get staffAccessGroups => _staffAccessGroups;
 
   bool get isInitialized => _isInitialized;
 
@@ -75,7 +81,19 @@ class AppState extends ChangeNotifier {
         _currentUserEmail = savedEmail;
         _currentUserRole = savedRole;
         _currentAuthToken = savedToken;
+        cachedUserRole = savedRole;
       });
+      if ((_currentUserRole ?? '').toLowerCase() == 'staff' &&
+          (_currentAuthToken ?? '').isNotEmpty) {
+        try {
+          final access = await StaffAccessService().getMine();
+          _staffAccessGroups = access.accessGroups.toSet();
+          cachedStaffAccessGroups = _staffAccessGroups;
+        } catch (_) {
+          _staffAccessGroups = null;
+          cachedStaffAccessGroups = null;
+        }
+      }
     } catch (e, stackTrace) {
       debugPrint('ERROR: Failed to load initial app state: $e\n$stackTrace');
       // Do NOT crash on startup error. Proceed with default values.
@@ -107,6 +125,9 @@ class AppState extends ChangeNotifier {
     _currentUserEmail = null;
     _currentUserRole = null;
     _currentAuthToken = null;
+    _staffAccessGroups = null;
+    cachedStaffAccessGroups = null;
+    cachedUserRole = null;
     await PreferencesService.setString(_authUserIdKey, '');
     await PreferencesService.setString(_authEmailKey, '');
     await PreferencesService.setString(_authRoleKey, '');
@@ -119,12 +140,31 @@ class AppState extends ChangeNotifier {
     _currentUserEmail = email;
     _currentUserRole = role;
     _currentAuthToken = token;
+    cachedUserRole = role;
     await PreferencesService.setString(_authUserIdKey, userId);
     await PreferencesService.setString(_authEmailKey, email);
     await PreferencesService.setString(_authRoleKey, role);
     await PreferencesService.setString(_authTokenKey, token ?? '');
     await setLoggedIn(true);
+    if (role.toLowerCase() == 'staff' && (token ?? '').isNotEmpty) {
+      try {
+        final access = await StaffAccessService().getMine();
+        _staffAccessGroups = access.accessGroups.toSet();
+        cachedStaffAccessGroups = _staffAccessGroups;
+      } catch (_) {
+        _staffAccessGroups = null;
+        cachedStaffAccessGroups = null;
+      }
+    }
     notifyListeners();
+  }
+
+  static bool staffCanAccess(String group) {
+    if ((cachedUserRole ?? '').toLowerCase() != 'staff' ||
+        cachedStaffAccessGroups == null) {
+      return true;
+    }
+    return cachedStaffAccessGroups!.contains(group);
   }
 
   void setBottomNavIndex(int index) {

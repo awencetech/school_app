@@ -26,14 +26,20 @@ class MainShell extends StatelessWidget {
         return Scaffold(
           appBar: showAppBar ? CustomAppBar(title: schoolConfig.schoolName) : null,
           body: SafeArea(
-            child: IndexedStack(
-              index: state.bottomNavIndex,
-              children: const [
-                HomeScreen(),
-                SchoolScreen(),
-                AchievementsScreen(),
-                SupportScreen(),
-                LoginScreen(),
+            child: Column(
+              children: [
+                Expanded(
+                  child: IndexedStack(
+                    index: state.bottomNavIndex,
+                    children: const [
+                      HomeScreen(),
+                      SchoolScreen(),
+                      AchievementsScreen(),
+                      SupportScreen(),
+                      LoginScreen(),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

@@ -148,11 +148,14 @@ function requireAdmin(req, res, next) {
   }
 }
 
-function requireRecipientRole(role) {
+function requireRecipientRole(expectedRoles) {
+  const allowedRoles = Array.isArray(expectedRoles)
+    ? expectedRoles.map((role) => String(role).toLowerCase())
+    : [String(expectedRoles).toLowerCase()];
   return (req, res, next) => {
     try {
       const auth = verifyAuthToken(readAuthToken(req));
-      if ((auth?.role || '').toLowerCase() !== role) {
+      if (!allowedRoles.includes((auth?.role || '').toLowerCase())) {
         return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
       }
       req.auth = auth;
@@ -163,7 +166,31 @@ function requireRecipientRole(role) {
   };
 }
 
+async function requireGroupAccess(req, res, next) {
+  try {
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (role !== 'staff' && role !== 'teacher') return next();
+    req.auth = auth;
+    await connectMongo();
+    const staff = await findStaffForAccess(req.auth.userId);
+    if (!staff) return next();
+    const staffId = staff.employeeId || staff._id.toString();
+    const access = await staffAccessCollection.findOne({ staffId });
+    if (!access || !Array.isArray(access.groupIds)) return next();
+    const requestedId = String(req.params.groupId || '').trim();
+    if (!access.groupIds.includes(requestedId)) {
+      return res.status(403).json({ message: 'You do not have access to this group.' });
+    }
+    return next();
+  } catch (error) {
+    console.error('Group access check failed:', error);
+    return res.status(500).json({ message: 'Unable to verify group access.' });
+  }
+}
+
 app.use('/api/groups', requireTeacherMutation);
+app.use('/api/groups/:groupId', requireGroupAccess);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -431,7 +458,7 @@ app.get('/api/messages/student-message', requireRecipientRole('student'), async 
   }
 });
 
-app.get('/api/messages/staff', requireRecipientRole('staff'), (req, res) => getAdminMessagesForRecipient(req, res, 'staff'));
+app.get('/api/messages/staff', requireRecipientRole(['staff', 'teacher']), (req, res) => getAdminMessagesForRecipient(req, res, 'staff'));
 app.get('/api/messages/group/:groupId', requireRecipientRole('student'), async (req, res) => {
   try {
     await connectMongo();
@@ -882,14 +909,6 @@ async function ensureIndexes(db) {
   ]);
 }
 
-const legacyGroupSeed = [
-  { name: 'NCC2022', id: 'NCC2022', type: 'Other', description: 'NCC2022', code: 'NCC2022', status: 'Active', year: '2022' },
-  { name: 'Second_Language_Tamil_Gr4_2026_27 - A', id: 'Second_Language_Tamil_Gr4_2026_27 - A', type: 'Other', description: 'Second_Language_Tamil_Gr4_2026_27 - A', code: 'Second_Language_Tamil_Gr4_2026_27 - A', status: 'Active', year: '2026-27' },
-  { name: 'USS - NSS G11', id: 'USS - NSS G11', type: 'Other', description: 'USS - NSS G11', code: 'USS - NSS G11', status: 'Active', year: '2026-27' },
-  { name: 'JRC - GRADE 6_TO_9', id: 'JRC - GRADE 6_TO_9', type: 'Other', description: 'JRC - GRADE 6_TO_9', code: 'JRC - GRADE 6_TO_9', status: 'Active', year: '2026-27' },
-  { name: 'SCOUTS AND GUIDES - GRADE 6_TO_9', id: 'SCOUTS AND GUIDES - GRADE 6_TO_9', type: 'Other', description: 'SCOUTS AND GUIDES - GRADE 6_TO_9', code: 'SCOUTS AND GUIDES - GRADE 6_TO_9', status: 'Active', year: '2026-27' },
-];
-
 async function connectMongo() {
   if (!mongoUri) {
     throw new Error('MongoDB URI is not configured');
@@ -971,28 +990,6 @@ async function migrateLegacyClassTimetable() {
     const exists = await classTimetableCollection.findOne({ _id: entry._id });
     if (!exists) await classTimetableCollection.insertOne(entry);
   }
-}
-
-async function ensureLegacyGroupsSeeded() {
-  if (!groupsCollection) {
-    return false;
-  }
-
-  const existingCount = await groupsCollection.countDocuments();
-  if (existingCount > 0) {
-    return false;
-  }
-
-  const now = new Date().toISOString();
-  const documents = legacyGroupSeed.map((group, index) => ({
-    ...group,
-    order: index + 1,
-    createdAt: now,
-    updatedAt: now,
-  }));
-
-  await groupsCollection.insertMany(documents);
-  return true;
 }
 
 function sanitizeUserForResponse(doc) {
@@ -1977,8 +1974,18 @@ app.patch('/api/bus-gps/:id/gps-status', async (req, res) => {
 app.get('/api/groups', async (req, res) => {
   try {
     await connectMongo();
-    await ensureLegacyGroupsSeeded();
-    const groups = await groupsCollection.find({}).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
+    let groups = await groupsCollection.find({}).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    if (role === 'staff' || role === 'teacher') {
+      const staff = await findStaffForAccess(auth.userId);
+      const staffId = staff?.employeeId || staff?._id?.toString();
+      const access = staffId ? await staffAccessCollection.findOne({ staffId }) : null;
+      if (access && Array.isArray(access.groupIds)) {
+        const allowed = new Set(access.groupIds);
+        groups = groups.filter((group) => allowed.has(String(group.id || group._id)));
+      }
+    }
     return res.json(groups.map(sanitizeGroupForResponse));
   } catch (error) {
     console.error('GET /api/groups failed:', error);
@@ -4590,7 +4597,7 @@ app.get('/api/one-on-one-meetings', async (req, res) => {
   }
 });
 
-app.get('/api/one-on-one-meetings/my-meetings', requireRecipientRole('staff'), async (req, res) => {
+app.get('/api/one-on-one-meetings/my-meetings', requireRecipientRole(['staff', 'teacher']), async (req, res) => {
   try {
     await connectMongo();
     const staffId = String(req.auth.userId || '').trim();
@@ -4841,7 +4848,7 @@ async function findStaffResourceStaff(staffId) {
   });
 }
 
-app.get('/api/staff-resources/my-resources', requireRecipientRole('staff'), async (req, res) => {
+app.get('/api/staff-resources/my-resources', requireRecipientRole(['staff', 'teacher']), async (req, res) => {
   try {
     await connectMongo();
     const staffId = String(req.auth.userId || '').trim();
@@ -4935,6 +4942,10 @@ function staffAccessResponse(staff, access) {
     staffId: access?.staffId || staff.employeeId || staff._id?.toString() || '',
     staffName: access?.staffName || staff.name || '',
     accessGroups: Array.isArray(access?.accessGroups) ? access.accessGroups : [],
+    groupIds: Array.isArray(access?.groupIds) ? access.groupIds : [],
+    classTeacherIds: Array.isArray(access?.classTeacherIds)
+      ? access.classTeacherIds
+      : [],
     updatedAt: access?.updatedAt || null,
     updatedBy: access?.updatedBy || null,
   };
@@ -4966,6 +4977,20 @@ app.get('/api/stf-access', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/stf-access/me', requireRecipientRole(['staff', 'teacher']), async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await findStaffForAccess(req.auth.userId);
+    if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
+    const staffId = staff.employeeId || staff._id.toString();
+    const access = await staffAccessCollection.findOne({ staffId });
+    return res.json(staffAccessResponse(staff, access));
+  } catch (error) {
+    console.error('GET /api/stf-access/me failed:', error);
+    return res.status(500).json({ message: 'Unable to load staff access.' });
+  }
+});
+
 app.get('/api/stf-access/:staffId', requireAdmin, async (req, res) => {
   try {
     await connectMongo();
@@ -4988,6 +5013,12 @@ app.put('/api/stf-access/:staffId', requireAdmin, async (req, res) => {
     if (!Array.isArray(req.body?.accessGroups)) {
       return res.status(422).json({ message: 'accessGroups must be an array.' });
     }
+    if (!Array.isArray(req.body?.groupIds)) {
+      return res.status(422).json({ message: 'groupIds must be an array.' });
+    }
+    if (!Array.isArray(req.body?.classTeacherIds)) {
+      return res.status(422).json({ message: 'classTeacherIds must be an array.' });
+    }
     const allowedGroups = new Set([
       'dashboard', 'students', 'staff', 'attendance', 'leave-requests',
       'calendar', 'messages', 'news', 'reports', 'student-records',
@@ -4995,6 +5026,10 @@ app.put('/api/stf-access/:staffId', requireAdmin, async (req, res) => {
     ]);
     const accessGroups = [...new Set(req.body.accessGroups.map((value) => String(value).trim()))]
       .filter((value) => allowedGroups.has(value));
+    const groupIds = [...new Set(req.body.groupIds.map((value) => String(value).trim()))]
+      .filter((value) => value.length > 0);
+    const classTeacherIds = [...new Set(req.body.classTeacherIds.map((value) => String(value).trim()))]
+      .filter((value) => value.length > 0);
     const staffId = staff.employeeId || staff._id.toString();
     const now = new Date().toISOString();
     await staffAccessCollection.updateOne(
@@ -5004,6 +5039,8 @@ app.put('/api/stf-access/:staffId', requireAdmin, async (req, res) => {
           staffId,
           staffName: staff.name || '',
           accessGroups,
+          groupIds,
+          classTeacherIds,
           updatedAt: now,
           updatedBy: String(req.auth.userId || ''),
         },
@@ -5032,7 +5069,7 @@ app.get('/api/staff', async (req, res) => {
   }
 });
 
-app.get('/api/staff/profile', requireRecipientRole('staff'), async (req, res) => {
+app.get('/api/staff/profile', requireRecipientRole(['staff', 'teacher']), async (req, res) => {
   try {
     await connectMongo();
     const staff = await employeeInfoCollection.findOne({

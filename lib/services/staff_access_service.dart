@@ -49,15 +49,31 @@ class StaffAccessService {
     );
   }
 
+  Future<StaffAccessRecord> getMine() async {
+    final response = await http
+        .get(_uri('/api/stf-access/me'), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 20));
+    _check(response);
+    return StaffAccessRecord.fromJson(
+      Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+    );
+  }
+
   Future<StaffAccessRecord> save({
     required String staffId,
     required List<String> accessGroups,
+    required List<String> groupIds,
+    required List<String> classTeacherIds,
   }) async {
     final response = await http
         .put(
           _uri('/api/stf-access/${Uri.encodeComponent(staffId)}'),
           headers: await AuthHeaders.json(),
-          body: jsonEncode({'accessGroups': accessGroups}),
+          body: jsonEncode({
+            'accessGroups': accessGroups,
+            'groupIds': groupIds,
+            'classTeacherIds': classTeacherIds,
+          }),
         )
         .timeout(const Duration(seconds: 20));
     _check(response);

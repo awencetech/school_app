@@ -5,31 +5,11 @@ import '../../models/staff_access.dart';
 import '../../models/staff_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../services/group_service.dart';
 import '../../services/staff_access_service.dart';
+import '../../models/group.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
-
-const _accessGroups = <_AccessGroup>[
-  _AccessGroup('dashboard', 'Dashboard', Icons.dashboard_outlined),
-  _AccessGroup('students', 'Students', Icons.people_outline),
-  _AccessGroup('staff', 'Staff', Icons.badge_outlined),
-  _AccessGroup('attendance', 'Attendance', Icons.fact_check_outlined),
-  _AccessGroup('leave-requests', 'Leave / Requests', Icons.assignment_outlined),
-  _AccessGroup('calendar', 'Calendar', Icons.calendar_month_outlined),
-  _AccessGroup('messages', 'Messages', Icons.mail_outline),
-  _AccessGroup('news', 'News', Icons.article_outlined),
-  _AccessGroup('reports', 'Reports', Icons.analytics_outlined),
-  _AccessGroup('student-records', 'Student Records', Icons.school_outlined),
-  _AccessGroup('staff-resources', 'Staff Resources', Icons.folder_shared_outlined),
-  _AccessGroup('other-options', 'Other Options', Icons.more_horiz),
-];
-
-class _AccessGroup {
-  const _AccessGroup(this.id, this.label, this.icon);
-  final String id;
-  final String label;
-  final IconData icon;
-}
 
 class StaffAccessPage extends StatefulWidget {
   const StaffAccessPage({super.key});
@@ -152,20 +132,22 @@ class _StaffAccessPageState extends State<StaffAccessPage> {
           padding: const EdgeInsets.only(top: 6),
           child: Text('${staffId.isEmpty ? 'Staff ID unavailable' : 'Staff ID: $staffId'}\n${staff.designation.isNotEmpty ? staff.designation : staff.role.isNotEmpty ? staff.role : 'Designation unavailable'}\nAccess: ${record.accessGroups.length} groups'),
         ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () async {
-          final staffId = record.staff.employeeId.isNotEmpty
-              ? record.staff.employeeId
-              : record.staff.id;
-          if (staffId == null || staffId.isEmpty) return;
-          final changed = await Navigator.of(context).pushNamed<bool>(
-            '${AppRoutes.adminStaffAccessEdit}/${Uri.encodeComponent(staffId)}',
-            arguments: record,
-          );
-          if (changed == true) _load();
-        },
+        trailing: IconButton(
+          tooltip: 'Edit access',
+          icon: const Icon(Icons.chevron_right),
+          onPressed: staffId.isEmpty ? null : () => _openEdit(record, staffId),
+        ),
+        onTap: staffId.isEmpty ? null : () => _openEdit(record, staffId),
       ),
     );
+  }
+
+  Future<void> _openEdit(StaffAccessRecord record, String staffId) async {
+    final changed = await Navigator.of(context).pushNamed<bool?>(
+      '${AppRoutes.adminStaffAccessEdit}/${Uri.encodeComponent(staffId)}',
+      arguments: record,
+    );
+    if (changed == true && mounted) _load();
   }
 
   Widget _avatar(StaffInfo staff) {
@@ -189,6 +171,15 @@ class _StaffAccessEditPageState extends State<StaffAccessEditPage> {
   final _service = StaffAccessService();
   StaffAccessRecord? _record;
   Set<String> _selected = {};
+  Set<String> _selectedGroupIds = {};
+  Set<String> _selectedClassTeacherIds = {};
+  List<Group> _groups = const [];
+  final _groupSearchController = TextEditingController();
+  TextEditingController? _classTeacherSearchController;
+  bool _groupsExpanded = false;
+  bool _classTeacherExpanded = false;
+  bool _groupsLoading = true;
+  String? _groupsError;
   bool _loading = false;
   bool _saving = false;
   String? _error;
@@ -199,18 +190,51 @@ class _StaffAccessEditPageState extends State<StaffAccessEditPage> {
     _record = widget.record;
     if (_record != null) {
       _selected = _record!.accessGroups.toSet();
-    } else if (widget.staffId != null && widget.staffId!.isNotEmpty) {
-      _load();
+      _selectedGroupIds = _record!.groupIds.toSet();
+      _selectedClassTeacherIds = _record!.classTeacherIds.toSet();
     }
+    if (widget.staffId != null && widget.staffId!.isNotEmpty) _load();
+    _loadGroups();
   }
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
       final record = await _service.get(widget.staffId!);
-      if (mounted) setState(() { _record = record; _selected = record.accessGroups.toSet(); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _record = record;
+          _selected = record.accessGroups.toSet();
+          _selectedGroupIds = record.groupIds.toSet();
+          _selectedClassTeacherIds = record.classTeacherIds.toSet();
+          _loading = false;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() { _loading = false; _error = error.toString().replaceFirst('Exception: ', ''); });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _groupSearchController.dispose();
+    _classTeacherSearchController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadGroups() async {
+    try {
+      final groups = await GroupService().getGroups(refresh: true);
+      if (!mounted) return;
+      setState(() { _groups = groups; _groupsLoading = false; _groupsError = null; });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() { _groupsLoading = false; _groupsError = error.toString().replaceFirst('Exception: ', ''); });
     }
   }
 
@@ -218,14 +242,21 @@ class _StaffAccessEditPageState extends State<StaffAccessEditPage> {
     final record = _record;
     if (record == null) return;
     final staff = record.staff;
-    final staffId = staff.employeeId.isNotEmpty ? staff.employeeId : staff.id;
+    final staffId = widget.staffId?.trim().isNotEmpty == true
+        ? widget.staffId!.trim()
+        : (staff.employeeId.isNotEmpty ? staff.employeeId : staff.id);
     if (staffId == null || staffId.isEmpty) {
       setState(() => _error = 'Staff ID is missing.');
       return;
     }
     setState(() { _saving = true; _error = null; });
     try {
-      await _service.save(staffId: staffId, accessGroups: _selected.toList());
+      await _service.save(
+        staffId: staffId,
+        accessGroups: _selected.toList(),
+        groupIds: _selectedGroupIds.toList(),
+        classTeacherIds: _selectedClassTeacherIds.toList(),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff access saved successfully.')));
         Navigator.of(context).pop(true);
@@ -285,19 +316,10 @@ class _StaffAccessEditPageState extends State<StaffAccessEditPage> {
               ]),
             ),
           ),
-          const SizedBox(height: 16),
-          Text('Staff Access', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          ..._accessGroups.map((group) => Card(
-                margin: const EdgeInsets.only(bottom: 6),
-                child: CheckboxListTile(
-                  value: _selected.contains(group.id),
-                  onChanged: _saving ? null : (value) => setState(() { value == true ? _selected.add(group.id) : _selected.remove(group.id); }),
-                  secondary: Icon(group.icon),
-                  title: Text(group.label),
-                  controlAffinity: ListTileControlAffinity.trailing,
-                ),
-              )),
+          _buildGroupsSection(),
+          const SizedBox(height: 12),
+          _buildClassTeacherSection(),
+          const SizedBox(height: 12),
           if (_error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
           const SizedBox(height: 8),
           FilledButton.icon(onPressed: _saving ? null : _save, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save), label: const Text('Save Access')),
@@ -306,6 +328,155 @@ class _StaffAccessEditPageState extends State<StaffAccessEditPage> {
       bottomNavigationBar: AdminBottomNavigationBar(currentIndex: 0, onItemSelected: (_) {}),
     );
   }
+
+  Widget _buildGroupsSection() {
+    final query = _groupSearchController.text.trim().toLowerCase();
+    final visibleGroups = _groups.where((group) {
+      return query.isEmpty ||
+          group.name.toLowerCase().contains(query) ||
+          group.id.toLowerCase().contains(query);
+    }).toList();
+    final availableIds = _groups.map(_groupKey).toSet();
+    final allSelected = availableIds.isNotEmpty &&
+        availableIds.every(_selectedGroupIds.contains);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: _groupsExpanded,
+        onExpansionChanged: (expanded) {
+          setState(() => _groupsExpanded = expanded);
+          if (expanded && _groups.isEmpty && _groupsLoading) _loadGroups();
+        },
+        leading: const Icon(Icons.groups_outlined),
+        title: const Text('Groups / Classes'),
+        children: [
+          if (_groupsLoading)
+            const Padding(padding: EdgeInsets.all(16), child: Text('Loading groups...'))
+          else if (_groupsError != null)
+            _StateMessage(message: 'Unable to load classes/groups', actionLabel: 'Retry', onAction: _loadGroups)
+          else if (_groups.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No classes or groups available'))
+          else ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextField(
+                controller: _groupSearchController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Search classes/groups',
+                  isDense: true,
+                ),
+              ),
+            ),
+            CheckboxListTile(
+              value: allSelected,
+              tristate: true,
+              onChanged: _saving ? null : (_) => setState(() {
+                if (allSelected) {
+                  _selectedGroupIds.removeAll(availableIds);
+                } else {
+                  _selectedGroupIds.addAll(availableIds);
+                }
+              }),
+              title: const Text('Select All'),
+              controlAffinity: ListTileControlAffinity.trailing,
+            ),
+            ...visibleGroups.map((group) {
+              final id = _groupKey(group);
+              return CheckboxListTile(
+                value: _selectedGroupIds.contains(id),
+                onChanged: _saving ? null : (value) => setState(() {
+                  value == true ? _selectedGroupIds.add(id) : _selectedGroupIds.remove(id);
+                }),
+                title: Text(group.name.isEmpty ? id : group.name),
+                subtitle: group.name == id ? null : Text(id),
+                controlAffinity: ListTileControlAffinity.trailing,
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClassTeacherSection() {
+    final classTeacherSearchController =
+        _classTeacherSearchController ??= TextEditingController();
+    final query = classTeacherSearchController.text.trim().toLowerCase();
+    final visibleGroups = _groups.where((group) {
+      return query.isEmpty ||
+          group.name.toLowerCase().contains(query) ||
+          group.id.toLowerCase().contains(query);
+    }).toList();
+    final availableIds = _groups.map(_groupKey).toSet();
+    final allSelected = availableIds.isNotEmpty &&
+        availableIds.every(_selectedClassTeacherIds.contains);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: _classTeacherExpanded,
+        onExpansionChanged: (expanded) {
+          setState(() => _classTeacherExpanded = expanded);
+          if (expanded && _groups.isEmpty && _groupsLoading) _loadGroups();
+        },
+        leading: const Icon(Icons.school_outlined),
+        title: const Text('Class Teacher'),
+        children: [
+          if (_groupsLoading)
+            const Padding(padding: EdgeInsets.all(16), child: Text('Loading classes...'))
+          else if (_groupsError != null)
+            _StateMessage(message: 'Unable to load classes/groups', actionLabel: 'Retry', onAction: _loadGroups)
+          else if (_groups.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No classes or groups available'))
+          else ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextField(
+                controller: classTeacherSearchController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Search classes/groups',
+                  isDense: true,
+                ),
+              ),
+            ),
+            CheckboxListTile(
+              value: allSelected,
+              tristate: true,
+              onChanged: _saving ? null : (_) => setState(() {
+                if (allSelected) {
+                  _selectedClassTeacherIds.removeAll(availableIds);
+                } else {
+                  _selectedClassTeacherIds.addAll(availableIds);
+                }
+              }),
+              title: const Text('Select All'),
+              controlAffinity: ListTileControlAffinity.trailing,
+            ),
+            ...visibleGroups.map((group) {
+              final id = _groupKey(group);
+              return CheckboxListTile(
+                value: _selectedClassTeacherIds.contains(id),
+                onChanged: _saving ? null : (value) => setState(() {
+                  value == true
+                      ? _selectedClassTeacherIds.add(id)
+                      : _selectedClassTeacherIds.remove(id);
+                }),
+                title: Text(group.name.isEmpty ? id : group.name),
+                subtitle: group.name == id ? null : Text(id),
+                controlAffinity: ListTileControlAffinity.trailing,
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _groupKey(Group group) =>
+      group.id.isNotEmpty ? group.id : group.databaseId;
 
   Widget _profileAvatar(StaffInfo staff) => staff.imageUrl.isEmpty
       ? CircleAvatar(radius: 28, child: Text(staff.name.isEmpty ? '?' : staff.name[0].toUpperCase()))

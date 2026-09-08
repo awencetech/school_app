@@ -86,7 +86,7 @@ class GroupService {
 
   Future<List<Group>> _requestGroups() async {
     final resp = await http
-        .get(_uri('/api/groups'))
+        .get(_uri('/api/groups'), headers: await AuthHeaders.bearer())
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       throw ApiException(

@@ -312,6 +312,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           : _selectedBottomIndex == 3
           ? const SupportScreen()
           : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
               child: Column(
                 children: [
                   const SizedBox(height: 4),
@@ -320,8 +321,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       config.posterDisplaySource!.isNotEmpty)
                     Padding(
                       padding: EdgeInsets.zero,
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 220,
                         child: _buildPosterWidget(config.posterDisplaySource!),
                       ),
                     )
@@ -354,7 +356,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       items: config.runningItems
                           .map((t) => NewsItem(title: t, description: ''))
                           .toList(),
-                      height: 54,
+                      height: 30,
                     ),
                   ),
                   const SizedBox(height: 16),

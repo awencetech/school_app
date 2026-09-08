@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../models/news_item.dart';
 import '../../models/school_info.dart';
 import '../../services/app_state.dart';
 import '../../services/dummy_data_service.dart';
@@ -14,7 +15,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/buttons/secondary_button.dart';
-import '../../widgets/important_news_ticker.dart';
+import '../../widgets/cards/important_news_marquee.dart';
 
 /// Home tab screen containing school highlights and quick actions.
 class HomeScreen extends StatelessWidget {
@@ -28,12 +29,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
+          SizedBox(
+            width: double.infinity,
+            height: 220,
             child: () {
               final posterSource = context
                   .watch<SchoolConfigService>()
@@ -144,7 +146,12 @@ class HomeScreen extends StatelessWidget {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 12),
-                    ImportantNewsTicker(items: config.runningItems),
+                    ImportantNewsMarquee(
+                      items: config.runningItems
+                          .map((item) => NewsItem(title: item, description: ''))
+                          .toList(),
+                      height: 30,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       displayWelcome,
@@ -193,7 +200,6 @@ class HomeScreen extends StatelessWidget {
                   : const SizedBox.shrink();
             },
           ),
-          const SizedBox(height: 24),
         ],
       ),
     );

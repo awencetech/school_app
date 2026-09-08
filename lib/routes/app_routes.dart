@@ -27,6 +27,15 @@ class AppRoutes {
   static const studentMenu = '/student-menu';
   static const staffDashboard = '/staff-dashboard';
     static const staffDashboardMessages = '$staffDashboard/msg-staff';
+    static const staffWriteMessage = '$staffDashboard/staff-msg';
+        static const staffRequest = '$staffDashboard/staff-req';
+        static const staffCampaignSurvey = '$staffDashboard/cmp-survey';
+          static const staffPtm = '$staffDashboard/ptm';
+          static const staffGroupsBuses = '$staffDashboard/groups-buses';
+          static const staffCheckApprove = '$staffDashboard/chk-approve';
+          static const staffTrackUniRoute = '$staffDashboard/track-1';
+          static const staffTrackSp7 = '$staffDashboard/track-2';
+          static const staffTrack = '$staffDashboard/track-3';
   static const staffOverviewDashboard = '/staff-dashboard/dashboard-summary';
   static const staffEventCalendar = '/staff-dashboard/event-calendar';
   static const staffInfo = '/staff-dashboard/staff-info';

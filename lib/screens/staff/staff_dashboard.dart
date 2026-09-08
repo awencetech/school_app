@@ -23,13 +23,6 @@ import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
-import '../student/student_check_approve_page.dart';
-import '../student/student_group_class_bus_page.dart';
-import '../student/student_ptm_page.dart';
-import '../student/student_uni_route_page.dart';
-import 'staff_write_message_page.dart';
-import 'staff_request_message_page.dart';
-import 'staff_campaigns_page.dart';
 import 'staff_group_messages_page.dart';
 import '../admin/homework_today_in_class_page.dart';
 import '../admin/class_demography_page.dart';
@@ -372,11 +365,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           ).pushNamed(AppRoutes.staffOverviewDashboard),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StaffWriteMessagePage(),
-                            ),
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffWriteMessage),
                           child: const _QuickAction(
                             icon: Icons.edit,
                             label: 'Write Message',
@@ -387,61 +378,42 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           icon: Icons.assignment,
                           label: 'Request',
                           color: Color(0xFFF4B400),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StaffRequestMessagePage(),
-                            ),
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffRequest),
                         ),
                         _QuickAction(
                           icon: Icons.fact_check,
                           label: 'Campaign Survey',
                           color: Color(0xFF8D6E63),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StaffCampaignsPage(),
-                            ),
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffCampaignSurvey),
                         ),
                         _QuickAction(
                           icon: Icons.assignment_turned_in,
                           label: 'PTM',
                           color: Color(0xFF5E7D1F),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StudentPtmPage(),
-                            ),
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.staffPtm),
                         ),
                       ],
-                      onGroupClassBusTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentGroupClassBusPage(),
-                        ),
-                      ),
-                      onCheckApproveTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentCheckApprovePage(),
-                        ),
-                      ),
-                      onUniRouteZ2Tap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentUniRoutePage(),
-                        ),
-                      ),
-                      onSp7Tap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentUniRoutePage(
-                            routeName: 'UNI-Route-SP7',
-                          ),
-                        ),
-                      ),
-                      onTrackTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const StudentUniRoutePage(routeName: 'Track'),
-                        ),
-                      ),
+                      onGroupClassBusTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.staffGroupsBuses),
+                      onCheckApproveTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.staffCheckApprove),
+                      onUniRouteZ2Tap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.staffTrackUniRoute),
+                      onSp7Tap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.staffTrackSp7),
+                      onTrackTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.staffTrack),
                     ),
                   ),
                   const SizedBox(height: 18),

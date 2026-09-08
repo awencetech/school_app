@@ -49,7 +49,7 @@ class StaffWriteMessagePage extends StatelessWidget {
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: const Text(
-          'SAMUNI',
+          'Write Message',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),

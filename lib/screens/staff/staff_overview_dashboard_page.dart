@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/school_news.dart';
 import '../../routes/app_routes.dart';
 import '../../services/school_news_service.dart';
+import '../../theme/app_colors.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 
 class StaffOverviewDashboardPage extends StatefulWidget {
@@ -23,17 +24,17 @@ class _StaffOverviewDashboardPageState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xff34395f),
-        toolbarHeight: 42,
-        automaticallyImplyLeading: false,
+        backgroundColor: AppColors.topBar,
+        foregroundColor: Colors.white,
+        toolbarHeight: 45,
         centerTitle: true,
         leading: IconButton(
           onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+          'Dashboard Summary',
+          style: TextStyle(color: Colors.white, fontSize: 15),
         ),
       ),
       body: SingleChildScrollView(

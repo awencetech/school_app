@@ -7,6 +7,7 @@ import '../screens/login/create_account_screen.dart';
 import '../screens/login/forgot_password_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/staff/staff_dashboard.dart';
+import '../screens/staff/staff_write_message_page.dart';
 import '../screens/staff/staff_overview_dashboard_page.dart';
 import '../screens/announcements/announcements_page.dart';
 import '../screens/admin/announcement_edit_page.dart';
@@ -269,6 +270,27 @@ class AppRouter {
       AppRoutes.studentMenu => const StudentMenuScreen(),
       AppRoutes.staffDashboard => const StaffDashboard(),
       AppRoutes.staffDashboardMessages => const MessagesPage(),
+      AppRoutes.staffWriteMessage => const StaffWriteMessagePage(),
+      AppRoutes.staffRequest => const StaffRequestMessagePage(),
+      AppRoutes.staffCampaignSurvey => const StaffCampaignsPage(),
+      AppRoutes.staffPtm => const StudentPtmPage(headerTitle: 'PTM'),
+      AppRoutes.staffGroupsBuses => const StudentGroupClassBusPage(
+        headerTitle: 'Groups/Class Buses',
+      ),
+      AppRoutes.staffCheckApprove => const StudentCheckApprovePage(
+        headerTitle: 'Check Approve',
+      ),
+      AppRoutes.staffTrackUniRoute => const StudentUniRoutePage(
+        headerTitle: 'Track UNI Route',
+      ),
+      AppRoutes.staffTrackSp7 => const StudentUniRoutePage(
+        routeName: 'UNI-Route-SP7',
+        headerTitle: 'Track SP7',
+      ),
+      AppRoutes.staffTrack => const StudentUniRoutePage(
+        routeName: 'Track',
+        headerTitle: 'Track',
+      ),
       AppRoutes.staffOverviewDashboard => const StaffOverviewDashboardPage(),
       AppRoutes.staffEventCalendar => const FutureEventCalendarPage(
         groupId: 'grade-10-c',

@@ -242,6 +242,195 @@ async function getAdminMessagesForRecipient(req, res, role) {
 }
 
 app.get('/api/messages/student', requireRecipientRole('student'), (req, res) => getAdminMessagesForRecipient(req, res, 'student'));
+
+function sanitizeStudentRequestForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || '',
+    studentUsername: doc.studentUsername || doc.username || '',
+    studentId: doc.studentId || '',
+    studentName: doc.studentName || '',
+    requestType: doc.requestType || doc.type || 'Other Student Request',
+    title: doc.title || doc.subject || '',
+    description: doc.description || doc.details || '',
+    createdAt: doc.createdAt || null,
+    status: doc.status || 'Pending',
+  };
+}
+
+app.post('/api/student-requests', requireRecipientRole('student'), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const requestType = String(body.requestType || '').trim();
+    const title = String(body.title || body.subject || '').trim();
+    const description = String(body.description || body.details || '').trim();
+    if (!requestType || !title || !description) {
+      return res.status(422).json({ message: 'Request type, title, and details are required.' });
+    }
+    const studentId = String(req.auth.userId || '').trim();
+    const [user, profile] = await Promise.all([
+      usersCollection.findOne({ userId: studentId }),
+      studentInfoCollection.findOne({ $or: [{ studentId }, { admissionNumber: studentId }] }),
+    ]);
+    const studentName = String(profile?.name || user?.name || user?.fullName || user?.email || studentId).split('@')[0];
+    const now = new Date().toISOString();
+    const document = {
+      studentUsername: studentId,
+      studentId,
+      studentName,
+      requestType,
+      title,
+      subject: title,
+      description,
+      details: description,
+      status: 'Pending',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await studentRequestsCollection.insertOne(document);
+    const saved = await studentRequestsCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({ success: true, message: 'Request submitted successfully.', data: sanitizeStudentRequestForResponse(saved) });
+  } catch (error) {
+    console.error('POST /api/student-requests failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to save student request.' });
+  }
+});
+
+app.get('/api/student-requests/pending', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const requests = await studentRequestsCollection.find({ status: 'Pending' }).sort({ createdAt: -1, _id: -1 }).toArray();
+    return res.json({ success: true, data: requests.map(sanitizeStudentRequestForResponse) });
+  } catch (error) {
+    console.error('GET /api/student-requests/pending failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load student requests.' });
+  }
+});
+
+app.patch('/api/student-requests/:id/status', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const status = String(req.body?.status || '').trim();
+    if (!['Approved', 'Rejected'].includes(status)) {
+      return res.status(422).json({ message: 'Status must be Approved or Rejected.' });
+    }
+    let selector;
+    try {
+      selector = { _id: new ObjectId(req.params.id) };
+    } catch (_) {
+      selector = { id: req.params.id };
+    }
+    const result = await studentRequestsCollection.updateOne(selector, {
+      $set: {
+        status,
+        updatedAt: new Date().toISOString(),
+        approvedBy: req.auth.userId,
+        approvedAt: status === 'Approved' ? new Date().toISOString() : null,
+      },
+    });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Student request not found.' });
+    return res.json({ success: true, data: sanitizeStudentRequestForResponse(await studentRequestsCollection.findOne(selector)) });
+  } catch (error) {
+    console.error('PATCH /api/student-requests/:id/status failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to update student request.' });
+  }
+});
+
+function sanitizeStudentMessageForResponse(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id ? doc._id.toString() : doc.id || '',
+    subject: doc.subject || doc.title || '',
+    title: doc.title || doc.subject || '',
+    message: doc.message || doc.content || '',
+    content: doc.content || doc.message || '',
+    messageType: doc.messageType || doc.category || 'General',
+    category: doc.category || doc.messageType || 'General',
+    senderId: doc.senderId || doc.studentId || '',
+    senderName: doc.senderName || 'Student',
+    senderEmail: doc.senderEmail || '',
+    senderRole: doc.senderRole || 'student',
+    studentId: doc.studentId || doc.senderId || '',
+    studentName: doc.studentName || doc.senderName || 'Student',
+    recipientId: doc.recipientId || '',
+    recipientLabel: doc.recipientLabel || doc.groupName || '',
+    groupId: doc.groupId || '',
+    groupName: doc.groupName || '',
+    isViewed: doc.isViewed === true || doc.read === true,
+    read: doc.read === true || doc.isViewed === true,
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || doc.createdAt || null,
+  };
+}
+
+app.post('/api/messages/student-message', requireRecipientRole('student'), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const subject = String(body.subject || body.title || '').trim();
+    const message = String(body.message || body.content || '').trim();
+    const groupId = String(body.groupId || '').trim();
+    const groupName = String(body.groupName || '').trim();
+    if (!subject || !message) {
+      return res.status(422).json({ message: 'Subject and message are required.' });
+    }
+
+    const studentId = String(req.auth.userId || '').trim();
+    const [user, profile] = await Promise.all([
+      usersCollection.findOne({ userId: studentId }),
+      studentInfoCollection.findOne({ $or: [{ studentId }, { admissionNumber: studentId }] }),
+    ]);
+    const studentName = String(profile?.name || user?.name || user?.fullName || user?.email || 'Student').split('@')[0];
+    const studentEmail = String(user?.email || req.auth.email || '').trim();
+    const now = new Date().toISOString();
+    const document = {
+      studentId,
+      studentName,
+      senderId: studentId,
+      senderName: studentName,
+      senderEmail: studentEmail,
+      senderRole: 'student',
+      recipientId: String(body.recipientId || '').trim(),
+      recipientLabel: groupName,
+      groupId,
+      groupName,
+      subject,
+      title: subject,
+      message,
+      content: message,
+      messageType: String(body.messageType || 'General').trim() || 'General',
+      category: String(body.category || body.messageType || 'General').trim() || 'General',
+      read: false,
+      isViewed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await studentMessagesCollection.insertOne(document);
+    const saved = await studentMessagesCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({
+      success: true,
+      message: 'Message sent successfully.',
+      data: sanitizeStudentMessageForResponse(saved),
+    });
+  } catch (error) {
+    console.error('POST /api/messages/student-message failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to save student message.' });
+  }
+});
+
+app.get('/api/messages/student-message', requireRecipientRole('student'), async (req, res) => {
+  try {
+    await connectMongo();
+    const studentId = String(req.auth.userId || '').trim();
+    const messages = await studentMessagesCollection.find({ studentId }).sort({ createdAt: -1 }).toArray();
+    return res.json({ success: true, data: messages.map(sanitizeStudentMessageForResponse) });
+  } catch (error) {
+    console.error('GET /api/messages/student-message failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load student messages.' });
+  }
+});
+
 app.get('/api/messages/staff', requireRecipientRole('staff'), (req, res) => getAdminMessagesForRecipient(req, res, 'staff'));
 app.get('/api/messages/group/:groupId', requireRecipientRole('student'), async (req, res) => {
   try {
@@ -606,6 +795,8 @@ let homeworkCollection;
 let diaryCollection;
 let studentDiaryCollection;
 let groupMessagesCollection;
+let studentMessagesCollection;
+let studentRequestsCollection;
 let groupMessageCommentsCollection;
 let classTimetableCollection;
 let legacyClassTimetableCollection;
@@ -655,6 +846,8 @@ async function ensureIndexes(db) {
     safeCreateIndex(diaryCollection, { studentId: 1, diaryDate: 1 }, { unique: true }),
     safeCreateIndex(studentDiaryCollection, { studentId: 1, diaryDate: 1 }, { unique: true }),
     safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
+    safeCreateIndex(studentMessagesCollection, { studentId: 1, createdAt: -1 }),
+    safeCreateIndex(studentRequestsCollection, { status: 1, createdAt: -1 }),
     safeCreateIndex(groupMessageCommentsCollection, { groupId: 1, messageId: 1, createdAt: 1 }),
     safeCreateIndex(classTimetableCollection, { groupId: 1, day: 1, startTime: 1 }),
     safeCreateIndex(
@@ -716,6 +909,8 @@ async function connectMongo() {
     diaryCollection = db.collection('staff-diary');
     studentDiaryCollection = db.collection('student-diary');
     groupMessagesCollection = db.collection('groupMessages');
+    studentMessagesCollection = db.collection('student-message');
+    studentRequestsCollection = db.collection('student-request');
     groupMessageCommentsCollection = db.collection('groupMessageComments');
     classTimetableCollection = db.collection('class-timetables');
     legacyClassTimetableCollection = db.collection('class-timetable');

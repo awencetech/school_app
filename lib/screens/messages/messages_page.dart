@@ -10,6 +10,7 @@ import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/quick_access_app_bar.dart';
 import '../../widgets/staff_footer.dart';
 
 class MessageModel {
@@ -41,7 +42,9 @@ class MessageModel {
 }
 
 class MessagesPage extends StatefulWidget {
-  const MessagesPage({super.key});
+  const MessagesPage({super.key, this.quickAccessTitle});
+
+  final String? quickAccessTitle;
 
   @override
   State<MessagesPage> createState() => _MessagesPageState();
@@ -77,9 +80,18 @@ class _MessagesPageState extends State<MessagesPage> {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
-      final adminMessages = await _adminMessageService.getMessagesForRole(role);
+        final isStudentQuickAccess = widget.quickAccessTitle == 'Messages';
+        final adminMessages = isStudentQuickAccess
+          ? await _adminMessageService.getStudentMessages()
+          : await _adminMessageService.getMessagesForRole(role);
       if (!mounted) return;
-      final liveMessages = adminMessages.map(_toMessageModel).toList();
+        final liveMessages = adminMessages
+          .map(
+          isStudentQuickAccess
+            ? _toStudentMessageModel
+            : _toMessageModel,
+          )
+          .toList();
       setState(() {
         _allMessages = liveMessages;
         _messages = List.from(liveMessages);
@@ -118,6 +130,27 @@ class _MessagesPageState extends State<MessagesPage> {
       recipientLabel: message.recipientTypes
           .map((type) => type == 'students' ? 'Students' : 'Staff / Teachers')
           .join(', '),
+    );
+  }
+
+  MessageModel _toStudentMessageModel(AdminMessage message) {
+    final date = message.createdAt;
+    return MessageModel(
+      id: 'student-${message.id}',
+      title: message.subject,
+      teacherName: 'From: ${message.senderName}',
+      createdDate: date == null
+          ? ''
+          : '${date.day.toString().padLeft(2, '0')} ${_month(date.month)} ${date.year}',
+      createdTime: date == null
+          ? ''
+          : '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+      message: message.message,
+      profileImage: null,
+      isViewed: false,
+      category: message.messageType,
+      groupName: message.groupName,
+      recipientLabel: message.groupName,
     );
   }
 
@@ -402,7 +435,31 @@ class _MessagesPageState extends State<MessagesPage> {
       data: Theme.of(context),
       child: Scaffold(
         backgroundColor: bgColor,
-        appBar: AppBar(
+        appBar: widget.quickAccessTitle != null
+            ? QuickAccessAppBar(
+                title: widget.quickAccessTitle!,
+                actions: [
+                  IconButton(
+                    onPressed: _openSearch,
+                    icon: const Icon(Icons.search, color: Colors.white),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.filter_list, color: Colors.white),
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedFilter = value;
+                        _applyFilters();
+                      });
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'All', child: Text('All')),
+                      PopupMenuItem(value: 'Homework', child: Text('Homework')),
+                      PopupMenuItem(value: 'General', child: Text('General')),
+                    ],
+                  ),
+                ],
+              )
+            : AppBar(
           backgroundColor: primaryColor,
           elevation: 0,
           leading: IconButton(
@@ -499,7 +556,7 @@ class _MessagesPageState extends State<MessagesPage> {
                       child: Card(
                         margin: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 8,
+                          vertical: 5,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -507,7 +564,7 @@ class _MessagesPageState extends State<MessagesPage> {
                         elevation: 0,
                         color: Colors.white,
                         child: Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(9),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -547,7 +604,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                             ),
                                           ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -570,7 +627,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                             color: primaryColor,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 2),
                                         Text(
                                           'Created on: ${message.createdDate}\n${message.createdTime}',
                                           style: GoogleFonts.poppins(
@@ -578,7 +635,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                             color: greyText,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 2),
                                         Text(
                                           'Message From\n${message.teacherName}',
                                           style: GoogleFonts.poppins(
@@ -587,7 +644,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                             color: primaryColor,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 5),
                                         Text(
                                           message.message,
                                           style: GoogleFonts.poppins(
@@ -596,7 +653,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                           ),
                                         ),
                                         if (message.recipientLabel.isNotEmpty) ...[
-                                          const SizedBox(height: 6),
+                                          const SizedBox(height: 4),
                                           Text(
                                             'Sent to: ${message.recipientLabel}',
                                             style: GoogleFonts.poppins(
@@ -617,31 +674,31 @@ class _MessagesPageState extends State<MessagesPage> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 7),
                               Row(
                                 children: [
                                   _StatusIcon(
                                     label: 'Like',
                                     icon: Icons.thumb_up_alt_outlined,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   _StatusIcon(
                                     label: message.isViewed ? 'Viewed' : 'New',
                                     icon: Icons.visibility_outlined,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   _StatusIcon(
                                     label: 'Remind',
                                     icon: Icons.alarm_add_outlined,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   _StatusIcon(
                                     label: 'Comment',
                                     icon: Icons.comment_outlined,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   Expanded(
@@ -657,7 +714,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                         contentPadding:
                                             const EdgeInsets.symmetric(
                                               horizontal: 12,
-                                              vertical: 12,
+                                                vertical: 8,
                                             ),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -685,7 +742,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                       backgroundColor: primaryColor,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 14,
-                                        vertical: 12,
+                                        vertical: 8,
                                       ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),

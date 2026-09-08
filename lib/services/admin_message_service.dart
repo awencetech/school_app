@@ -18,7 +18,8 @@ class AdminMessageService {
   static String _resolveBaseUrl() {
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kIsWeb || kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) return _productionBaseUrl;
+    if (kIsWeb) return 'http://localhost:3001';
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }
@@ -52,6 +53,54 @@ class AdminMessageService {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Unable to send message');
     }
+  }
+
+  Future<void> createStudentMessage({
+    String groupId = '',
+    String groupName = '',
+    required String subject,
+    required String message,
+    String messageType = 'General',
+  }) async {
+    final response = await http
+        .post(
+          _uri('/api/messages/student-message'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode({
+            'groupId': groupId,
+            'groupName': groupName,
+            'subject': subject,
+            'message': message,
+            'messageType': messageType,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final payload = jsonDecode(response.body);
+      final detail = payload is Map ? payload['message'] : null;
+      throw Exception(detail?.toString() ?? 'Unable to send message.');
+    }
+    final payload = jsonDecode(response.body);
+    if (payload is! Map || payload['success'] != true || payload['data'] is! Map) {
+      throw Exception('Message was not confirmed by the server.');
+    }
+  }
+
+  Future<List<AdminMessage>> getStudentMessages() async {
+    final response = await http
+        .get(
+          _uri('/api/messages/student-message'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) throw Exception('Unable to load messages');
+    final payload = jsonDecode(response.body);
+    final values = payload is Map ? payload['data'] : payload;
+    if (values is! List) return [];
+    return values
+        .whereType<Map>()
+        .map((item) => AdminMessage.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
   }
 
   Future<List<AdminMessage>> getMessagesForRole(String role) async {

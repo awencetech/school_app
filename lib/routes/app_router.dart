@@ -256,7 +256,51 @@ class AppRouter {
       AppRoutes.forgotPassword => const ForgotPasswordScreen(),
       AppRoutes.createAccount => const CreateAccountScreen(),
       AppRoutes.studentDashboard => const StudentDashboard(),
-      AppRoutes.studentDashboardMessages => const MessagesPage(),
+      AppRoutes.studentDashboardMessages => const MessagesPage(
+        quickAccessTitle: 'Messages',
+      ),
+      AppRoutes.studentDashboardCalendar => const FutureEventCalendarPage(
+        groupId: 'grade-10-c',
+        groupName: 'Grade 10 C',
+        isStaffView: true,
+        quickAccessTitle: 'Calendar',
+      ),
+      AppRoutes.studentDashboardDashboardSummaryInfo =>
+        const StaffOverviewDashboardPage(
+          quickAccessTitle: 'Dashboard Summary Info',
+        ),
+      AppRoutes.studentDashboardWriteMessage => const StaffWriteMessagePage(
+        quickAccessTitle: 'Write Message',
+        studentMode: true,
+      ),
+      AppRoutes.studentDashboardRequest => const StaffRequestMessagePage(
+        quickAccessTitle: 'Request',
+        studentMode: true,
+      ),
+      AppRoutes.studentDashboardCampaignSurvey => const StaffCampaignsPage(
+        quickAccessTitle: 'Campaign Survey',
+      ),
+      AppRoutes.studentDashboardPtm => const StudentPtmPage(
+        quickAccessTitle: 'PTM',
+      ),
+      AppRoutes.studentDashboardGroupsClassDiscussion =>
+        const StudentGroupClassBusPage(
+          quickAccessTitle: 'Groups/Class Discussion',
+        ),
+      AppRoutes.studentDashboardCheckApprove => const StudentCheckApprovePage(
+        quickAccessTitle: 'Check Approve',
+      ),
+      AppRoutes.studentDashboardTrackUniRoute22 => const StudentUniRoutePage(
+        quickAccessTitle: 'Track UNI Route - 22',
+      ),
+      AppRoutes.studentDashboardTrackSp7 => const StudentUniRoutePage(
+        routeName: 'UNI-Route-SP7',
+        quickAccessTitle: 'Track SP7',
+      ),
+      AppRoutes.studentDashboardTrack => const StudentUniRoutePage(
+        routeName: 'Track',
+        quickAccessTitle: 'Track',
+      ),
       AppRoutes.studentDashboardInfo => const StudentInfoScreen(),
       AppRoutes.studentDashboardAttendance => const StudentAttendancePage(),
       AppRoutes.studentDashboardExamResults => const StudentExamResultsPage(),
@@ -279,6 +323,7 @@ class AppRouter {
       ),
       AppRoutes.staffCheckApprove => const StudentCheckApprovePage(
         headerTitle: 'Check Approve',
+        approvalMode: true,
       ),
       AppRoutes.staffTrackUniRoute => const StudentUniRoutePage(
         headerTitle: 'Track UNI Route',

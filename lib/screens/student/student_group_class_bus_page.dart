@@ -2,17 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../../routes/app_routes.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
+import '../../widgets/quick_access_app_bar.dart';
 
 class StudentGroupClassBusPage extends StatelessWidget {
-  const StudentGroupClassBusPage({super.key, this.headerTitle = 'SAMUNI'});
+  const StudentGroupClassBusPage({
+    super.key,
+    this.headerTitle = 'SAMUNI',
+    this.quickAccessTitle,
+  });
 
   final String headerTitle;
+  final String? quickAccessTitle;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+        appBar: quickAccessTitle != null
+          ? QuickAccessAppBar(title: quickAccessTitle!)
+          : AppBar(
         backgroundColor: const Color(0xff34395f),
         elevation: 0,
         toolbarHeight: 43,

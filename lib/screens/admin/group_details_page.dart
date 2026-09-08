@@ -336,28 +336,6 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                   },
                 ),
                 _IconGridItem(
-                  'Online Assignment',
-                  Icons.assignment,
-                  const Color(0xFF3B82F6),
-                  onTap: () {
-                    Navigator.of(context).pushNamed(
-                      AppRoutes.teacherOnlineAssignment,
-                      arguments: widget.group,
-                    );
-                  },
-                ),
-                _IconGridItem(
-                  'Online Assessment',
-                  Icons.assessment,
-                  const Color(0xFFF97316),
-                  onTap: () {
-                    Navigator.of(context).pushNamed(
-                      AppRoutes.teacherOnlineAssessment,
-                      arguments: widget.group,
-                    );
-                  },
-                ),
-                _IconGridItem(
                   'Leave Approval',
                   Icons.approval,
                   const Color(0xFF6366F1),

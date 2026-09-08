@@ -13,6 +13,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/slug_generator.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/quick_access_app_bar.dart';
 
 enum _CalendarView { month, week, day }
 
@@ -23,12 +24,14 @@ class FutureEventCalendarPage extends StatefulWidget {
     required this.groupName,
     this.isEdit = false,
     this.isStaffView = false,
+    this.quickAccessTitle,
   });
 
   final String groupId;
   final String groupName;
   final bool isEdit;
   final bool isStaffView;
+  final String? quickAccessTitle;
 
   @override
   State<FutureEventCalendarPage> createState() =>
@@ -51,9 +54,11 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
       return;
     }
     Navigator.of(context).pushReplacementNamed(
-      widget.isStaffView
-          ? AppRoutes.staffDashboard
-          : AppRoutes.teacherGroupClasses,
+      widget.quickAccessTitle != null
+          ? AppRoutes.studentDashboard
+          : widget.isStaffView
+              ? AppRoutes.staffDashboard
+              : AppRoutes.teacherGroupClasses,
       arguments: Group(id: widget.groupId, name: widget.groupName),
     );
   }
@@ -146,7 +151,9 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: widget.quickAccessTitle != null
+          ? QuickAccessAppBar(title: widget.quickAccessTitle!)
+          : AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
         title: Text('Future Events', style: AppTextStyles.appTitle),

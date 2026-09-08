@@ -6,9 +6,12 @@ import '../../routes/app_routes.dart';
 import '../../services/school_news_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/quick_access_app_bar.dart';
 
 class StaffOverviewDashboardPage extends StatefulWidget {
-  const StaffOverviewDashboardPage({super.key});
+  const StaffOverviewDashboardPage({super.key, this.quickAccessTitle});
+
+  final String? quickAccessTitle;
 
   @override
   State<StaffOverviewDashboardPage> createState() =>
@@ -23,10 +26,13 @@ class _StaffOverviewDashboardPageState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: widget.quickAccessTitle != null
+          ? QuickAccessAppBar(title: widget.quickAccessTitle!)
+          : AppBar(
         backgroundColor: AppColors.topBar,
         foregroundColor: Colors.white,
         toolbarHeight: 45,
+        automaticallyImplyLeading: false,
         centerTitle: true,
         leading: IconButton(
           onPressed: () => navigateBack(context),

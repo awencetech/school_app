@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../routes/app_routes.dart';
+import '../../services/app_state.dart';
+import '../../services/student_request_service.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/quick_access_app_bar.dart';
 
 class StaffRequestMessagePage extends StatefulWidget {
-  const StaffRequestMessagePage({super.key, this.headerTitle = 'SAMUNI'});
+  const StaffRequestMessagePage({
+    super.key,
+    this.headerTitle = 'SAMUNI',
+    this.quickAccessTitle,
+    this.studentMode = false,
+  });
 
   final String headerTitle;
+  final String? quickAccessTitle;
+  final bool studentMode;
 
   @override
   State<StaffRequestMessagePage> createState() =>
@@ -19,90 +30,54 @@ class _StaffRequestMessagePageState extends State<StaffRequestMessagePage> {
 
   static const _activeRequests = [
     _Request(
-      '2026-08-27 - IH6C',
-      'uniform default',
-      'Other Created on Aug 27, 2026 7:45 AM',
+      '2026-08-27 - IDC1',
+      'ID Card Request\nRequest for new student ID card',
+      'Created on Aug 27, 2026 7:45 AM',
       false,
     ),
     _Request(
-      '2026-08-26 - D87UE',
-      'Leave request',
-      'Other Created on Aug 26, 2026 10:59 PM',
+      '2026-08-23 - FEE1',
+      'Fee Related Request\nRequest regarding fee payment details',
+      'Created on Aug 23, 2026 10:59 AM',
       false,
     ),
     _Request(
-      '2026-08-25 - NW740',
-      'Complaint Regarding AC Not Working Properly in School Bus',
-      'Other Created on Aug 25, 2026 5:39 PM',
+      '2026-08-22 - TRN1',
+      'Transport Request\nRequest for school transport route change',
+      'Created on Aug 22, 2026 5:39 PM',
       false,
     ),
     _Request(
-      '2026-08-25 - H1BM',
-      'Type: Enroll Created on Aug 25, 2026 12:27 PM',
-      '',
+      '2026-08-21 - PDT1',
+      'Personal Details Update\nRequest to update student personal details',
+      'Created on Aug 21, 2026 12:27 PM',
       false,
     ),
     _Request(
-      '2026-08-25 - K3T76',
-      'Type: Enroll Created on Aug 25, 2026 12:25 PM',
-      '',
+      '2026-08-20 - CLS1',
+      'Class Related Request\nRequest regarding class section change',
+      'Created on Aug 20, 2026 12:25 PM',
       false,
     ),
   ];
 
   static const _completedRequests = [
     _Request(
-      '2026-08-25 - VRFU1',
-      'I am suffering from severe throat pain and need to visit a doctor for a medical consultation. Therefore, I kindly request permission to leave school at 3:30 PM today.',
-      'Other Created on Aug 25, 2026 8:07 AM',
+      '2026-08-25 - BON1',
+      'Bonafide Certificate\nRequest for Bonafide Certificate',
+      'Created on Aug 25, 2026 8:07 AM',
       true,
     ),
     _Request(
-      '2026-08-24 - 5ILS',
-      'AC is not coming in bus',
-      'Other Created on Aug 24, 2026 5:27 PM',
+      '2026-08-24 - CRT1',
+      'Certificate Request\nRequest for academic certificate',
+      'Created on Aug 24, 2026 5:27 PM',
       true,
     ),
     _Request(
-      '2026-08-24 - BAZ8L',
-      'Type: Other Created on Aug 24, 2026 2:27 PM',
-      '',
-      true,
-    ),
-    _Request(
-      '2026-08-24 - Q4Z5',
-      'Type: Other Created on Aug 24, 2026 12:27 PM',
-      '',
-      true,
-    ),
-    _Request(
-      '2026-08-24 - PMK2',
-      'Regarding pondicherry trip',
-      'Other Created on Aug 24, 2026 12:09 PM',
-      true,
-    ),
-    _Request(
-      '2026-08-24 - 3M9K2',
-      'Regarding track pant instead of jeans',
-      'Other Created on Aug 24, 2026 7:43 AM',
-      true,
-    ),
-    _Request(
-      '2026-08-21 - 6ZOAI',
-      'Type: Other Created on Aug 21, 2026 12:36 PM',
-      '',
-      true,
-    ),
-    _Request(
-      '2026-08-21 - KE3SJ',
-      'Type: Other Created on Aug 21, 2026 9:50 AM',
-      '',
-      true,
-    ),
-    _Request(
-      '2026-08-20 - 032G5',
-      'Type: Other Created on Aug 20, 2026 7:24 PM',
-      '',
+      '2026-08-19 - LIB1',
+      'Library Request\nRequest regarding library book issue',
+      'Created on Aug 19, 2026 11:20 AM',
       true,
     ),
   ];
@@ -120,9 +95,13 @@ class _StaffRequestMessagePageState extends State<StaffRequestMessagePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.studentMode) return const _StudentRequestForm();
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+        appBar: widget.quickAccessTitle != null
+          ? QuickAccessAppBar(title: widget.quickAccessTitle!)
+          : AppBar(
         backgroundColor: const Color(0xff34395f),
         elevation: 0,
         toolbarHeight: 44,
@@ -366,6 +345,168 @@ class _StaffRequestMessagePageState extends State<StaffRequestMessagePage> {
       ],
     ),
   );
+}
+
+class _StudentRequestForm extends StatefulWidget {
+  const _StudentRequestForm();
+
+  @override
+  State<_StudentRequestForm> createState() => _StudentRequestFormState();
+}
+
+class _StudentRequestFormState extends State<_StudentRequestForm> {
+  final _service = StudentRequestService();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  String _requestType = 'ID Card Request';
+  bool _isSending = false;
+  String? _error;
+
+  static const _requestTypes = [
+    'ID Card Request',
+    'Bonafide Certificate Request',
+    'Fee Related Request',
+    'Transport Request',
+    'Certificate Request',
+    'Personal Details Update',
+    'Library Request',
+    'Class/Section Change Request',
+    'Other Student Request',
+  ];
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
+    final state = context.read<AppState>();
+    String? error;
+    if (title.isEmpty) error = 'Please enter a request title.';
+    if (description.isEmpty) error = 'Please enter request details.';
+    if ((state.currentUserId ?? '').trim().isEmpty) {
+      error = 'Your student account is missing. Please log in again.';
+    }
+    if ((state.currentUserRole ?? '').trim().toLowerCase() != 'student') {
+      error = 'Only students can submit requests from this page.';
+    }
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    if (_isSending) return;
+    setState(() {
+      _isSending = true;
+      _error = null;
+    });
+    try {
+      await _service.createRequest(
+        requestType: _requestType,
+        title: title,
+        description: description,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request submitted successfully.')),
+      );
+      Navigator.of(context).pushReplacementNamed(
+        AppRoutes.studentDashboardMessages,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _error = 'Unable to submit request. Please try again.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: const QuickAccessAppBar(title: 'Request'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Create Request',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _requestType,
+                decoration: const InputDecoration(
+                  labelText: 'Request Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: _requestTypes
+                    .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _requestType = value);
+                },
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Request Title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _descriptionController,
+                minLines: 6,
+                maxLines: 10,
+                decoration: const InputDecoration(
+                  labelText: 'Request Details',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: _isSending ? null : _send,
+                icon: const Icon(Icons.send),
+                label: Text(_isSending ? 'Sending...' : 'Send'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: ReusableBottomNavigationBar(
+        currentIndex: 2,
+        onItemSelected: (index) {
+          if (index == 4) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.main,
+              (route) => false,
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
+          BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
+          BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Quick Menu'),
+        ],
+      ),
+    );
+  }
 }
 
 class _Request {

@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../routes/app_routes.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/quick_access_app_bar.dart';
 
 class StaffCampaignsPage extends StatelessWidget {
-  const StaffCampaignsPage({super.key, this.headerTitle = 'SAMUNI'});
+  const StaffCampaignsPage({
+    super.key,
+    this.headerTitle = 'SAMUNI',
+    this.quickAccessTitle,
+  });
 
   final String headerTitle;
+  final String? quickAccessTitle;
 
   static const _campaigns = [
     _Campaign(
@@ -68,7 +74,9 @@ class StaffCampaignsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+        appBar: quickAccessTitle != null
+          ? QuickAccessAppBar(title: quickAccessTitle!)
+          : AppBar(
         backgroundColor: const Color(0xff34395f),
         elevation: 0,
         toolbarHeight: 39,

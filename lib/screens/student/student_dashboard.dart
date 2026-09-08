@@ -21,13 +21,6 @@ import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../support/support_screen.dart';
-import 'student_ptm_page.dart';
-import 'student_group_class_bus_page.dart';
-import 'student_check_approve_page.dart';
-import 'student_uni_route_page.dart';
-import '../staff/staff_campaigns_page.dart';
-import '../staff/staff_request_message_page.dart';
-import '../staff/staff_write_message_page.dart';
 import '../admin/homework_today_in_class_page.dart';
 import '../admin/class_demography_page.dart';
 
@@ -403,9 +396,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Event Calendar',
                           details:
                               'View upcoming school events and important dates.',
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.staffEventCalendar),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.studentDashboardCalendar,
+                          ),
                         ),
                         _studentQuickAction(
                           context,
@@ -415,9 +408,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Student Dashboard',
                           details:
                               'Your student dashboard provides quick access to school activities, messages, and student information.',
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.staffOverviewDashboard),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.studentDashboardDashboardSummaryInfo,
+                          ),
                         ),
                         _studentQuickAction(
                           context,
@@ -427,10 +420,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Write Message',
                           details:
                               'Create and send a message to your school or teachers.',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StaffWriteMessagePage(),
-                            ),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.studentDashboardWriteMessage,
                           ),
                         ),
                         _studentQuickAction(
@@ -440,10 +431,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           color: Color(0xFFF4B400),
                           title: 'Request Message',
                           details: 'View and submit requests to the school.',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StaffRequestMessagePage(),
-                            ),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.studentDashboardRequest,
                           ),
                         ),
                         _studentQuickAction(
@@ -454,10 +443,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Campaigns and Surveys',
                           details:
                               'Read active campaigns and surveys, then respond when required.',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StaffCampaignsPage(),
-                            ),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.studentDashboardCampaignSurvey,
                           ),
                         ),
                         _studentQuickAction(
@@ -468,40 +455,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'PTM Status',
                           details:
                               'Check parent-teacher meeting status and related updates.',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const StudentPtmPage(),
-                            ),
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.studentDashboardPtm,
                           ),
                         ),
                       ],
-                      onGroupClassBusTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentGroupClassBusPage(),
-                        ),
+                      onGroupClassBusTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentDashboardGroupsClassDiscussion,
                       ),
-                      onCheckApproveTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentCheckApprovePage(),
-                        ),
+                      onCheckApproveTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.staffCheckApprove,
                       ),
-                      onUniRouteZ2Tap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentUniRoutePage(),
-                        ),
+                      onUniRouteZ2Tap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentDashboardTrackUniRoute22,
                       ),
-                      onSp7Tap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentUniRoutePage(
-                            routeName: 'UNI-Route-SP7',
-                          ),
-                        ),
+                      onSp7Tap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentDashboardTrackSp7,
                       ),
-                      onTrackTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const StudentUniRoutePage(routeName: 'Track'),
-                        ),
+                      onTrackTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentDashboardTrack,
                       ),
                     ),
                   ),

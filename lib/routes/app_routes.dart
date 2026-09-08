@@ -13,6 +13,23 @@ class AppRoutes {
   static const forgotPassword = '/forgot-password';
   static const createAccount = '/create-account';
   static const studentDashboard = '/student-dashboard';
+  static const studentDashboardCalendar = '$studentDashboard/calendar';
+  static const studentDashboardDashboardSummaryInfo =
+      '$studentDashboard/dashboard-summary-info';
+  static const studentDashboardWriteMessage =
+      '$studentDashboard/write-message';
+  static const studentDashboardRequest = '$studentDashboard/request';
+  static const studentDashboardCampaignSurvey =
+      '$studentDashboard/campaign-survey';
+  static const studentDashboardPtm = '$studentDashboard/ptm';
+  static const studentDashboardGroupsClassDiscussion =
+      '$studentDashboard/groups-class-discussion';
+  static const studentDashboardCheckApprove =
+      '$studentDashboard/check-approve';
+  static const studentDashboardTrackUniRoute22 =
+      '$studentDashboard/track-uni-route-22';
+  static const studentDashboardTrackSp7 = '$studentDashboard/track-sp7';
+  static const studentDashboardTrack = '$studentDashboard/track';
     static const studentDashboardMessages = '$studentDashboard/msg-student';
     static const studentDashboardInfo = '$studentDashboard/student-info';
     static const studentDashboardAttendance = '$studentDashboard/attendance';
@@ -26,13 +43,13 @@ class AppRoutes {
   static const groupClassMenu = '/group-class-menu';
   static const studentMenu = '/student-menu';
   static const staffDashboard = '/staff-dashboard';
+    static const staffCheckApprove = '$staffDashboard/check-approve';
     static const staffDashboardMessages = '$staffDashboard/msg-staff';
     static const staffWriteMessage = '$staffDashboard/staff-msg';
         static const staffRequest = '$staffDashboard/staff-req';
         static const staffCampaignSurvey = '$staffDashboard/cmp-survey';
           static const staffPtm = '$staffDashboard/ptm';
           static const staffGroupsBuses = '$staffDashboard/groups-buses';
-          static const staffCheckApprove = '$staffDashboard/chk-approve';
           static const staffTrackUniRoute = '$staffDashboard/track-1';
           static const staffTrackSp7 = '$staffDashboard/track-2';
           static const staffTrack = '$staffDashboard/track-3';

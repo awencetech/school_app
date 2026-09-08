@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../routes/app_routes.dart';
+import '../../services/admin_message_service.dart';
+import '../../services/app_state.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import '../../widgets/quick_access_app_bar.dart';
 
 class StaffWriteMessagePage extends StatelessWidget {
-  const StaffWriteMessagePage({super.key});
+  const StaffWriteMessagePage({
+    super.key,
+    this.quickAccessTitle,
+    this.studentMode = false,
+  });
+
+  final String? quickAccessTitle;
+  final bool studentMode;
 
   static const _userGroups = [
     _MessageGroup(
@@ -40,9 +51,17 @@ class StaffWriteMessagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (studentMode) {
+      return _StudentWriteMessageForm(
+        title: quickAccessTitle ?? 'Write Message',
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+        appBar: quickAccessTitle != null
+          ? QuickAccessAppBar(title: quickAccessTitle!)
+          : AppBar(
         backgroundColor: const Color(0xff34395f),
         elevation: 0,
         toolbarHeight: 46,
@@ -120,6 +139,212 @@ class StaffWriteMessagePage extends StatelessWidget {
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
+          BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.logout),
+            label: 'Quick Menu',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StudentWriteMessageForm extends StatefulWidget {
+  const _StudentWriteMessageForm({required this.title});
+
+  final String title;
+
+  @override
+  State<_StudentWriteMessageForm> createState() =>
+      _StudentWriteMessageFormState();
+}
+
+class _StudentWriteMessageFormState extends State<_StudentWriteMessageForm> {
+  final _service = AdminMessageService();
+  final _subjectController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _isSending = false;
+  String? _error;
+
+  String get _username {
+    final appState = context.read<AppState>();
+    final username = (appState.currentUserId ?? '').trim();
+    return username.isEmpty ? 'Student' : username;
+  }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final subject = _subjectController.text.trim();
+    final message = _messageController.text.trim();
+    final appState = context.read<AppState>();
+    String? error;
+    if (subject.isEmpty) error = 'Please enter a subject.';
+    if (message.isEmpty) error = 'Please enter a message.';
+    if ((appState.currentUserId ?? '').trim().isEmpty) {
+      error = 'Your student account is missing. Please log in again.';
+    }
+    if ((appState.currentUserRole ?? '').trim().toLowerCase() != 'student') {
+      error = 'Only students can send messages from this page.';
+    }
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    if (_isSending) return;
+
+    setState(() {
+      _isSending = true;
+      _error = null;
+    });
+    try {
+      await _service.createStudentMessage(
+        subject: subject,
+        message: message,
+      );
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Message sent'),
+          content: const Text('Your message was saved successfully.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(
+        AppRoutes.studentDashboardMessages,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _error = 'Unable to send message. Please try again.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: QuickAccessAppBar(title: widget.title),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Write Message',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'From',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text(
+                    _username,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Student',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.normal,
+                      color: Color(0xff555555),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _subjectController,
+                decoration: const InputDecoration(
+                  labelText: 'Subject',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _messageController,
+                minLines: 6,
+                maxLines: 10,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  labelText: 'Message',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (_messageController.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const Text(
+                  'Message Preview',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfff7f8fc),
+                    border: Border.all(color: Color(0xffdddddd)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _messageController.text,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
+                ),
+              ],
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: _isSending ? null : _send,
+                icon: const Icon(Icons.send),
+                label: Text(_isSending ? 'Sending...' : 'Send'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: ReusableBottomNavigationBar(
+        currentIndex: 2,
+        onItemSelected: (index) {
+          if (index == 4) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.main,
+              (route) => false,
+            );
           }
         },
         items: const [

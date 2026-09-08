@@ -203,12 +203,12 @@ class ParentObservationService {
       'studentName': studentName,
       'groupId': groupId,
       'date': date,
-      if (teacherObservation != null) 'teacherObservation': teacherObservation,
-      if (subjectFeedback != null) 'subjectFeedback': subjectFeedback,
-      if (gkScore != null) 'gkScore': gkScore,
-      if (area != null) 'area': area,
-      if (status != null) 'status': status,
-      if (diaryDetails != null) 'diaryDetails': diaryDetails,
+      'teacherObservation': ?teacherObservation,
+      'subjectFeedback': ?subjectFeedback,
+      'gkScore': ?gkScore,
+      'area': ?area,
+      'status': ?status,
+      'diaryDetails': ?diaryDetails,
     };
     final response = await http
         .post(uri, headers: await AuthHeaders.json(), body: jsonEncode(body))

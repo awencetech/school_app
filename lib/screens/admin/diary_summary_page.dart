@@ -258,7 +258,7 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(
-            '${student.name} - ${_dateText}',
+            '${student.name} - $_dateText',
             style: const TextStyle(fontSize: 14),
           ),
           content: SizedBox(
@@ -399,7 +399,9 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
         ),
       ),
     );
-    for (final controller in controllers.values) controller.dispose();
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
     if (saved == true) await _loadObservations();
   }
 
@@ -428,7 +430,7 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
   ) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
     child: DropdownButtonFormField<String>(
-      value: options.containsKey(values[key]) ? values[key] : null,
+      initialValue: options.containsKey(values[key]) ? values[key] : null,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: key == 'mood' ? 'My Day at School' : key,
@@ -568,7 +570,9 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
         ],
       ),
     );
-    for (final controller in controllers.values) controller.dispose();
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
     if (saved == true) await _loadObservations();
   }
 
@@ -868,40 +872,6 @@ class _DiarySummaryPageState extends State<DiarySummaryPage> {
       ],
     );
   }
-
-  Widget _diaryFields(String label, List<String> values, double width) =>
-      SizedBox(
-        width: width,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 8)),
-              ...values.map(
-                (value) => SizedBox(
-                  height: 20,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: value,
-                    isDense: true,
-                    isExpanded: true,
-                    iconSize: 12,
-                    style: const TextStyle(fontSize: 9, color: Colors.black),
-                    decoration: _decoration(),
-                    items: [
-                      DropdownMenuItem(
-                        value: value,
-                        child: Text(value, overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
-                    onChanged: (_) {},
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 
   Widget _tableHeader(List<String> labels, List<double> widths) => Container(
     height: 28,

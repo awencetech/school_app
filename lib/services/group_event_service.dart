@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/group_event.dart';
 import 'group_service.dart';
+import 'event_celebration_service.dart';
 import 'auth_headers.dart';
 
 class GroupEventService {
@@ -56,6 +57,30 @@ class GroupEventService {
       }
       return GroupEvent.fromJson(Map<String, dynamic>.from(item));
     }).toList();
+  }
+
+  Future<List<CalendarEvent>> getCalendarEvents() async {
+    final groups = await GroupService(
+      baseUrl: _baseUrl,
+    ).getGroups(refresh: true);
+    final groupEvents = await Future.wait(
+      groups.map((group) => getEventsForGroup(group.id)),
+    );
+    final celebrations = await EventCelebrationService(
+      baseUrl: _baseUrl,
+    ).getEvents();
+
+    final events = <CalendarEvent>[
+      for (final group in groupEvents)
+        for (final event in group) CalendarEvent.fromGroupEvent(event),
+      for (final event in celebrations)
+        if (event.eventDate != null) CalendarEvent.fromCelebration(event),
+    ];
+    events.sort((a, b) {
+      final dateOrder = a.startDate.compareTo(b.startDate);
+      return dateOrder != 0 ? dateOrder : a.title.compareTo(b.title);
+    });
+    return events;
   }
 
   Future<GroupEvent> createEvent(GroupEvent event) async {

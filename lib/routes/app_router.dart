@@ -325,17 +325,32 @@ class AppRouter {
       AppRoutes.adminQuickDashboardSummary =>
         const StaffOverviewDashboardPage(),
       AppRoutes.adminQuickWriteMessage => const AdminWriteMessagePage(),
-      AppRoutes.adminQuickRequest => const StaffRequestMessagePage(),
-      AppRoutes.adminQuickGroupClass => const StaffCampaignsPage(),
-      AppRoutes.adminQuickPtm => const StudentPtmPage(),
-      AppRoutes.adminQuickGroupsClassBus => const StudentGroupClassBusPage(),
-      AppRoutes.adminQuickCheckApproval => const StudentCheckApprovePage(),
-      AppRoutes.adminQuickTrackUniRoute => const StudentUniRoutePage(),
+      AppRoutes.adminQuickRequest => const StaffRequestMessagePage(
+        headerTitle: 'Request List',
+      ),
+      AppRoutes.adminQuickGroupClass => const StaffCampaignsPage(
+        headerTitle: 'Group Class',
+      ),
+      AppRoutes.adminQuickPtm => const StudentPtmPage(headerTitle: 'PTM'),
+      AppRoutes.adminQuickGroupsClassBus => const StudentGroupClassBusPage(
+        headerTitle: 'Groups/Class Bus',
+      ),
+      AppRoutes.adminQuickCheckApproval => const StudentCheckApprovePage(
+        headerTitle: 'Check Approval',
+      ),
+      AppRoutes.adminQuickTrackUniRoute => const StudentUniRoutePage(
+        headerTitle: 'UNI Route',
+        showComingSoon: true,
+      ),
       AppRoutes.adminQuickTrackSp => const StudentUniRoutePage(
         routeName: 'UNI-Route-SP7',
+        headerTitle: 'SP Route',
+        showComingSoon: true,
       ),
       AppRoutes.adminQuickTrack => const StudentUniRoutePage(
         routeName: 'Track',
+        headerTitle: 'Track',
+        showComingSoon: true,
       ),
       AppRoutes.adminMedicalEventList => const AdminMedicalEventListPage(),
       AppRoutes.adminMedicalEventListView => AdminMedicalEventViewPage(

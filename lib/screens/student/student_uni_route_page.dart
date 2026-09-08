@@ -6,9 +6,16 @@ import '../../routes/app_routes.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
 class StudentUniRoutePage extends StatefulWidget {
-  const StudentUniRoutePage({super.key, this.routeName = 'UNI-Route-Z2'});
+  const StudentUniRoutePage({
+    super.key,
+    this.routeName = 'UNI-Route-Z2',
+    this.headerTitle = 'SAMUNI',
+    this.showComingSoon = false,
+  });
 
   final String routeName;
+  final String headerTitle;
+  final bool showComingSoon;
 
   @override
   State<StudentUniRoutePage> createState() => _StudentUniRoutePageState();
@@ -57,52 +64,59 @@ class _StudentUniRoutePageState extends State<StudentUniRoutePage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          widget.headerTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
-      body: Column(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(4, 7, 4, 4),
+      body: widget.showComingSoon
+          ? const Center(
               child: Text(
-                '${widget.routeName} Track the Vehicle',
-                style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
+                'Coming Soon..!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (!_showRoutes) _routeDetails() else _passengerList(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
-                    child: Row(
+            )
+          : Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(4, 7, 4, 4),
+                    child: Text(
+                      '${widget.routeName} Track the Vehicle',
+                      style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _tab(
-                          'Routes',
-                          true,
-                          () => setState(() => _showRoutes = true),
-                        ),
-                        _tab(
-                          'Details',
-                          false,
-                          () => setState(() => _showRoutes = false),
+                        if (!_showRoutes) _routeDetails() else _passengerList(),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+                          child: Row(
+                            children: [
+                              _tab(
+                                'Routes',
+                                true,
+                                () => setState(() => _showRoutes = true),
+                              ),
+                              _tab(
+                                'Details',
+                                false,
+                                () => setState(() => _showRoutes = false),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       bottomNavigationBar: const AppBottomNavigation(),
     );
   }

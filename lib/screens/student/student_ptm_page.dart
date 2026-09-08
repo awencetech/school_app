@@ -4,7 +4,9 @@ import '../../routes/app_routes.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
 class StudentPtmPage extends StatelessWidget {
-  const StudentPtmPage({super.key});
+  const StudentPtmPage({super.key, this.headerTitle = 'SAMUNI'});
+
+  final String headerTitle;
 
   static const _meetings = [
     _Ptm(
@@ -43,9 +45,9 @@ class StudentPtmPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          headerTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
       body: Column(

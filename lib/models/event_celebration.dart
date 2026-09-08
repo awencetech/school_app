@@ -28,10 +28,15 @@ class EventCelebration {
       if (value == null || value.toString().trim().isEmpty) return null;
       final raw = value.toString();
       try {
-        return DateTime.parse(raw);
+        final datePart = RegExp(r'^\d{4}-\d{2}-\d{2}').firstMatch(raw)?.group(0);
+        return DateTime.parse(datePart ?? raw);
       } catch (_) {
         try {
-          return DateTime.parse(raw.replaceAll('/', '-'));
+          final normalized = raw.replaceAll('/', '-');
+          final datePart = RegExp(r'^\d{4}-\d{2}-\d{2}')
+              .firstMatch(normalized)
+              ?.group(0);
+          return DateTime.parse(datePart ?? normalized);
         } catch (_) {
           return null;
         }

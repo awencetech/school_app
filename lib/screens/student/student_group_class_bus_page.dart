@@ -4,7 +4,9 @@ import '../../routes/app_routes.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
 class StudentGroupClassBusPage extends StatelessWidget {
-  const StudentGroupClassBusPage({super.key});
+  const StudentGroupClassBusPage({super.key, this.headerTitle = 'SAMUNI'});
+
+  final String headerTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +22,9 @@ class StudentGroupClassBusPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          headerTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
       body: SingleChildScrollView(

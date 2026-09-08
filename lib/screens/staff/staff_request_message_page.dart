@@ -4,7 +4,9 @@ import '../../routes/app_routes.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 
 class StaffRequestMessagePage extends StatefulWidget {
-  const StaffRequestMessagePage({super.key});
+  const StaffRequestMessagePage({super.key, this.headerTitle = 'SAMUNI'});
+
+  final String headerTitle;
 
   @override
   State<StaffRequestMessagePage> createState() =>
@@ -130,9 +132,9 @@ class _StaffRequestMessagePageState extends State<StaffRequestMessagePage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          widget.headerTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
       body: Column(

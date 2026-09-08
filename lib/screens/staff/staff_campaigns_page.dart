@@ -4,7 +4,9 @@ import '../../routes/app_routes.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 
 class StaffCampaignsPage extends StatelessWidget {
-  const StaffCampaignsPage({super.key});
+  const StaffCampaignsPage({super.key, this.headerTitle = 'SAMUNI'});
+
+  final String headerTitle;
 
   static const _campaigns = [
     _Campaign(
@@ -76,9 +78,9 @@ class StaffCampaignsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          headerTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
       body: Column(

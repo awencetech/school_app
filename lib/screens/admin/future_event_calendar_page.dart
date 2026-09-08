@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -37,7 +39,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   final GroupEventService _eventService = GroupEventService();
   late DateTime _displayedMonth;
   late DateTime _selectedDate;
-  List<GroupEvent> _events = [];
+  List<CalendarEvent> _events = [];
   _CalendarView _view = _CalendarView.month;
   bool _isLoading = true;
   String? _errorMessage;
@@ -73,7 +75,11 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
       });
     }
     try {
-      final events = await _eventService.getEventsForGroup(widget.groupId);
+      final events = widget.isEdit
+          ? (await _eventService.getEventsForGroup(widget.groupId))
+            .map(CalendarEvent.fromGroupEvent)
+            .toList()
+          : await _eventService.getCalendarEvents();
       if (!mounted) return;
       setState(() {
         _events = events;
@@ -108,7 +114,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     });
   }
 
-  List<GroupEvent> _eventsForDate(DateTime date) {
+  List<CalendarEvent> _eventsForDate(DateTime date) {
     final day = DateUtils.dateOnly(date);
     return _events.where((event) {
       final start = DateUtils.dateOnly(event.startDate);
@@ -265,6 +271,12 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
   }
 
   Widget _buildCalendarGrid({required List<DateTime> dates}) {
+    final maxEventsPerDate = dates.fold<int>(
+      0,
+      (maximum, date) => math.max(maximum, _eventsForDate(date).length),
+    );
+    final cellHeight = math.max(70.0, 28.0 + maxEventsPerDate * 13.0);
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -284,9 +296,9 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: dates.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisExtent: 70,
+              mainAxisExtent: cellHeight,
               crossAxisSpacing: 0,
               mainAxisSpacing: 0,
             ),
@@ -305,7 +317,6 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     final isToday = DateUtils.isSameDay(date, DateTime.now());
     final isSelected = DateUtils.isSameDay(date, _selectedDate);
     final isOutsideMonth = date.month != _displayedMonth.month;
-    final visibleEvents = events.take(2).toList();
 
     return InkWell(
       onTap: () => setState(() => _selectedDate = date),
@@ -338,24 +349,14 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
                 ),
               ),
             ),
-            ...visibleEvents.map(_eventChip),
-            if (events.length > visibleEvents.length)
-              Text(
-                '+${events.length - visibleEvents.length} more',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 8,
-                  color: AppColors.secondaryText,
-                ),
-              ),
+            ...events.map(_eventChip),
           ],
         ),
       ),
     );
   }
 
-  Widget _eventChip(GroupEvent event) {
+  Widget _eventChip(CalendarEvent event) {
     return InkWell(
       onTap: () => _showEventDetails(event),
       borderRadius: BorderRadius.circular(2),
@@ -381,7 +382,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     );
   }
 
-  Future<void> _showEventDetails(GroupEvent event) {
+  Future<void> _showEventDetails(CalendarEvent event) {
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -424,6 +425,8 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
                 'End Date',
                 _formatEventDate(event.endDate ?? event.startDate),
               ),
+              if (event.category != null && event.category!.isNotEmpty)
+                _detailRow('Category', event.category!),
               if (event.startTime != null)
                 _detailRow('Start Time', event.startTime!),
               if (event.endTime != null)
@@ -478,13 +481,13 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     );
   }
 
-  Color _eventColor(GroupEvent event) {
+  Color _eventColor(CalendarEvent event) {
     final value = event.color.replaceFirst('#', '');
     final parsed = int.tryParse(value, radix: 16);
     return parsed == null ? AppColors.yellowButton : Color(0xFF000000 | parsed);
   }
 
-  Color _eventTextColor(GroupEvent event) {
+  Color _eventTextColor(CalendarEvent event) {
     final color = _eventColor(event);
     final brightness = ThemeData.estimateBrightnessForColor(color);
     return brightness == Brightness.dark ? Colors.white : Colors.black;
@@ -524,12 +527,16 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
                 children: [
                   IconButton(
                     tooltip: 'Edit event',
-                    onPressed: () => _openEventForm(event),
+                    onPressed: event.groupEvent == null
+                      ? null
+                      : () => _openEventForm(event.groupEvent!),
                     icon: const Icon(Icons.edit_outlined),
                   ),
                   IconButton(
                     tooltip: 'Delete event',
-                    onPressed: () => _deleteEvent(event),
+                    onPressed: event.groupEvent == null
+                      ? null
+                      : () => _deleteEvent(event.groupEvent!),
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                   ),
                 ],
@@ -622,7 +629,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     );
   }
 
-  String _eventDetails(GroupEvent event) {
+  String _eventDetails(CalendarEvent event) {
     final time = [
       event.startTime,
       event.endTime,

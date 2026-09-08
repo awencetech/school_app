@@ -4,7 +4,9 @@ import '../../routes/app_routes.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
 
 class StudentCheckApprovePage extends StatefulWidget {
-  const StudentCheckApprovePage({super.key});
+  const StudentCheckApprovePage({super.key, this.headerTitle = 'SAMUNI'});
+
+  final String headerTitle;
 
   @override
   State<StudentCheckApprovePage> createState() =>
@@ -41,9 +43,9 @@ class _StudentCheckApprovePageState extends State<StudentCheckApprovePage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        title: Text(
+          widget.headerTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
       body: Column(

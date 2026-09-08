@@ -367,13 +367,20 @@ class _Section extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: lines
                   .map(
-                    (line) => Text(
-                      line,
-                      style: const TextStyle(
-                        fontSize: 8,
-                        height: 1.35,
-                        color: Color(0xff355c8a),
-                      ),
+                    (line) => Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            line,
+                            softWrap: true,
+                            style: const TextStyle(
+                              fontSize: 8,
+                              height: 1.35,
+                              color: Color(0xff355c8a),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                   .toList(),
@@ -443,6 +450,7 @@ class _TrendRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
                     value,
+                    softWrap: true,
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: header ? FontWeight.w600 : FontWeight.w400,

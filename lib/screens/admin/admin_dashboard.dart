@@ -261,22 +261,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     ),
                                   ),
                                   _QuickAction(
-                                    icon: Icons.assignment,
-                                    label: 'Request',
-                                    color: Color(0xFFF4B400),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminQuickRequest,
-                                    ),
-                                  ),
-                                  _QuickAction(
-                                    icon: Icons.fact_check,
-                                    label: 'Campaign Survey',
-                                    color: Color(0xFF8D6E63),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminQuickGroupClass,
-                                    ),
-                                  ),
-                                  _QuickAction(
                                     icon: Icons.assignment_turned_in,
                                     label: 'PTM',
                                     color: Color(0xFF5E7D1F),

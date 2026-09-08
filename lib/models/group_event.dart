@@ -1,3 +1,5 @@
+import 'event_celebration.dart';
+
 /// An event scheduled for one activity group.
 class GroupEvent {
   const GroupEvent({
@@ -68,14 +70,79 @@ class GroupEvent {
   static DateTime? _parseDate(dynamic value) {
     if (value is DateTime) return value;
     if (value is Map && value[r'$date'] != null) {
-      return DateTime.tryParse(value[r'$date'].toString());
+      return _parseCalendarDate(value[r'$date'].toString());
     }
     if (value == null) return null;
-    return DateTime.tryParse(value.toString());
+    return _parseCalendarDate(value.toString());
+  }
+
+  static DateTime? _parseCalendarDate(String value) {
+    final datePart = RegExp(r'^\d{4}-\d{2}-\d{2}').firstMatch(value)?.group(0);
+    return DateTime.tryParse(datePart ?? value);
   }
 
   static String? _optionalString(dynamic value) {
     final text = value?.toString().trim() ?? '';
     return text.isEmpty ? null : text;
+  }
+}
+
+/// Calendar-ready representation shared by group events and school events.
+class CalendarEvent {
+  const CalendarEvent({
+    required this.id,
+    required this.title,
+    required this.startDate,
+    this.endDate,
+    this.startTime,
+    this.endTime,
+    this.description = '',
+    this.category,
+    this.groupId = '',
+    this.color = '#FF9800',
+    this.groupEvent,
+  });
+
+  final String id;
+  final String title;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final String? startTime;
+  final String? endTime;
+  final String description;
+  final String? category;
+  final String groupId;
+  final String color;
+  final GroupEvent? groupEvent;
+
+  factory CalendarEvent.fromGroupEvent(GroupEvent event) => CalendarEvent(
+    id: event.id,
+    title: event.title,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    description: event.description,
+    groupId: event.groupId,
+    color: event.color,
+    groupEvent: event,
+  );
+
+  factory CalendarEvent.fromCelebration(EventCelebration event) {
+    final date = event.eventDate;
+    if (date == null) {
+      throw const FormatException('Calendar events require a date.');
+    }
+    final description = [event.subHeading, event.content]
+        .where((value) => value.trim().isNotEmpty)
+        .join('\n');
+    return CalendarEvent(
+      id: event.id ?? '',
+      title: event.heading.isNotEmpty ? event.heading : event.subHeading,
+      startDate: date,
+      description: description,
+      category: event.category,
+      color: '#FF9800',
+    );
   }
 }

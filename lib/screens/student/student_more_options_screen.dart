@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../routes/app_routes.dart';
-import '../../models/group.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
-import '../admin/class_demography_page.dart';
 
 /// More options screen for the classes/groups section.
 class StudentMoreOptionsScreen extends StatelessWidget {
@@ -102,117 +100,23 @@ class StudentMoreOptionsScreen extends StatelessWidget {
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.92,
                 ),
-                itemCount: 20,
+                itemCount: 14,
                 itemBuilder: (context, index) {
                   final items = [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.groupClassMenu,
-                      ),
-                      child: const _MoreOptionTile(
-                        icon: Icons.menu,
-                        label: 'Group/Class Menu',
-                        color: Color(0xFF0891B2),
-                      ),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.dashboard,
-                      label: 'Group Dashboard',
-                      color: Color(0xFFF97316),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.checkroom,
-                      label: 'Take Attendance',
-                      color: Color(0xFF047857),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.upload_file,
-                      label: 'Upload HW,CW',
-                      color: Color(0xFFDC2626),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.edit,
-                      label: 'Write Message',
-                      color: Color(0xFF9333EA),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ClassDemographyPage(group: Group(id: 'NCC2022', name: 'NCC2022', year: '2026')))),
-                      child: const _MoreOptionTile(
-                        icon: Icons.pie_chart,
-                        label: 'Class Demography',
-                        color: Color(0xFF22C55E),
-                      ),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.school,
-                      label: 'Class Resources',
-                      color: Color(0xFF2563EB),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.table_chart,
-                      label: 'Class TimeTable',
-                      color: Color(0xFFEF4444),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.emoji_events,
-                      label: 'Appreciate Award',
-                      color: Color(0xFF14B8A6),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.photo,
-                      label: 'Photos News',
-                      color: Color(0xFF475569),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.online_prediction,
-                      label: 'Online Assignment',
-                      color: Color(0xFF1D4ED8),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.message,
-                      label: 'Write Group Messages',
-                      color: Color(0xFF10B981),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.approval,
-                      label: 'Leave Approval',
-                      color: Color(0xFF9333EA),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.book,
-                      label: 'Diary Summary',
-                      color: Color(0xFF84CC16),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.folder_open,
-                      label: 'Class Resources',
-                      color: Color(0xFF2563EB),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.checkroom,
-                      label: 'Size & Uniform ordering',
-                      color: Color(0xFF1E40AF),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.medical_services,
-                      label: 'Medical Details',
-                      color: Color(0xFF64748B),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.attach_money,
-                      label: 'Fee Information',
-                      color: Color(0xFFA3E635),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.person,
-                      label: 'Student Resources',
-                      color: Color(0xFF2563EB),
-                    ),
-                    const _MoreOptionTile(
-                      icon: Icons.event_available,
-                      label: 'PTM Status',
-                      color: Color(0xFF1E3A8A),
-                    ),
+                    const _MoreOptionTile(icon: Icons.info, label: 'Group Info', color: Color(0xFF2563EB)),
+                    const _MoreOptionTile(icon: Icons.calendar_month, label: 'Future Event Calendar', color: Color(0xFFF59E0B)),
+                    const _MoreOptionTile(icon: Icons.book, label: 'HW Today in class', color: Color(0xFFEF4444)),
+                    const _MoreOptionTile(icon: Icons.mail, label: 'Group Messages', color: Color(0xFF16A34A)),
+                    const _MoreOptionTile(icon: Icons.edit, label: 'Write Message', color: Color(0xFF9333EA)),
+                    const _MoreOptionTile(icon: Icons.people, label: 'Class Demography', color: Color(0xFF06B6D4)),
+                    const _MoreOptionTile(icon: Icons.library_books, label: 'Class Resources', color: Color(0xFF8B5CF6)),
+                    const _MoreOptionTile(icon: Icons.photo_camera, label: 'Photos News', color: Color(0xFFEC4899)),
+                    const _MoreOptionTile(icon: Icons.schedule, label: 'Class TimeTable', color: Color(0xFF3B82F6)),
+                    const _MoreOptionTile(icon: Icons.today, label: 'Class Planner', color: Color(0xFF10B981)),
+                    const _MoreOptionTile(icon: Icons.videocam, label: 'Video Conf', color: Color(0xFFDC2626)),
+                    const _MoreOptionTile(icon: Icons.description, label: 'Class FilePlan', color: Color(0xFF64748B)),
+                    const _MoreOptionTile(icon: Icons.assignment, label: 'Online Assignment', color: Color(0xFFF97316)),
+                    const _MoreOptionTile(icon: Icons.assessment, label: 'Online Assessment', color: Color(0xFF6366F1)),
                   ];
 
                   return items[index];

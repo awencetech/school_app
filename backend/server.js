@@ -822,6 +822,7 @@ let oneOnOneMeetingsCollection;
 let gateRegisterCollection;
 let employeeAttendanceCollection;
 let staffResourcesCollection;
+let staffAccessCollection;
 
 async function safeCreateIndex(collection, spec, options = {}) {
   try {
@@ -877,6 +878,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(employeeAttendanceCollection, { employeeId: 1, attendanceDate: 1 }, { unique: true }),
     safeCreateIndex(employeeAttendanceCollection, { attendanceDate: 1, status: 1 }),
     safeCreateIndex(staffResourcesCollection, { staffId: 1, createdAt: -1 }),
+    safeCreateIndex(staffAccessCollection, { staffId: 1 }, { unique: true }),
   ]);
 }
 
@@ -936,6 +938,7 @@ async function connectMongo() {
     gateRegisterCollection = db.collection('gate-reg');
     employeeAttendanceCollection = db.collection('employee-attendance');
     staffResourcesCollection = db.collection('staff-resources');
+    staffAccessCollection = db.collection('stf-access');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
@@ -4923,6 +4926,98 @@ app.delete('/api/staff-resources/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/staff-resources/:id failed:', error);
     return res.status(500).json({ message: 'Unable to delete staff resource.' });
+  }
+});
+
+function staffAccessResponse(staff, access) {
+  return {
+    staff: sanitizeStaffForResponse(staff),
+    staffId: access?.staffId || staff.employeeId || staff._id?.toString() || '',
+    staffName: access?.staffName || staff.name || '',
+    accessGroups: Array.isArray(access?.accessGroups) ? access.accessGroups : [],
+    updatedAt: access?.updatedAt || null,
+    updatedBy: access?.updatedBy || null,
+  };
+}
+
+async function findStaffForAccess(staffId) {
+  const value = String(staffId || '').trim();
+  if (!value) return null;
+  const filters = [{ employeeId: value }, { id: value }];
+  if (ObjectId.isValid(value)) filters.push({ _id: new ObjectId(value) });
+  return employeeInfoCollection.findOne({ $or: filters });
+}
+
+app.get('/api/stf-access', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await employeeInfoCollection.find({}).sort({ name: 1, _id: 1 }).toArray();
+    const access = await staffAccessCollection.find({}).toArray();
+    const byStaffId = new Map(access.map((item) => [String(item.staffId || ''), item]));
+    return res.json({
+      data: staff.map((item) => staffAccessResponse(
+        item,
+        byStaffId.get(String(item.employeeId || item._id || '')),
+      )),
+    });
+  } catch (error) {
+    console.error('GET /api/stf-access failed:', error);
+    return res.status(500).json({ message: 'Unable to load staff access.' });
+  }
+});
+
+app.get('/api/stf-access/:staffId', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await findStaffForAccess(req.params.staffId);
+    if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
+    const staffId = staff.employeeId || staff._id.toString();
+    const access = await staffAccessCollection.findOne({ staffId });
+    return res.json(staffAccessResponse(staff, access));
+  } catch (error) {
+    console.error('GET /api/stf-access/:staffId failed:', error);
+    return res.status(500).json({ message: 'Unable to load staff access.' });
+  }
+});
+
+app.put('/api/stf-access/:staffId', requireAdmin, async (req, res) => {
+  try {
+    await connectMongo();
+    const staff = await findStaffForAccess(req.params.staffId);
+    if (!staff) return res.status(404).json({ message: 'Staff member not found.' });
+    if (!Array.isArray(req.body?.accessGroups)) {
+      return res.status(422).json({ message: 'accessGroups must be an array.' });
+    }
+    const allowedGroups = new Set([
+      'dashboard', 'students', 'staff', 'attendance', 'leave-requests',
+      'calendar', 'messages', 'news', 'reports', 'student-records',
+      'staff-resources', 'other-options',
+    ]);
+    const accessGroups = [...new Set(req.body.accessGroups.map((value) => String(value).trim()))]
+      .filter((value) => allowedGroups.has(value));
+    const staffId = staff.employeeId || staff._id.toString();
+    const now = new Date().toISOString();
+    await staffAccessCollection.updateOne(
+      { staffId },
+      {
+        $set: {
+          staffId,
+          staffName: staff.name || '',
+          accessGroups,
+          updatedAt: now,
+          updatedBy: String(req.auth.userId || ''),
+        },
+        $setOnInsert: { createdAt: now },
+      },
+      { upsert: true },
+    );
+    return res.json(staffAccessResponse(
+      staff,
+      await staffAccessCollection.findOne({ staffId }),
+    ));
+  } catch (error) {
+    console.error('PUT /api/stf-access/:staffId failed:', error);
+    return res.status(500).json({ message: 'Unable to save staff access.' });
   }
 });
 

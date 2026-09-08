@@ -93,6 +93,8 @@ class AppRoutes {
   static const adminOtherOptions = '/admin/other-options';
   static const adminOtherStaffResource =
       '$adminOtherOptions/staff-resource';
+    static const adminStaffAccess = '$adminOtherOptions/stf-access';
+    static const adminStaffAccessEdit = '$adminStaffAccess/edit';
   static const adminOtherStaffResourceHistory =
       '$adminOtherStaffResource/history';
   static const adminOtherStaffResourceHistoryView =
@@ -213,7 +215,8 @@ class AppRoutes {
       '$teacherGroupClassMenu/online-assessment-edit';
   static const teacherEditGroupInfoEdit = teacherGroupInfoEdit;
   static const teacherGroupDashboard = '$teacherGroupClasses/group-dashboard';
-  static const teacherDiarySummary = '$teacherGroupClasses/diary-summary';
+    static const teacherDiarySummary =
+            '/staff-dashboard/group-classes/diary-summary';
   static const teacherTakeAttendance = '$teacherGroupClasses/take-attendance';
   static const teacherAppreciateAward = '$teacherGroupClasses/appreciate-award';
   static const teacherLeaveApproval = '$teacherGroupClasses/leave-approval';

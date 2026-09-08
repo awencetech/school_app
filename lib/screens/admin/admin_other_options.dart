@@ -50,6 +50,10 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                 'label': 'Staff Resource',
                 'icon': Icons.folder_shared_outlined,
               },
+              {
+                'label': 'Staff Access',
+                'icon': Icons.admin_panel_settings_outlined,
+              },
             ];
 
             return GridView.builder(
@@ -83,6 +87,10 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
                     } else if (index == 5) {
                       Navigator.of(context).pushNamed(
                         AppRoutes.adminOtherStaffResource,
+                      );
+                    } else if (index == 6) {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.adminStaffAccess,
                       );
                     }
                   },

@@ -65,6 +65,7 @@ import '../screens/admin/list_students_page.dart';
 import '../screens/admin/admin_student_menu_page.dart';
 import '../screens/admin/student_info_page.dart';
 import '../models/staff_info.dart';
+import '../models/staff_access.dart';
 import '../models/staff_resource.dart';
 import '../services/student_service.dart';
 import '../screens/admin/add_options.dart';
@@ -76,6 +77,7 @@ import '../screens/admin/create_class_screen.dart';
 import '../screens/admin/empty_admin_option_page.dart';
 import '../screens/admin/admin_write_message_page.dart';
 import '../screens/admin/admin_staff_resource_page.dart';
+import '../screens/admin/staff_access_page.dart';
 import '../screens/admin/staff_resource_history_page.dart';
 import '../screens/admin/staff_resource_image_page.dart';
 import '../screens/messages/messages_page.dart';
@@ -444,6 +446,17 @@ class AppRouter {
         isStaffView: true,
       ),
       AppRoutes.adminOtherOptions => const AdminOtherOptions(),
+      AppRoutes.adminStaffAccess => const StaffAccessPage(),
+      _ when settings.name != null &&
+          settings.name!.startsWith('${AppRoutes.adminStaffAccessEdit}/') =>
+        StaffAccessEditPage(
+          record: settings.arguments is StaffAccessRecord
+              ? settings.arguments as StaffAccessRecord
+              : null,
+          staffId: settings.name!.substring(
+            '${AppRoutes.adminStaffAccessEdit}/'.length,
+          ),
+        ),
       AppRoutes.adminOtherStaffResource => const AdminStaffResourcePage(),
       AppRoutes.adminOtherStaffResourceHistory => StaffResourceHistoryPage(
         staff: settings.arguments is StaffInfo

@@ -69,7 +69,6 @@ import '../models/staff_info.dart';
 import '../models/staff_access.dart';
 import '../models/staff_resource.dart';
 import '../services/student_service.dart';
-import '../services/app_state.dart';
 import '../screens/admin/add_options.dart';
 import '../screens/admin/student_create_id_screen.dart';
 import '../screens/admin/staff_create_id_screen.dart';
@@ -265,40 +264,6 @@ class AppRouter {
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
             child,
-      );
-    }
-
-    const staffPermissions = <String, String>{
-      AppRoutes.staffEventCalendar: 'calendar',
-      AppRoutes.staffOverviewDashboard: 'dashboard',
-      AppRoutes.staffRequest: 'leave-requests',
-      AppRoutes.staffDashboardMessages: 'messages',
-      AppRoutes.staffWriteMessage: 'messages',
-      AppRoutes.staffCampaignSurvey: 'news',
-      AppRoutes.staffPtm: 'calendar',
-      AppRoutes.staffResources: 'staff-resources',
-      AppRoutes.staffHandbook: 'staff-resources',
-      AppRoutes.staffEventsCelebration: 'news',
-      AppRoutes.staffTodoTasks: 'dashboard',
-      AppRoutes.staffInfo: 'staff',
-      AppRoutes.staffApplyLeave: 'leave-requests',
-      AppRoutes.staffMeeting: 'staff',
-      AppRoutes.staffAnnouncements: 'news',
-      AppRoutes.staffCheckApprove: 'messages',
-      AppRoutes.staffGroupsBuses: 'students',
-      AppRoutes.staffSwipeAttendance: 'attendance',
-      AppRoutes.staffTrackUniRoute: 'students',
-      AppRoutes.staffTrackSp7: 'students',
-      AppRoutes.staffTrack: 'students',
-    };
-    final requiredPermission = staffPermissions[settings.name];
-    if (requiredPermission != null &&
-        !AppState.staffCanAccess(requiredPermission)) {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const StaffPlaceholderPage(
-          title: 'Access restricted',
-        ),
       );
     }
 

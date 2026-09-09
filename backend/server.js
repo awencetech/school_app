@@ -174,12 +174,20 @@ async function requireGroupAccess(req, res, next) {
     req.auth = auth;
     await connectMongo();
     const staff = await findStaffForAccess(req.auth.userId);
-    if (!staff) return next();
+    if (!staff) {
+      return res.status(403).json({ message: 'Staff access record not found.' });
+    }
     const staffId = staff.employeeId || staff._id.toString();
     const access = await staffAccessCollection.findOne({ staffId });
-    if (!access || !Array.isArray(access.groupIds)) return next();
+    if (!access) {
+      return res.status(403).json({ message: 'You do not have access to this group.' });
+    }
     const requestedId = String(req.params.groupId || '').trim();
-    if (!access.groupIds.includes(requestedId)) {
+    const allowedIds = [
+      ...(Array.isArray(access.groupIds) ? access.groupIds : []),
+      ...(Array.isArray(access.classTeacherIds) ? access.classTeacherIds : []),
+    ].map((value) => String(value).trim());
+    if (!allowedIds.includes(requestedId)) {
       return res.status(403).json({ message: 'You do not have access to this group.' });
     }
     return next();
@@ -1914,6 +1922,14 @@ function sanitizeTodayInClassForResponse(doc) {
     commentsAllowed: doc.commentsAllowed !== false,
     isHomework: doc.isHomework === true,
     attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
+    title: doc.title || '',
+    dueDate: doc.dueDate || null,
+    priority: doc.priority || 'Medium',
+    topic: doc.topic || '',
+    status: doc.status || '',
+    teacherNotes: doc.teacherNotes || '',
+    startTime: doc.startTime || '',
+    endTime: doc.endTime || '',
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
@@ -2991,6 +3007,9 @@ app.post('/api/groups/:groupId/homework', async (req, res) => {
       sendToTeachers: body.sendToTeachers === true,
       commentsAllowed: body.commentsAllowed !== false,
       attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      title: (body.title || '').toString().trim(),
+      dueDate: body.dueDate ? String(body.dueDate) : null,
+      priority: ['Low', 'Medium', 'High'].includes(body.priority) ? body.priority : 'Medium',
       createdAt: now,
       updatedAt: now,
     };
@@ -3027,6 +3046,9 @@ app.put('/api/groups/:groupId/homework/:recordId', async (req, res) => {
       sendToTeachers: body.sendToTeachers === true,
       commentsAllowed: body.commentsAllowed !== false,
       attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      title: (body.title || '').toString().trim(),
+      dueDate: body.dueDate ? String(body.dueDate) : null,
+      priority: ['Low', 'Medium', 'High'].includes(body.priority) ? body.priority : 'Medium',
       updatedAt: new Date().toISOString(),
     };
     const result = await homeworkCollection.updateOne(selector, { $set: update });
@@ -3082,6 +3104,11 @@ app.post('/api/groups/:groupId/today-in-class', async (req, res) => {
       commentsAllowed: body.commentsAllowed !== false,
       isHomework: body.isHomework === true,
       attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      topic: (body.topic || '').toString().trim(),
+      status: (body.status || '').toString().trim(),
+      teacherNotes: (body.teacherNotes || '').toString().trim(),
+      startTime: (body.startTime || '').toString().trim(),
+      endTime: (body.endTime || '').toString().trim(),
       createdAt: now,
       updatedAt: now,
     };
@@ -3120,6 +3147,11 @@ app.put('/api/groups/:groupId/today-in-class/:recordId', async (req, res) => {
       commentsAllowed: body.commentsAllowed !== false,
       isHomework: body.isHomework === true,
       attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => item.toString()) : [],
+      topic: (body.topic || '').toString().trim(),
+      status: (body.status || '').toString().trim(),
+      teacherNotes: (body.teacherNotes || '').toString().trim(),
+      startTime: (body.startTime || '').toString().trim(),
+      endTime: (body.endTime || '').toString().trim(),
       updatedAt: new Date().toISOString(),
     };
     const result = await todayInClassCollection.updateOne(selector, { $set: update });

@@ -10,7 +10,21 @@ class TodayInClassRecord {
     required this.commentsAllowed,
     this.isHomework = false,
     this.attachments = const [],
-  });
+    String? title,
+    this.dueDate,
+    String? priority,
+    String? topic,
+    String? status,
+    String? teacherNotes,
+    String? startTime,
+    String? endTime,
+  })  : title = title ?? '',
+        priority = priority ?? 'Medium',
+        topic = topic ?? '',
+        status = status ?? '',
+        teacherNotes = teacherNotes ?? '',
+        startTime = startTime ?? '',
+        endTime = endTime ?? '';
 
   final String id;
   final String groupId;
@@ -22,6 +36,14 @@ class TodayInClassRecord {
   final bool commentsAllowed;
   final bool isHomework;
   final List<String> attachments;
+  final String title;
+  final DateTime? dueDate;
+  final String priority;
+  final String topic;
+  final String status;
+  final String teacherNotes;
+  final String startTime;
+  final String endTime;
 
   factory TodayInClassRecord.fromJson(Map<String, dynamic> json) {
     final date = DateTime.tryParse((json['date'] ?? '').toString());
@@ -39,6 +61,14 @@ class TodayInClassRecord {
       attachments: (json['attachments'] is List)
           ? (json['attachments'] as List).map((item) => item.toString()).toList()
           : const [],
+          title: (json['title'] ?? '').toString(),
+          dueDate: DateTime.tryParse((json['dueDate'] ?? '').toString()),
+          priority: (json['priority'] ?? 'Medium').toString(),
+          topic: (json['topic'] ?? '').toString(),
+          status: (json['status'] ?? '').toString(),
+          teacherNotes: (json['teacherNotes'] ?? '').toString(),
+          startTime: (json['startTime'] ?? '').toString(),
+          endTime: (json['endTime'] ?? '').toString(),
     );
   }
 }

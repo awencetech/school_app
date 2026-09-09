@@ -51,6 +51,9 @@ class HomeworkService {
     required bool sendToTeachers,
     required bool commentsAllowed,
     required List<String> attachments,
+    String title = '',
+    DateTime? dueDate,
+    String priority = 'Medium',
   }) => _save(
         method: 'POST',
         uri: _uri('/api/groups/${Uri.encodeComponent(groupId)}/homework'),
@@ -62,6 +65,9 @@ class HomeworkService {
           'sendToTeachers': sendToTeachers,
           'commentsAllowed': commentsAllowed,
           'attachments': attachments,
+          'title': title,
+          'dueDate': dueDate?.toIso8601String(),
+          'priority': priority,
         },
         expectedStatus: 201,
       );
@@ -76,6 +82,9 @@ class HomeworkService {
     required bool sendToTeachers,
     required bool commentsAllowed,
     required List<String> attachments,
+    String title = '',
+    DateTime? dueDate,
+    String priority = 'Medium',
   }) => _save(
         method: 'PUT',
         uri: _uri('/api/groups/${Uri.encodeComponent(groupId)}/homework/${Uri.encodeComponent(recordId)}'),
@@ -87,6 +96,9 @@ class HomeworkService {
           'sendToTeachers': sendToTeachers,
           'commentsAllowed': commentsAllowed,
           'attachments': attachments,
+          'title': title,
+          'dueDate': dueDate?.toIso8601String(),
+          'priority': priority,
         },
         expectedStatus: 200,
       );

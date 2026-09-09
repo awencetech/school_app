@@ -627,7 +627,9 @@ class AppRouter {
           groupName: group.name,
           groupYear: group.year,
           isEdit:
-              !viewOnly && settings.name == AppRoutes.teacherEditHomeworkToday,
+              !viewOnly &&
+              (settings.name == AppRoutes.teacherHomeworkToday ||
+                settings.name == AppRoutes.teacherEditHomeworkToday),
         );
       })(),
       AppRoutes.teacherHomeworkAdd => (() {

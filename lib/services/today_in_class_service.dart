@@ -50,6 +50,11 @@ class TodayInClassService {
     required bool commentsAllowed,
     required bool isHomework,
     required List<String> attachments,
+    String topic = '',
+    String status = '',
+    String teacherNotes = '',
+    String startTime = '',
+    String endTime = '',
   }) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class');
     final response = await http.post(
@@ -64,6 +69,11 @@ class TodayInClassService {
         'commentsAllowed': commentsAllowed,
         'isHomework': isHomework,
         'attachments': attachments,
+        'topic': topic,
+        'status': status,
+        'teacherNotes': teacherNotes,
+        'startTime': startTime,
+        'endTime': endTime,
       }),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != 201) {
@@ -91,6 +101,11 @@ class TodayInClassService {
     required bool commentsAllowed,
     required bool isHomework,
     required List<String> attachments,
+    String topic = '',
+    String status = '',
+    String teacherNotes = '',
+    String startTime = '',
+    String endTime = '',
   }) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class/${Uri.encodeComponent(recordId)}');
     final response = await http.put(
@@ -105,6 +120,11 @@ class TodayInClassService {
         'commentsAllowed': commentsAllowed,
         'isHomework': isHomework,
         'attachments': attachments,
+        'topic': topic,
+        'status': status,
+        'teacherNotes': teacherNotes,
+        'startTime': startTime,
+        'endTime': endTime,
       }),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) {

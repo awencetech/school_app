@@ -8,18 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
 import '../../widgets/navigation/app_bottom_navigation.dart';
-import 'student_achievements_awards_page.dart';
-import 'student_attendance_page.dart';
-import 'student_diary_page.dart';
-import 'student_exam_results_page.dart';
-import 'student_faculty_feedback_page.dart';
-import 'student_fee_information_page.dart';
-import 'student_info_screen.dart';
-import 'student_medical_page.dart';
-import 'student_ptm_page.dart';
-import 'student_resources_page.dart';
-import 'student_uni_route_page.dart';
-import 'student_uniform_request_page.dart';
 
 /// Student menu screen matching the provided reference flow.
 class StudentMenuScreen extends StatelessWidget {
@@ -229,120 +217,96 @@ class StudentMenuScreen extends StatelessWidget {
                       icon: Icons.info,
                       label: 'Student Info',
                       color: const Color(0xFF26C6DA),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentInfoScreen(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuStudentInfo,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.calendar_today,
                       label: 'Attendance\nApply Leave',
                       color: const Color(0xFFF57C00),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentAttendancePage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuApplyLeave,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.bar_chart,
                       label: 'Exam Score',
                       color: const Color(0xFF2E7D32),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentExamResultsPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuExamScore,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.menu_book,
                       label: 'Student Diary',
                       color: const Color(0xFF26C6DA),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentDiaryPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuStudentDiary,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.emoji_events,
                       label: 'Achievements\nAwards',
                       color: const Color(0xFF8E24AA),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentAchievementsAwardsPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuAchievementAwards,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.payments,
                       label: 'Fee Information',
                       color: const Color(0xFFB0C400),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentFeeInformationPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuFeeInformation,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.checkroom,
                       label: 'Size & Uniform\nOrdering',
                       color: const Color(0xFF2196F3),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentUniformRequestPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuSizeUniformOrdering,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.medical_services,
                       label: 'Medical',
                       color: const Color(0xFF90A4AE),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentMedicalPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuMedical,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.folder,
                       label: 'Student Resources',
                       color: const Color(0xFFD84315),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentResourcesPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuStudentResources,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.feedback,
                       label: 'Feedback',
                       color: const Color(0xFF1E88E5),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentFacultyFeedbackPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuFeedback,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.directions_bus,
                       label: 'Pick Up',
                       color: const Color(0xFF00796B),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentUniRoutePage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuPickUp,
                       ),
                     ),
                     _StudentMenuTile(
                       icon: Icons.assignment_turned_in,
                       label: 'PTM Status',
                       color: const Color(0xFF0D47A1),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentPtmPage(),
-                        ),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.studentMenuPtmStatus,
                       ),
                     ),
                   ];

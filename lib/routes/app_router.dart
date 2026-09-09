@@ -23,14 +23,19 @@ import '../screens/staff/staff_events_celebration_page.dart';
 import '../screens/staff/staff_todo_tasks_page.dart';
 import '../screens/staff/staff_placeholder_page.dart';
 import '../screens/student/student_dashboard.dart';
+import '../screens/student/student_achievements_awards_page.dart';
 import '../screens/student/student_info_screen.dart';
 import '../screens/student/student_attendance_page.dart';
 import '../screens/student/student_exam_results_page.dart';
 import '../screens/student/student_diary_page.dart';
+import '../screens/student/student_fee_information_page.dart';
 import '../screens/student/student_faculty_feedback_page.dart';
+import '../screens/student/student_medical_page.dart';
+import '../screens/student/student_resources_page.dart';
 import '../screens/student/student_more_options_screen.dart';
 import '../screens/student/group_class_menu_screen.dart';
 import '../screens/student/student_menu_screen.dart';
+import '../screens/student/student_uniform_request_page.dart';
 import '../screens/support/support_query_screen.dart';
 import '../screens/support/privacy_policy_screen.dart';
 import '../screens/admin/admin_other_options.dart';
@@ -330,9 +335,24 @@ class AppRouter {
       AppRoutes.studentDashboardAttendance => const StudentAttendancePage(),
       AppRoutes.studentDashboardExamResults => const StudentExamResultsPage(),
       AppRoutes.studentDashboardDiary => const StudentDiaryPage(),
-        AppRoutes.studentDashboardFacultyFeedback =>
-          const StudentFacultyFeedbackPage(),
-          AppRoutes.studentDashboardMenu => const StudentMenuScreen(),
+      AppRoutes.studentDashboardFacultyFeedback =>
+        const StudentFacultyFeedbackPage(),
+      AppRoutes.studentDashboardMenu => const StudentMenuScreen(),
+      AppRoutes.studentMenuStudentInfo => const StudentInfoScreen(),
+      AppRoutes.studentMenuApplyLeave => const StudentAttendancePage(),
+      AppRoutes.studentMenuExamScore => const StudentExamResultsPage(),
+      AppRoutes.studentMenuStudentDiary => const StudentDiaryPage(),
+      AppRoutes.studentMenuAchievementAwards =>
+        const StudentAchievementsAwardsPage(),
+      AppRoutes.studentMenuFeeInformation =>
+        const StudentFeeInformationPage(),
+      AppRoutes.studentMenuSizeUniformOrdering =>
+        const StudentUniformRequestPage(),
+      AppRoutes.studentMenuMedical => const StudentMedicalPage(),
+      AppRoutes.studentMenuStudentResources => const StudentResourcesPage(),
+      AppRoutes.studentMenuFeedback => const StudentFacultyFeedbackPage(),
+      AppRoutes.studentMenuPickUp => const StudentUniRoutePage(),
+      AppRoutes.studentMenuPtmStatus => const StudentPtmPage(),
       AppRoutes.studentInfo => const StudentInfoScreen(),
       AppRoutes.studentMoreOptions => const StudentMoreOptionsScreen(),
       AppRoutes.groupClassMenu => const GroupClassMenuScreen(),

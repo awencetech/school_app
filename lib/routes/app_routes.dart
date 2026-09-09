@@ -30,14 +30,30 @@ class AppRoutes {
       '$studentDashboard/track-uni-route-22';
   static const studentDashboardTrackSp7 = '$studentDashboard/track-sp7';
   static const studentDashboardTrack = '$studentDashboard/track';
-    static const studentDashboardMessages = '$studentDashboard/msg-student';
-    static const studentDashboardInfo = '$studentDashboard/student-info';
-    static const studentDashboardAttendance = '$studentDashboard/attendance';
-    static const studentDashboardExamResults = '$studentDashboard/exam-results';
-    static const studentDashboardDiary = '$studentDashboard/student-diary';
-    static const studentDashboardFacultyFeedback =
-            '$studentDashboard/faculty-feedback';
-    static const studentDashboardMenu = '$studentDashboard/student-menu';
+  static const studentDashboardMessages = '$studentDashboard/msg-student';
+  static const studentDashboardInfo = '$studentDashboard/student-info';
+  static const studentDashboardAttendance = '$studentDashboard/attendance';
+  static const studentDashboardExamResults = '$studentDashboard/exam-results';
+  static const studentDashboardDiary = '$studentDashboard/student-diary';
+  static const studentDashboardFacultyFeedback =
+      '$studentDashboard/faculty-feedback';
+  static const studentDashboardMenu = '$studentDashboard/student-menu';
+  static const studentMenuStudentInfo = '$studentDashboardMenu/student-info';
+  static const studentMenuApplyLeave = '$studentDashboardMenu/apply-leave';
+  static const studentMenuExamScore = '$studentDashboardMenu/exam-score';
+  static const studentMenuStudentDiary = '$studentDashboardMenu/student-diary';
+  static const studentMenuAchievementAwards =
+      '$studentDashboardMenu/achievement-awards';
+  static const studentMenuFeeInformation =
+      '$studentDashboardMenu/fee-information';
+  static const studentMenuSizeUniformOrdering =
+      '$studentDashboardMenu/size-uniform-ordering';
+  static const studentMenuMedical = '$studentDashboardMenu/medical';
+  static const studentMenuStudentResources =
+      '$studentDashboardMenu/student-resources';
+  static const studentMenuFeedback = '$studentDashboardMenu/feedback';
+  static const studentMenuPickUp = '$studentDashboardMenu/pick-up';
+  static const studentMenuPtmStatus = '$studentDashboardMenu/ptm-status';
   static const studentInfo = '/student-info';
   static const studentMoreOptions = '/student-more-options';
   static const groupClassMenu = '/group-class-menu';
@@ -255,7 +271,13 @@ Future<void> navigateBack(BuildContext context, {String? fallbackRoute}) async {
     }
 
     final role = context.read<AppState>().currentUserRole?.trim().toLowerCase();
-    final route = fallbackRoute ?? switch (role) {
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+    final route = fallbackRoute ??
+        (currentRoute != null &&
+                currentRoute.startsWith('${AppRoutes.studentDashboardMenu}/')
+            ? AppRoutes.studentDashboardMenu
+            : null) ??
+        switch (role) {
         'student' => AppRoutes.studentDashboard,
         'staff' => AppRoutes.staffDashboard,
         'admin' => AppRoutes.adminDashboard,

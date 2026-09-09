@@ -24,8 +24,8 @@ class StaffWriteMessagePage extends StatelessWidget {
         title: quickAccessTitle ?? 'Write Message',
       );
     }
-    return const _StaffMessageComposePage(
-      group: _MessageGroup('All Groups', '', ''),
+    return const StaffMessageComposePage(
+      group: StaffMessageGroup('All Groups', '', ''),
     );
   }
 }
@@ -236,25 +236,25 @@ class _StudentWriteMessageFormState extends State<_StudentWriteMessageForm> {
   }
 }
 
-class _MessageGroup {
-  const _MessageGroup(this.title, this.subtitle, this.messageHeading);
+class StaffMessageGroup {
+  const StaffMessageGroup(this.title, this.subtitle, this.messageHeading);
 
   final String title;
   final String subtitle;
   final String messageHeading;
 }
 
-class _StaffMessageComposePage extends StatefulWidget {
-  const _StaffMessageComposePage({required this.group});
+class StaffMessageComposePage extends StatefulWidget {
+  const StaffMessageComposePage({super.key, required this.group});
 
-  final _MessageGroup group;
+  final StaffMessageGroup group;
 
   @override
-  State<_StaffMessageComposePage> createState() =>
+  State<StaffMessageComposePage> createState() =>
       _StaffMessageComposePageState();
 }
 
-class _StaffMessageComposePageState extends State<_StaffMessageComposePage> {
+class _StaffMessageComposePageState extends State<StaffMessageComposePage> {
   final _service = AdminMessageService();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();

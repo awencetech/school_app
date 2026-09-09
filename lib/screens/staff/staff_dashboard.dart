@@ -10,8 +10,10 @@ import '../../models/news_item.dart';
 import '../../models/group.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../services/class_service.dart';
 import '../../services/school_config_service.dart';
 import '../../services/staff_service.dart';
+import '../../services/staff_access_service.dart';
 import '../../services/social_url_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -23,7 +25,6 @@ import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
-import 'staff_group_messages_page.dart';
 import '../admin/homework_today_in_class_page.dart';
 import '../admin/class_demography_page.dart';
 
@@ -42,11 +43,77 @@ class _StaffDashboardState extends State<StaffDashboard> {
   String _staffImageUrl = '';
   bool _staffLoading = true;
   String? _staffError;
+  bool _assignedClassLoading = true;
+  String? _assignedClassDisplay;
+  String? _assignedClassError;
 
   @override
   void initState() {
     super.initState();
     _loadStaffInformation();
+    _loadAssignedClass();
+  }
+
+  Future<void> _loadAssignedClass() async {
+    try {
+      final access = await StaffAccessService().getMine();
+      final assignedIds = access.classTeacherIds.toSet();
+      if (assignedIds.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _assignedClassLoading = false;
+          _assignedClassDisplay = null;
+        });
+        return;
+      }
+
+      final classes = await ClassService().getClasses(refresh: true);
+      final assignedClass = classes.cast<Group?>().firstWhere(
+        (item) => item != null &&
+            assignedIds.contains(_classReference(item)),
+        orElse: () => null,
+      );
+      if (!mounted) return;
+      setState(() {
+        _assignedClassLoading = false;
+        _assignedClassDisplay = assignedClass == null
+            ? null
+            : _formatAssignedClass(assignedClass);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _assignedClassLoading = false;
+        _assignedClassError = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  String _classReference(Group group) =>
+      group.id.trim().isNotEmpty ? group.id.trim() : group.databaseId.trim();
+
+  String _formatAssignedClass(Group group) {
+    final className = group.name.trim().isNotEmpty
+        ? group.name.trim()
+        : group.id.trim();
+    final year = group.year.trim();
+    return [className, year].where((value) => value.isNotEmpty).join(' ');
+  }
+
+  Widget _assignedClassTitle() {
+    final text = _assignedClassLoading
+        ? 'Loading...'
+        : _assignedClassError != null
+        ? 'Unable to load class'
+        : _assignedClassDisplay ?? 'No Main Class Assigned';
+    return Text(
+      text,
+      style: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF222222),
+      ),
+    );
   }
 
   Future<void> _loadStaffInformation() async {
@@ -604,14 +671,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Grade 10 C - 2026-27',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF222222),
-                                ),
-                              ),
+                              _assignedClassTitle(),
                               const SizedBox(height: 12),
                               DashboardIconGrid(
                                 children: [
@@ -619,11 +679,8 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     icon: Icons.message,
                                     label: 'Write Group\nMessages',
                                     color: Color(0xFF4CAF50),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const StaffGroupMessagesPage(),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.staffWriteGroupMessage,
                                     ),
                                   ),
                                   _ClassAction(

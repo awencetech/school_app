@@ -7,6 +7,7 @@ import '../screens/login/create_account_screen.dart';
 import '../screens/login/forgot_password_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/staff/staff_dashboard.dart';
+import '../screens/staff/staff_group_messages_page.dart';
 import '../screens/staff/staff_write_message_page.dart';
 import '../screens/staff/staff_overview_dashboard_page.dart';
 import '../screens/announcements/announcements_page.dart';
@@ -268,7 +269,6 @@ class AppRouter {
     }
 
     const staffPermissions = <String, String>{
-      AppRoutes.staffDashboard: 'dashboard',
       AppRoutes.staffEventCalendar: 'calendar',
       AppRoutes.staffOverviewDashboard: 'dashboard',
       AppRoutes.staffRequest: 'leave-requests',
@@ -376,6 +376,15 @@ class AppRouter {
       AppRoutes.staffDashboardMessages => const MessagesPage(),
       AppRoutes.staffWriteMessage => const StaffWriteMessagePage(),
       AppRoutes.staffRequest => const StaffLeaveRequestPage(),
+      AppRoutes.staffWriteGroupMessage => const StaffGroupMessagesPage(
+        headerTitle: 'Write Group Messages',
+      ),
+      AppRoutes.staffWriteGroupMessageGroups => const StaffMessageTargetsPage(
+        targetType: StaffMessageTargetType.groups,
+      ),
+      AppRoutes.staffWriteGroupMessageClasses => const StaffMessageTargetsPage(
+        targetType: StaffMessageTargetType.classes,
+      ),
       AppRoutes.staffCampaignSurvey => const StaffCampaignsPage(),
       AppRoutes.staffPtm => const StudentPtmPage(
         headerTitle: 'PTM',

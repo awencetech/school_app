@@ -4,13 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/admin_message.dart';
+import '../../models/group.dart';
 import '../../routes/app_routes.dart';
 import '../../services/admin_message_service.dart';
 import '../../services/app_state.dart';
+import '../../services/class_service.dart';
+import '../../services/group_service.dart';
+import '../../services/staff_access_service.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
+import 'staff_write_message_page.dart';
 
 class StaffGroupMessagesPage extends StatefulWidget {
-  const StaffGroupMessagesPage({super.key});
+  const StaffGroupMessagesPage({super.key, this.headerTitle = 'SAMUNI'});
+
+  final String headerTitle;
 
   @override
   State<StaffGroupMessagesPage> createState() => _StaffGroupMessagesPageState();
@@ -34,13 +41,63 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
 
   static const _defaultMessages = <_StaffMessage>[];
   final _adminMessageService = AdminMessageService();
+  final _staffAccessService = StaffAccessService();
   late List<_StaffMessage> _messages;
+  List<Group> _groups = const [];
+  List<Group> _classes = const [];
+  bool _targetsLoading = true;
+  String? _targetsError;
 
   @override
   void initState() {
     super.initState();
     _messages = List.from(_defaultMessages);
     _loadAdminMessages();
+    _loadAssignedTargets();
+  }
+
+  Future<void> _loadAssignedTargets() async {
+    try {
+      final access = await _staffAccessService.getMine();
+      final allowedGroups = access.groupIds.toSet();
+      final allowedClasses = access.classTeacherIds.toSet();
+      final groups = await GroupService().getGroups(refresh: true);
+      final classes = await ClassService().getClasses(refresh: true);
+      if (!mounted) return;
+      setState(() {
+        _groups = groups
+            .where((group) => allowedGroups.contains(_targetKey(group)))
+            .toList();
+        _classes = classes
+            .where((group) => allowedClasses.contains(_targetKey(group)))
+            .toList();
+        _targetsLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _targetsLoading = false;
+        _targetsError = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  String _targetKey(Group target) =>
+      target.id.trim().isNotEmpty ? target.id.trim() : target.databaseId.trim();
+
+  void _selectTarget(Group target) {
+    final targetName = target.name.isEmpty ? target.id : target.name;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StaffMessageComposePage(
+          group: StaffMessageGroup(
+            targetName,
+            targetName,
+            'Message for $targetName',
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadAdminMessages() async {
@@ -157,8 +214,8 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
         centerTitle: true,
-        title: const Text(
-          'SAMUNI',
+        title: Text(
+          widget.headerTitle,
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
         actions: [
@@ -168,26 +225,37 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
           ),
         ],
       ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(8, 7, 8, 12),
         children: [
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(4, 7, 4, 4),
-              child: Text(
-                'Messages',
-                style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
-              ),
-            ),
+          _TargetDropdownCard(
+            title: 'Groups',
+            subtitle: 'Send message to a group',
+            icon: Icons.groups_outlined,
+            targets: _groups,
+            loading: _targetsLoading,
+            error: _targetsError,
+            emptyLabel: 'No groups available',
+            onTargetSelected: _selectTarget,
           ),
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              itemCount: _messages.length,
-              itemBuilder: (context, index) =>
-                  _MessageCard(message: _messages[index]),
-            ),
+          const SizedBox(height: 10),
+          _TargetDropdownCard(
+            title: 'Classes',
+            subtitle: 'Send message to a class',
+            icon: Icons.school_outlined,
+            targets: _classes,
+            loading: _targetsLoading,
+            error: _targetsError,
+            emptyLabel: 'No classes available',
+            onTargetSelected: _selectTarget,
           ),
+          const SizedBox(height: 14),
+          const Text(
+            'Messages',
+            style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
+          ),
+          const SizedBox(height: 4),
+          ..._messages.map((message) => _MessageCard(message: message)),
         ],
       ),
       bottomNavigationBar: ReusableBottomNavigationBar(
@@ -212,6 +280,216 @@ class _StaffGroupMessagesPageState extends State<StaffGroupMessagesPage> {
       ),
     );
   }
+}
+
+class _TargetDropdownCard extends StatelessWidget {
+  const _TargetDropdownCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.targets,
+    required this.loading,
+    required this.error,
+    required this.emptyLabel,
+    required this.onTargetSelected,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<Group> targets;
+  final bool loading;
+  final String? error;
+  final String emptyLabel;
+  final ValueChanged<Group> onTargetSelected;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: EdgeInsets.zero,
+    elevation: 1,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: ExpansionTile(
+      leading: Icon(icon, size: 25, color: const Color(0xff34395f)),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 10)),
+      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      children: [
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else if (error != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              error!,
+              style: const TextStyle(fontSize: 10, color: Colors.red),
+            ),
+          )
+        else if (targets.isEmpty)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(emptyLabel, style: const TextStyle(fontSize: 10)),
+          )
+        else
+          ...targets.map(
+            (target) => ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.radio_button_unchecked, size: 16),
+              title: Text(
+                target.name.isEmpty ? target.id : target.name,
+                style: const TextStyle(fontSize: 11),
+              ),
+              onTap: () => onTargetSelected(target),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+enum StaffMessageTargetType { groups, classes }
+
+class StaffMessageTargetsPage extends StatefulWidget {
+  const StaffMessageTargetsPage({super.key, required this.targetType});
+
+  final StaffMessageTargetType targetType;
+
+  @override
+  State<StaffMessageTargetsPage> createState() =>
+      _StaffMessageTargetsPageState();
+}
+
+class _StaffMessageTargetsPageState extends State<StaffMessageTargetsPage> {
+  final _staffAccessService = StaffAccessService();
+  List<Group> _targets = const [];
+  bool _loading = true;
+  String? _error;
+
+  bool get _isGroups => widget.targetType == StaffMessageTargetType.groups;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTargets();
+  }
+
+  Future<void> _loadTargets() async {
+    try {
+      final access = await _staffAccessService.getMine();
+      final allowed = (_isGroups ? access.groupIds : access.classTeacherIds)
+          .toSet();
+      final dynamic result = _isGroups
+          ? await GroupService().getGroups(refresh: true)
+          : await ClassService().getClasses(refresh: true);
+      final records = result is List
+          ? result.whereType<Group>().toList()
+          : const <Group>[];
+      if (!mounted) return;
+      setState(() {
+        _targets = records
+            .where((target) => allowed.contains(_targetKey(target)))
+            .toList();
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  String _targetKey(Group target) =>
+      target.id.trim().isNotEmpty ? target.id.trim() : target.databaseId.trim();
+
+  void _selectTarget(Group target) {
+    final targetName = target.name.isEmpty ? target.id : target.name;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StaffMessageComposePage(
+          group: StaffMessageGroup(
+            targetName,
+            targetName,
+            'Message for $targetName',
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      backgroundColor: const Color(0xff34395f),
+      elevation: 0,
+      toolbarHeight: 44,
+      leading: IconButton(
+        onPressed: () => Navigator.of(context).pop(),
+        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+      ),
+      centerTitle: true,
+      title: Text(
+        _isGroups ? 'Groups' : 'Classes',
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ),
+    ),
+    body: _loading
+        ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+        : _error != null
+        ? Center(child: Text(_error!, style: const TextStyle(fontSize: 11)))
+        : _targets.isEmpty
+        ? Center(
+            child: Text(
+              _isGroups ? 'No groups available' : 'No classes available',
+              style: const TextStyle(fontSize: 11),
+            ),
+          )
+        : ListView.separated(
+            padding: const EdgeInsets.all(10),
+            itemCount: _targets.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 6),
+            itemBuilder: (context, index) {
+              final target = _targets[index];
+              return Card(
+                margin: EdgeInsets.zero,
+                elevation: 1,
+                child: ListTile(
+                  leading: const Icon(Icons.radio_button_unchecked, size: 18),
+                  title: Text(
+                    target.name.isEmpty ? target.id : target.name,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  onTap: () => _selectTarget(target),
+                ),
+              );
+            },
+          ),
+    bottomNavigationBar: _staffBottomNavigationBar(context),
+  );
+
+  Widget _staffBottomNavigationBar(BuildContext context) =>
+      ReusableBottomNavigationBar(
+        currentIndex: 2,
+        onItemSelected: (_) {},
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
+          BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.logout),
+            label: 'Quick Menu',
+          ),
+        ],
+      );
 }
 
 class _MessageCard extends StatelessWidget {

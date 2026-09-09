@@ -177,7 +177,7 @@ class _StaffAccessPageState extends State<StaffAccessPage> {
                 ? staff.designation
                 : staff.role.isNotEmpty
                 ? staff.role
-                : 'Designation unavailable'}\nAccess: ${record.accessGroups.length} groups',
+                : 'Designation unavailable'}\nAccess: ${record.groupIds.length} ${record.groupIds.length == 1 ? 'group' : 'groups'}\nAccess: ${record.classTeacherIds.length} ${record.classTeacherIds.length == 1 ? 'class' : 'classes'}',
           ),
         ),
         trailing: IconButton(

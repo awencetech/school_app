@@ -2429,8 +2429,24 @@ app.get('/api/classes', async (req, res) => {
       type: { $regex: '^class$', $options: 'i' },
       $or: [{ schoolId }, { schoolId: { $exists: false } }],
     }).sort({ order: 1, createdAt: 1, _id: 1 }).toArray();
-    console.log(`GET /api/classes school=${schoolId} returned=${classes.length}`);
-    return res.json(classes.map(sanitizeGroupForResponse));
+    const auth = verifyAuthToken(readAuthToken(req));
+    const role = (auth?.role || '').toLowerCase();
+    let visibleClasses = classes;
+    if (role === 'staff' || role === 'teacher') {
+      const staff = await findStaffForAccess(auth.userId);
+      const staffId = staff?.employeeId || staff?._id?.toString();
+      const access = staffId ? await staffAccessCollection.findOne({ staffId }) : null;
+      const allowed = new Set(
+        access && Array.isArray(access.classTeacherIds)
+          ? access.classTeacherIds.map((value) => String(value))
+          : [],
+      );
+      visibleClasses = classes.filter((item) =>
+        allowed.has(String(item.id || item._id)),
+      );
+    }
+    console.log(`GET /api/classes school=${schoolId} returned=${visibleClasses.length}`);
+    return res.json(visibleClasses.map(sanitizeGroupForResponse));
   } catch (error) {
     console.error('GET /api/classes failed:', error);
     return res.status(500).json({ message: 'Unable to load classes.' });
@@ -2560,10 +2576,14 @@ app.get('/api/groups', async (req, res) => {
       const staff = await findStaffForAccess(auth.userId);
       const staffId = staff?.employeeId || staff?._id?.toString();
       const access = staffId ? await staffAccessCollection.findOne({ staffId }) : null;
-      if (access && Array.isArray(access.groupIds)) {
-        const allowed = new Set(access.groupIds);
-        groups = groups.filter((group) => allowed.has(String(group.id || group._id)));
-      }
+      const allowed = new Set(
+        access && Array.isArray(access.groupIds)
+          ? access.groupIds.map((value) => String(value))
+          : [],
+      );
+      groups = groups.filter((group) =>
+        allowed.has(String(group.id || group._id)),
+      );
     }
     console.log(`GET /api/groups type=${type || 'all'} school=${schoolId} returned=${groups.length}`);
     return res.json(groups.map(sanitizeGroupForResponse));

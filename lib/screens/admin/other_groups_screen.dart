@@ -79,7 +79,10 @@ class _OtherGroupsScreenState extends State<OtherGroupsScreen> {
 
   void _applyGroups(List<Group> groups) {
     if (!mounted) return;
-    final ordered = [...groups]..sort((a, b) => a.order.compareTo(b.order));
+    final ordered = groups
+        .where((group) => group.type.trim().toLowerCase() != 'class')
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
     setState(() {
       allGroups = ordered;
       filteredGroups = ordered;

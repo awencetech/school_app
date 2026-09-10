@@ -1082,7 +1082,7 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
         foregroundColor: AppColors.white,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () async {
             // Try root navigator maybePop first; fall back to replacing with Group Menu.
             // Using rootNavigator helps when the page is inside nested navigators.

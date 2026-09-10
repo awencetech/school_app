@@ -17,7 +17,14 @@ class _AdminOtherOptionsState extends State<AdminOtherOptions> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: AppColors.topBar, title: const Text('Other Options')),
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Other Options'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: LayoutBuilder(

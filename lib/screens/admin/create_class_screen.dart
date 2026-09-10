@@ -235,7 +235,7 @@ class _CreateClassesScreenState extends State<CreateClassesScreen> {
         centerTitle: true,
         title: const Text('Create Classes'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => navigateBack(context),
         ),
       ),

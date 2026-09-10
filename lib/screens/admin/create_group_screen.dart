@@ -35,7 +35,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   @override
   void initState() {
     super.initState();
-    _loadGroups();
+    _loadGroups(refresh: true);
   }
 
   @override
@@ -228,6 +228,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleGroups = _groups
+        .where((group) => group.type.trim().toLowerCase() != 'class')
+        .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
@@ -235,7 +239,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         centerTitle: true,
         title: const Text('Create Group'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -427,7 +431,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               ],
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
-              else if (_groups.isEmpty)
+              else if (visibleGroups.isEmpty)
                 Center(
                   child: Text(
                     'No groups available yet.',
@@ -438,8 +442,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   ),
                 )
               else
-                ...List.generate(_groups.length, (index) {
-                  final group = _groups[index];
+                ...List.generate(visibleGroups.length, (index) {
+                  final group = visibleGroups[index];
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
@@ -462,10 +466,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         const SizedBox(height: 6),
                         Text(
                           'ID: ${group.id}',
-                          style: GoogleFonts.poppins(fontSize: 12),
-                        ),
-                        Text(
-                          'Type: ${group.type}',
                           style: GoogleFonts.poppins(fontSize: 12),
                         ),
                         Text(

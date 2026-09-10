@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/group.dart';
 import '../../routes/app_router.dart';
 import '../../routes/app_routes.dart';
+import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class GroupMenuPage extends StatelessWidget {
@@ -95,10 +96,10 @@ class GroupMenuPage extends StatelessWidget {
   Future<void> _openItem(BuildContext context, _GroupMenuItem item) async {
     AppRouter.rememberSelectedGroup(group);
     final result = await Navigator.of(context).pushNamed(
-      isViewOnly ? _viewRoute(item.route) : item.route,
+      item.route,
       arguments: {
         'group': group,
-        'viewOnly': isViewOnly,
+        'viewOnly': false,
       },
     );
     if (item.route == AppRoutes.teacherGroupInfoEdit && result == true && context.mounted) {
@@ -107,26 +108,6 @@ class GroupMenuPage extends StatelessWidget {
         arguments: group,
       );
     }
-  }
-
-  String _viewRoute(String editRoute) {
-    const routes = <String, String>{
-      AppRoutes.teacherEditGroupInfo: AppRoutes.teacherGroupInfo,
-      AppRoutes.teacherEditFutureEventCalendar: AppRoutes.teacherFutureEventCalendar,
-      AppRoutes.teacherEditHomeworkToday: AppRoutes.teacherHomeworkToday,
-      AppRoutes.teacherEditGroupMessages: AppRoutes.teacherGroupMessages,
-      AppRoutes.teacherEditWriteMessage: AppRoutes.teacherGroupMessages,
-      AppRoutes.teacherEditClassDemography: AppRoutes.teacherClassDemography,
-      AppRoutes.teacherEditClassResources: AppRoutes.teacherClassResources,
-      AppRoutes.teacherEditPhotosNews: AppRoutes.teacherPhotosNews,
-      AppRoutes.teacherEditClassTimetable: AppRoutes.teacherClassTimetable,
-      AppRoutes.teacherEditClassPlanner: AppRoutes.teacherClassPlanner,
-      AppRoutes.teacherEditVideoConference: AppRoutes.teacherVideoConference,
-      AppRoutes.teacherEditClassFilePlan: AppRoutes.teacherClassFilePlan,
-      AppRoutes.teacherEditOnlineAssignment: AppRoutes.teacherOnlineAssignment,
-      AppRoutes.teacherEditOnlineAssessment: AppRoutes.teacherOnlineAssessment,
-    };
-    return routes[editRoute] ?? editRoute;
   }
 
   @override
@@ -158,7 +139,11 @@ class GroupMenuPage extends StatelessWidget {
               );
             }
           },
-          icon: const Icon(Icons.arrow_back, size: 20),
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 20,
+            color: AppColors.white,
+          ),
         ),
         title: Text(
           isViewOnly ? 'Group Menu' : 'Group Menu Edit',

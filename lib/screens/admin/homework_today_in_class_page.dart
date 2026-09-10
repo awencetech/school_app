@@ -906,6 +906,11 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
           widget.isHomework ? 'Homework' : 'Classwork',
           style: AppTextStyles.appTitle.copyWith(fontSize: 16),
         ),
+        leading: IconButton(
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+        ),
         actions: [
           IconButton(
             tooltip: 'Close',

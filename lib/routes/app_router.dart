@@ -89,6 +89,7 @@ import '../screens/admin/staff_resource_image_page.dart';
 import '../screens/messages/messages_page.dart';
 import '../screens/staff/staff_campaigns_page.dart';
 import '../screens/staff/staff_request_message_page.dart';
+import '../screens/staff/staff_upload_homework_page.dart';
 import '../screens/staff/staff_leave_request_page.dart';
 import '../screens/student/student_check_approve_page.dart';
 import '../screens/student/student_group_class_bus_page.dart';
@@ -359,12 +360,7 @@ class AppRouter {
       AppRoutes.studentMenu => const StudentMenuScreen(),
       AppRoutes.staffDashboard => const StaffDashboard(),
       AppRoutes.staffDashboardMessages => const MessagesPage(),
-      AppRoutes.staffUploadHomework => const HomeworkTodayInClassPage(
-        groupId: 'grade-10-c',
-        groupName: '10 C',
-        groupYear: '2026-27',
-        initialTabIndex: 0,
-      ),
+      AppRoutes.staffUploadHomework => const StaffUploadHomeworkPage(),
       AppRoutes.staffWriteMessage => const StaffWriteMessagePage(),
       AppRoutes.staffRequest => const StaffLeaveRequestPage(),
       AppRoutes.staffWriteGroupMessage => const StaffGroupMessagesPage(

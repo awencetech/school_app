@@ -1243,6 +1243,7 @@ let eventsCollection;
 let legacyEventsCollection;
 let todayInClassCollection;
 let homeworkCollection;
+let staffUploadHomeworkCollection;
 let diaryCollection;
 let studentDiaryCollection;
 let groupMessagesCollection;
@@ -1300,6 +1301,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
     safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
     safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
+    safeCreateIndex(staffUploadHomeworkCollection, { schoolId: 1, createdAt: -1 }),
     safeCreateIndex(diaryCollection, { studentId: 1, diaryDate: 1 }, { unique: true }),
     safeCreateIndex(studentDiaryCollection, { studentId: 1, diaryDate: 1 }, { unique: true }),
     safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
@@ -1359,6 +1361,7 @@ async function connectMongo() {
     legacyEventsCollection = db.collection('events');
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
+    staffUploadHomeworkCollection = db.collection('staff-uploadhw');
     diaryCollection = db.collection('staff-diary');
     studentDiaryCollection = db.collection('student-diary');
     groupMessagesCollection = db.collection('groupMessages');
@@ -3075,6 +3078,47 @@ app.delete('/api/groups/:groupId/homework/:recordId', async (req, res) => {
   } catch (error) {
     console.error('DELETE /api/groups/:groupId/homework/:recordId failed:', error);
     return res.status(500).json({ message: 'Unable to delete Homework.' });
+  }
+});
+
+app.post('/api/staff-uploadhw', requireRecipientRole('staff'), async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const date = String(body.date || '').trim();
+    const subject = String(body.subject || '').trim();
+    const message = String(body.message || '').trim();
+    const groupId = String(body.groupId || '').trim();
+    if (!date || Number.isNaN(Date.parse(date)) || !subject || !message || !groupId) {
+      return res.status(422).json({ message: 'Date, group, subject, and message are required.' });
+    }
+    const now = new Date().toISOString();
+    const auth = req.auth || verifyAuthToken(readAuthToken(req)) || {};
+    const record = {
+      groupId,
+      groupName: String(body.groupName || '').trim(),
+      schoolId: String(body.schoolId || 'default-school').trim() || 'default-school',
+      date,
+      subject,
+      message,
+      title: String(body.title || '').trim(),
+      dueDate: body.dueDate ? String(body.dueDate) : null,
+      priority: ['Low', 'Medium', 'High'].includes(body.priority) ? body.priority : 'Medium',
+      sendToStudents: body.sendToStudents === true,
+      sendToTeachers: body.sendToTeachers === true,
+      commentsAllowed: body.commentsAllowed !== false,
+      attachments: Array.isArray(body.attachments) ? body.attachments.map((item) => String(item)) : [],
+      createdBy: auth.userId || '',
+      staffId: auth.userId || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const result = await staffUploadHomeworkCollection.insertOne(record);
+    const saved = await staffUploadHomeworkCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json({ ...sanitizeTodayInClassForResponse(saved), groupName: saved.groupName, schoolId: saved.schoolId, createdBy: saved.createdBy });
+  } catch (error) {
+    console.error('POST /api/staff-uploadhw failed:', error);
+    return res.status(500).json({ message: 'Unable to save staff homework.' });
   }
 });
 

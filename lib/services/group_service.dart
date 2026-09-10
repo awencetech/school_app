@@ -292,17 +292,12 @@ class GroupService {
     return Group.fromJson(responsePayload);
   }
 
-  Future<void> deleteGroup(
-    String databaseId, {
-    String? typeFilter,
-    String schoolId = 'default-school',
-  }) async {
-    final query = <String, String>{'schoolId': schoolId};
-    if (typeFilter?.isNotEmpty == true) {
-      query['type'] = typeFilter!;
-    }
+  Future<void> deleteGroup(String databaseId) async {
     final resp = await http
-        .delete(_uri('/api/groups/$databaseId').replace(queryParameters: query))
+        .delete(
+          _uri('/api/groups/$databaseId'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       final message = _errorMessage(resp.body);

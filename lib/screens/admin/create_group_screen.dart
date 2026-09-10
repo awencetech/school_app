@@ -181,7 +181,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         const SnackBar(content: Text('Group deleted successfully')),
       );
       await _loadGroups(refresh: true);
-      if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
       setState(() {

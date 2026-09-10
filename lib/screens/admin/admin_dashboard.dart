@@ -4,12 +4,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
+import '../../services/social_url_service.dart';
 import '../../services/app_state.dart';
 import '../../services/user_menu_state.dart';
 import '../../theme/app_colors.dart';
@@ -32,6 +34,82 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedBottomIndex = 0;
+
+  Future<void> _openUrl(
+    BuildContext context,
+    String value,
+    String unavailableMessage,
+  ) async {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null ||
+        !const ['http', 'https'].contains(uri.scheme.toLowerCase()) ||
+        uri.host.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(unavailableMessage)),
+        );
+      }
+      return;
+    }
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+        context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the link.')),
+      );
+    }
+  }
+
+  Future<void> _openSocialUrl(
+    BuildContext context,
+    Future<String> Function() fetcher,
+    String unavailableMessage,
+  ) async {
+    try {
+      final url = await fetcher();
+      if (!context.mounted) return;
+      await _openUrl(context, url, unavailableMessage);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(unavailableMessage)),
+        );
+      }
+    }
+  }
+
+  Future<void> _openWhatsapp(BuildContext context) async {
+    try {
+      final config = await SocialUrlService().getWhatsappConfig();
+      final phone = (config['phoneNumber'] ?? '').replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
+      if (phone.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('WhatsApp link is not available.')),
+          );
+        }
+        return;
+      }
+      final text = (config['text'] ?? '').trim();
+      final uri = Uri.parse(
+        'https://wa.me/$phone${text.isEmpty ? '' : '?text=${Uri.encodeComponent(text)}'}',
+      );
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+          context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to open WhatsApp.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('WhatsApp link is not available.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +359,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     .pushNamed(AppRoutes.adminQuickTrack),
                               ),
                             ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Color(0xFFE0E0E0),
+                              ),
+                            ),
                             const SizedBox(height: 18),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -302,8 +388,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     icon: Icons.language,
                                     label: 'Website',
                                     color: Color(0xFF4CAF50),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminKnowYourSchoolWebsiteEdit,
+                                    onTap: () => _openUrl(
+                                      context,
+                                      context.read<SchoolConfigService>().websiteUrl,
+                                      'School website link is not available.',
                                     ),
                                   ),
                                   _SchoolLinkChip(
@@ -335,6 +423,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     icon: Icons.newspaper,
                                     label: 'Newsletter',
                                     color: Color(0xFF5C84C3),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminDashboardNewsletter,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.announcement,
@@ -348,37 +439,44 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     icon: Icons.people,
                                     label: 'Demography',
                                     color: Color(0xFF388E3C),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.adminDashboardDemography,
+                                    ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.facebook,
                                     label: 'Facebook',
                                     color: Color(0xFF3B5998),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminKnowYourSchoolFacebookEdit,
+                                    onTap: () => _openSocialUrl(
+                                      context,
+                                      SocialUrlService().getFacebookUrl,
+                                      'Facebook link is not available.',
                                     ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.ondemand_video,
                                     label: 'Youtube',
                                     color: Color(0xFFD32F2F),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminKnowYourSchoolYoutubeEdit,
+                                    onTap: () => _openSocialUrl(
+                                      context,
+                                      SocialUrlService().getYoutubeUrl,
+                                      'YouTube link is not available.',
                                     ),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.chat,
                                     label: 'Whatsapp',
                                     color: Color(0xFF25D366),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminKnowYourSchoolWhatsappEdit,
-                                    ),
+                                    onTap: () => _openWhatsapp(context),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.camera_alt,
                                     label: 'Instagram',
                                     color: Color(0xFFE1306C),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.adminKnowYourSchoolInstagramEdit,
+                                    onTap: () => _openSocialUrl(
+                                      context,
+                                      SocialUrlService().getInstagramUrl,
+                                      'Instagram link is not available.',
                                     ),
                                   ),
                                   _SchoolLinkChip(
@@ -391,6 +489,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         ),
                                   ),
                                 ],
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Color(0xFFE0E0E0),
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -541,6 +647,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     },
                                   ),
                                 ],
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Color(0xFFE0E0E0),
                               ),
                             ),
                           ],

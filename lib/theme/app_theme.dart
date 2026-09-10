@@ -33,7 +33,6 @@ class AppTheme {
         backgroundColor: AppColors.topBar,
         surfaceTintColor: AppColors.topBar,
         foregroundColor: AppColors.white,
-        iconTheme: IconThemeData(color: AppColors.primary),
         elevation: 2,
         centerTitle: true,
       ),

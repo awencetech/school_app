@@ -72,6 +72,10 @@ class _ListTeachersPageState extends State<ListTeachersPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text('School Team'),
       ),
       body: RefreshIndicator(

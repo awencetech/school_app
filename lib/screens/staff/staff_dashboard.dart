@@ -25,7 +25,6 @@ import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
 import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
-import '../admin/homework_today_in_class_page.dart';
 import '../admin/class_demography_page.dart';
 
 /// Staff dashboard screen matching the supplied design.
@@ -687,16 +686,8 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     icon: Icons.upload_file,
                                     label: 'Upload\nHW,CW',
                                     color: Color(0xFFD32F2F),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const HomeworkTodayInClassPage(
-                                              groupId: 'grade-10-c',
-                                              groupName: '10 C',
-                                              groupYear: '2026-27',
-                                              initialTabIndex: 0,
-                                            ),
-                                      ),
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      AppRoutes.staffUploadHomework,
                                     ),
                                   ),
                                   GestureDetector(

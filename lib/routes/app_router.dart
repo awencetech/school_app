@@ -359,6 +359,12 @@ class AppRouter {
       AppRoutes.studentMenu => const StudentMenuScreen(),
       AppRoutes.staffDashboard => const StaffDashboard(),
       AppRoutes.staffDashboardMessages => const MessagesPage(),
+      AppRoutes.staffUploadHomework => const HomeworkTodayInClassPage(
+        groupId: 'grade-10-c',
+        groupName: '10 C',
+        groupYear: '2026-27',
+        initialTabIndex: 0,
+      ),
       AppRoutes.staffWriteMessage => const StaffWriteMessagePage(),
       AppRoutes.staffRequest => const StaffLeaveRequestPage(),
       AppRoutes.staffWriteGroupMessage => const StaffGroupMessagesPage(

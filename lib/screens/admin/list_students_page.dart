@@ -73,7 +73,7 @@ class _ListStudentsPageState extends State<ListStudentsPage> {
         backgroundColor: AppColors.topBar,
         title: const Text('Student List'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();

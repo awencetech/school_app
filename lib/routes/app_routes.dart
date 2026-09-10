@@ -61,6 +61,7 @@ class AppRoutes {
   static const staffDashboard = '/staff-dashboard';
     static const staffCheckApprove = '$staffDashboard/check-approve';
     static const staffDashboardMessages = '$staffDashboard/msg-staff';
+    static const staffUploadHomework = '$staffDashboard/upload-hw';
     static const staffWriteMessage = '$staffDashboard/staff-msg';
     static const staffWriteGroupMessage = '$staffDashboard/wrie-group-msg';
     static const staffWriteGroupMessageGroups =

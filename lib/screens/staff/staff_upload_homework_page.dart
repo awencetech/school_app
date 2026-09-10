@@ -197,6 +197,11 @@ class _StaffUploadHomeworkPageState extends State<StaffUploadHomeworkPage> {
         backgroundColor: AppColors.topBar,
         centerTitle: true,
         title: Text('Homework', style: AppTextStyles.appTitle.copyWith(fontSize: 16)),
+        leading: IconButton(
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+        ),
         actions: [
           IconButton(
             tooltip: 'Close',

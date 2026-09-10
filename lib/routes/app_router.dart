@@ -620,8 +620,17 @@ class AppRouter {
               settings.name == AppRoutes.teacherEditFutureEventCalendar,
         );
       })(),
-      AppRoutes.teacherHomeworkToday ||
       AppRoutes.teacherEditHomeworkToday => (() {
+        final group = _eventGroupFromArguments(settings.arguments);
+        return HomeworkTodayInClassPage(
+          groupId: _eventGroupId(group),
+          groupName: group.name,
+          groupYear: group.year,
+          initialTabIndex: 1,
+          isEdit: true,
+        );
+      })(),
+      AppRoutes.teacherHomeworkToday => (() {
         final group = _eventGroupFromArguments(settings.arguments);
         final viewOnly = _isViewOnly(settings.arguments);
         return HomeworkTodayInClassPage(
@@ -629,9 +638,7 @@ class AppRouter {
           groupName: group.name,
           groupYear: group.year,
           isEdit:
-              !viewOnly &&
-              (settings.name == AppRoutes.teacherHomeworkToday ||
-                settings.name == AppRoutes.teacherEditHomeworkToday),
+              !viewOnly,
         );
       })(),
       AppRoutes.teacherHomeworkAdd => (() {

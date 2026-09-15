@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../generated/l10n/app_localizations.dart';
 import '../../models/language_option.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
@@ -23,7 +24,7 @@ class LanguageSelectionScreen extends StatelessWidget {
       color: AppColors.divider,
       child: Center(
         child: Text(
-          'School Poster',
+          AppLocalizations.of(context).schoolPoster,
           style: AppTextStyles.subtitle.copyWith(color: AppColors.hintText),
         ),
       ),
@@ -85,7 +86,7 @@ class LanguageSelectionScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Select your preferred Language',
+                            AppLocalizations.of(context).selectPreferredLanguage,
                             style: AppTextStyles.languageTitle,
                             textAlign: TextAlign.center,
                           ),
@@ -124,7 +125,7 @@ class LanguageSelectionScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                           PrimaryButton(
-                            label: 'Continue',
+                            label: AppLocalizations.of(context).continueText,
                             backgroundColor: AppColors.primary,
                             textColor: AppColors.white,
                             height: 48,

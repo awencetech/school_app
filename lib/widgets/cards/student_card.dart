@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../generated/l10n/app_localizations.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -50,7 +51,7 @@ class StudentCard extends StatelessWidget {
                 children: [
                   Text(name, style: AppTextStyles.subtitle),
                   const SizedBox(height: 4),
-                  Text('Marks: $marks', style: AppTextStyles.body),
+                  Text(AppLocalizations.of(context).marks(marks), style: AppTextStyles.body),
                 ],
               ),
             ),

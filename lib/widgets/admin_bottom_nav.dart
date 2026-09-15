@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../generated/l10n/app_localizations.dart';
 import '../routes/app_routes.dart';
 import '../services/app_state.dart';
 import '../services/user_menu_state.dart';
@@ -20,6 +21,7 @@ class AdminBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
       backgroundColor: const Color(0xFF333856),
@@ -61,12 +63,12 @@ class AdminBottomNavigationBar extends StatelessWidget {
         context.read<UserMenuState>().close();
         onItemSelected(index);
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-        BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
-        BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
-        BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+      items: [
+        BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
+        BottomNavigationBarItem(icon: const Icon(Icons.person), label: l10n.user),
+        BottomNavigationBarItem(icon: const Icon(Icons.info), label: l10n.help),
+        BottomNavigationBarItem(icon: const Icon(Icons.help), label: l10n.support),
+        BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.logout),
       ],
     );
   }

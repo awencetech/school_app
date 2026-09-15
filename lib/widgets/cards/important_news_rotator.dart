@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../generated/l10n/app_localizations.dart';
 
 import '../../models/news_item.dart';
 import '../../theme/app_colors.dart';
@@ -91,7 +92,7 @@ class _ImportantNewsRotatorState extends State<ImportantNewsRotator>
   Widget build(BuildContext context) {
     final items = widget.items;
     if (items.isEmpty) {
-      return Text('No news available', style: AppTextStyles.body);
+      return Text(AppLocalizations.of(context).noNewsAvailable, style: AppTextStyles.body);
     }
 
     final current = items[_index];

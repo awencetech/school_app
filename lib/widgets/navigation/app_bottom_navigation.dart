@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../theme/app_colors.dart';
@@ -19,17 +20,18 @@ class AppBottomNavigation extends StatelessWidget {
     }
 
     final isLoggedIn = state?.isLoggedIn ?? false;
+    final l10n = AppLocalizations.of(context);
     final navItems = <BottomNavigationBarItem>[
-      const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-      const BottomNavigationBarItem(icon: Icon(Icons.school), label: 'School'),
-      const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Exploit'),
-      const BottomNavigationBarItem(
+      BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
+      BottomNavigationBarItem(icon: const Icon(Icons.school), label: l10n.school),
+      BottomNavigationBarItem(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
+      BottomNavigationBarItem(
         icon: Icon(Icons.support_agent),
-        label: 'Support',
+        label: l10n.support,
       ),
       BottomNavigationBarItem(
         icon: Icon(isLoggedIn ? Icons.logout : Icons.login),
-        label: isLoggedIn ? 'Logout' : 'Login',
+        label: isLoggedIn ? l10n.logout : l10n.login,
       ),
     ];
 

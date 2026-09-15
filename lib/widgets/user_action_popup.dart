@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../generated/l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../routes/app_routes.dart';
 
@@ -8,6 +9,7 @@ Future<void> showUserActionPopup(BuildContext context) {
     context: context,
     barrierColor: Colors.transparent,
     builder: (context) {
+      final l10n = AppLocalizations.of(context);
       final screenWidth = MediaQuery.sizeOf(context).width;
       final popupWidth = screenWidth < 320 ? screenWidth - 24 : 292.0;
 
@@ -39,7 +41,7 @@ Future<void> showUserActionPopup(BuildContext context) {
                   Expanded(
                     child: _UserAction(
                       icon: Icons.person,
-                      label: 'Update User\nProfile',
+                      label: l10n.updateUserProfile,
                       iconColor: const Color(0xFFD9007F),
                       onTap: () {
                         Navigator.of(context).pop();
@@ -50,7 +52,7 @@ Future<void> showUserActionPopup(BuildContext context) {
                   Expanded(
                     child: _UserAction(
                       icon: Icons.lock,
-                      label: 'Change\nPassword',
+                      label: l10n.changePassword,
                       iconColor: const Color(0xFFC99700),
                       onTap: () {
                         Navigator.of(context).pop();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/user_service.dart';
@@ -36,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleSignIn() {
+    final l10n = AppLocalizations.of(context);
     final identifier = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     setState(() => _isLoading = true);
@@ -73,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           } else {
             messenger.showSnackBar(
-              const SnackBar(content: Text('Invalid user role')),
+              SnackBar(content: Text(l10n.invalidUserRole)),
             );
           }
         })
@@ -81,10 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           // Log error for debugging but show generic message to user
           debugPrint('Login error: $e');
-          String message = 'Invalid username or password';
+          String message = l10n.invalidCredentials;
           if (e is! Exception) {
-            message =
-                'Connection error. Please check your internet and try again.';
+            message = l10n.connectionError;
           }
           ScaffoldMessenger.of(
             context,
@@ -108,6 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isLoginEnabled =
         _usernameController.text.trim().isNotEmpty &&
         _passwordController.text.trim().isNotEmpty;
@@ -139,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.center,
                           child: Text(
-                            'School name',
+                            l10n.schoolName,
                             style: AppTextStyles.pageTitle.copyWith(
                               fontSize: 24,
                             ),
@@ -148,13 +150,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         CustomTextField(
                           controller: _usernameController,
-                          label: 'Username or email',
+                          label: l10n.usernameOrEmail,
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: _passwordController,
-                          label: 'Password',
+                          label: l10n.password,
                           obscureText: true,
                           textInputAction: TextInputAction.done,
                         ),
@@ -166,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               context,
                             ).pushNamed(AppRoutes.forgotPassword),
                             child: Text(
-                              'Forgot your password?',
+                              l10n.forgotPassword,
                               style: AppTextStyles.body.copyWith(
                                 color: AppColors.blueButton,
                               ),
@@ -175,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         SecondaryButton(
-                          label: _isLoading ? 'Signing in...' : 'Sign In',
+                          label: _isLoading ? l10n.signingIn : l10n.signIn,
                           onPressed: isLoginEnabled && !_isLoading
                               ? _handleSignIn
                               : null,
@@ -186,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             context,
                           ).pushNamed(AppRoutes.createAccount),
                           child: Text(
-                            'Don\'t have an account? Register',
+                            l10n.accountRegisterPrompt,
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.primaryText,
                             ),
@@ -194,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 12),
                         PrimaryButton(
-                          label: 'Register',
+                          label: l10n.register,
                           backgroundColor: AppColors.orangeButton,
                           textColor: AppColors.white,
                           onPressed: () => Navigator.of(
@@ -205,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Padding(
                           padding: const EdgeInsets.only(left: 2),
                           child: Text(
-                            'Contact our school to get information about registration',
+                            l10n.registrationInfo,
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.primaryText,
                             ),

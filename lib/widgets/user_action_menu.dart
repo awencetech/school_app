@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../generated/l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 
 /// A popup menu that appears above the User button in the bottom navigation.
@@ -16,6 +17,7 @@ class UserActionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Positioned(
       bottom: 65, // Above the bottom navigation bar
       left: 0,
@@ -43,7 +45,7 @@ class UserActionMenu extends StatelessWidget {
               Expanded(
                 child: _MenuItem(
                   icon: Icons.person,
-                  label: 'Update User\nProfile',
+                  label: l10n.updateUserProfile,
                   iconColor: const Color(0xFFD9007F),
                   onTap: onProfileTap,
                 ),
@@ -51,7 +53,7 @@ class UserActionMenu extends StatelessWidget {
               Expanded(
                 child: _MenuItem(
                   icon: Icons.lock,
-                  label: 'Change\nPassword',
+                  label: l10n.changePassword,
                   iconColor: const Color(0xFFC99700),
                   onTap: onPasswordTap,
                 ),

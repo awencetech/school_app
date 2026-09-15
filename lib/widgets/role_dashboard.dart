@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../generated/l10n/app_localizations.dart';
 import '../screens/home/main_shell.dart';
 import '../services/app_state.dart';
 import '../theme/app_colors.dart';
@@ -21,6 +22,7 @@ class RoleDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
@@ -64,7 +66,7 @@ class RoleDashboard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Username',
+                    l10n.username,
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -102,7 +104,7 @@ class RoleDashboard extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Logout',
+                        l10n.logout,
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

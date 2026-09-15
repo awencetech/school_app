@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../generated/l10n/app_localizations.dart';
 
 import '../../models/news_item.dart';
 import '../../theme/app_colors.dart';
@@ -110,7 +111,7 @@ class _ImportantNewsMarqueeState extends State<ImportantNewsMarquee> {
           ),
         ),
         child: Text(
-          'No news available',
+          AppLocalizations.of(context).noNewsAvailable,
           style: AppTextStyles.body,
           textAlign: TextAlign.center,
         ),

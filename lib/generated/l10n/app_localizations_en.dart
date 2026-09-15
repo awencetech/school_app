@@ -1,0 +1,146 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for English (`en`).
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
+
+  @override
+  String get selectPreferredLanguage => 'Select your preferred Language';
+
+  @override
+  String get schoolPoster => 'School Poster';
+
+  @override
+  String get continueText => 'Continue';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String get noDataAvailable => 'No Data available';
+
+  @override
+  String get noNewsAvailable => 'No news available';
+
+  @override
+  String get somethingWentWrong => 'Something went wrong';
+
+  @override
+  String get pleaseTryAgain => 'Please try again';
+
+  @override
+  String get requiredField => 'Required field';
+
+  @override
+  String get invalidEmail => 'Invalid email';
+
+  @override
+  String get passwordRequired => 'Password is required';
+
+  @override
+  String get areYouSure => 'Are you sure?';
+
+  @override
+  String get deleteQuestion => 'Are you sure you want to delete this?';
+
+  @override
+  String get home => 'Home';
+
+  @override
+  String get school => 'School';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  @override
+  String get support => 'Support';
+
+  @override
+  String get login => 'Login';
+
+  @override
+  String get logout => 'Logout';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get help => 'Help';
+
+  @override
+  String get quickMenu => 'Quick Menu';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String marks(Object marks) {
+    return 'Marks: $marks';
+  }
+
+  @override
+  String get schoolName => 'School name';
+
+  @override
+  String get usernameOrEmail => 'Username or email';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get forgotPassword => 'Forgot your password?';
+
+  @override
+  String get signingIn => 'Signing in...';
+
+  @override
+  String get signIn => 'Sign In';
+
+  @override
+  String get register => 'Register';
+
+  @override
+  String get accountRegisterPrompt => 'Don\'t have an account? Register';
+
+  @override
+  String get registrationInfo =>
+      'Contact our school to get information about registration';
+
+  @override
+  String get invalidUserRole => 'Invalid user role';
+
+  @override
+  String get invalidCredentials => 'Invalid username or password';
+
+  @override
+  String get connectionError =>
+      'Connection error. Please check your internet and try again.';
+
+  @override
+  String get updateUserProfile => 'Update User\nProfile';
+
+  @override
+  String get changePassword => 'Change\nPassword';
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../generated/l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import 'dashboard_icon_grid.dart';
 
@@ -42,6 +43,10 @@ class DashboardExtraQuickAccess extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final localizedAppBarTitle = appBarTitle == 'Quick Access'
+        ? l10n.quickAccess
+        : appBarTitle;
     final extraIndexes = [
       0,
       if (showCheckApprove) 1,
@@ -67,7 +72,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
 
         final extraIndex = index - leadingItems.length;
         final itemIndex = extraIndexes[extraIndex];
-        final item = _items[itemIndex];
+        final item = _localizedItem(l10n, _items[itemIndex]);
         return InkWell(
           onTap: itemIndex == 0 && onGroupClassBusTap != null
               ? onGroupClassBusTap
@@ -83,7 +88,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
                   MaterialPageRoute<void>(
                     builder: (_) => _ExtraQuickAccessDetailsPage(
                       item: item,
-                      appBarTitle: appBarTitle,
+                      appBarTitle: localizedAppBarTitle,
                     ),
                   ),
                 ),
@@ -120,6 +125,23 @@ class DashboardExtraQuickAccess extends StatelessWidget {
       },
     );
   }
+
+  _ExtraAction _localizedItem(AppLocalizations l10n, _ExtraAction item) {
+    switch (item.label) {
+      case 'Groups/class Bus':
+        return item.copyWith(label: l10n.groupsClassBus);
+      case 'Check Approve':
+        return item.copyWith(label: l10n.checkApprove);
+      case 'Track UNI Route - Z2':
+        return item.copyWith(label: l10n.trackUniRoute);
+      case 'Track SP7':
+        return item.copyWith(label: l10n.track57);
+      case 'Track':
+        return item.copyWith(label: l10n.track);
+      default:
+        return item;
+    }
+  }
 }
 
 class _ExtraAction {
@@ -128,6 +150,9 @@ class _ExtraAction {
   final String label;
   final IconData icon;
   final Color color;
+
+  _ExtraAction copyWith({String? label}) =>
+      _ExtraAction(label ?? this.label, icon, color);
 }
 
 class _ExtraQuickAccessDetailsPage extends StatelessWidget {

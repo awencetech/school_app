@@ -143,4 +143,67 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get changePassword => 'पासवर्ड\nबदलें';
+
+  @override
+  String welcome(Object name) {
+    return 'स्वागत है $name';
+  }
+
+  @override
+  String get quickAccess => 'त्वरित पहुँच';
+
+  @override
+  String get quickAccessDescription =>
+      'अक्सर उपयोग की जाने वाली सुविधाओं तक तुरंत पहुँचें';
+
+  @override
+  String get messages => 'संदेश';
+
+  @override
+  String get calendar => 'कैलेंडर';
+
+  @override
+  String get dashboardSummary => 'डैशबोर्ड सारांश';
+
+  @override
+  String get writeMessage => 'संदेश लिखें';
+
+  @override
+  String get pta => 'अभिभावक शिक्षक संघ';
+
+  @override
+  String get groupsClassBus => 'समूह/कक्षा बस';
+
+  @override
+  String get checkApprove => 'जांच और अनुमोदन';
+
+  @override
+  String get trackUniRoute => 'UNI मार्ग 42 ट्रैक करें';
+
+  @override
+  String get track57 => '57 ट्रैक करें';
+
+  @override
+  String get track => 'ट्रैक करें';
+
+  @override
+  String get knowYourSchool => 'अपने स्कूल को जानें';
+
+  @override
+  String get website => 'वेबसाइट';
+
+  @override
+  String get schoolHandbook => 'स्कूल पुस्तिका';
+
+  @override
+  String get eventsCalendar => 'कार्यक्रम कैलेंडर';
+
+  @override
+  String get schoolResources => 'स्कूल संसाधन';
+
+  @override
+  String get newsletter => 'समाचार पत्रिका';
+
+  @override
+  String get schoolNameValue => 'MMHSS';
 }

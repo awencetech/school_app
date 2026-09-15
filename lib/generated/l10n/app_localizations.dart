@@ -363,6 +363,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change\nPassword'**
   String get changePassword;
+
+  /// No description provided for @welcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome {name}'**
+  String welcome(Object name);
+
+  /// No description provided for @quickAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Access'**
+  String get quickAccess;
+
+  /// No description provided for @quickAccessDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Access frequently used features quickly'**
+  String get quickAccessDescription;
+
+  /// No description provided for @messages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get messages;
+
+  /// No description provided for @calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendar;
+
+  /// No description provided for @dashboardSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard Summary'**
+  String get dashboardSummary;
+
+  /// No description provided for @writeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Message'**
+  String get writeMessage;
+
+  /// No description provided for @pta.
+  ///
+  /// In en, this message translates to:
+  /// **'PTA'**
+  String get pta;
+
+  /// No description provided for @groupsClassBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups/Class Bus'**
+  String get groupsClassBus;
+
+  /// No description provided for @checkApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Approve'**
+  String get checkApprove;
+
+  /// No description provided for @trackUniRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Track UNI Route 42'**
+  String get trackUniRoute;
+
+  /// No description provided for @track57.
+  ///
+  /// In en, this message translates to:
+  /// **'Track 57'**
+  String get track57;
+
+  /// No description provided for @track.
+  ///
+  /// In en, this message translates to:
+  /// **'Track'**
+  String get track;
+
+  /// No description provided for @knowYourSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'Know your School'**
+  String get knowYourSchool;
+
+  /// No description provided for @website.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get website;
+
+  /// No description provided for @schoolHandbook.
+  ///
+  /// In en, this message translates to:
+  /// **'School Handbook'**
+  String get schoolHandbook;
+
+  /// No description provided for @eventsCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Events Calendar'**
+  String get eventsCalendar;
+
+  /// No description provided for @schoolResources.
+  ///
+  /// In en, this message translates to:
+  /// **'School Res.'**
+  String get schoolResources;
+
+  /// No description provided for @newsletter.
+  ///
+  /// In en, this message translates to:
+  /// **'Newsletter'**
+  String get newsletter;
+
+  /// No description provided for @schoolNameValue.
+  ///
+  /// In en, this message translates to:
+  /// **'MMHSS'**
+  String get schoolNameValue;
 }
 
 class _AppLocalizationsDelegate

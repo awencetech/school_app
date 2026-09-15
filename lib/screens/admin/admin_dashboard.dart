@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/school_info.dart';
+import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
@@ -113,6 +114,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return PopScope(
       canPop: !context.watch<UserMenuState>().isOpen,
       onPopInvokedWithResult: (didPop, result) {
@@ -279,7 +281,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                               child: Text(
-                                'Quick Access',
+                                l10n.quickAccess,
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -290,7 +292,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
                               child: Text(
-                                'Access frequently used features quickly',
+                                l10n.quickAccessDescription,
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w400,
@@ -303,11 +305,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                               child: DashboardExtraQuickAccess(
                                 crossAxisCount: 5,
-                                appBarTitle: 'Quick Access',
+                                appBarTitle: l10n.quickAccess,
                                 leadingItems: [
                                   _QuickAction(
                                     icon: Icons.message,
-                                    label: 'Messages HW, CW',
+                                    label: l10n.messages,
                                     color: Color(0xFFFF7043),
                                     onTap: () => Navigator.of(context).pushNamed(
                                       AppRoutes.adminQuickMessages,
@@ -315,7 +317,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.calendar_month,
-                                    label: 'Calendar',
+                                    label: l10n.calendar,
                                     color: Color(0xFFE53935),
                                     onTap: () => Navigator.of(
                                       context,
@@ -323,7 +325,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.dashboard,
-                                    label: 'Dashboard Summary Info',
+                                    label: l10n.dashboardSummary,
                                     color: Color(0xFF1E4D8F),
                                     onTap: () =>
                                         Navigator.of(context).pushNamed(
@@ -332,7 +334,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.edit,
-                                    label: 'Write Message',
+                                    label: l10n.writeMessage,
                                     color: Color(0xFFBF360C),
                                     onTap: () => Navigator.of(context).pushNamed(
                                       AppRoutes.adminQuickWriteMessage,
@@ -340,7 +342,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.assignment_turned_in,
-                                    label: 'PTM',
+                                    label: l10n.pta,
                                     color: Color(0xFF5E7D1F),
                                     onTap: () => Navigator.of(context).pushNamed(
                                       AppRoutes.adminQuickPtm,
@@ -371,7 +373,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                               child: Text(
-                                'Know your School',
+                                l10n.knowYourSchool,
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -386,7 +388,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 children: [
                                   _SchoolLinkChip(
                                     icon: Icons.language,
-                                    label: 'Website',
+                                    label: l10n.website,
                                     color: Color(0xFF4CAF50),
                                     onTap: () => _openUrl(
                                       context,
@@ -396,7 +398,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.school,
-                                    label: 'School handbook',
+                                    label: l10n.schoolHandbook,
                                     color: Color(0xFFF59E0B),
                                     onTap: () => Navigator.of(
                                       context,
@@ -404,7 +406,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.event,
-                                    label: 'Events Celebrations',
+                                    label: l10n.eventsCalendar,
                                     color: Color(0xFFF44336),
                                     onTap: () =>
                                         Navigator.of(context).pushNamed(
@@ -413,7 +415,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.folder_copy_outlined,
-                                    label: 'School Res.',
+                                    label: l10n.schoolResources,
                                     color: Color(0xFF8D6E63),
                                     onTap: () => Navigator.of(
                                       context,
@@ -421,7 +423,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.newspaper,
-                                    label: 'Newsletter',
+                                    label: l10n.newsletter,
                                     color: Color(0xFF5C84C3),
                                     onTap: () => Navigator.of(context).pushNamed(
                                       AppRoutes.adminDashboardNewsletter,

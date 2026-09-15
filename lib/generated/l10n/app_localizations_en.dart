@@ -143,4 +143,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changePassword => 'Change\nPassword';
+
+  @override
+  String welcome(Object name) {
+    return 'Welcome $name';
+  }
+
+  @override
+  String get quickAccess => 'Quick Access';
+
+  @override
+  String get quickAccessDescription =>
+      'Access frequently used features quickly';
+
+  @override
+  String get messages => 'Messages';
+
+  @override
+  String get calendar => 'Calendar';
+
+  @override
+  String get dashboardSummary => 'Dashboard Summary';
+
+  @override
+  String get writeMessage => 'Write Message';
+
+  @override
+  String get pta => 'PTA';
+
+  @override
+  String get groupsClassBus => 'Groups/Class Bus';
+
+  @override
+  String get checkApprove => 'Check Approve';
+
+  @override
+  String get trackUniRoute => 'Track UNI Route 42';
+
+  @override
+  String get track57 => 'Track 57';
+
+  @override
+  String get track => 'Track';
+
+  @override
+  String get knowYourSchool => 'Know your School';
+
+  @override
+  String get website => 'Website';
+
+  @override
+  String get schoolHandbook => 'School Handbook';
+
+  @override
+  String get eventsCalendar => 'Events Calendar';
+
+  @override
+  String get schoolResources => 'School Res.';
+
+  @override
+  String get newsletter => 'Newsletter';
+
+  @override
+  String get schoolNameValue => 'MMHSS';
 }

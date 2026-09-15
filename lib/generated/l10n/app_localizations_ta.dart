@@ -144,4 +144,67 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get changePassword => 'கடவுச்சொல்லை\nமாற்றவும்';
+
+  @override
+  String welcome(Object name) {
+    return 'வரவேற்கிறோம் $name';
+  }
+
+  @override
+  String get quickAccess => 'விரைவு அணுகல்';
+
+  @override
+  String get quickAccessDescription =>
+      'அடிக்கடி பயன்படுத்தும் அம்சங்களை விரைவாக அணுகவும்';
+
+  @override
+  String get messages => 'செய்திகள்';
+
+  @override
+  String get calendar => 'நாட்காட்டி';
+
+  @override
+  String get dashboardSummary => 'டாஷ்போர்டு சுருக்கம்';
+
+  @override
+  String get writeMessage => 'செய்தி எழுதவும்';
+
+  @override
+  String get pta => 'பெற்றோர் ஆசிரியர் சங்கம்';
+
+  @override
+  String get groupsClassBus => 'குழுக்கள்/வகுப்பு பேருந்து';
+
+  @override
+  String get checkApprove => 'சரிபார்த்து ஒப்புதல்';
+
+  @override
+  String get trackUniRoute => 'UNI வழித்தடம் 42';
+
+  @override
+  String get track57 => '57-ஐ கண்காணிக்கவும்';
+
+  @override
+  String get track => 'கண்காணிக்கவும்';
+
+  @override
+  String get knowYourSchool => 'உங்கள் பள்ளியை அறியவும்';
+
+  @override
+  String get website => 'இணையதளம்';
+
+  @override
+  String get schoolHandbook => 'பள்ளி கையேடு';
+
+  @override
+  String get eventsCalendar => 'நிகழ்வுகள் நாட்காட்டி';
+
+  @override
+  String get schoolResources => 'பள்ளி வளங்கள்';
+
+  @override
+  String get newsletter => 'செய்திமடல்';
+
+  @override
+  String get schoolNameValue => 'MMHSS';
 }

@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/news_item.dart';
 import '../../models/group.dart';
+import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../services/class_service.dart';
@@ -288,6 +289,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final config = context.watch<SchoolConfigService>();
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -387,7 +389,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Quick Access',
+                            l10n.quickAccess,
                             textAlign: TextAlign.left,
                             style: GoogleFonts.poppins(
                               fontSize: 15,
@@ -408,7 +410,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       leadingItems: [
                         _QuickAction(
                           icon: Icons.message,
-                          label: 'Messages HW, CW',
+                          label: l10n.messages,
                           color: Color(0xFFFF7043),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -418,7 +420,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         ),
                         _QuickAction(
                           icon: Icons.calendar_month,
-                          label: 'Calendar',
+                          label: l10n.calendar,
                           color: Color(0xFFE53935),
                           onTap: () => Navigator.of(
                             context,
@@ -426,7 +428,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         ),
                         _QuickAction(
                           icon: Icons.dashboard,
-                          label: 'Dashboard Summary Info',
+                          label: l10n.dashboardSummary,
                           color: Color(0xFF1E4D8F),
                           onTap: () => Navigator.of(
                             context,
@@ -436,9 +438,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           onTap: () => Navigator.of(
                             context,
                           ).pushNamed(AppRoutes.staffWriteMessage),
-                          child: const _QuickAction(
+                          child: _QuickAction(
                             icon: Icons.edit,
-                            label: 'Write Message',
+                            label: l10n.writeMessage,
                             color: Color(0xFFBF360C),
                           ),
                         ),
@@ -460,7 +462,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         ),
                         _QuickAction(
                           icon: Icons.assignment_turned_in,
-                          label: 'PTM',
+                          label: l10n.pta,
                           color: Color(0xFF5E7D1F),
                           onTap: () => Navigator.of(
                             context,
@@ -707,7 +709,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                         ),
                         const SizedBox(height: 18),
                         Text(
-                          'Know your School',
+                          l10n.knowYourSchool,
                           style: GoogleFonts.poppins(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -719,31 +721,31 @@ class _StaffDashboardState extends State<StaffDashboard> {
                           children: [
                             _SchoolLinkChip(
                               icon: Icons.language,
-                              label: 'Website',
+                              label: l10n.website,
                               color: Color(0xFF4CAF50),
                               onTap: () => _openWebsite(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.school,
-                              label: 'School handbook',
+                              label: l10n.schoolHandbook,
                               color: Color(0xFFFFC107),
                               routeName: AppRoutes.staffHandbook,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.event,
-                              label: 'Events Celebrations',
+                              label: l10n.eventsCalendar,
                               color: Color(0xFFF44336),
                               routeName: AppRoutes.staffEventsCelebration,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.folder_copy_outlined,
-                              label: 'School Res.',
+                              label: l10n.schoolResources,
                               color: Color(0xFF8D6E63),
                               routeName: AppRoutes.schoolResources,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.newspaper,
-                              label: 'Newsletter',
+                              label: l10n.newsletter,
                               color: Color(0xFF5C84C3),
                               onTap: () => Navigator.of(context).pushNamed(
                                 AppRoutes.adminDashboardNewsletter,

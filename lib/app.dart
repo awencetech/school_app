@@ -27,39 +27,37 @@ class SchoolApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SchoolConfigService()),
         ChangeNotifierProvider(create: (_) => UserMenuState()),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'School App',
-        theme: AppTheme.light,
-        locale: Locale(
-          context.watch<AppState>().selectedLanguage == null
-              ? 'en'
-              : context.watch<AppState>().selectedLanguage!.code,
+      child: Consumer<AppState>(
+        builder: (context, appState, child) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'School App',
+          theme: AppTheme.light,
+          locale: Locale(appState.selectedLanguage?.code ?? 'en'),
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            FlutterQuillLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          // Ensure splash screen is always shown first on initial app load
+          // (including web refresh / deep links). The splash will receive the
+          // originally requested route as `targetRoute` and navigate there
+          // after the delay.
+          initialRoute: AppRoutes.splash,
+          onGenerateInitialRoutes: (initialRouteName) {
+            AppRouter.markSplashShown();
+            return [
+              PageRouteBuilder(
+                settings: RouteSettings(name: initialRouteName),
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    SplashScreen(targetRoute: initialRouteName),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) => child,
+              ),
+            ];
+          },
+          onGenerateRoute: AppRouter.onGenerateRoute,
+          navigatorObservers: [appRouteObserver],
         ),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          FlutterQuillLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        // Ensure splash screen is always shown first on initial app load
-        // (including web refresh / deep links). The splash will receive the
-        // originally requested route as `targetRoute` and navigate there
-        // after the delay.
-        initialRoute: AppRoutes.splash,
-        onGenerateInitialRoutes: (initialRouteName) {
-          AppRouter.markSplashShown();
-          return [
-            PageRouteBuilder(
-              settings: RouteSettings(name: initialRouteName),
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  SplashScreen(targetRoute: initialRouteName),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) => child,
-            ),
-          ];
-        },
-        onGenerateRoute: AppRouter.onGenerateRoute,
-        navigatorObservers: [appRouteObserver],
       ),
     );
   }

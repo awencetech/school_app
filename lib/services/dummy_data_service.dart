@@ -11,6 +11,8 @@ import '../models/student_achievement.dart';
 class DummyDataService {
   DummyDataService._();
 
+  static Future<SchoolInfo>? _schoolInfoFuture;
+
   static const List<StaffMember> fallbackLeadership = [
     StaffMember(
       name: 'Founder',
@@ -68,6 +70,10 @@ class DummyDataService {
   }
 
   static Future<SchoolInfo> getSchoolInfo() async {
+    return _schoolInfoFuture ??= _loadSchoolInfo();
+  }
+
+  static Future<SchoolInfo> _loadSchoolInfo() async {
     try {
       final json = await _loadJson('assets/data/school.json');
       return SchoolInfo.fromJson(json);

@@ -95,11 +95,10 @@ async function findCredentialByUserId(userId, role) {
 }
 
 async function findCredentialAcrossRoleCollections(filter) {
-  for (const entry of credentialCollectionEntries()) {
-    const credential = await entry.collection.findOne(filter);
-    if (credential) return credential;
-  }
-  return null;
+  const credentials = await Promise.all(
+    credentialCollectionEntries().map((entry) => entry.collection.findOne(filter)),
+  );
+  return credentials.find(Boolean) || null;
 }
 
 async function findCredentialByIdentifier(identifier) {
@@ -868,24 +867,6 @@ app.get('/api/messages/inbox', requirePtmReader, async (req, res) => {
         ...(role === 'student' ? [{ senderId: currentUserId }] : []),
       ],
     };
-    const direct = await studentMessagesCollection.find({
-      $and: [
-        recipientScope,
-        {
-          $or: [
-            { recipientId: currentUserId },
-            { recipientUsername: currentUserId },
-            { senderId: currentUserId },
-            { groupId: null },
-            { groupId: '' },
-            { groupName: null },
-            { groupName: '' },
-            ...groupValues.map((value) => ({ groupId: value })),
-            ...groupValues.map((value) => ({ groupName: value })),
-          ],
-        },
-      ],
-    }).toArray();
     const recipientField = role === 'student' ? 'sendToStudents' : 'sendToStaff';
     const legacyFilter = {
       senderRole: { $in: ['admin', 'staff', 'teacher'] },
@@ -896,7 +877,27 @@ app.get('/api/messages/inbox', requirePtmReader, async (req, res) => {
         ...(groupValues.length ? [{ groupId: { $in: groupValues } }, { groupName: { $in: groupValues } }] : []),
       ],
     };
-    const legacy = await groupMessagesCollection.find(legacyFilter).toArray();
+    const [direct, legacy] = await Promise.all([
+      studentMessagesCollection.find({
+        $and: [
+          recipientScope,
+          {
+            $or: [
+              { recipientId: currentUserId },
+              { recipientUsername: currentUserId },
+              { senderId: currentUserId },
+              { groupId: null },
+              { groupId: '' },
+              { groupName: null },
+              { groupName: '' },
+              ...groupValues.map((value) => ({ groupId: value })),
+              ...groupValues.map((value) => ({ groupName: value })),
+            ],
+          },
+        ],
+      }).toArray(),
+      groupMessagesCollection.find(legacyFilter).toArray(),
+    ]);
     const messages = [...direct, ...legacy]
       .map((message) => sanitizeStudentMessageForResponse(message))
       .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
@@ -1342,6 +1343,7 @@ for (const method of ['put', 'patch', 'delete']) {
 }
 
 let client;
+let mongoReadyPromise;
 let mainPageInfoCollection;
 let imageBucket;
 let usersCollection;
@@ -1420,6 +1422,8 @@ async function ensureIndexes(db) {
     safeCreateIndex(staffCredentialsCollection, { email: 1 }, { unique: true }),
     safeCreateIndex(adminCredentialsCollection, { userId: 1 }, { unique: true }),
     safeCreateIndex(adminCredentialsCollection, { email: 1 }, { unique: true }),
+    safeCreateIndex(employeeInfoCollection, { employeeId: 1 }, { sparse: true }),
+    safeCreateIndex(employeeInfoCollection, { staffId: 1 }, { sparse: true }),
     safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
     safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
     safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
@@ -1489,6 +1493,16 @@ async function connectMongo() {
     throw new Error('MongoDB URI is not configured');
   }
 
+  if (mongoReadyPromise) return mongoReadyPromise;
+  mongoReadyPromise = initializeMongo().catch((error) => {
+    mongoReadyPromise = null;
+    client = null;
+    throw error;
+  });
+  return mongoReadyPromise;
+}
+
+async function initializeMongo() {
   if (!client) {
     client = new MongoClient(mongoUri);
     await client.connect();
@@ -3737,17 +3751,32 @@ app.get('/api/groups/:groupId/messages', async (req, res) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    const hydrated = await Promise.all(messages.map(async (message) => {
-      const messageKey = message.id || (message._id ? message._id.toString() : '');
-      const comments = await groupMessageCommentsCollection
-        .find({ groupId: { $in: groupIdVariants(groupId) }, messageId: messageKey || (message._id ? message._id.toString() : '') })
-        .sort({ createdAt: 1 })
-        .toArray();
+    const messageKeys = messages
+      .map((message) => message.id || (message._id ? message._id.toString() : ''))
+      .filter(Boolean);
+    const comments = messageKeys.length === 0
+      ? []
+      : await groupMessageCommentsCollection
+          .find({
+            groupId: { $in: groupIdVariants(groupId) },
+            messageId: { $in: messageKeys },
+          })
+          .sort({ createdAt: 1 })
+          .toArray();
+    const commentsByMessage = new Map();
+    for (const comment of comments) {
+      const messageComments = commentsByMessage.get(comment.messageId) || [];
+      messageComments.push(comment);
+      commentsByMessage.set(comment.messageId, messageComments);
+    }
 
+    const hydrated = messages.map((message) => {
+      const messageKey = message.id || (message._id ? message._id.toString() : '');
+      const messageComments = commentsByMessage.get(messageKey) || [];
       return {
         ...message,
         likedBy: Array.isArray(message.likedBy) ? message.likedBy : [],
-        comments: comments.map((comment) => ({
+        comments: messageComments.map((comment) => ({
           id: comment._id ? comment._id.toString() : comment.id || null,
           studentId: comment.studentId || '',
           studentName: comment.studentName || 'Student',
@@ -3755,7 +3784,7 @@ app.get('/api/groups/:groupId/messages', async (req, res) => {
           createdAt: comment.createdAt || new Date().toISOString(),
         })),
       };
-    }));
+    });
 
     return res.json(hydrated.map(sanitizeGroupMessageForResponse));
   } catch (error) {

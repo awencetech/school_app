@@ -61,6 +61,109 @@ function normalizeRole(value) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function credentialCollectionForRole(role) {
+  switch (normalizeRole(role)) {
+    case 'student':
+    case 'students':
+      return studentCredentialsCollection;
+    case 'staff':
+    case 'teacher':
+    case 'teachers':
+      return staffCredentialsCollection;
+    case 'admin':
+    case 'admins':
+      return adminCredentialsCollection;
+    default:
+      return null;
+  }
+}
+
+function credentialCollectionEntries() {
+  return [
+    { role: 'student', collection: studentCredentialsCollection },
+    { role: 'staff', collection: staffCredentialsCollection },
+    { role: 'admin', collection: adminCredentialsCollection },
+  ];
+}
+
+async function findCredentialByUserId(userId, role) {
+  const collection = credentialCollectionForRole(role);
+  const credential = collection
+    ? await collection.findOne({ userId })
+    : await findCredentialAcrossRoleCollections({ userId });
+  return credential || usersCollection.findOne({ userId });
+}
+
+async function findCredentialAcrossRoleCollections(filter) {
+  for (const entry of credentialCollectionEntries()) {
+    const credential = await entry.collection.findOne(filter);
+    if (credential) return credential;
+  }
+  return null;
+}
+
+async function findCredentialByIdentifier(identifier) {
+  const lowered = identifier.toLowerCase();
+  const byEmail = await findCredentialAcrossRoleCollections({ email: lowered });
+  if (byEmail) return byEmail;
+  const byUserId = await findCredentialAcrossRoleCollections({ userId: identifier });
+  return byUserId || usersCollection.findOne({ $or: [{ email: lowered }, { userId: identifier }] });
+}
+
+async function findCredentialById(id) {
+  for (const entry of credentialCollectionEntries()) {
+    try {
+      const credential = await entry.collection.findOne({ _id: new ObjectId(id) });
+      if (credential) return { credential, collection: entry.collection, legacy: false };
+    } catch (_) {
+      // Continue with the string userId lookup below.
+    }
+    const credential = await entry.collection.findOne({ userId: id });
+    if (credential) return { credential, collection: entry.collection, legacy: false };
+  }
+
+  let legacy;
+  try {
+    legacy = await usersCollection.findOne({ _id: new ObjectId(id) });
+  } catch (_) {
+    legacy = await usersCollection.findOne({ userId: id });
+  }
+  return legacy ? { credential: legacy, collection: usersCollection, legacy: true } : null;
+}
+
+async function findCredentialConflict(filter) {
+  const roleCredential = await findCredentialAcrossRoleCollections(filter);
+  return roleCredential || usersCollection.findOne(filter);
+}
+
+async function listCredentials(role) {
+  const requestedRole = normalizeRole(role);
+  const normalizedRole = requestedRole === 'students'
+    ? 'student'
+    : requestedRole === 'teacher' || requestedRole === 'teachers'
+    ? 'staff'
+    : requestedRole === 'admin' || requestedRole === 'admins'
+    ? 'admin'
+    : requestedRole;
+  const roleEntries = normalizedRole
+    ? credentialCollectionEntries().filter((entry) => entry.role === normalizedRole)
+    : credentialCollectionEntries();
+  const documents = [];
+  for (const entry of roleEntries) {
+    documents.push(...await entry.collection.find({}).toArray());
+  }
+
+  const legacyFilter = normalizedRole ? { role: normalizedRole } : {};
+  const legacyDocuments = await usersCollection.find(legacyFilter).toArray();
+  const identities = new Set(documents.flatMap((doc) => [doc.userId, doc.email]).filter(Boolean));
+  for (const legacy of legacyDocuments) {
+    if (!identities.has(legacy.userId) && !identities.has(legacy.email)) {
+      documents.push(legacy);
+    }
+  }
+  return documents;
+}
+
 function signAuthPayload(payload) {
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
@@ -488,7 +591,7 @@ app.post('/api/messages/staff', requireRecipientRole('staff'), async (req, res) 
 async function getAdminMessagesForRecipient(req, res, role) {
   try {
     await connectMongo();
-    const user = await usersCollection.findOne({ userId: req.auth.userId });
+    const user = await findCredentialByUserId(req.auth.userId, role);
     const profile = role === 'student'
       ? await studentInfoCollection.findOne({ studentId: req.auth.userId })
       : await employeeInfoCollection.findOne({ $or: [{ employeeId: req.auth.userId }, { staffId: req.auth.userId }] });
@@ -624,7 +727,7 @@ app.post('/api/student-requests', requireRecipientRole('student'), async (req, r
     }
     const studentId = String(req.auth.userId || '').trim();
     const [user, profile] = await Promise.all([
-      usersCollection.findOne({ userId: studentId }),
+      findCredentialByUserId(studentId, 'student'),
       studentInfoCollection.findOne({ $or: [{ studentId }, { admissionNumber: studentId }] }),
     ]);
     const studentName = String(profile?.name || user?.name || user?.fullName || user?.email || studentId).split('@')[0];
@@ -833,7 +936,7 @@ app.post('/api/messages/student-message', requireRecipientRole('student'), async
 
     const studentId = String(req.auth.userId || '').trim();
     const [user, profile] = await Promise.all([
-      usersCollection.findOne({ userId: studentId }),
+      findCredentialByUserId(studentId, 'student'),
       studentInfoCollection.findOne({ $or: [{ studentId }, { admissionNumber: studentId }] }),
     ]);
     const studentName = String(profile?.name || user?.name || user?.fullName || user?.email || 'Student').split('@')[0];
@@ -1242,6 +1345,9 @@ let client;
 let mainPageInfoCollection;
 let imageBucket;
 let usersCollection;
+let studentCredentialsCollection;
+let staffCredentialsCollection;
+let adminCredentialsCollection;
 let employeeInfoCollection;
 let legacyStaffInfoCollection;
 let groupsCollection;
@@ -1308,6 +1414,12 @@ async function ensureIndexes(db) {
     safeCreateIndex(classesCollection, { schoolId: 1, id: 1 }, { sparse: true }),
     safeCreateIndex(usersCollection, { userId: 1 }, { sparse: true }),
     safeCreateIndex(usersCollection, { email: 1 }, { sparse: true }),
+    safeCreateIndex(studentCredentialsCollection, { userId: 1 }, { unique: true }),
+    safeCreateIndex(studentCredentialsCollection, { email: 1 }, { unique: true }),
+    safeCreateIndex(staffCredentialsCollection, { userId: 1 }, { unique: true }),
+    safeCreateIndex(staffCredentialsCollection, { email: 1 }, { unique: true }),
+    safeCreateIndex(adminCredentialsCollection, { userId: 1 }, { unique: true }),
+    safeCreateIndex(adminCredentialsCollection, { email: 1 }, { unique: true }),
     safeCreateIndex(eventsCollection, { groupId: 1, startDate: 1 }),
     safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
     safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
@@ -1383,6 +1495,9 @@ async function connectMongo() {
     const db = client.db('mainpage');
     mainPageInfoCollection = db.collection('mainPageInfo');
     usersCollection = db.collection('users');
+    studentCredentialsCollection = db.collection('student-creds');
+    staffCredentialsCollection = db.collection('staff-creds');
+    adminCredentialsCollection = db.collection('admin-creds');
     employeeInfoCollection = db.collection('employee-info');
     legacyStaffInfoCollection = db.collection('staff-info');
     groupsCollection = db.collection('groups');
@@ -1431,6 +1546,7 @@ async function connectMongo() {
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
     console.log('MongoDB collections ready, including student-attendance');
     await ensureIndexes(db);
+    await copyLegacyCredentials();
     await migrateLegacyStaffInfo();
     await migrateLegacyEvents();
     await migrateLegacyClassTimetable();
@@ -1438,6 +1554,76 @@ async function connectMongo() {
   }
 
   return mainPageInfoCollection;
+}
+
+async function copyLegacyCredentials() {
+  const legacyCredentials = await usersCollection.find({}).toArray();
+  const passwordFields = ['password', 'passwordHash', 'password_hash', 'hashedPassword'];
+  let migrated = 0;
+  let alreadyMigrated = 0;
+  let failed = 0;
+
+  for (const source of legacyCredentials) {
+    if (!passwordFields.some((field) => source[field] !== undefined)) continue;
+    const collection = credentialCollectionForRole(source.role);
+    if (!collection) continue;
+
+    const credential = { _id: source._id };
+    for (const field of ['userId', 'email', 'role', 'createdAt', ...passwordFields]) {
+      if (source[field] !== undefined) credential[field] = source[field];
+    }
+
+    const identityFilters = [{ _id: source._id }];
+    if (source.userId) identityFilters.push({ userId: source.userId });
+    if (source.email) identityFilters.push({ email: source.email });
+
+    try {
+      let destination = await collection.findOne({ $or: identityFilters });
+      const destinationExisted = Boolean(destination);
+      if (!destination) {
+        if (source.password && !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(source.password)) {
+          throw new Error('source password is not a bcrypt hash');
+        }
+        await collection.insertOne(credential);
+        destination = await collection.findOne({ _id: source._id });
+      }
+
+      const destinationMatches = destination &&
+        destination.userId === source.userId &&
+        destination.email === source.email &&
+        normalizeRole(destination.role) === normalizeRole(source.role) &&
+        passwordFields.every((field) => destination[field] === source[field]);
+      if (!destinationMatches) {
+        throw new Error('destination credential does not match the users record');
+      }
+
+      const unset = Object.fromEntries(passwordFields.map((field) => [field, '']));
+      const cleanup = await usersCollection.updateOne(
+        { _id: source._id, ...Object.fromEntries(passwordFields.map((field) => [field, source[field]]).filter(([, value]) => value !== undefined)) },
+        { $unset: unset },
+      );
+      if (cleanup.matchedCount !== 1) {
+        throw new Error('users credential fields changed before cleanup');
+      }
+
+      const remaining = await usersCollection.findOne({ _id: source._id });
+      const stillHasCredentials = passwordFields.some((field) => remaining?.[field] !== undefined);
+      if (stillHasCredentials) throw new Error('credential fields remain in users after cleanup');
+
+      if (destinationExisted) {
+        alreadyMigrated += 1;
+      } else {
+        migrated += 1;
+      }
+    } catch (error) {
+      failed += 1;
+      console.error(`Credential migration failed for ${source.userId || source._id}:`, error.message);
+    }
+  }
+
+  if (migrated || alreadyMigrated || failed) {
+    console.log(`Credential migration complete: ${migrated} migrated, ${alreadyMigrated} already migrated, ${failed} failed.`);
+  }
 }
 
 async function migrateLegacyClasses() {
@@ -3807,7 +3993,7 @@ app.post('/api/groups/:groupId/messages', async (req, res) => {
       return res.status(403).json({ message: 'Only student accounts can create group messages.' });
     }
 
-    const verifiedUser = await usersCollection.findOne({ userId: senderId, role: { $in: ['student', 'students'] } });
+    const verifiedUser = await findCredentialByUserId(senderId, 'student');
     if (!verifiedUser) {
       return res.status(403).json({ message: 'Student account not found.' });
     }
@@ -4084,9 +4270,7 @@ app.delete('/api/groups/:id', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const role = req.query.role;
-    const filter = {};
-    if (role) filter.role = role;
-    const users = await usersCollection.find(filter).toArray();
+    const users = await listCredentials(role);
     return res.json(users.map(sanitizeUserForResponse));
   } catch (error) {
     console.error('GET /api/users failed:', error);
@@ -4099,18 +4283,19 @@ app.post('/api/users', async (req, res) => {
     const body = req.body || {};
     const userId = (body.userId || '').toString().trim();
     const email = (body.email || '').toString().trim().toLowerCase();
-    const role = body.role || 'student';
+    const role = normalizeRole(body.role || 'student');
+    const credentialsCollection = credentialCollectionForRole(role);
 
-    if (!userId || !email) {
+    if (!userId || !email || !credentialsCollection) {
       return res.status(422).json({ message: 'userId and email are required.' });
     }
 
     // uniqueness checks - check separately to give specific errors
-    const existUserId = await usersCollection.findOne({ userId });
+    const existUserId = await findCredentialConflict({ userId });
     if (existUserId) {
       return res.status(409).json({ message: 'User ID already exists.' });
     }
-    const existEmail = await usersCollection.findOne({ email });
+    const existEmail = await findCredentialConflict({ email });
     if (existEmail) {
       return res.status(409).json({ message: 'Email already exists.' });
     }
@@ -4127,8 +4312,8 @@ app.post('/api/users', async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    const result = await usersCollection.insertOne(toSave);
-    const saved = await usersCollection.findOne({ _id: result.insertedId });
+    const result = await credentialsCollection.insertOne(toSave);
+    const saved = await credentialsCollection.findOne({ _id: result.insertedId });
     return res.status(201).json(sanitizeUserForResponse(saved));
   } catch (error) {
     console.error('POST /api/users failed:', error);
@@ -4139,15 +4324,9 @@ app.post('/api/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    let doc;
-    try {
-      doc = await usersCollection.findOne({ _id: new ObjectId(id) });
-    } catch (e) {
-      // fallback to lookup by userId string (e.g. "testlocal123")
-      doc = await usersCollection.findOne({ userId: id });
-    }
-    if (!doc) return res.status(404).json({ message: 'User not found.' });
-    return res.json(sanitizeUserForResponse(doc));
+    const found = await findCredentialById(id);
+    if (!found) return res.status(404).json({ message: 'User not found.' });
+    return res.json(sanitizeUserForResponse(found.credential));
   } catch (error) {
     console.error('GET /api/users/:id failed:', error);
     return res.status(500).json({ message: 'Unable to load user.' });
@@ -4159,15 +4338,10 @@ app.put('/api/users/:id', async (req, res) => {
     const id = req.params.id;
     const body = req.body || {};
 
-    // find existing
-    let existing;
-    try {
-      existing = await usersCollection.findOne({ _id: new ObjectId(id) });
-    } catch (e) {
-      // fallback to lookup by userId string
-      existing = await usersCollection.findOne({ userId: id });
-    }
-    if (!existing) return res.status(404).json({ message: 'User not found.' });
+    const found = await findCredentialById(id);
+    if (!found) return res.status(404).json({ message: 'User not found.' });
+    if (found.legacy) return res.status(409).json({ message: 'Legacy user credentials are read-only.' });
+    const existing = found.credential;
 
     // prevent role changes unless explicitly provided
     const updates = {};
@@ -4179,14 +4353,16 @@ app.put('/api/users/:id', async (req, res) => {
 
     // check uniqueness for email change
     if (updates.email && updates.email !== (existing.email || '').toLowerCase()) {
-      const conflict = await usersCollection.findOne({ email: updates.email, _id: { $ne: existing._id } });
-      if (conflict) return res.status(409).json({ message: 'Email already in use.' });
+      const conflict = await findCredentialConflict({ email: updates.email });
+      if (conflict && String(conflict._id) !== String(existing._id)) {
+        return res.status(409).json({ message: 'Email already in use.' });
+      }
     }
 
     if (Object.keys(updates).length === 0) return res.status(422).json({ message: 'No updatable fields provided.' });
 
-    await usersCollection.updateOne({ _id: existing._id }, { $set: updates });
-    const updated = await usersCollection.findOne({ _id: existing._id });
+    await found.collection.updateOne({ _id: existing._id }, { $set: updates });
+    const updated = await found.collection.findOne({ _id: existing._id });
     return res.json(sanitizeUserForResponse(updated));
   } catch (error) {
     console.error('PUT /api/users/:id failed:', error);
@@ -4197,13 +4373,11 @@ app.put('/api/users/:id', async (req, res) => {
 app.delete('/api/users/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    let result;
-    try {
-      result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
-    } catch (e) {
-      // fallback to delete by userId string
-      result = await usersCollection.deleteOne({ userId: id });
-    }
+    const found = await findCredentialById(id);
+    if (found?.legacy) return res.status(409).json({ success: false, message: 'Legacy user credentials are read-only.' });
+    const result = found
+      ? await found.collection.deleteOne({ _id: found.credential._id })
+      : { deletedCount: 0 };
     if (result.deletedCount === 0) return res.status(404).json({ success: false, message: 'User not found' });
     return res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
@@ -6206,7 +6380,7 @@ app.post('/api/staff', async (req, res) => {
     const missing = required.find((field) => !String(body[field] || '').trim());
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
     const employeeId = String(body.employeeId).trim();
-    const staffUser = await usersCollection.findOne({ userId: employeeId, role: 'staff' });
+    const staffUser = await findCredentialByUserId(employeeId, 'staff');
     if (!staffUser) return res.status(422).json({ message: 'Employee ID must belong to a staff user.' });
     const existingStaff = await employeeInfoCollection.findOne({ employeeId });
     if (existingStaff) return res.status(409).json({ message: 'This Employee ID is already assigned.' });
@@ -6255,7 +6429,7 @@ app.put('/api/staff/:id', async (req, res) => {
     const missing = required.find((field) => !String(body[field] || '').trim());
     if (missing) return res.status(422).json({ message: `${missing} is required.` });
     const employeeId = String(body.employeeId).trim();
-    const staffUser = await usersCollection.findOne({ userId: employeeId, role: 'staff' });
+    const staffUser = await findCredentialByUserId(employeeId, 'staff');
     if (!staffUser) return res.status(422).json({ message: 'Employee ID must belong to a staff user.' });
     const existingStaff = await employeeInfoCollection.findOne({ employeeId, _id: { $ne: id } });
     if (existingStaff) return res.status(409).json({ message: 'This Employee ID is already assigned.' });
@@ -6583,12 +6757,8 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Attempt lookup by email (case-insensitive) then by userId
-    const lowered = identifier.toLowerCase();
-    let user = await usersCollection.findOne({ email: lowered });
-    if (!user) {
-      user = await usersCollection.findOne({ userId: identifier });
-    }
+    // Attempt lookup in role-specific credential collections, then legacy users.
+    const user = await findCredentialByIdentifier(identifier);
 
     // Do not reveal whether user exists
     if (!user || !user.password) {

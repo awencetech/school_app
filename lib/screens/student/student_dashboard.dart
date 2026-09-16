@@ -731,13 +731,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             ),
                             _SchoolLinkTile(
                               icon: Icons.announcement,
-                              label: 'Announcement',
+                              label: l10n.announcement,
                               color: Color(0xFF795548),
                               routeName: AppRoutes.staffAnnouncements,
                             ),
                             _SchoolLinkTile(
                               icon: Icons.people,
-                              label: 'Demography',
+                              label: l10n.demography,
                               color: Color(0xFF6A1B9A),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -754,31 +754,31 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             ),
                             _SchoolLinkTile(
                               icon: Icons.facebook,
-                              label: 'Facebook',
+                              label: l10n.facebook,
                               color: Color(0xFF3B5998),
                               onTap: () => _openFacebook(context),
                             ),
                             _SchoolLinkTile(
                               icon: Icons.ondemand_video,
-                              label: 'Youtube',
+                              label: l10n.youtube,
                               color: Color(0xFFD32F2F),
                               onTap: () => _openYoutube(context),
                             ),
                             _SchoolLinkTile(
                               icon: Icons.chat,
-                              label: 'Whatsapp',
+                              label: l10n.whatsapp,
                               color: Color(0xFF25D366),
                               onTap: () => _openWhatsapp(context),
                             ),
                             _SchoolLinkTile(
                               icon: Icons.camera_alt,
-                              label: 'Instagram',
+                              label: l10n.instagram,
                               color: Color(0xFFE1306C),
                               onTap: () => _openInstagram(context),
                             ),
                             _SchoolLinkTile(
                               icon: Icons.library_books,
-                              label: 'Library',
+                              label: l10n.library,
                               color: Color(0xFF795548),
                               onTap: () => _openLibrary(context),
                             ),
@@ -806,12 +806,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
             _selectedBottomIndex = index;
           });
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Help'),
-          BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
-          BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+        items: [
+          BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
+          BottomNavigationBarItem(icon: const Icon(Icons.person), label: l10n.user),
+          BottomNavigationBarItem(icon: const Icon(Icons.info), label: l10n.help),
+          BottomNavigationBarItem(icon: const Icon(Icons.help), label: l10n.support),
+          BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.logout),
         ],
       ),
     );
@@ -1114,7 +1114,7 @@ class _SchoolLinkTile extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             maxLines: 3,
-            overflow: TextOverflow.ellipsis,
+            overflow: TextOverflow.visible,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w400,

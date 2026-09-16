@@ -753,13 +753,13 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.announcement,
-                              label: 'Announcement',
+                              label: l10n.announcement,
                               color: Color(0xFF43A047),
                               routeName: AppRoutes.staffAnnouncements,
                             ),
                             _SchoolLinkChip(
                               icon: Icons.people,
-                              label: 'Demography',
+                              label: l10n.demography,
                               color: Color(0xFF388E3C),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -776,7 +776,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.facebook,
-                              label: 'Facebook',
+                              label: l10n.facebook,
                               color: Color(0xFF3B5998),
                               onTap: () => _openSocialUrl(
                                 context,
@@ -786,7 +786,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.ondemand_video,
-                              label: 'Youtube',
+                              label: l10n.youtube,
                               color: Color(0xFFD32F2F),
                               onTap: () => _openSocialUrl(
                                 context,
@@ -796,13 +796,13 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.chat,
-                              label: 'Whatsapp',
+                              label: l10n.whatsapp,
                               color: Color(0xFF25D366),
                               onTap: () => _openWhatsapp(context),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.camera_alt,
-                              label: 'Instagram',
+                              label: l10n.instagram,
                               color: Color(0xFFE1306C),
                               onTap: () => _openSocialUrl(
                                 context,
@@ -812,7 +812,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             ),
                             _SchoolLinkChip(
                               icon: Icons.library_books,
-                              label: 'Library',
+                              label: l10n.library,
                               color: Color(0xFF795548),
                               onTap: () => Navigator.of(
                                 context,

@@ -42,7 +42,7 @@ class StaffFooter extends StatelessWidget {
         BottomNavigationBarItem(icon: const Icon(Icons.person), label: l10n.user),
         BottomNavigationBarItem(icon: const Icon(Icons.info), label: l10n.help),
         BottomNavigationBarItem(icon: const Icon(Icons.help), label: l10n.support),
-        BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.quickMenu),
+        BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.logout),
       ],
     );
   }

@@ -206,5 +206,62 @@ class AppLocalizationsTa extends AppLocalizations {
   String get newsletter => 'செய்திமடல்';
 
   @override
+  String get announcement => 'அறிவிப்பு';
+
+  @override
+  String get demography => 'மக்கள்தொகை விவரம்';
+
+  @override
+  String get facebook => 'Facebook';
+
+  @override
+  String get youtube => 'YouTube';
+
+  @override
+  String get whatsapp => 'WhatsApp';
+
+  @override
+  String get instagram => 'Instagram';
+
+  @override
+  String get library => 'நூலகம்';
+
+  @override
+  String get otherMenu => 'பிற\nமெனு';
+
+  @override
+  String get listStudents => 'மாணவர்களைப்\nபட்டியலிடு';
+
+  @override
+  String get listTeachers => 'ஆசிரியர்களைப்\nபட்டியலிடு';
+
+  @override
+  String get listClasses => 'வகுப்புகளைப்\nபட்டியலிடு';
+
+  @override
+  String get listOtherGroups => 'பிற குழுக்களைப்\nபட்டியலிடு';
+
+  @override
+  String get write => 'எழுது';
+
+  @override
+  String get schoolNews => 'பள்ளி\nசெய்திகள்';
+
+  @override
+  String get medicalEventList => 'மருத்துவ நிகழ்வு\nபட்டியல்';
+
+  @override
+  String get trackBusGps => 'பேருந்து GPS-ஐ\nகண்காணி';
+
+  @override
+  String get employeeAttendance => 'பணியாளர்\nவருகை';
+
+  @override
+  String get employeeLeaveApproval => 'பணியாளர் விடுப்பு\nஒப்புதல்';
+
+  @override
+  String get oneOnOne => 'தனிப்பட்ட\nசந்திப்பு';
+
+  @override
   String get schoolNameValue => 'MMHSS';
 }

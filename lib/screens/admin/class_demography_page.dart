@@ -5,6 +5,7 @@ import '../../models/class_demography.dart';
 import '../../models/demography.dart';
 import '../../models/group.dart';
 import '../../models/user.dart';
+import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/demography_service.dart';
 import '../../services/user_service.dart';
@@ -119,6 +120,7 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -165,26 +167,26 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
                   );
                 }
               },
-              items: const [
+              items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
+                  icon: const Icon(Icons.home),
+                  label: l10n.home,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'User',
+                  icon: const Icon(Icons.person),
+                  label: l10n.user,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.info),
-                  label: 'Dashboard',
+                  icon: const Icon(Icons.info),
+                  label: l10n.dashboard,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.help),
-                  label: 'Support',
+                  icon: const Icon(Icons.help),
+                  label: l10n.support,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.logout),
-                  label: 'Logout',
+                  icon: const Icon(Icons.logout),
+                  label: l10n.logout,
                 ),
               ],
             )

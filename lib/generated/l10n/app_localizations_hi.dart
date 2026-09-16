@@ -205,5 +205,62 @@ class AppLocalizationsHi extends AppLocalizations {
   String get newsletter => 'समाचार पत्रिका';
 
   @override
+  String get announcement => 'घोषणा';
+
+  @override
+  String get demography => 'जनसांख्यिकी';
+
+  @override
+  String get facebook => 'Facebook';
+
+  @override
+  String get youtube => 'YouTube';
+
+  @override
+  String get whatsapp => 'WhatsApp';
+
+  @override
+  String get instagram => 'Instagram';
+
+  @override
+  String get library => 'पुस्तकालय';
+
+  @override
+  String get otherMenu => 'अन्य\nमेनू';
+
+  @override
+  String get listStudents => 'छात्रों की\nसूची';
+
+  @override
+  String get listTeachers => 'शिक्षकों की\nसूची';
+
+  @override
+  String get listClasses => 'कक्षाओं की\nसूची';
+
+  @override
+  String get listOtherGroups => 'अन्य समूहों की\nसूची';
+
+  @override
+  String get write => 'लिखें';
+
+  @override
+  String get schoolNews => 'स्कूल\nसमाचार';
+
+  @override
+  String get medicalEventList => 'चिकित्सा कार्यक्रम\nसूची';
+
+  @override
+  String get trackBusGps => 'बस GPS\nट्रैक करें';
+
+  @override
+  String get employeeAttendance => 'कर्मचारी\nउपस्थिति';
+
+  @override
+  String get employeeLeaveApproval => 'कर्मचारी अवकाश\nअनुमोदन';
+
+  @override
+  String get oneOnOne => 'व्यक्तिगत\nबैठक';
+
+  @override
   String get schoolNameValue => 'MMHSS';
 }

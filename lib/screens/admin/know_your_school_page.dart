@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../generated/l10n/app_localizations.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_icon_grid.dart';
@@ -10,76 +11,76 @@ import '../../widgets/dashboard_icon_grid.dart';
 class KnowYourSchoolPage extends StatelessWidget {
   const KnowYourSchoolPage({super.key});
 
-  final List<_SchoolTile> _tiles = const [
+  List<_SchoolTile> _tiles(AppLocalizations l10n) => [
     _SchoolTile(
       icon: Icons.language,
-      label: 'Website',
+      label: l10n.website,
       color: Color(0xFF4CAF50),
       route: AppRoutes.adminKnowYourSchoolWebsiteEdit,
     ),
     _SchoolTile(
       icon: Icons.school,
-      label: 'School handbook',
+      label: l10n.schoolHandbook,
       color: Color(0xFFF59E0B),
       route: AppRoutes.adminKnowYourSchoolSchoolHandbookEdit,
     ),
     _SchoolTile(
       icon: Icons.event,
-      label: 'Events Celebrations',
+      label: l10n.eventsCalendar,
       color: Color(0xFFF44336),
       route: AppRoutes.adminKnowYourSchoolEventsCelebrationEdit,
     ),
     _SchoolTile(
       icon: Icons.folder_copy_outlined,
-      label: 'School Res.',
+      label: l10n.schoolResources,
       color: Color(0xFF8D6E63),
       route: AppRoutes.adminKnowYourSchoolSchoolResourcesEdit,
     ),
     _SchoolTile(
       icon: Icons.newspaper,
-      label: 'Newsletter',
+      label: l10n.newsletter,
       color: Color(0xFF5C84C3),
       route: AppRoutes.adminKnowYourSchoolNewsletterEdit,
     ),
     _SchoolTile(
       icon: Icons.announcement,
-      label: 'Announcement',
+      label: l10n.announcement,
       color: Color(0xFF43A047),
       route: AppRoutes.adminKnowYourSchoolAnnouncementEdit,
     ),
     _SchoolTile(
       icon: Icons.people,
-      label: 'Demography',
+      label: l10n.demography,
       color: Color(0xFF6A1B9A),
       route: AppRoutes.adminKnowYourSchoolDemographyEdit,
     ),
     _SchoolTile(
       icon: Icons.facebook,
-      label: 'Facebook',
+      label: l10n.facebook,
       color: Color(0xFF3B5998),
       route: AppRoutes.adminKnowYourSchoolFacebookEdit,
     ),
     _SchoolTile(
       icon: Icons.ondemand_video,
-      label: 'Youtube',
+      label: l10n.youtube,
       color: Color(0xFFD32F2F),
       route: AppRoutes.adminKnowYourSchoolYoutubeEdit,
     ),
     _SchoolTile(
       icon: Icons.chat,
-      label: 'Whatsapp',
+      label: l10n.whatsapp,
       color: Color(0xFF25D366),
       route: AppRoutes.adminKnowYourSchoolWhatsappEdit,
     ),
     _SchoolTile(
       icon: Icons.camera_alt,
-      label: 'Instagram',
+      label: l10n.instagram,
       color: Color(0xFFE1306C),
       route: AppRoutes.adminKnowYourSchoolInstagramEdit,
     ),
     _SchoolTile(
       icon: Icons.library_books,
-      label: 'Library',
+      label: l10n.library,
       color: Color(0xFF795548),
       route: AppRoutes.adminKnowYourSchoolLibraryEdit,
     ),
@@ -87,6 +88,7 @@ class KnowYourSchoolPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
@@ -109,7 +111,7 @@ class KnowYourSchoolPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               DashboardIconGrid(
-                children: _tiles
+                children: _tiles(l10n)
                     .map(
                       (tile) => _SchoolLinkChip(
                         icon: tile.icon,

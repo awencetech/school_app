@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/group.dart';
 import '../../models/group_event.dart';
+import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/group_event_service.dart';
 import '../../services/group_service.dart';
@@ -149,6 +150,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: widget.quickAccessTitle != null
@@ -214,12 +216,12 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
                 }
                 setState(() => _selectedBottomIndex = index);
               },
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-                BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Dashboard'),
-                BottomNavigationBarItem(icon: Icon(Icons.help), label: 'Support'),
-                BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+              items: [
+                BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
+                BottomNavigationBarItem(icon: const Icon(Icons.person), label: l10n.user),
+                BottomNavigationBarItem(icon: const Icon(Icons.info), label: l10n.dashboard),
+                BottomNavigationBarItem(icon: const Icon(Icons.help), label: l10n.support),
+                BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.logout),
               ],
             )
           : AdminBottomNavigationBar(

@@ -14,6 +14,22 @@ import 'services/splash_config_service.dart';
 import 'services/user_menu_state.dart';
 import 'theme/app_theme.dart';
 
+class _QuillLocalizationsDelegate extends LocalizationsDelegate<FlutterQuillLocalizations> {
+  const _QuillLocalizationsDelegate();
+
+  @override
+  Future<FlutterQuillLocalizations> load(Locale locale) {
+    final quillLocale = locale.languageCode == 'ta' ? const Locale('en') : locale;
+    return FlutterQuillLocalizations.delegate.load(quillLocale);
+  }
+
+  @override
+  bool isSupported(Locale locale) => const {'en', 'hi', 'ta'}.contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_QuillLocalizationsDelegate old) => false;
+}
+
 /// Root widget for the School App.
 class SchoolApp extends StatelessWidget {
   const SchoolApp({super.key});
@@ -35,7 +51,7 @@ class SchoolApp extends StatelessWidget {
           locale: Locale(appState.selectedLanguage?.code ?? 'en'),
           localizationsDelegates: [
             ...AppLocalizations.localizationsDelegates,
-            FlutterQuillLocalizations.delegate,
+            const _QuillLocalizationsDelegate(),
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           // Ensure splash screen is always shown first on initial app load

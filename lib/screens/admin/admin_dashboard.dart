@@ -431,7 +431,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.announcement,
-                                    label: 'Announcement',
+                                    label: l10n.announcement,
                                     color: Color(0xFF43A047),
                                     onTap: () => Navigator.of(
                                       context,
@@ -439,7 +439,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.people,
-                                    label: 'Demography',
+                                    label: l10n.demography,
                                     color: Color(0xFF388E3C),
                                     onTap: () => Navigator.of(context).pushNamed(
                                       AppRoutes.adminDashboardDemography,
@@ -447,7 +447,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.facebook,
-                                    label: 'Facebook',
+                                    label: l10n.facebook,
                                     color: Color(0xFF3B5998),
                                     onTap: () => _openSocialUrl(
                                       context,
@@ -457,7 +457,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.ondemand_video,
-                                    label: 'Youtube',
+                                    label: l10n.youtube,
                                     color: Color(0xFFD32F2F),
                                     onTap: () => _openSocialUrl(
                                       context,
@@ -467,13 +467,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.chat,
-                                    label: 'Whatsapp',
+                                    label: l10n.whatsapp,
                                     color: Color(0xFF25D366),
                                     onTap: () => _openWhatsapp(context),
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.camera_alt,
-                                    label: 'Instagram',
+                                    label: l10n.instagram,
                                     color: Color(0xFFE1306C),
                                     onTap: () => _openSocialUrl(
                                       context,
@@ -483,7 +483,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _SchoolLinkChip(
                                     icon: Icons.library_books,
-                                    label: 'Library',
+                                    label: l10n.library,
                                     color: Color(0xFF795548),
                                     onTap: () =>
                                         Navigator.of(context).pushNamed(
@@ -520,7 +520,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 children: [
                                   _QuickAction(
                                     icon: Icons.menu,
-                                    label: 'Other\nMenu',
+                                    label: l10n.otherMenu,
                                     color: Color(0xFFB91C1C),
                                     onTap: () {
                                       Navigator.of(
@@ -530,7 +530,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.group,
-                                    label: 'List\nStudents',
+                                    label: l10n.listStudents,
                                     color: Color(0xFFF59E0B),
                                     onTap: () {
                                       Navigator.of(
@@ -540,7 +540,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.person,
-                                    label: 'List\nTeachers',
+                                    label: l10n.listTeachers,
                                     color: Color(0xFFF43F5E),
                                     onTap: () {
                                       Navigator.of(
@@ -550,7 +550,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.class_,
-                                    label: 'List\nClasses',
+                                    label: l10n.listClasses,
                                     color: Color(0xFF16A34A),
                                     onTap: () {
                                       Navigator.of(
@@ -560,7 +560,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.group_work,
-                                    label: 'List Other\ngroups',
+                                    label: l10n.listOtherGroups,
                                     color: Color(0xFF7C3AED),
                                     onTap: () {
                                       Navigator.of(
@@ -570,7 +570,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.edit,
-                                    label: 'Write',
+                                    label: l10n.write,
                                     color: Color(0xFFF97316),
                                     onTap: () {
                                       Navigator.of(
@@ -580,7 +580,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.newspaper,
-                                    label: 'School\nNews',
+                                    label: l10n.schoolNews,
                                     color: Color(0xFF3B82F6),
                                     onTap: () {
                                       Navigator.of(
@@ -590,7 +590,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.medical_services,
-                                    label: 'Medical Event\nList',
+                                    label: l10n.medicalEventList,
                                     color: Color(0xFF92400E),
                                     onTap: () {
                                       Navigator.of(context).pushNamed(
@@ -600,7 +600,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.location_on,
-                                    label: 'Track Bus\nGPS',
+                                    label: l10n.trackBusGps,
                                     color: Color(0xFF0EA5E9),
                                     onTap: () {
                                       Navigator.of(
@@ -610,7 +610,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.badge,
-                                    label: 'Employee\nAttendance',
+                                    label: l10n.employeeAttendance,
                                     color: Color(0xFF2563EB),
                                     onTap: () {
                                       Navigator.of(context).pushNamed(
@@ -620,7 +620,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.approval,
-                                    label: 'Emp Leave\nApproval',
+                                    label: l10n.employeeLeaveApproval,
                                     color: Color(0xFF16A34A),
                                     onTap: () {
                                       Navigator.of(context).pushNamed(
@@ -630,7 +630,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                   _QuickAction(
                                     icon: Icons.people_alt,
-                                    label: 'One on\nOne',
+                                    label: l10n.oneOnOne,
                                     color: Color(0xFF4F46E5),
                                     onTap: () {
                                       Navigator.of(
@@ -754,7 +754,7 @@ class _QuickAction extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 3,
               softWrap: true,
-              overflow: TextOverflow.ellipsis,
+              overflow: TextOverflow.visible,
               style: GoogleFonts.poppins(
                 fontSize: 10,
                 fontWeight: FontWeight.w400,

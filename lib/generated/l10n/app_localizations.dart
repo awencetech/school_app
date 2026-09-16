@@ -478,6 +478,120 @@ abstract class AppLocalizations {
   /// **'Newsletter'**
   String get newsletter;
 
+  /// No description provided for @announcement.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement'**
+  String get announcement;
+
+  /// No description provided for @demography.
+  ///
+  /// In en, this message translates to:
+  /// **'Demography'**
+  String get demography;
+
+  /// No description provided for @facebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Facebook'**
+  String get facebook;
+
+  /// No description provided for @youtube.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube'**
+  String get youtube;
+
+  /// No description provided for @whatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get whatsapp;
+
+  /// No description provided for @instagram.
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram'**
+  String get instagram;
+
+  /// No description provided for @library.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get library;
+
+  /// No description provided for @otherMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Other\nMenu'**
+  String get otherMenu;
+
+  /// No description provided for @listStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'List\nStudents'**
+  String get listStudents;
+
+  /// No description provided for @listTeachers.
+  ///
+  /// In en, this message translates to:
+  /// **'List\nTeachers'**
+  String get listTeachers;
+
+  /// No description provided for @listClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'List\nClasses'**
+  String get listClasses;
+
+  /// No description provided for @listOtherGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'List Other\nGroups'**
+  String get listOtherGroups;
+
+  /// No description provided for @write.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get write;
+
+  /// No description provided for @schoolNews.
+  ///
+  /// In en, this message translates to:
+  /// **'School\nNews'**
+  String get schoolNews;
+
+  /// No description provided for @medicalEventList.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Event\nList'**
+  String get medicalEventList;
+
+  /// No description provided for @trackBusGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Track Bus\nGPS'**
+  String get trackBusGps;
+
+  /// No description provided for @employeeAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee\nAttendance'**
+  String get employeeAttendance;
+
+  /// No description provided for @employeeLeaveApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Emp Leave\nApproval'**
+  String get employeeLeaveApproval;
+
+  /// No description provided for @oneOnOne.
+  ///
+  /// In en, this message translates to:
+  /// **'One on\nOne'**
+  String get oneOnOne;
+
   /// No description provided for @schoolNameValue.
   ///
   /// In en, this message translates to:

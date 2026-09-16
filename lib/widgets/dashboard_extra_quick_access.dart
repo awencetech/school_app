@@ -111,7 +111,7 @@ class DashboardExtraQuickAccess extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 3,
                   softWrap: true,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w400,

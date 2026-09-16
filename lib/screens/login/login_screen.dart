@@ -125,8 +125,23 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 56,
               width: double.infinity,
               color: AppColors.primary,
-              alignment: Alignment.center,
-              child: Text(config.schoolName, style: AppTextStyles.appTitle),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(config.schoolName, style: AppTextStyles.appTitle),
+                  Positioned(
+                    right: 4,
+                    child: IconButton(
+                      tooltip: 'Change language',
+                      icon: const Icon(Icons.language),
+                      color: AppColors.white,
+                      onPressed: () => Navigator.of(context).pushNamed(
+                        AppRoutes.language,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: SingleChildScrollView(

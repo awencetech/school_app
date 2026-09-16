@@ -205,5 +205,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newsletter => 'Newsletter';
 
   @override
+  String get announcement => 'Announcement';
+
+  @override
+  String get demography => 'Demography';
+
+  @override
+  String get facebook => 'Facebook';
+
+  @override
+  String get youtube => 'YouTube';
+
+  @override
+  String get whatsapp => 'WhatsApp';
+
+  @override
+  String get instagram => 'Instagram';
+
+  @override
+  String get library => 'Library';
+
+  @override
+  String get otherMenu => 'Other\nMenu';
+
+  @override
+  String get listStudents => 'List\nStudents';
+
+  @override
+  String get listTeachers => 'List\nTeachers';
+
+  @override
+  String get listClasses => 'List\nClasses';
+
+  @override
+  String get listOtherGroups => 'List Other\nGroups';
+
+  @override
+  String get write => 'Write';
+
+  @override
+  String get schoolNews => 'School\nNews';
+
+  @override
+  String get medicalEventList => 'Medical Event\nList';
+
+  @override
+  String get trackBusGps => 'Track Bus\nGPS';
+
+  @override
+  String get employeeAttendance => 'Employee\nAttendance';
+
+  @override
+  String get employeeLeaveApproval => 'Emp Leave\nApproval';
+
+  @override
+  String get oneOnOne => 'One on\nOne';
+
+  @override
   String get schoolNameValue => 'MMHSS';
 }

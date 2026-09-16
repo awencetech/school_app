@@ -57,6 +57,10 @@ function readAuthToken(req) {
   return header.startsWith('Bearer ') ? header.substring(7) : '';
 }
 
+function normalizeRole(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
 function signAuthPayload(payload) {
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
@@ -77,9 +81,9 @@ function requireTeacherMutation(req, res, next) {
   if (!isGroupMenuMutation) return next();
   try {
     const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'staff' && role !== 'teacher') {
-      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only teachers may modify Group Menu data.' : 'Authentication required.' });
+    const role = normalizeRole(auth?.role);
+    if (role !== 'staff' && role !== 'teacher' && role !== 'admin') {
+      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only staff, teachers, or admins may modify Group Menu data.' : 'Authentication required.' });
     }
     req.auth = auth;
     return next();
@@ -91,9 +95,9 @@ function requireTeacherMutation(req, res, next) {
 function requireTeacher(req, res, next) {
   try {
     const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'staff' && role !== 'teacher') {
-      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only teachers may modify class resources.' : 'Authentication required.' });
+    const role = normalizeRole(auth?.role);
+    if (role !== 'staff' && role !== 'teacher' && role !== 'admin') {
+      return res.status(auth ? 403 : 401).json({ message: auth ? 'Only staff, teachers, or admins may modify class resources.' : 'Authentication required.' });
     }
     req.auth = auth;
     return next();
@@ -105,7 +109,7 @@ function requireTeacher(req, res, next) {
 function requireDiaryRead(req, res, next) {
   try {
     const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
+    const role = normalizeRole(auth?.role);
     if (role !== 'staff' && role !== 'teacher' && role !== 'admin' && role !== 'student') {
       return res.status(auth ? 403 : 401).json({
         message: auth ? 'Diary access is not available for this role.' : 'Authentication required.',
@@ -121,7 +125,7 @@ function requireDiaryRead(req, res, next) {
 function requireDiaryWrite(req, res, next) {
   try {
     const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
+    const role = normalizeRole(auth?.role);
     if (role !== 'staff' && role !== 'teacher' && role !== 'admin') {
       return res.status(auth ? 403 : 401).json({
         message: auth ? 'Students have read-only access to diary observations.' : 'Authentication required.',
@@ -137,7 +141,7 @@ function requireDiaryWrite(req, res, next) {
 function requireAdmin(req, res, next) {
   try {
     const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
+    const role = normalizeRole(auth?.role);
     if (role !== 'admin') {
       return res.status(auth ? 403 : 401).json({ message: auth ? 'Admin access required.' : 'Authentication required.' });
     }
@@ -150,12 +154,12 @@ function requireAdmin(req, res, next) {
 
 function requireRecipientRole(expectedRoles) {
   const allowedRoles = Array.isArray(expectedRoles)
-    ? expectedRoles.map((role) => String(role).toLowerCase())
-    : [String(expectedRoles).toLowerCase()];
+    ? expectedRoles.map((role) => normalizeRole(role))
+    : [normalizeRole(expectedRoles)];
   return (req, res, next) => {
     try {
       const auth = verifyAuthToken(readAuthToken(req));
-      if (!allowedRoles.includes((auth?.role || '').toLowerCase())) {
+      if (!allowedRoles.includes(normalizeRole(auth?.role))) {
         return res.status(auth ? 403 : 401).json({ message: 'Authentication required.' });
       }
       req.auth = auth;
@@ -169,9 +173,13 @@ function requireRecipientRole(expectedRoles) {
 async function requireGroupAccess(req, res, next) {
   try {
     const auth = verifyAuthToken(readAuthToken(req));
-    const role = (auth?.role || '').toLowerCase();
-    if (role !== 'staff' && role !== 'teacher') return next();
+    const role = normalizeRole(auth?.role);
+    if (role !== 'staff' && role !== 'teacher' && role !== 'admin') return next();
     req.auth = auth;
+    const requestedId = String(req.params.groupId || '').trim();
+    if (!requestedId || requestedId.toLowerCase() === 'unknown') {
+      return next();
+    }
     await connectMongo();
     const staff = await findStaffForAccess(req.auth.userId);
     if (!staff) {
@@ -182,7 +190,6 @@ async function requireGroupAccess(req, res, next) {
     if (!access) {
       return res.status(403).json({ message: 'You do not have access to this group.' });
     }
-    const requestedId = String(req.params.groupId || '').trim();
     const allowedIds = [
       ...(Array.isArray(access.groupIds) ? access.groupIds : []),
       ...(Array.isArray(access.classTeacherIds) ? access.classTeacherIds : []),
@@ -1244,6 +1251,7 @@ let legacyEventsCollection;
 let todayInClassCollection;
 let homeworkCollection;
 let staffUploadHomeworkCollection;
+let onlineAssignmentCollection;
 let diaryCollection;
 let studentDiaryCollection;
 let groupMessagesCollection;
@@ -1276,6 +1284,7 @@ let busGpsCollection;
 let oneOnOneMeetingsCollection;
 let gateRegisterCollection;
 let employeeAttendanceCollection;
+let studentAttendanceCollection;
 let staffResourcesCollection;
 let staffAccessCollection;
 
@@ -1292,6 +1301,7 @@ async function safeCreateIndex(collection, spec, options = {}) {
 }
 
 async function ensureIndexes(db) {
+  await ensureStudentAttendanceUniqueness();
   await Promise.all([
     safeCreateIndex(groupsCollection, { id: 1 }, { sparse: true }),
     safeCreateIndex(classesCollection, { id: 1 }, { sparse: true }),
@@ -1302,6 +1312,7 @@ async function ensureIndexes(db) {
     safeCreateIndex(todayInClassCollection, { groupId: 1, date: 1 }),
     safeCreateIndex(homeworkCollection, { groupId: 1, date: 1 }),
     safeCreateIndex(staffUploadHomeworkCollection, { schoolId: 1, createdAt: -1 }),
+    safeCreateIndex(onlineAssignmentCollection, { groupId: 1, dueDate: -1 }),
     safeCreateIndex(diaryCollection, { studentId: 1, diaryDate: 1 }, { unique: true }),
     safeCreateIndex(studentDiaryCollection, { studentId: 1, diaryDate: 1 }, { unique: true }),
     safeCreateIndex(groupMessagesCollection, { groupId: 1, createdAt: -1 }),
@@ -1337,9 +1348,28 @@ async function ensureIndexes(db) {
     safeCreateIndex(gateRegisterCollection, { personType: 1, entryDate: -1 }),
     safeCreateIndex(employeeAttendanceCollection, { employeeId: 1, attendanceDate: 1 }, { unique: true }),
     safeCreateIndex(employeeAttendanceCollection, { attendanceDate: 1, status: 1 }),
+    safeCreateIndex(studentAttendanceCollection, { studentId: 1, attendanceDate: 1 }, { unique: true, name: 'student_attendance_student_date' }),
+    safeCreateIndex(studentAttendanceCollection, { studentId: 1, createdAt: -1 }),
     safeCreateIndex(staffResourcesCollection, { staffId: 1, createdAt: -1 }),
     safeCreateIndex(staffAccessCollection, { staffId: 1 }, { unique: true }),
   ]);
+}
+
+async function ensureStudentAttendanceUniqueness() {
+  const duplicateGroups = await studentAttendanceCollection.aggregate([
+    { $group: { _id: { studentId: '$studentId', attendanceDate: '$attendanceDate' }, ids: { $push: '$_id' }, count: { $sum: 1 } } },
+    { $match: { count: { $gt: 1 } } },
+  ]).toArray();
+  for (const group of duplicateGroups) {
+    const [, ...duplicates] = group.ids;
+    if (duplicates.length > 0) await studentAttendanceCollection.deleteMany({ _id: { $in: duplicates } });
+  }
+  const indexes = await studentAttendanceCollection.listIndexes().toArray();
+  for (const index of indexes) {
+    if (index.name !== '_id_' && JSON.stringify(index.key) === JSON.stringify({ studentId: 1, attendanceDate: 1 }) && index.unique !== true) {
+      await studentAttendanceCollection.dropIndex(index.name);
+    }
+  }
 }
 
 async function connectMongo() {
@@ -1362,6 +1392,7 @@ async function connectMongo() {
     todayInClassCollection = db.collection('todayInClass');
     homeworkCollection = db.collection('home-work');
     staffUploadHomeworkCollection = db.collection('staff-uploadhw');
+    onlineAssignmentCollection = db.collection('online-assignment');
     diaryCollection = db.collection('staff-diary');
     studentDiaryCollection = db.collection('student-diary');
     groupMessagesCollection = db.collection('groupMessages');
@@ -1370,7 +1401,7 @@ async function connectMongo() {
     studentCampaignCollection = db.collection('student-campaign');
     studentPtmCollection = db.collection('student-ptm');
     groupMessageCommentsCollection = db.collection('groupMessageComments');
-    classTimetableCollection = db.collection('class-timetables');
+    classTimetableCollection = db.collection('staff-timetable');
     legacyClassTimetableCollection = db.collection('class-timetable');
     studentInfoCollection = db.collection('stud-in');
     schoolHandbookCollection = db.collection('school-handbook');
@@ -1382,8 +1413,8 @@ async function connectMongo() {
     demographyCollection = db.collection('demography');
     libraryCollection = db.collection('lib');
     socialUrlCollection = db.collection('social-url');
-    classPhotosCollection = db.collection('class-photos');
-    classNewsCollection = db.collection('class-news');
+    classPhotosCollection = db.collection('photos-news');
+    classNewsCollection = db.collection('photos-news');
     lessonPlansCollection = db.collection('class-planner');
     schoolNewsCollection = db.collection('schoolnews');
     medicalEventCollection = db.collection('medical-event');
@@ -1394,9 +1425,11 @@ async function connectMongo() {
     oneOnOneMeetingsCollection = db.collection('one-on-one-meetings');
     gateRegisterCollection = db.collection('gate-reg');
     employeeAttendanceCollection = db.collection('employee-attendance');
+    studentAttendanceCollection = db.collection('student-attendance');
     staffResourcesCollection = db.collection('staff-resources');
     staffAccessCollection = db.collection('stf-access');
     imageBucket = new GridFSBucket(db, { bucketName: 'images' });
+    console.log('MongoDB collections ready, including student-attendance');
     await ensureIndexes(db);
     await migrateLegacyStaffInfo();
     await migrateLegacyEvents();
@@ -1458,7 +1491,7 @@ function sanitizeUserForResponse(doc) {
     id: doc._id ? doc._id.toString() : doc.id || null,
     userId: doc.userId || doc.userID || '',
     email: doc.email || '',
-    role: doc.role || 'student',
+    role: normalizeRole(doc.role || 'student'),
   };
 }
 
@@ -1597,6 +1630,7 @@ function sanitizeStudentForResponse(doc) {
     address: doc.address || '',
     about: doc.about || '',
     hobbies: doc.hobbies || '',
+    specialNeeds: doc.specialNeeds || doc.special_needs || '',
     role: doc.role || '',
     imageUrl: doc.imageUrl || '',
     createdAt: doc.createdAt || null,
@@ -1938,6 +1972,33 @@ function sanitizeTodayInClassForResponse(doc) {
   };
 }
 
+function sanitizeOnlineAssignmentForResponse(doc) {
+  if (!doc) return null;
+  const attachmentValues = Array.isArray(doc.attachments)
+    ? doc.attachments
+    : (doc.attachment ? [doc.attachment] : []);
+  return {
+    _id: doc._id ? doc._id.toString() : null,
+    id: doc.id || (doc._id ? doc._id.toString() : ''),
+    groupId: doc.groupId || '',
+    title: doc.title || '',
+    subject: doc.subject || '',
+    description: doc.description || '',
+    instructions: doc.instructions || '',
+    assignedDate: doc.assignedDate || null,
+    dueDate: doc.dueDate || null,
+    maxMarks: Number.isFinite(Number(doc.maxMarks)) ? Number(doc.maxMarks) : 0,
+    status: doc.status || 'Active',
+    folder: doc.folder || 'Assignments',
+    attachment: doc.attachment || (attachmentValues[0] || ''),
+    attachments: attachmentValues,
+    submissions: Array.isArray(doc.submissions) ? doc.submissions : [],
+    createdBy: doc.createdBy || '',
+    createdAt: doc.createdAt || null,
+    updatedAt: doc.updatedAt || null,
+  };
+}
+
 function sanitizeGroupMessageForResponse(doc) {
   if (!doc) return null;
   return {
@@ -2238,6 +2299,107 @@ app.patch('/api/employee-attendance/:id/late', async (req, res) => {
   } catch (error) {
     console.error('PATCH /api/employee-attendance/:id/late failed:', error);
     return res.status(500).json({ message: 'Unable to update late attendance.' });
+  }
+});
+
+function studentAttendancePayload(body) {
+  const studentId = String(body.studentId || '').trim();
+  const attendanceDate = String(body.attendanceDate || '').trim();
+  const className = String(body.className || '').trim();
+  const reason = String(body.reason || '').trim();
+  const status = String(body.status || (body.present === true ? 'Present' : 'Absent')).trim();
+  if (!studentId) return { error: 'Student ID is required.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate)) return { error: 'A valid attendance date in YYYY-MM-DD format is required.' };
+  if (!['Present', 'Absent', 'Leave', 'Pending'].includes(status)) return { error: 'Attendance status must be Present, Absent, Leave, or Pending.' };
+  if (status === 'Pending' && !reason) return { error: 'A reason is required for a leave request.' };
+  return {
+    values: {
+      studentId,
+      attendanceDate,
+      className,
+      subject: String(body.subject || 'All Day').trim() || 'All Day',
+      classType: String(body.classType || 'Classroom').trim() || 'Classroom',
+      reason,
+      status,
+      present: status === 'Present',
+      studentName: String(body.studentName || '').trim(),
+      section: String(body.section || '').trim(),
+      admissionNumber: String(body.admissionNumber || '').trim(),
+    },
+  };
+}
+
+async function studentAttendanceIdentifiers(auth) {
+  const userId = String(auth?.userId || '').trim();
+  if (!userId) return [];
+  const profile = await studentInfoCollection.findOne({
+    $or: [{ studentId: userId }, { admissionNumber: userId }],
+  });
+  return [...new Set([
+    userId,
+    profile?.studentId,
+    profile?.admissionNumber,
+  ].filter((value) => value != null && String(value).trim()).map((value) => String(value).trim()))];
+}
+
+app.get('/api/student-attendance', requireRecipientRole(['student', 'staff', 'teacher', 'admin']), async (req, res) => {
+  console.log('GET /api/student-attendance request:', {
+    url: req.originalUrl,
+    role: req.auth?.role,
+    userId: req.auth?.userId,
+  });
+  try {
+    await connectMongo();
+    const role = String(req.auth?.role || '').toLowerCase();
+    const filter = {};
+    if (role === 'student') {
+      const identifiers = await studentAttendanceIdentifiers(req.auth);
+      if (identifiers.length === 0) return res.status(422).json({ message: 'Student ID is required.' });
+      filter.$or = [
+        { studentId: { $in: identifiers } },
+        { admissionNumber: { $in: identifiers } },
+      ];
+    } else if (req.query.studentId) {
+      filter.studentId = String(req.query.studentId).trim();
+    }
+    if (req.query.date) filter.attendanceDate = String(req.query.date).trim();
+    if (req.query.fromDate || req.query.toDate) {
+      filter.attendanceDate = {};
+      if (req.query.fromDate) filter.attendanceDate.$gte = String(req.query.fromDate).trim();
+      if (req.query.toDate) filter.attendanceDate.$lte = String(req.query.toDate).trim();
+    }
+    if (req.query.className) filter.className = String(req.query.className).trim();
+    if (req.query.status) filter.status = String(req.query.status).trim();
+    const records = await studentAttendanceCollection.find(filter).sort({ attendanceDate: -1, createdAt: -1 }).toArray();
+    const data = records.map((record) => ({ ...record, _id: record._id.toString() }));
+    console.log('GET /api/student-attendance returned records:', data.length);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('GET /api/student-attendance MongoDB/API error:', error);
+    return res.status(500).json({ message: 'Unable to load student attendance.' });
+  }
+});
+
+app.post('/api/student-attendance', requireRecipientRole(['student', 'staff', 'teacher', 'admin']), async (req, res) => {
+  try {
+    const { values, error } = studentAttendancePayload(req.body || {});
+    if (error) return res.status(422).json({ message: error });
+    await connectMongo();
+    const role = String(req.auth?.role || '').toLowerCase();
+    if (role === 'student') values.studentId = String(req.auth.userId || '').trim();
+    if (['staff', 'teacher', 'admin'].includes(role)) values.markedBy = String(req.auth.userId || '').trim();
+    const now = new Date();
+    const result = await studentAttendanceCollection.findOneAndUpdate(
+      { studentId: values.studentId, attendanceDate: values.attendanceDate },
+      { $set: { ...values, updatedAt: now }, $setOnInsert: { createdAt: now } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    const record = result.value || result;
+    return res.status(201).json({ ...record, _id: record._id.toString() });
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ message: 'Attendance already exists for this student and date.' });
+    console.error('POST /api/student-attendance failed:', error);
+    return res.status(500).json({ message: 'Unable to save student attendance.' });
   }
 });
 
@@ -2774,6 +2936,162 @@ app.get('/api/groups/:groupId/homework', async (req, res) => {
   } catch (error) {
     console.error('GET /api/groups/:groupId/homework failed:', error);
     return res.status(500).json({ message: 'Unable to load Homework.' });
+  }
+});
+
+app.get('/api/online-assignment', async (req, res) => {
+  try {
+    await connectMongo();
+    const records = await onlineAssignmentCollection
+      .find({})
+      .sort({ dueDate: -1, createdAt: -1 })
+      .toArray();
+    return res.json(records.map(sanitizeOnlineAssignmentForResponse));
+  } catch (error) {
+    console.error('GET /api/online-assignment failed:', error);
+    return res.status(500).json({ message: 'Unable to load assignments.' });
+  }
+});
+
+app.post('/api/online-assignment', async (req, res) => {
+  try {
+    await connectMongo();
+    const body = req.body || {};
+    const auth = verifyAuthToken(readAuthToken(req));
+    const title = (body.title || '').toString().trim();
+    const subject = (body.subject || '').toString().trim();
+    const description = (body.description || '').toString().trim();
+    const instructions = (body.instructions || '').toString().trim();
+    const assignedDate = (body.assignedDate || '').toString().trim();
+    const dueDate = (body.dueDate || '').toString().trim();
+    const maxMarks = Number(body.maxMarks ?? 0);
+    const status = (body.status || 'Active').toString().trim();
+    const folder = (body.folder || 'Assignments').toString().trim();
+
+    if (!title || !assignedDate || !dueDate || Number.isNaN(Date.parse(assignedDate)) || Number.isNaN(Date.parse(dueDate))) {
+      return res.status(422).json({ message: 'Title, assigned date, and due date are required.' });
+    }
+
+    const attachmentValues = Array.isArray(body.attachments)
+      ? body.attachments.map((item) => String(item ?? '').trim()).filter(Boolean)
+      : (body.attachment ? [String(body.attachment).trim()].filter(Boolean) : []);
+    const now = new Date().toISOString();
+    const record = {
+      groupId: (body.groupId || '').toString().trim(),
+      title,
+      subject,
+      description,
+      instructions,
+      assignedDate,
+      dueDate,
+      maxMarks: Number.isFinite(maxMarks) ? maxMarks : 0,
+      status,
+      folder,
+      attachment: attachmentValues[0] || '',
+      attachments: attachmentValues,
+      submissions: Array.isArray(body.submissions) ? body.submissions.map((item) => ({
+        id: item?.id || new Date().getTime().toString(),
+        studentName: item?.studentName || '',
+        submittedDate: item?.submittedDate || now,
+        status: item?.status || 'Pending',
+        marks: item?.marks ?? null,
+        feedback: item?.feedback || '',
+      })) : [],
+      createdBy: (auth?.userId || body.createdBy || '').toString().trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await onlineAssignmentCollection.insertOne(record);
+    const saved = await onlineAssignmentCollection.findOne({ _id: result.insertedId });
+    return res.status(201).json(sanitizeOnlineAssignmentForResponse(saved));
+  } catch (error) {
+    console.error('POST /api/online-assignment failed:', error);
+    return res.status(500).json({ message: 'Unable to save assignment.' });
+  }
+});
+
+app.get('/api/online-assignment/:assignmentId', async (req, res) => {
+  try {
+    await connectMongo();
+    const assignmentId = (req.params.assignmentId || '').trim();
+    if (!assignmentId) return res.status(422).json({ message: 'Assignment id is required.' });
+    const doc = await onlineAssignmentCollection.findOne(recordIdSelector(assignmentId));
+    if (!doc) return res.status(404).json({ message: 'Assignment not found.' });
+    return res.json(sanitizeOnlineAssignmentForResponse(doc));
+  } catch (error) {
+    console.error('GET /api/online-assignment/:assignmentId failed:', error);
+    return res.status(500).json({ message: 'Unable to load assignment.' });
+  }
+});
+
+app.put('/api/online-assignment/:assignmentId', async (req, res) => {
+  try {
+    await connectMongo();
+    const assignmentId = (req.params.assignmentId || '').trim();
+    const body = req.body || {};
+    const auth = verifyAuthToken(readAuthToken(req));
+    const title = (body.title || '').toString().trim();
+    const subject = (body.subject || '').toString().trim();
+    const description = (body.description || '').toString().trim();
+    const instructions = (body.instructions || '').toString().trim();
+    const assignedDate = (body.assignedDate || '').toString().trim();
+    const dueDate = (body.dueDate || '').toString().trim();
+    const maxMarks = Number(body.maxMarks ?? 0);
+    const status = (body.status || 'Active').toString().trim();
+    const folder = (body.folder || 'Assignments').toString().trim();
+
+    if (!assignmentId || !title || !assignedDate || !dueDate || Number.isNaN(Date.parse(assignedDate)) || Number.isNaN(Date.parse(dueDate))) {
+      return res.status(422).json({ message: 'Title, assigned date, and due date are required.' });
+    }
+
+    const attachmentValues = Array.isArray(body.attachments)
+      ? body.attachments.map((item) => String(item ?? '').trim()).filter(Boolean)
+      : (body.attachment ? [String(body.attachment).trim()].filter(Boolean) : []);
+    const selector = recordIdSelector(assignmentId);
+    const update = {
+      title,
+      subject,
+      description,
+      instructions,
+      assignedDate,
+      dueDate,
+      maxMarks: Number.isFinite(maxMarks) ? maxMarks : 0,
+      status,
+      folder,
+      attachment: attachmentValues[0] || '',
+      attachments: attachmentValues,
+      submissions: Array.isArray(body.submissions) ? body.submissions.map((item) => ({
+        id: item?.id || new Date().getTime().toString(),
+        studentName: item?.studentName || '',
+        submittedDate: item?.submittedDate || new Date().toISOString(),
+        status: item?.status || 'Pending',
+        marks: item?.marks ?? null,
+        feedback: item?.feedback || '',
+      })) : [],
+      createdBy: (auth?.userId || body.createdBy || '').toString().trim(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await onlineAssignmentCollection.updateOne(selector, { $set: update });
+    if (!result.matchedCount) return res.status(404).json({ message: 'Assignment not found.' });
+    const saved = await onlineAssignmentCollection.findOne(selector);
+    return res.json(sanitizeOnlineAssignmentForResponse(saved));
+  } catch (error) {
+    console.error('PUT /api/online-assignment/:assignmentId failed:', error);
+    return res.status(500).json({ message: 'Unable to update assignment.' });
+  }
+});
+
+app.delete('/api/online-assignment/:assignmentId', async (req, res) => {
+  try {
+    await connectMongo();
+    const result = await onlineAssignmentCollection.deleteOne(recordIdSelector(req.params.assignmentId));
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Assignment not found.' });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/online-assignment/:assignmentId failed:', error);
+    return res.status(500).json({ message: 'Unable to delete assignment.' });
   }
 });
 
@@ -6062,9 +6380,7 @@ app.post('/api/students', async (req, res) => {
       address: String(body.address || '').trim(),
       about: String(body.about || '').trim(),
       hobbies: String(body.hobbies || '').trim(),
-      role: String(body.role || '').trim(),
-      imageUrl: String(body.imageUrl || '').trim(),
-      createdAt: now,
+    specialNeeds: String(body.specialNeeds || body.special_needs || '').trim(),
       updatedAt: now,
     };
 
@@ -6113,6 +6429,7 @@ app.put('/api/students/:id', async (req, res) => {
       address: String(body.address || '').trim(),
       about: String(body.about || '').trim(),
       hobbies: String(body.hobbies || '').trim(),
+      specialNeeds: String(body.specialNeeds || body.special_needs || '').trim(),
       role: String(body.role || '').trim(),
       imageUrl: String(body.imageUrl || '').trim(),
       updatedAt: new Date().toISOString(),
@@ -6283,7 +6600,7 @@ app.post('/api/login', async (req, res) => {
 
     const token = signAuthPayload({
       userId: user.userId,
-      role: user.role,
+      role: normalizeRole(user.role),
       exp: Math.floor(Date.now() / 1000) + (8 * 60 * 60),
     });
     return res.json({ success: true, token, user: sanitizeUserForResponse(user) });

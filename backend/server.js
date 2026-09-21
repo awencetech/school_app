@@ -8,6 +8,7 @@ const multer = require('multer');
 const { Readable } = require('stream');
 const { MongoClient, ObjectId, GridFSBucket } = require('mongodb');
 const bcrypt = require('bcrypt');
+const admin = require('firebase-admin');
 
 dotenv.config({ path: path.join(__dirname, 'env.development') });
 
@@ -94,6 +95,42 @@ async function findCredentialByUserId(userId, role) {
   return credential || usersCollection.findOne({ userId });
 }
 
+function credentialLookupVariants(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return [];
+
+  const normalized = raw.toLowerCase();
+  const variants = [raw, normalized];
+  const unique = new Set();
+  for (const variant of variants) {
+    if (variant) unique.add(variant);
+  }
+
+  const lookupKeys = [
+    'email',
+    'emailAddress',
+    'userEmail',
+    'adminEmail',
+    'staffEmail',
+    'studentEmail',
+    'username',
+    'userName',
+    'userId',
+    'identifier',
+    'accountId',
+    'login',
+  ];
+
+  const filters = [];
+  for (const key of lookupKeys) {
+    for (const variant of unique) {
+      filters.push({ [key]: variant });
+    }
+  }
+
+  return filters;
+}
+
 async function findCredentialAcrossRoleCollections(filter) {
   const credentials = await Promise.all(
     credentialCollectionEntries().map((entry) => entry.collection.findOne(filter)),
@@ -102,11 +139,18 @@ async function findCredentialAcrossRoleCollections(filter) {
 }
 
 async function findCredentialByIdentifier(identifier) {
-  const lowered = identifier.toLowerCase();
-  const byEmail = await findCredentialAcrossRoleCollections({ email: lowered });
-  if (byEmail) return byEmail;
-  const byUserId = await findCredentialAcrossRoleCollections({ userId: identifier });
-  return byUserId || usersCollection.findOne({ $or: [{ email: lowered }, { userId: identifier }] });
+  const raw = String(identifier || '').trim();
+  if (!raw) return null;
+
+  const filters = credentialLookupVariants(raw);
+  if (filters.length === 0) return null;
+
+  for (const collectionEntry of credentialCollectionEntries()) {
+    const match = await collectionEntry.collection.findOne({ $or: filters });
+    if (match) return match;
+  }
+
+  return usersCollection.findOne({ $or: filters });
 }
 
 async function findCredentialById(id) {
@@ -176,6 +220,83 @@ function verifyAuthToken(token) {
   if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
   const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
   return payload.exp > Math.floor(Date.now() / 1000) ? payload : null;
+}
+
+let firebaseAdminInitialized = false;
+function initializeFirebaseAdmin() {
+  if (firebaseAdminInitialized) return true;
+
+  try {
+    const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+    if (rawServiceAccount.trim()) {
+      const serviceAccount = JSON.parse(rawServiceAccount);
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      firebaseAdminInitialized = true;
+      return true;
+    }
+
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE_PROJECT_ID) {
+      admin.initializeApp({ credential: admin.credential.applicationDefault() });
+      firebaseAdminInitialized = true;
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Firebase Admin initialization failed:', error.message || error);
+    return false;
+  }
+}
+
+async function verifyFirebaseTokenFromRequest(req) {
+  const token = readAuthToken(req);
+  if (!token) return null;
+
+  if (!initializeFirebaseAdmin()) {
+    throw new Error('Firebase Admin SDK is not configured on the backend.');
+  }
+
+  const decoded = await admin.auth().verifyIdToken(token);
+  return decoded || null;
+}
+
+function isCredentialDocumentAllowed(document) {
+  if (!document) return false;
+
+  const normalizedStatus = String(document.status ?? document.accountStatus ?? document.State ?? document.state ?? '').trim().toLowerCase();
+  if (['inactive', 'disabled', 'blocked', 'suspended', 'deactivated'].includes(normalizedStatus)) {
+    return false;
+  }
+
+  if (document.active === false || document.isActive === false || document.enabled === false || document.isEnabled === false) {
+    return false;
+  }
+
+  return true;
+}
+
+async function findAuthorizedCredentialByEmail(email) {
+  const raw = String(email || '').trim();
+  if (!raw) return null;
+
+  const checks = [
+    { role: 'admin', collection: adminCredentialsCollection, name: 'admin-creds' },
+    { role: 'staff', collection: staffCredentialsCollection, name: 'staff-creds' },
+    { role: 'student', collection: studentCredentialsCollection, name: 'student-creds' },
+  ];
+
+  const filters = credentialLookupVariants(raw);
+  if (filters.length === 0) return null;
+
+  for (const entry of checks) {
+    if (!entry.collection) continue;
+    const record = await entry.collection.findOne({ $or: filters });
+    if (!record) continue;
+    if (!isCredentialDocumentAllowed(record)) continue;
+    return { role: entry.role, record, collectionName: entry.name };
+  }
+
+  return null;
 }
 
 function requireTeacherMutation(req, res, next) {
@@ -1690,7 +1811,7 @@ function sanitizeUserForResponse(doc) {
   return {
     id: doc._id ? doc._id.toString() : doc.id || null,
     userId: doc.userId || doc.userID || '',
-    email: doc.email || '',
+    email: doc.email || doc.emailAddress || doc.userEmail || doc.adminEmail || doc.staffEmail || doc.studentEmail || '',
     role: normalizeRole(doc.role || 'student'),
   };
 }
@@ -6773,6 +6894,55 @@ async function upsertMainPageDocument(payload) {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.post('/api/auth/check-email', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const emailFromBody = String(body.email || '').trim().toLowerCase();
+    let verifiedEmail = '';
+
+    if (req.headers.authorization) {
+      try {
+        const decodedToken = await verifyFirebaseTokenFromRequest(req);
+        verifiedEmail = String(decodedToken?.email || '').trim().toLowerCase();
+      } catch (error) {
+        console.error('Firebase token verification failed:', error.message || error);
+        return res.status(401).json({
+          authorized: false,
+          message: 'Invalid Firebase authentication token.',
+        });
+      }
+    }
+
+    const email = verifiedEmail || emailFromBody;
+    if (!email) {
+      return res.status(400).json({
+        authorized: false,
+        message: 'Email is required.',
+      });
+    }
+
+    const authorizedRecord = await findAuthorizedCredentialByEmail(email);
+    if (!authorizedRecord) {
+      return res.status(200).json({
+        authorized: false,
+        message: 'Your email is not registered with the school. Please contact the school administration.',
+      });
+    }
+
+    return res.status(200).json({
+      authorized: true,
+      role: authorizedRecord.role,
+      email: authorizedRecord.record.email,
+    });
+  } catch (error) {
+    console.error('POST /api/auth/check-email failed:', error);
+    return res.status(500).json({
+      authorized: false,
+      message: 'Unable to verify the email authorization.',
+    });
+  }
 });
 
 // Authentication - login

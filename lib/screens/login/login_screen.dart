@@ -55,36 +55,72 @@ class _LoginScreenState extends State<LoginScreen> {
         .login(identifier: identifier, password: password)
         .then((user) async {
           if (!mounted) return;
-          await context.read<AppState>().setAuthenticatedUser(
-            userId: user.userId,
-            email: user.email,
-            role: user.role,
-            token: user.token,
-          );
 
-          if (!mounted) return;
-          final navigator = Navigator.of(context);
-          final messenger = ScaffoldMessenger.of(context);
+          try {
+            final firebaseIdToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+            final authEmail = (user.email ?? '').trim().isNotEmpty ? user.email!.trim() : identifier;
+            final authorization = await svc.checkEmailAuthorization(
+              email: authEmail,
+              firebaseIdToken: firebaseIdToken,
+            );
 
-          // route based on authoritative backend role
-          if (user.role == 'student') {
-            navigator.pushNamedAndRemoveUntil(
-              AppRoutes.studentDashboard,
-              (route) => false,
+            if (authorization['authorized'] != true) {
+              await FirebaseAuth.instance.signOut();
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    authorization['message']?.toString() ??
+                        'Your email is not registered with the school. Please contact the school administration.',
+                  ),
+                ),
+              );
+              return;
+            }
+
+            final authorizedRole = authorization['role']?.toString() ?? user.role;
+            await context.read<AppState>().setAuthenticatedUser(
+              userId: user.userId,
+              email: user.email,
+              role: authorizedRole,
+              token: user.token,
             );
-          } else if (user.role == 'staff') {
-            navigator.pushNamedAndRemoveUntil(
-              AppRoutes.staffDashboard,
-              (route) => false,
-            );
-          } else if (user.role == 'admin') {
-            navigator.pushNamedAndRemoveUntil(
-              AppRoutes.adminDashboard,
-              (route) => false,
-            );
-          } else {
-            messenger.showSnackBar(
-              SnackBar(content: Text(l10n?.invalidUserRole ?? 'Invalid user role')),
+
+            if (!mounted) return;
+            final navigator = Navigator.of(context);
+            final messenger = ScaffoldMessenger.of(context);
+
+            if (authorizedRole == 'student') {
+              navigator.pushNamedAndRemoveUntil(
+                AppRoutes.studentDashboard,
+                (route) => false,
+              );
+            } else if (authorizedRole == 'staff') {
+              navigator.pushNamedAndRemoveUntil(
+                AppRoutes.staffDashboard,
+                (route) => false,
+              );
+            } else if (authorizedRole == 'admin') {
+              navigator.pushNamedAndRemoveUntil(
+                AppRoutes.adminDashboard,
+                (route) => false,
+              );
+            } else {
+              messenger.showSnackBar(
+                SnackBar(content: Text(l10n?.invalidUserRole ?? 'Invalid user role')),
+              );
+            }
+          } catch (e, stackTrace) {
+            debugPrint('Email authorization check failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+            if (!mounted) return;
+            await FirebaseAuth.instance.signOut();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Your email is not registered with the school. Please contact the school administration.',
+                ),
+              ),
             );
           }
         })
@@ -126,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
-        await _completeGoogleLogin(user);
+        await _authorizeAuthenticatedUser(user);
         return;
       }
 
@@ -147,16 +183,17 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
 
-      await _completeGoogleLogin(user);
+      await _authorizeAuthenticatedUser(user);
     } on FirebaseAuthException catch (e, stackTrace) {
-      debugPrint('Google sign-in FirebaseAuthException: ${e.code} - ${e.message}');
+      debugPrint('Firebase Auth Error: ${e.code}');
+      debugPrint('Firebase Auth Message: ${e.message}');
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Google sign-in failed: ${e.message ?? e.code}')),
       );
     } catch (e, stackTrace) {
-      debugPrint('Google sign-in unexpected error: $e');
+      debugPrint('Google Sign-In Error: $e');
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -167,6 +204,50 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isGoogleLoading = false);
       }
     }
+  }
+
+  Future<void> _authorizeAuthenticatedUser(User user) async {
+    final email = user.email?.trim();
+    if (email == null || email.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing_email',
+        message: 'No email is available for this Firebase user.',
+      );
+    }
+
+    final firebaseIdToken = await user.getIdToken();
+    final authorization = await UserService().checkEmailAuthorization(
+      email: email,
+      firebaseIdToken: firebaseIdToken,
+    );
+
+    if (authorization['authorized'] != true) {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            authorization['message']?.toString() ??
+                'Your email is not registered with the school. Please contact the school administration.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final role = authorization['role']?.toString() ?? 'student';
+    await context.read<AppState>().setAuthenticatedUser(
+      userId: user.uid,
+      email: email,
+      role: role,
+      token: user.uid,
+    );
+
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.studentDashboard,
+      (route) => false,
+    );
   }
 
   Future<void> _completeGoogleLogin(User user) async {

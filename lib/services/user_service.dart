@@ -96,6 +96,41 @@ class UserService {
     return User.fromJson(userPayload);
   }
 
+  Future<Map<String, dynamic>> checkEmailAuthorization({
+    required String email,
+    String? firebaseIdToken,
+  }) async {
+    final normalized = email.trim();
+    if (normalized.isEmpty) {
+      throw const FormatException('Email is required for backend authorization.');
+    }
+
+    final uri = _uri('/api/auth/check-email');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (firebaseIdToken != null && firebaseIdToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $firebaseIdToken';
+    }
+
+    final resp = await http
+        .post(
+      uri,
+      headers: headers,
+      body: jsonEncode({'email': normalized}),
+    )
+        .timeout(const Duration(seconds: 20));
+
+    final payload = jsonDecode(resp.body) as Map<String, dynamic>;
+    if (resp.statusCode != 200) {
+      throw ApiException(
+        resp.statusCode,
+        (payload['message'] ?? 'Authorization check failed.').toString(),
+        uri.toString(),
+      );
+    }
+
+    return payload;
+  }
+
   Future<User?> getUserByEmail(String email) async {
     final normalized = email.trim().toLowerCase();
     if (normalized.isEmpty) return null;

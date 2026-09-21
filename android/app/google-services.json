@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "74427495793",
+    "project_id": "mhss-de0e7",
+    "storage_bucket": "mhss-de0e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74427495793:android:864b60abc41f2800eb72d0",
+        "android_client_info": {
+          "package_name": "com.school.mmhs_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "74427495793-7dsmneui6qir7f5pb0p26cu92vbg23g6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.school.mmhs_app",
+            "certificate_hash": "fce4d079de7a8a19ba10814030c82e3b45eff97e"
+          }
+        },
+        {
+          "client_id": "74427495793-rbn99nhcq9ncr8i9rqiifuik405augit.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ3RHy7CHSLSNIXkpKMyRfzxt7PIxCP18"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "74427495793-rbn99nhcq9ncr8i9rqiifuik405augit.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

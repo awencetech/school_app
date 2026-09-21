@@ -64,14 +64,13 @@ void main() {
     expect(find.text('Contact our school to get information about registration'), findsOneWidget);
   });
 
-  testWidgets('ForgotPasswordScreen matches the reference recovery layout', (WidgetTester tester) async {
+  testWidgets('ForgotPasswordScreen supports email, OTP and password reset flow', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: ForgotPasswordScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('Recover Your Password'), findsOneWidget);
-    expect(find.text('Student ID'), findsOneWidget);
-    expect(find.text('Admission Number'), findsOneWidget);
-    expect(find.text('Reset Password'), findsOneWidget);
+    expect(find.text('Email address'), findsOneWidget);
+    expect(find.text('Send OTP'), findsOneWidget);
     expect(find.text('Don\'t have an account? Register'), findsOneWidget);
     expect(find.text('Contact your school if you face issues'), findsOneWidget);
   });

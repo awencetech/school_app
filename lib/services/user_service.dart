@@ -96,6 +96,17 @@ class UserService {
     return User.fromJson(userPayload);
   }
 
+  Future<User?> getUserByEmail(String email) async {
+    final normalized = email.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+
+    final users = await getUsers();
+    return users.cast<User?>().firstWhere(
+      (user) => user != null && user.email.toLowerCase() == normalized,
+      orElse: () => null,
+    );
+  }
+
   Future<User> getUserById(String id) async {
     final resp = await http.get(_uri('/api/users/$id')).timeout(const Duration(seconds: 10));
     if (resp.statusCode != 200) throw Exception('Failed to load user: ${resp.body}');

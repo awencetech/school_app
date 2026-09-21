@@ -20,18 +20,30 @@ class AppBottomNavigation extends StatelessWidget {
     }
 
     final isLoggedIn = state?.isLoggedIn ?? false;
-    final l10n = AppLocalizations.of(context);
+    AppLocalizations? l10n;
+    try {
+      l10n = AppLocalizations.of(context);
+    } catch (_) {
+      l10n = null;
+    }
+    final homeLabel = l10n?.home ?? 'Home';
+    final schoolLabel = l10n?.school ?? 'School';
+    final dashboardLabel = l10n?.dashboard ?? 'Dashboard';
+    final supportLabel = l10n?.support ?? 'Support';
+    final loginLabel = l10n?.login ?? 'Login';
+    final logoutLabel = l10n?.logout ?? 'Logout';
+
     final navItems = <BottomNavigationBarItem>[
-      BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
-      BottomNavigationBarItem(icon: const Icon(Icons.school), label: l10n.school),
-      BottomNavigationBarItem(icon: const Icon(Icons.dashboard), label: l10n.dashboard),
+      BottomNavigationBarItem(icon: const Icon(Icons.home), label: homeLabel),
+      BottomNavigationBarItem(icon: const Icon(Icons.school), label: schoolLabel),
+      BottomNavigationBarItem(icon: const Icon(Icons.dashboard), label: dashboardLabel),
       BottomNavigationBarItem(
-        icon: Icon(Icons.support_agent),
-        label: l10n.support,
+        icon: const Icon(Icons.support_agent),
+        label: supportLabel,
       ),
       BottomNavigationBarItem(
         icon: Icon(isLoggedIn ? Icons.logout : Icons.login),
-        label: isLoggedIn ? l10n.logout : l10n.login,
+        label: isLoggedIn ? logoutLabel : loginLabel,
       ),
     ];
 

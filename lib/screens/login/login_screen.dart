@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import '../../generated/l10n/app_localizations.dart';
@@ -24,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void initState() {
@@ -37,7 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleSignIn() {
-    final l10n = AppLocalizations.of(context);
+    AppLocalizations? l10n;
+    try {
+      l10n = AppLocalizations.of(context);
+    } catch (_) {
+      l10n = null;
+    }
     final identifier = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     setState(() => _isLoading = true);
@@ -75,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           } else {
             messenger.showSnackBar(
-              SnackBar(content: Text(l10n.invalidUserRole)),
+              SnackBar(content: Text(l10n?.invalidUserRole ?? 'Invalid user role')),
             );
           }
         })
@@ -83,9 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           // Log error for debugging but show generic message to user
           debugPrint('Login error: $e');
-          String message = l10n.invalidCredentials;
+          String message = l10n?.invalidCredentials ?? 'Invalid credentials';
           if (e is! Exception) {
-            message = l10n.connectionError;
+            message = l10n?.connectionError ?? 'Connection error';
           }
           ScaffoldMessenger.of(
             context,
@@ -96,6 +105,86 @@ class _LoginScreenState extends State<LoginScreen> {
             setState(() => _isLoading = false);
           }
         });
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.setCustomParameters({'prompt': 'select_account'});
+
+        final userCredential = await FirebaseAuth.instance.signInWithPopup(provider);
+        final user = userCredential.user;
+
+        if (user == null) {
+          throw FirebaseAuthException(
+            code: 'sign_in_failed',
+            message: 'Google sign-in completed without a Firebase user.',
+          );
+        }
+
+        await _completeGoogleLogin(user);
+        return;
+      }
+
+      await GoogleSignIn.instance.initialize();
+      final googleUser = await GoogleSignIn.instance.authenticate();
+      final googleAuth = googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'sign_in_failed',
+          message: 'Google sign-in completed without a Firebase user.',
+        );
+      }
+
+      await _completeGoogleLogin(user);
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint('Google sign-in FirebaseAuthException: ${e.code} - ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in failed: ${e.message ?? e.code}')),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Google sign-in unexpected error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google sign-in failed. Please try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
+  }
+
+  Future<void> _completeGoogleLogin(User user) async {
+    final email = (user.email ?? user.displayName ?? 'google-user').trim();
+    final userId = user.uid.isNotEmpty ? user.uid : email.split('@').first;
+
+    await context.read<AppState>().setAuthenticatedUser(
+      userId: userId,
+      email: email,
+      role: 'student',
+      token: user.uid,
+    );
+
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.studentDashboard,
+      (route) => false,
+    );
   }
 
   @override
@@ -109,7 +198,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    AppLocalizations? l10n;
+    try {
+      l10n = AppLocalizations.of(context);
+    } catch (_) {
+      l10n = null;
+    }
     final isLoginEnabled =
         _usernameController.text.trim().isNotEmpty &&
         _passwordController.text.trim().isNotEmpty;
@@ -156,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.center,
                           child: Text(
-                            l10n.schoolName,
+                            l10n?.schoolName ?? 'School name',
                             style: AppTextStyles.pageTitle.copyWith(
                               fontSize: 24,
                             ),
@@ -165,13 +259,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         CustomTextField(
                           controller: _usernameController,
-                          label: l10n.usernameOrEmail,
+                          label: l10n?.usernameOrEmail ?? 'Username or email',
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: _passwordController,
-                          label: l10n.password,
+                          label: l10n?.password ?? 'Password',
                           obscureText: true,
                           textInputAction: TextInputAction.done,
                         ),
@@ -183,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               context,
                             ).pushNamed(AppRoutes.forgotPassword),
                             child: Text(
-                              l10n.forgotPassword,
+                              l10n?.forgotPassword ?? 'Forgot your password?',
                               style: AppTextStyles.body.copyWith(
                                 color: AppColors.blueButton,
                               ),
@@ -191,8 +285,45 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: AppColors.border),
+                              backgroundColor: AppColors.white,
+                              foregroundColor: AppColors.primaryText,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            icon: Container(
+                              width: 22,
+                              height: 22,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEA4335),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text(
+                                'G',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            label: Text(
+                              _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
+                              style: AppTextStyles.body,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         SecondaryButton(
-                          label: _isLoading ? l10n.signingIn : l10n.signIn,
+                          label: _isLoading ? (l10n?.signingIn ?? 'Signing in') : (l10n?.signIn ?? 'Sign In'),
                           onPressed: isLoginEnabled && !_isLoading
                               ? _handleSignIn
                               : null,
@@ -203,7 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             context,
                           ).pushNamed(AppRoutes.createAccount),
                           child: Text(
-                            l10n.accountRegisterPrompt,
+                            l10n?.accountRegisterPrompt ?? 'Don\'t have an account? Register',
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.primaryText,
                             ),
@@ -211,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 12),
                         PrimaryButton(
-                          label: l10n.register,
+                          label: l10n?.register ?? 'Register',
                           backgroundColor: AppColors.orangeButton,
                           textColor: AppColors.white,
                           onPressed: () => Navigator.of(
@@ -222,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Padding(
                           padding: const EdgeInsets.only(left: 2),
                           child: Text(
-                            l10n.registrationInfo,
+                            l10n?.registrationInfo ?? 'Contact our school to get information about registration',
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.primaryText,
                             ),

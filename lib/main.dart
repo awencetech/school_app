@@ -18,11 +18,15 @@ Future<void> main() async {
   };
 
   try {
-    await Firebase.initializeApp(
+    final firebaseApp = await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    debugPrint(
+      'Firebase initialized: projectId=${firebaseApp.options.projectId}, '
+      'appId=${firebaseApp.options.appId}, authDomain=${firebaseApp.options.authDomain}',
+    );
   } catch (error, stackTrace) {
-    debugPrint('FIREBASE INITIALIZATION ERROR: $error');
+    debugPrint('FIREBASE INITIALIZATION ERROR: ${error.runtimeType}: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
 

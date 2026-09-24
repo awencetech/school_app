@@ -92,7 +92,7 @@ class LanguageSelectionScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           SizedBox(
-                            width: constraints.maxWidth,
+                            width: double.infinity,
                             height: 180,
                             child: _buildPoster(
                               context,

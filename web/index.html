@@ -32,26 +32,6 @@
   <title>school_app</title>
   <link rel="manifest" href="manifest.json">
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBQ3RHy7CHSLSNIXkpKMyRfzxt7PIxCP18",
-      authDomain: "mhss-de0e7.firebaseapp.com",
-      projectId: "mhss-de0e7",
-      storageBucket: "mhss-de0e7.firebasestorage.app",
-      messagingSenderId: "74427495793",
-      appId: "1:74427495793:web:0000000000000000"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    window.__firebaseAuth = auth;
-    window.__googleProvider = provider;
-  </script>
 </head>
 <body>
   <!--

@@ -85,8 +85,10 @@ class _AdminCreateIdScreenState extends State<AdminCreateIdScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
+            child: Wrap(
+              alignment: WrapAlignment.start,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton.icon(
                   onPressed: _addAdmin,
@@ -96,7 +98,6 @@ class _AdminCreateIdScreenState extends State<AdminCreateIdScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
-                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: _resetPassword,
                   icon: const Icon(Icons.vpn_key, size: 18),

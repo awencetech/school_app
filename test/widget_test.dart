@@ -10,14 +10,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:school_app/app.dart';
+import 'package:school_app/generated/l10n/app_localizations.dart';
 import 'package:school_app/models/group.dart';
 import 'package:school_app/models/staff_handbook.dart';
 import 'package:school_app/screens/achievements/achievements_screen.dart';
 import 'package:school_app/screens/admin/group_info_edit_page.dart';
+import 'package:school_app/screens/admin/admin_create_id_screen.dart';
 import 'package:school_app/screens/admin/student_management_page.dart';
 import 'package:school_app/screens/login/create_account_screen.dart';
 import 'package:school_app/screens/login/forgot_password_screen.dart';
 import 'package:school_app/screens/login/login_screen.dart';
+import 'package:school_app/screens/language/language_selection_screen.dart';
 import 'package:school_app/screens/school/school_screen.dart';
 import 'package:school_app/screens/staff/staff_handbook_page.dart';
 import 'package:school_app/screens/student/student_info_screen.dart';
@@ -62,6 +65,49 @@ void main() {
     expect(find.text('Sign In'), findsOneWidget);
     expect(find.text('Don\'t have an account? Register'), findsOneWidget);
     expect(find.text('Contact our school to get information about registration'), findsOneWidget);
+  });
+
+  testWidgets('LanguageSelectionScreen stays within a narrow browser width', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AppState()),
+          ChangeNotifierProvider(create: (_) => SchoolConfigService()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const LanguageSelectionScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Select your preferred Language'), findsOneWidget);
+  });
+
+  testWidgets('AdminCreateIdScreen actions wrap on narrow browser widths', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const AdminCreateIdScreen(),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Add User'), findsOneWidget);
+    expect(find.text('Force reset of Password'), findsOneWidget);
   });
 
   testWidgets('ForgotPasswordScreen supports email, OTP and password reset flow', (WidgetTester tester) async {

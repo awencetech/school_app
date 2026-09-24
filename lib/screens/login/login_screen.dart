@@ -24,6 +24,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _googleServerClientId =
+    '74427495793-rbn99nhcq9ncr8i9rqiifuik405augit.apps.googleusercontent.com';
+  static const _unregisteredGoogleEmailMessage =
+    'This email is not registered. Please contact your school administrator.';
+
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -166,7 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      await GoogleSignIn.instance.initialize();
+      await GoogleSignIn.instance.initialize(
+        serverClientId: _googleServerClientId,
+      );
       final googleUser = await GoogleSignIn.instance.authenticate();
       final googleAuth = googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -185,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await _authorizeAuthenticatedUser(user);
     } on FirebaseAuthException catch (e, stackTrace) {
-      debugPrint('Firebase Auth Error: ${e.code}');
+      debugPrint('Firebase Auth Error: code=${e.code}');
       debugPrint('Firebase Auth Message: ${e.message}');
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
@@ -193,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text('Google sign-in failed: ${e.message ?? e.code}')),
       );
     } catch (e, stackTrace) {
-      debugPrint('Google Sign-In Error: $e');
+      debugPrint('Google Sign-In Error: type=${e.runtimeType}, error=$e');
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -226,10 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            authorization['message']?.toString() ??
-                'Your email is not registered with the school. Please contact the school administration.',
-          ),
+          content: const Text(_unregisteredGoogleEmailMessage),
         ),
       );
       return;
@@ -244,10 +248,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.studentDashboard,
-      (route) => false,
-    );
+    final destination = switch (role) {
+      'admin' => AppRoutes.adminDashboard,
+      'staff' => AppRoutes.staffDashboard,
+      'student' => AppRoutes.studentDashboard,
+      _ => null,
+    };
+
+    if (destination == null) {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid user role')),
+      );
+      return;
+    }
+
+    Navigator.of(context).pushNamedAndRemoveUntil(destination, (route) => false);
   }
 
   Future<void> _completeGoogleLogin(User user) async {

@@ -227,21 +227,35 @@ function initializeFirebaseAdmin() {
   if (firebaseAdminInitialized) return true;
 
   try {
+    const projectId = process.env.FIREBASE_PROJECT_ID || 'mhss-de0e7';
     const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT || '';
     if (rawServiceAccount.trim()) {
       const serviceAccount = JSON.parse(rawServiceAccount);
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId,
+      });
       firebaseAdminInitialized = true;
+      console.info(`Firebase Admin initialized with service-account credentials for ${projectId}.`);
       return true;
     }
 
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE_PROJECT_ID) {
-      admin.initializeApp({ credential: admin.credential.applicationDefault() });
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        projectId,
+      });
       firebaseAdminInitialized = true;
+      console.info(`Firebase Admin initialized with application credentials for ${projectId}.`);
       return true;
     }
 
-    return false;
+    // ID-token verification uses Firebase's public signing keys and only needs
+    // the Firebase project ID when no server-side write credentials are needed.
+    admin.initializeApp({ projectId });
+    firebaseAdminInitialized = true;
+    console.info(`Firebase Admin initialized for token verification for ${projectId}.`);
+    return true;
   } catch (error) {
     console.error('Firebase Admin initialization failed:', error.message || error);
     return false;
@@ -6908,9 +6922,14 @@ app.post('/api/auth/check-email', async (req, res) => {
         verifiedEmail = String(decodedToken?.email || '').trim().toLowerCase();
       } catch (error) {
         console.error('Firebase token verification failed:', error.message || error);
+        const isConfigurationError = String(error.message || '').includes(
+          'Firebase Admin SDK is not configured',
+        );
         return res.status(401).json({
           authorized: false,
-          message: 'Invalid Firebase authentication token.',
+          message: isConfigurationError
+            ? 'Firebase authentication is not configured on the server.'
+            : 'Invalid Firebase authentication token.',
         });
       }
     }

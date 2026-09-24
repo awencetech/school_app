@@ -15,3 +15,7 @@ services:
         value: 10000
       - key: MONGODB_URI
         sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: mhss-de0e7
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false

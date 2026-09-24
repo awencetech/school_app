@@ -427,34 +427,45 @@ class _LoginScreenState extends State<LoginScreen> {
                               : null,
                         ),
                         const SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.createAccount),
-                          child: Text(
-                            l10n?.accountRegisterPrompt ?? 'Don\'t have an account? Register',
-                            style: AppTextStyles.body.copyWith(
-                              color: AppColors.primaryText,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        PrimaryButton(
-                          label: l10n?.register ?? 'Register',
-                          backgroundColor: AppColors.orangeButton,
-                          textColor: AppColors.white,
-                          onPressed: () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.createAccount),
-                        ),
-                        const SizedBox(height: 18),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: Text(
-                            l10n?.registrationInfo ?? 'Contact our school to get information about registration',
-                            style: AppTextStyles.body.copyWith(
-                              color: AppColors.primaryText,
-                            ),
+                        Visibility(
+                          visible: false,
+                          maintainState: true,
+                          maintainAnimation: true,
+                          maintainSize: true,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.createAccount),
+                                child: Text(
+                                  l10n?.accountRegisterPrompt ?? 'Don\'t have an account? Register',
+                                  style: AppTextStyles.body.copyWith(
+                                    color: AppColors.primaryText,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              PrimaryButton(
+                                label: l10n?.register ?? 'Register',
+                                backgroundColor: AppColors.orangeButton,
+                                textColor: AppColors.white,
+                                onPressed: () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.createAccount),
+                              ),
+                              const SizedBox(height: 18),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 2),
+                                child: Text(
+                                  l10n?.registrationInfo ?? 'Contact our school to get information about registration',
+                                  style: AppTextStyles.body.copyWith(
+                                    color: AppColors.primaryText,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

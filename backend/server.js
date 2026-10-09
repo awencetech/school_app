@@ -17,8 +17,12 @@ const {
 } = require('./user_management');
 const {
   createMongoReadinessHandler,
+  createMongoConnector,
+  describeMongoConnectionFailure,
+  readBackendConfig,
   runStartupDatabaseSetup,
   uploadGroupPhotoToGridFS,
+  validateBackendConfig,
 } = require('./staging_safety');
 
 if (process.env.NODE_ENV !== 'production') {
@@ -27,10 +31,9 @@ if (process.env.NODE_ENV !== 'production') {
 
 const app = express();
 app.set('trust proxy', true);
-const port = Number(process.env.PORT) || 3001;
-const mongoUri = process.env.MONGODB_URI;
-const mongoDatabase = process.env.MONGODB_DATABASE || 'mainpage';
-const runStartupMigrations = process.env.RUN_STARTUP_MIGRATIONS;
+const backendConfig = readBackendConfig(process.env);
+validateBackendConfig(backendConfig);
+const { port, mongoUri, mongoDatabase, runStartupMigrations } = backendConfig;
 const uploadDirectory = path.join(__dirname, 'uploads');
 const authSecret = process.env.AUTH_SECRET;
 if (!authSecret || authSecret.length < 32) {
@@ -1694,7 +1697,6 @@ for (const method of ['put', 'patch', 'delete']) {
 }
 
 let client;
-let mongoReadyPromise;
 let mongoInitialized = false;
 let mainPageInfoCollection;
 let imageBucket;
@@ -1840,20 +1842,14 @@ async function ensureStudentAttendanceUniqueness() {
   }
 }
 
-async function connectMongo() {
-  if (!mongoUri) {
-    throw new Error('MongoDB URI is not configured');
-  }
-
-  if (mongoReadyPromise) return mongoReadyPromise;
-  mongoReadyPromise = initializeMongo().catch((error) => {
-    mongoReadyPromise = null;
+const connectMongo = createMongoConnector({
+  getUri: () => mongoUri,
+  initialize: initializeMongo,
+  onFailure: () => {
     client = null;
     mongoInitialized = false;
-    throw error;
-  });
-  return mongoReadyPromise;
-}
+  },
+});
 
 async function initializeMongo() {
   if (!client) {
@@ -7963,7 +7959,7 @@ async function startServer() {
     await connectMongo();
     console.log('Connected to MongoDB');
   } catch (error) {
-    console.warn('MongoDB connection unavailable:', error.message);
+    console.warn(describeMongoConnectionFailure(error));
   }
 
   // If requested via environment, log the registered routes to help diagnose

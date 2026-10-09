@@ -10,7 +10,9 @@ import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class StudentManagementPage extends StatefulWidget {
-  const StudentManagementPage({super.key});
+  const StudentManagementPage({super.key, this.studentService});
+
+  final StudentService? studentService;
 
   @override
   State<StudentManagementPage> createState() => _StudentManagementPageState();
@@ -18,7 +20,7 @@ class StudentManagementPage extends StatefulWidget {
 
 class _StudentManagementPageState extends State<StudentManagementPage> {
   final _formKey = GlobalKey<FormState>();
-  final StudentService _studentService = StudentService();
+  late final StudentService _studentService;
   bool _showStudentForm = false;
   bool _loading = true;
   bool _submittingStudent = false;
@@ -49,6 +51,7 @@ class _StudentManagementPageState extends State<StudentManagementPage> {
   @override
   void initState() {
     super.initState();
+    _studentService = widget.studentService ?? StudentService();
     _loadStudents();
   }
 

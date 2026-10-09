@@ -8,6 +8,7 @@ import '../models/group.dart';
 import 'group_state_service.dart';
 import 'preferences_service.dart';
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class GroupRemoteData {
   const GroupRemoteData({
@@ -29,14 +30,18 @@ class GroupService {
   final String _baseUrl;
   static const _groupsCacheKey = 'api_groups_cache_v1';
   static Future<List<Group>>? _groupsRequest;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
+  static const _productionBaseUrl = ApiConfig.productionBaseUrl;
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb) return _productionBaseUrl;
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }

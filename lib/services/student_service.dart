@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class StudentRecord {
   const StudentRecord({
@@ -75,13 +76,15 @@ class StudentService {
   StudentService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
+  static const _productionBaseUrl = ApiConfig.productionBaseUrl;
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kIsWeb || kReleaseMode) return _productionBaseUrl;
+    if (kIsWeb) return _productionBaseUrl;
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:3001';
     }

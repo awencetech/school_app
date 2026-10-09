@@ -55,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final identifier = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     setState(() => _isLoading = true);
+    final appState = context.read<AppState>();
     final svc = UserService();
     svc
         .login(identifier: identifier, password: password)
@@ -86,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             final authorizedRole =
                 authorization['role']?.toString() ?? user.role;
-            await context.read<AppState>().setAuthenticatedUser(
+            await appState.setAuthenticatedUser(
               userId: user.userId,
               email: user.email,
               role: authorizedRole,
@@ -124,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
             debugPrintStack(stackTrace: stackTrace);
             if (!mounted) return;
             await FirebaseAuth.instance.signOut();
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
@@ -234,6 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
+    final appState = context.read<AppState>();
     final firebaseIdToken = await user.getIdToken();
     final authorization = await UserService().checkEmailAuthorization(
       email: email,
@@ -250,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final role = authorization['role']?.toString() ?? 'student';
-    await context.read<AppState>().setAuthenticatedUser(
+    await appState.setAuthenticatedUser(
       userId: user.uid,
       email: email,
       role: role,

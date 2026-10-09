@@ -1,17 +1,32 @@
-# school_app
+# MMHS School App
 
-A new Flutter project.
+## API target selection
 
-## Getting Started
+Release builds require an explicit backend target. Set `API_ENV` to `staging`
+or `production`; the app maps those names to the staging and existing
+production backend URLs in `lib/config/api_config.dart`. A release build with
+an unset or unknown target fails rather than silently selecting a backend.
 
-This project is a starting point for a Flutter application.
+Build a staging APK for installation testing:
 
-A few resources to get you started if this is your first Flutter project:
+```sh
+flutter build apk --release --dart-define=API_ENV=staging
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Build a production Android App Bundle only after confirming the release
+signing configuration and production service setup:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```sh
+flutter build appbundle --release --dart-define=API_ENV=production
+```
+
+The `API_BASE_URL` define remains available for non-release local development.
+Do not put credentials or other secrets in a client build. Client API URLs are
+not secrets. Staging builds are test artifacts; never distribute one as a
+production release.
+
+## Local development
+
+Install Flutter dependencies with `flutter pub get`, then run `flutter test`
+and `flutter analyze`. The Android release signing configuration is local and
+must not be committed.

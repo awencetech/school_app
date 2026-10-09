@@ -461,11 +461,6 @@ class _StaffStudentAttendancePageState
       ],
     ),
   );
-  Color _statusColor(String status) => status == 'Present'
-      ? Colors.green
-      : status == 'Absent'
-      ? Colors.red
-      : Colors.orange;
   Widget _stateBox(String message, VoidCallback? retry) => Padding(
     padding: const EdgeInsets.all(16),
     child: Column(

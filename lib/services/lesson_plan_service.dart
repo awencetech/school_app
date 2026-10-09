@@ -5,18 +5,22 @@ import 'package:http/http.dart' as http;
 import '../models/lesson_plan.dart';
 import 'group_service.dart';
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class LessonPlanService {
   LessonPlanService({String? baseUrl})
     : _baseUrl = baseUrl ?? _resolveBaseUrl();
   final String _baseUrl;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kIsWeb) return kReleaseMode ? _productionBaseUrl : 'http://localhost:3001';
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kIsWeb) return kReleaseMode ? ApiConfig.releaseBaseUrl : 'http://localhost:3001';
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }

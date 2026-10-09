@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/event_celebration.dart';
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class EventCelebrationService {
   EventCelebrationService({String? baseUrl})
@@ -13,13 +14,16 @@ class EventCelebrationService {
 
   final String _baseUrl;
   static const schoolId = 'default-school';
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     if (kIsWeb) return 'http://localhost:3001';
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
@@ -120,8 +124,8 @@ class EventCelebrationService {
       throw Exception('The uploaded image URL was missing.');
     }
     return url
-        .replaceAll('http://localhost:3001', _productionBaseUrl)
-        .replaceAll('http://10.0.2.2:3001', _productionBaseUrl);
+        .replaceAll('http://localhost:3001', _baseUrl)
+        .replaceAll('http://10.0.2.2:3001', _baseUrl);
   }
 
   String _message(http.Response response) => _messageBody(response.statusCode, response.body);

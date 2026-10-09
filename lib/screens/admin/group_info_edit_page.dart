@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../models/group.dart';
+import '../../config/api_config.dart';
 import '../../models/staff_info.dart';
 import '../../services/group_service.dart';
 import '../../services/group_state_service.dart';
@@ -811,10 +812,10 @@ class _GroupInfoEditPageState extends State<GroupInfoEditPage> {
   }
 
   String _resolveApiBaseUrl() {
-    if (kReleaseMode) return 'https://school-app-1uep.onrender.com';
+    if (kReleaseMode) return ApiConfig.releaseBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    const production = 'https://school-app-1uep.onrender.com';
+    const production = ApiConfig.productionBaseUrl;
     if (kIsWeb) return production;
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';

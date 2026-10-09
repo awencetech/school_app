@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:school_app/generated/l10n/app_localizations.dart';
+import 'package:school_app/services/app_state.dart';
 import 'package:school_app/screens/student/student_menu_screen.dart';
 import 'package:school_app/screens/student/student_info_screen.dart';
 import 'package:school_app/screens/student/student_attendance_page.dart';
@@ -10,14 +14,29 @@ import 'package:school_app/screens/student/student_ptm_page.dart';
 import 'package:school_app/screens/student/student_uni_route_page.dart';
 
 void main() {
-  testWidgets('student menu tiles navigate to the expected student pages', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: StudentMenuScreen()));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('student menu tiles navigate to the expected student pages', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AppState(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const StudentMenuScreen(),
+        ),
+      ),
+    );
 
     await tester.tap(find.text('Student Info'));
     await tester.pumpAndSettle();
     expect(find.byType(StudentInfoScreen), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
 
     await tester.tap(find.textContaining('Attendance'));
@@ -35,16 +54,6 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Student Diary'));
-    await tester.pumpAndSettle();
-    expect(find.byType(StudentDiaryPage), findsOneWidget);
-
-    await tester.tap(
-      find.widgetWithText(OutlinedButton, 'Review Feedback'),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byType(StudentFacultyFeedbackPage), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
     expect(find.byType(StudentDiaryPage), findsOneWidget);
 

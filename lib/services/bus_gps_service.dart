@@ -5,18 +5,21 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/bus_gps.dart';
+import '../config/api_config.dart';
 
 class BusGpsService {
   BusGpsService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
+  static const _productionBaseUrl = ApiConfig.productionBaseUrl;
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kReleaseMode || kIsWeb) return _productionBaseUrl;
+    if (kIsWeb) return _productionBaseUrl;
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }

@@ -130,7 +130,9 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
                             ),
                             const SizedBox(width: 16),
                             _ProfilePhoto(
-                              imageSource: staff.imageUrl ?? config.secretaryPhotoBase64,
+                              imageSource: staff.imageUrl.trim().isNotEmpty
+                                  ? staff.imageUrl
+                                  : config.secretaryPhotoBase64 ?? '',
                             ),
                           ],
                         ),

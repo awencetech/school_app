@@ -7,19 +7,22 @@ import 'package:http/http.dart' as http;
 import '../models/class_news.dart';
 import '../models/class_photo.dart';
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class ClassContentService {
   ClassContentService({String? baseUrl})
     : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
+  static const _productionBaseUrl = ApiConfig.productionBaseUrl;
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kIsWeb || kReleaseMode) return _productionBaseUrl;
+    if (kIsWeb) return _productionBaseUrl;
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';
   }
@@ -320,8 +323,8 @@ class ClassContentService {
         throw const FormatException('The uploaded image URL was missing.');
       }
       return url
-          .replaceAll('http://localhost:3001', _productionBaseUrl)
-          .replaceAll('http://10.0.2.2:3001', _productionBaseUrl);
+          .replaceAll('http://localhost:3001', _baseUrl)
+          .replaceAll('http://10.0.2.2:3001', _baseUrl);
     } catch (e) {
       debugPrint('Error uploading news image: $e');
       rethrow;

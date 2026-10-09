@@ -6,16 +6,19 @@ import 'package:http/http.dart' as http;
 
 import '../models/main_page_info.dart';
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class MainPageInfoRepository {
   MainPageInfoRepository({String? baseUrl})
     : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
+  static const _productionBaseUrl = ApiConfig.productionBaseUrl;
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) {
       return override;
@@ -39,13 +42,13 @@ class MainPageInfoRepository {
     return 'http://localhost:3001';
   }
 
-  static String _normalizeUrl(String url) {
+  String _normalizeUrl(String url) {
     return url
-        .replaceAll('http://localhost:3001', _productionBaseUrl)
-        .replaceAll('http://10.0.2.2:3001', _productionBaseUrl);
+        .replaceAll('http://localhost:3001', _baseUrl)
+        .replaceAll('http://10.0.2.2:3001', _baseUrl);
   }
 
-  static dynamic _normalizePayload(dynamic value) {
+  dynamic _normalizePayload(dynamic value) {
     if (value is String) {
       return _normalizeUrl(value);
     }

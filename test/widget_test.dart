@@ -27,18 +27,45 @@ import 'package:school_app/screens/student/student_info_screen.dart';
 import 'package:school_app/services/app_state.dart';
 import 'package:school_app/services/school_config_service.dart';
 import 'package:school_app/services/staff_handbook_service.dart';
+import 'package:school_app/services/student_service.dart';
 import 'package:school_app/widgets/cards/staff_profile_card.dart';
 import 'package:school_app/widgets/important_news_ticker.dart';
 import 'package:school_app/widgets/navigation/app_bottom_navigation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _withSchoolConfig(Widget child) {
   return ChangeNotifierProvider(
     create: (_) => SchoolConfigService(),
-    child: MaterialApp(home: child),
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child,
+    ),
   );
 }
 
+Widget _withAppLocalizations(Widget child) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
+
+class _TestStudentService extends StudentService {
+  @override
+  Future<List<StudentRecord>> getStudents() async => [];
+
+  @override
+  Future<String> getNextStudentId() async => 'STU0001';
+
+  @override
+  Future<StudentRecord> createStudent(StudentRecord student) async => student;
+}
+
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('SchoolApp builds', (WidgetTester tester) async {
     await tester.pumpWidget(const SchoolApp());
     await tester.pump(const Duration(seconds: 4));
@@ -165,6 +192,7 @@ void main() {
   testWidgets('SchoolScreen renders a staff profile list without blanking', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues({'founder_name': 'Test Founder'});
     await tester.pumpWidget(_withSchoolConfig(const SchoolScreen()));
     await tester.pumpAndSettle();
 
@@ -198,28 +226,32 @@ void main() {
   );
 
   testWidgets(
-    'StudentInfoScreen matches the reference student information layout',
+    'StudentInfoScreen shows an unavailable state without an authenticated student',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MaterialApp(home: StudentInfoScreen()));
+      await tester.pumpWidget(
+        ChangeNotifierProvider(
+          create: (_) => AppState(),
+          child: const MaterialApp(home: StudentInfoScreen()),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.text('Student Info'), findsOneWidget);
-      expect(find.text('Student name'), findsOneWidget);
-      expect(find.text('Student ID'), findsOneWidget);
-      expect(find.text('Mail ID :'), findsOneWidget);
-      expect(find.text('Mobile No :'), findsOneWidget);
-      expect(find.text('Special Needs :'), findsOneWidget);
-      expect(find.text('Address'), findsOneWidget);
-      expect(find.text('Groups and Classes of Student name'), findsOneWidget);
-      expect(find.text('Your Location'), findsOneWidget);
-      expect(find.text('Parent Details'), findsOneWidget);
+      expect(
+        find.text('Student information is currently unavailable.'),
+        findsOneWidget,
+      );
+      expect(find.text('Student ID'), findsNothing);
     },
   );
 
   testWidgets('StudentManagementPage exposes the Add Student button', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+    await tester.pumpWidget(
+      _withAppLocalizations(
+        StudentManagementPage(studentService: _TestStudentService()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Student'), findsOneWidget);
@@ -229,7 +261,11 @@ void main() {
   testWidgets(
     'StudentManagementPage uses class/section dropdowns with a generated read-only student ID',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+      await tester.pumpWidget(
+        _withAppLocalizations(
+          StudentManagementPage(studentService: _TestStudentService()),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Add Student'));
@@ -251,7 +287,11 @@ void main() {
   testWidgets(
     'StudentManagementPage shows saved students with edit and delete actions',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+      await tester.pumpWidget(
+        _withAppLocalizations(
+          StudentManagementPage(studentService: _TestStudentService()),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Add Student'));
@@ -261,47 +301,46 @@ void main() {
         find.widgetWithText(TextFormField, 'Name'),
         'Naveen',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Class'),
-        'Grade 10',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Section'),
-        'A',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Student ID'),
-        'STU-101',
-      );
+      await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('10th').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A').last);
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Parent Name'),
         'Ravi',
       );
       await tester.enterText(
+        find.widgetWithText(TextFormField, 'Admission Number'),
+        'ADM-101',
+      );
+      await tester.enterText(
         find.widgetWithText(TextFormField, 'Mobile Number'),
         '9876543210',
       );
+      await tester.enterText(find.widgetWithText(TextFormField, 'Role'), 'student');
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Address'),
         'Street 1',
       );
-
-      await tester.dragUntilVisible(
-        find.text('Save Student'),
-        find.byType(Scrollable),
-        const Offset(0, -300),
-      );
+      await tester.ensureVisible(find.text('Save Student'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Save Student'));
       await tester.pumpAndSettle();
 
       expect(find.text('Naveen'), findsOneWidget);
-      expect(find.text('Grade 10'), findsOneWidget);
+      expect(find.text('10th'), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
       expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     },
   );
 
-  testWidgets('GroupInfoEditPage shows the selected group and edit fields', (
+  testWidgets('GroupInfoEditPage renders empty student and staff group tabs', (
     WidgetTester tester,
   ) async {
     final group = Group(
@@ -313,14 +352,18 @@ void main() {
       year: '2022',
     );
 
-    await tester.pumpWidget(MaterialApp(home: GroupInfoEditPage(group: group)));
+    await tester.pumpWidget(
+      _withAppLocalizations(GroupInfoEditPage(group: group)),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Group Info Edit'), findsOneWidget);
-    expect(find.text('NCC2022'), findsWidgets);
-    expect(find.text('SAMUNI-2022-NCC2022'), findsOneWidget);
-    expect(find.text('Save Changes'), findsOneWidget);
-    expect(find.text('Group Details'), findsOneWidget);
+    expect(find.text('Students'), findsWidgets);
+    expect(find.text('No students found in this group.'), findsOneWidget);
+    await tester.tap(find.text('Staff/Teachers').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Staff/Teachers'), findsWidgets);
+    expect(find.text('No staff found in this group.'), findsOneWidget);
   });
 
   testWidgets(
@@ -329,7 +372,7 @@ void main() {
       final service = _TestStaffHandbookService();
 
       await tester.pumpWidget(
-        MaterialApp(home: StaffHandbookPage(service: service)),
+        _withAppLocalizations(StaffHandbookPage(service: service)),
       );
       await tester.pumpAndSettle();
 

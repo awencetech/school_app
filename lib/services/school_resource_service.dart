@@ -7,19 +7,23 @@ import 'package:file_picker/file_picker.dart';
 
 import '../models/school_resource.dart';
 import 'auth_headers.dart';
+import '../config/api_config.dart';
 
 class SchoolResourceService {
   SchoolResourceService({String? baseUrl})
       : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
-  static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
-    if (kReleaseMode) return _productionBaseUrl;
+    if (kReleaseMode) {
+      return ApiConfig.releaseBaseUrl;
+    }
     if (kIsWeb) return 'http://localhost:3001';
     if (Platform.isAndroid) return 'http://10.0.2.2:3001';
     return 'http://localhost:3001';

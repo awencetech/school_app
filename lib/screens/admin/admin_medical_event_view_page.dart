@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/medical_event.dart';
 import '../../routes/app_routes.dart';
+import '../../services/auth_headers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -45,7 +46,12 @@ class AdminMedicalEventViewPage extends StatelessWidget {
             title: 'First Observations',
             children: [
               _detail('Symptom Reported', item.symptomReported),
-              _detail('Special Needs Known', item.specialNeedsKnown.isEmpty ? 'None recorded' : item.specialNeedsKnown),
+              _detail(
+                'Special Needs Known',
+                item.specialNeedsKnown.isEmpty
+                    ? 'None recorded'
+                    : item.specialNeedsKnown,
+              ),
             ],
           ),
           if (item.reportImage.isNotEmpty) ...[
@@ -55,18 +61,7 @@ class AdminMedicalEventViewPage extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () => _showImage(context, item.reportImage),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      item.reportImage,
-                      width: double.infinity,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: Text('Unable to load medical report image.'),
-                      ),
-                    ),
-                  ),
+                  child: _medicalReportImage(item.reportImage),
                 ),
               ],
             ),
@@ -77,7 +72,10 @@ class AdminMedicalEventViewPage extends StatelessWidget {
             children: [
               _detail('Reported by', item.reportedByLabel),
               _detail('Reported Date', _formatDate(item.createdAt)),
-              _detail('Last Modified', _formatDate(item.lastModifiedAt ?? item.updatedAt)),
+              _detail(
+                'Last Modified',
+                _formatDate(item.lastModifiedAt ?? item.updatedAt),
+              ),
               _detail('Released to Parent', 'Not recorded'),
             ],
           ),
@@ -88,59 +86,101 @@ class AdminMedicalEventViewPage extends StatelessWidget {
   }
 
   AppBar _appBar(BuildContext context) => AppBar(
-        backgroundColor: AppColors.topBar,
-        foregroundColor: Colors.white,
-        title: const Text('Medical Event Details'),
-        leading: IconButton(
-          onPressed: () => navigateBack(context),
-          icon: const Icon(Icons.arrow_back),
-        ),
-      );
+    backgroundColor: AppColors.topBar,
+    foregroundColor: Colors.white,
+    title: const Text('Medical Event Details'),
+    leading: IconButton(
+      onPressed: () => navigateBack(context),
+      icon: const Icon(Icons.arrow_back),
+    ),
+  );
 
   Widget _bottomNavigationBar(BuildContext context) => AdminBottomNavigationBar(
-        currentIndex: 0,
-        onItemSelected: (index) {
-          switch (index) {
-            case 0:
-            case 2:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
-              break;
-            case 1:
-              Navigator.of(context).pushNamed(AppRoutes.adminDashboard);
-              break;
-            case 3:
-              Navigator.of(context).pushNamed(AppRoutes.supportQuery);
-              break;
-            case 4:
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
-              break;
-          }
-        },
+    currentIndex: 0,
+    onItemSelected: (index) {
+      switch (index) {
+        case 0:
+        case 2:
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (route) => false);
+          break;
+        case 1:
+          Navigator.of(context).pushNamed(AppRoutes.adminDashboard);
+          break;
+        case 3:
+          Navigator.of(context).pushNamed(AppRoutes.supportQuery);
+          break;
+        case 4:
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+          break;
+      }
+    },
+  );
+
+  Widget _medicalReportImage(String url) => FutureBuilder<Map<String, String>>(
+    future: AuthHeaders.bearer(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          url,
+          headers: snapshot.data,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('Unable to load medical report image.'),
+          ),
+        ),
       );
+    },
+  );
 
   void _showImage(BuildContext context, String url) {
     showDialog<void>(
       context: context,
       builder: (_) => Dialog(
         child: InteractiveViewer(
-          child: Image.network(url, fit: BoxFit.contain),
+          child: FutureBuilder<Map<String, String>>(
+            future: AuthHeaders.bearer(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return Image.network(
+                url,
+                headers: snapshot.data,
+                fit: BoxFit.contain,
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
   Widget _detail(String label, String value) => Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Text(
-          '$label:\n${value.isEmpty ? 'Not available' : value}',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
-        ),
-      );
+    padding: const EdgeInsets.only(top: 10),
+    child: Text(
+      '$label:\n${value.isEmpty ? 'Not available' : value}',
+      style: const TextStyle(fontSize: 14, color: Color(0xFF374151)),
+    ),
+  );
 
   Widget _bodyText(String value) => Text(
-        value.isEmpty ? 'Not available' : value,
-        style: const TextStyle(fontSize: 14, height: 1.45, color: Color(0xFF374151)),
-      );
+    value.isEmpty ? 'Not available' : value,
+    style: const TextStyle(
+      fontSize: 14,
+      height: 1.45,
+      color: Color(0xFF374151),
+    ),
+  );
 }
 
 class _InfoSection extends StatelessWidget {
@@ -151,22 +191,44 @@ class _InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFDFE7F1)),
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFDFE7F1)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
-            ...children,
-          ],
-        ),
-      );
+        ...children,
+      ],
+    ),
+  );
 }
 
-String _formatDate(DateTime? date) => date == null ? 'Not available' : '${date.day.toString().padLeft(2, '0')} ${_months[date.month - 1]} ${date.year}';
-const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+String _formatDate(DateTime? date) => date == null
+    ? 'Not available'
+    : '${date.day.toString().padLeft(2, '0')} ${_months[date.month - 1]} ${date.year}';
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];

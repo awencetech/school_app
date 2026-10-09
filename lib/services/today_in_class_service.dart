@@ -16,6 +16,7 @@ class TodayInClassService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
@@ -27,7 +28,9 @@ class TodayInClassService {
 
   Future<List<TodayInClassRecord>> getRecords(String groupId) async {
     final uri = _uri('/api/groups/${Uri.encodeComponent(groupId)}/today-in-class');
-    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(uri, headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException(response.statusCode, 'Unable to load Today in Class.', uri.toString());
     }
@@ -139,6 +142,7 @@ class TodayInClassService {
     MediaType? contentType,
   }) async {
     final request = http.MultipartRequest('POST', _uri('/api/upload/attachment'));
+    request.headers.addAll(await AuthHeaders.bearer());
     request.files.add(http.MultipartFile.fromBytes(
       'file',
       bytes,

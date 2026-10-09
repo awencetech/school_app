@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import '../../models/group.dart';
+import '../../services/online_assignment_service.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 // ============================================================================
@@ -24,6 +25,21 @@ class StudentSubmission {
     this.marks,
     this.feedback,
   });
+
+  factory StudentSubmission.fromJson(Map<String, dynamic> json) {
+    return StudentSubmission(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      studentName: (json['studentName'] ?? '').toString(),
+      submittedDate:
+          DateTime.tryParse((json['submittedDate'] ?? '').toString()) ??
+          DateTime.now(),
+      status: (json['status'] ?? 'Pending').toString(),
+      marks: json['marks'] is num
+          ? (json['marks'] as num).toDouble()
+          : double.tryParse((json['marks'] ?? '').toString()),
+      feedback: json['feedback']?.toString(),
+    );
+  }
 
   StudentSubmission copyWith({
     String? id,
@@ -73,6 +89,47 @@ class Assignment {
     this.submissions = const [],
   });
 
+  factory Assignment.fromJson(Map<String, dynamic> json) {
+    DateTime readDate(dynamic value) =>
+        DateTime.tryParse((value ?? '').toString()) ?? DateTime.now();
+
+    return Assignment(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      subject: (json['subject'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      instructions: (json['instructions'] ?? '').toString(),
+      assignedDate: readDate(json['assignedDate']),
+      dueDate: readDate(json['dueDate']),
+      maxMarks: json['maxMarks'] is num
+          ? (json['maxMarks'] as num).toInt()
+          : int.tryParse((json['maxMarks'] ?? '').toString()) ?? 0,
+      status: (json['status'] ?? 'Active').toString(),
+      folder: (json['folder'] ?? 'Assignments').toString(),
+      attachments: (json['attachments'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(growable: false),
+      submissions: (json['submissions'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((item) =>
+              StudentSubmission.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'subject': subject,
+    'description': description,
+    'instructions': instructions,
+    'assignedDate': assignedDate.toIso8601String(),
+    'dueDate': dueDate.toIso8601String(),
+    'maxMarks': maxMarks,
+    'status': status,
+    'folder': folder,
+    'attachments': attachments,
+  };
+
   Assignment copyWith({
     String? id,
     String? title,
@@ -109,17 +166,27 @@ class Assignment {
 // ============================================================================
 
 class OnlineAssignmentPage extends StatefulWidget {
-  const OnlineAssignmentPage({super.key, required this.group, this.isViewOnly = false});
+  const OnlineAssignmentPage({
+    super.key,
+    required this.group,
+    this.isViewOnly = false,
+    this.assignmentService,
+  });
 
   final Group group;
   final bool isViewOnly;
+  final OnlineAssignmentService? assignmentService;
 
   @override
   State<OnlineAssignmentPage> createState() => _OnlineAssignmentPageState();
 }
 
 class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
+  late final OnlineAssignmentService _service =
+      widget.assignmentService ?? OnlineAssignmentService();
   List<Assignment> _allAssignments = [];
+  bool _isLoading = true;
+  String? _loadError;
   String _viewMode = 'list'; // list, grid, folders, analyse
   String _filterStatus = 'All'; // All, Active, Pending, Submitted, Overdue
   String _searchQuery = '';
@@ -128,143 +195,42 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
   @override
   void initState() {
     super.initState();
-    _allAssignments = _generateMockAssignments();
+    _loadAssignments();
+  }
+
+  Future<void> _loadAssignments() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    try {
+      final groupReferences = [
+        widget.group.databaseId,
+        widget.group.name,
+        widget.group.code,
+      ].where((value) => value.trim().isNotEmpty).toList();
+      final records = await _service.getAssignments(
+        groupId: widget.group.id,
+        groupReferences: groupReferences,
+      );
+      if (!mounted) return;
+      setState(() {
+        _allAssignments = records.map(Assignment.fromJson).toList();
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  // ============================================================================
-  // MOCK DATA
-  // ============================================================================
-
-  List<Assignment> _generateMockAssignments() {
-    final now = DateTime.now();
-    return [
-      Assignment(
-        id: '1',
-        title: 'Mathematics Assignment',
-        subject: 'Mathematics',
-        description: 'Solve the given problems on quadratic equations',
-        instructions: 'Answer all 10 questions. Show all working. Submit as PDF.',
-        assignedDate: now.subtract(const Duration(days: 5)),
-        dueDate: now.add(const Duration(days: 1)),
-        maxMarks: 50,
-        status: 'Active',
-        folder: 'Mathematics',
-        attachments: ['Algebra_Questions.pdf'],
-        submissions: [
-          StudentSubmission(id: '1', studentName: 'John Doe', submittedDate: now.subtract(const Duration(days: 1)), status: 'Submitted', marks: 45, feedback: 'Excellent work!'),
-          StudentSubmission(id: '2', studentName: 'Jane Smith', submittedDate: now, status: 'Submitted', marks: 38),
-          StudentSubmission(id: '3', studentName: 'Mike Johnson', submittedDate: now.subtract(const Duration(days: 2)), status: 'Submitted'),
-          StudentSubmission(id: '4', studentName: 'Sarah Williams', submittedDate: now.add(const Duration(hours: 2)), status: 'Late'),
-          StudentSubmission(id: '5', studentName: 'Tom Brown', submittedDate: DateTime(2099), status: 'Pending'),
-        ],
-      ),
-      Assignment(
-        id: '2',
-        title: 'Science Homework',
-        subject: 'Physics',
-        description: 'Motion and Force - Practical problems',
-        instructions: 'Complete the worksheet. Draw diagrams where needed.',
-        assignedDate: now.subtract(const Duration(days: 3)),
-        dueDate: now.add(const Duration(days: 2)),
-        maxMarks: 30,
-        status: 'Active',
-        folder: 'Science',
-        attachments: ['Physics_Worksheet.pdf', 'Formula_Sheet.pdf'],
-        submissions: [
-          StudentSubmission(id: '6', studentName: 'John Doe', submittedDate: now, status: 'Submitted', marks: 28),
-          StudentSubmission(id: '7', studentName: 'Jane Smith', submittedDate: now, status: 'Submitted', marks: 25),
-          StudentSubmission(id: '8', studentName: 'Mike Johnson', submittedDate: now, status: 'Submitted'),
-          StudentSubmission(id: '9', studentName: 'Sarah Williams', submittedDate: DateTime(2099), status: 'Pending'),
-          StudentSubmission(id: '10', studentName: 'Tom Brown', submittedDate: DateTime(2099), status: 'Pending'),
-        ],
-      ),
-      Assignment(
-        id: '3',
-        title: 'English Grammar',
-        subject: 'English',
-        description: 'Parts of Speech - Identification and Usage',
-        instructions: 'Identify parts of speech in sentences. Write 5 sentences of your own.',
-        assignedDate: now.subtract(const Duration(days: 8)),
-        dueDate: now.subtract(const Duration(days: 1)),
-        maxMarks: 25,
-        status: 'Closed',
-        folder: 'English',
-        attachments: [],
-        submissions: [
-          StudentSubmission(id: '11', studentName: 'John Doe', submittedDate: now.subtract(const Duration(days: 2)), status: 'Submitted', marks: 23),
-          StudentSubmission(id: '12', studentName: 'Jane Smith', submittedDate: now.subtract(const Duration(days: 2)), status: 'Submitted', marks: 22),
-          StudentSubmission(id: '13', studentName: 'Mike Johnson', submittedDate: now.subtract(const Duration(days: 2)), status: 'Submitted', marks: 20),
-          StudentSubmission(id: '14', studentName: 'Sarah Williams', submittedDate: now.subtract(const Duration(days: 3)), status: 'Late', marks: 18),
-          StudentSubmission(id: '15', studentName: 'Tom Brown', submittedDate: DateTime(2099), status: 'Not Submitted'),
-        ],
-      ),
-      Assignment(
-        id: '4',
-        title: 'Project: Science Fair',
-        subject: 'Science',
-        description: 'Create a project on renewable energy',
-        instructions: 'Research, plan, and present your project. Submit report and photos.',
-        assignedDate: now.subtract(const Duration(days: 10)),
-        dueDate: now.add(const Duration(days: 7)),
-        maxMarks: 100,
-        status: 'Active',
-        folder: 'Projects',
-        attachments: ['Project_Guidelines.pdf'],
-        submissions: [
-          StudentSubmission(id: '16', studentName: 'John Doe', submittedDate: now.subtract(const Duration(days: 1)), status: 'Submitted', marks: 85),
-          StudentSubmission(id: '17', studentName: 'Jane Smith', submittedDate: now, status: 'Submitted', marks: 92),
-          StudentSubmission(id: '18', studentName: 'Mike Johnson', submittedDate: DateTime(2099), status: 'Pending'),
-          StudentSubmission(id: '19', studentName: 'Sarah Williams', submittedDate: DateTime(2099), status: 'Pending'),
-          StudentSubmission(id: '20', studentName: 'Tom Brown', submittedDate: DateTime(2099), status: 'Pending'),
-        ],
-      ),
-      Assignment(
-        id: '5',
-        title: 'History Essay',
-        subject: 'History',
-        description: 'Write an essay on Ancient Civilizations',
-        instructions: '500-1000 words. Use at least 5 sources. Include bibliography.',
-        assignedDate: now.subtract(const Duration(days: 15)),
-        dueDate: now.subtract(const Duration(days: 2)),
-        maxMarks: 40,
-        status: 'Overdue',
-        folder: 'Homework',
-        attachments: [],
-        submissions: [
-          StudentSubmission(id: '21', studentName: 'John Doe', submittedDate: now.subtract(const Duration(days: 3)), status: 'Late', marks: 35),
-          StudentSubmission(id: '22', studentName: 'Jane Smith', submittedDate: now.subtract(const Duration(days: 2)), status: 'Late', marks: 38),
-          StudentSubmission(id: '23', studentName: 'Mike Johnson', submittedDate: DateTime(2099), status: 'Not Submitted'),
-          StudentSubmission(id: '24', studentName: 'Sarah Williams', submittedDate: DateTime(2099), status: 'Not Submitted'),
-          StudentSubmission(id: '25', studentName: 'Tom Brown', submittedDate: DateTime(2099), status: 'Not Submitted'),
-        ],
-      ),
-      Assignment(
-        id: '6',
-        title: 'Computer Science Lab',
-        subject: 'Computer Science',
-        description: 'Python Programming - Functions and Loops',
-        instructions: 'Write programs for given problems. Test and submit source code.',
-        assignedDate: now.subtract(const Duration(days: 2)),
-        dueDate: now.add(const Duration(days: 3)),
-        maxMarks: 60,
-        status: 'Active',
-        folder: 'Science',
-        attachments: ['Lab_Questions.pdf', 'Sample_Code.py'],
-        submissions: [
-          StudentSubmission(id: '26', studentName: 'John Doe', submittedDate: now, status: 'Submitted', marks: 55),
-          StudentSubmission(id: '27', studentName: 'Jane Smith', submittedDate: now, status: 'Submitted', marks: 58),
-          StudentSubmission(id: '28', studentName: 'Mike Johnson', submittedDate: DateTime(2099), status: 'Pending'),
-          StudentSubmission(id: '29', studentName: 'Sarah Williams', submittedDate: DateTime(2099), status: 'Pending'),
-          StudentSubmission(id: '30', studentName: 'Tom Brown', submittedDate: DateTime(2099), status: 'Pending'),
-        ],
-      ),
-    ];
   }
 
   // ============================================================================
@@ -321,7 +287,15 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
       builder: (context) => _CreateAssignmentDialog(),
     );
     if (result != null) {
-      setState(() => _allAssignments.add(result));
+      try {
+        await _service.createAssignment(
+          groupId: widget.group.id,
+          assignment: result.toJson(),
+        );
+        await _loadAssignments();
+      } catch (error) {
+        _showRequestError(error);
+      }
     }
   }
 
@@ -344,36 +318,108 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
       builder: (context) => _EditAssignmentDialog(assignment: assignment),
     );
     if (result != null) {
-      setState(() {
-        final index = _allAssignments.indexWhere((a) => a.id == assignment.id);
-        if (index >= 0) _allAssignments[index] = result;
-      });
+      try {
+        await _service.updateAssignment(
+          groupId: widget.group.id,
+          assignmentId: assignment.id,
+          assignment: result.toJson(),
+        );
+        await _loadAssignments();
+      } catch (error) {
+        _showRequestError(error);
+      }
     }
   }
 
-  void _deleteAssignment(Assignment assignment) {
-    showDialog(
+  void _deleteAssignment(Assignment assignment) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Assignment?'),
         content: const Text('Are you sure you want to delete this assignment?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () {
-            setState(() => _allAssignments.removeWhere((a) => a.id == assignment.id));
-            Navigator.pop(context);
-          }, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
+    if (confirmed != true) return;
+    try {
+      await _service.deleteAssignment(assignment.id);
+      await _loadAssignments();
+    } catch (error) {
+      _showRequestError(error);
+    }
   }
 
-  void _duplicateAssignment(Assignment assignment) {
+  void _duplicateAssignment(Assignment assignment) async {
     final copy = assignment.copyWith(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '',
       title: '${assignment.title} (Copy)',
+      submissions: const [],
     );
-    setState(() => _allAssignments.add(copy));
+    try {
+      await _service.createAssignment(
+        groupId: widget.group.id,
+        assignment: copy.toJson(),
+      );
+      await _loadAssignments();
+    } catch (error) {
+      _showRequestError(error);
+    }
+  }
+
+  void _showRequestError(Object error) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Unable to save assignment: $error')),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.assignment_outlined,
+              size: 48,
+              color: Color(0xffc5cad1),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No assignments available.',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xff363b60),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (!widget.isViewOnly) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _openAddDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff2baac8),
+                ),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Create Assignment'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   // ============================================================================
@@ -421,7 +467,30 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
           ),
         ],
       ),
-      body: _viewMode == 'analyse'
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Unable to load assignments.'),
+                        const SizedBox(height: 8),
+                        Text(_loadError!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _loadAssignments,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _allAssignments.isEmpty
+                  ? _buildEmptyState()
+                  : _viewMode == 'analyse'
           ? _buildAnalyticsView()
           : _viewMode == 'folders'
               ? _buildFoldersView(folders)
@@ -496,7 +565,7 @@ class _OnlineAssignmentPageState extends State<OnlineAssignmentPage> {
                                   children: [
                                     const Icon(Icons.assignment_outlined, size: 48, color: Color(0xffc5cad1)),
                                     const SizedBox(height: 12),
-                                    const Text('No Assignments Yet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xff363b60))),
+                                    const Text('No assignments available.', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xff363b60))),
                                     const SizedBox(height: 6),
                                     const Text('Create an assignment to give students homework and class activities.', style: TextStyle(fontSize: 12, color: Color(0xff7a7a7a))),
                                     const SizedBox(height: 16),
@@ -955,7 +1024,7 @@ class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
   final _subjectController = TextEditingController();
   final _descController = TextEditingController();
   final _instrController = TextEditingController();
-  final _marksController = TextEditingController(text: '50');
+  final _marksController = TextEditingController();
   final DateTime _assignDate = DateTime.now();
   final DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
   String _folder = 'Mathematics';
@@ -976,6 +1045,13 @@ class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter assignment title')));
       return;
     }
+    final maxMarks = int.tryParse(_marksController.text.trim());
+    if (maxMarks == null || maxMarks <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter the maximum marks for this assignment.')),
+      );
+      return;
+    }
 
     final assignment = Assignment(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -985,7 +1061,7 @@ class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
       instructions: _instrController.text,
       assignedDate: _assignDate,
       dueDate: _dueDate,
-      maxMarks: int.tryParse(_marksController.text) ?? 50,
+      maxMarks: maxMarks,
       status: _status,
       folder: _folder,
       submissions: [],
@@ -1081,7 +1157,8 @@ class _EditAssignmentDialogState extends State<_EditAssignmentDialog> {
       subject: _subjectController.text,
       description: _descController.text,
       instructions: _instrController.text,
-      maxMarks: int.tryParse(_marksController.text) ?? 50,
+      maxMarks:
+          int.tryParse(_marksController.text) ?? widget.assignment.maxMarks,
       folder: _folder,
       status: _status,
     );

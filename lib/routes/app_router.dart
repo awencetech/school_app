@@ -246,8 +246,12 @@ class AppRouter {
 
   static String _eventGroupId(Group group) {
     final id = group.id.trim();
+    final normalizedId = id.toUpperCase();
     if (id.isNotEmpty && id.toLowerCase() != 'unknown') {
-      if (id.toUpperCase().startsWith('SAMUNI-2022-')) return id;
+      if (normalizedId.startsWith('MMHS-2022-') ||
+          normalizedId.startsWith('SAMUNI-2022-')) {
+        return id;
+      }
       return generateGroupDatabaseId(group.name.isEmpty ? id : group.name);
     }
     return generateGroupDatabaseId(group.name);
@@ -316,7 +320,7 @@ class AppRouter {
       AppRoutes.studentDashboardGroupsClassDiscussion =>
         const StudentGroupClassBusPage(
           quickAccessTitle: 'Groups/Class Discussion',
-            comingSoon: true,
+          comingSoon: true,
         ),
       AppRoutes.studentDashboardCheckApprove => const StudentCheckApprovePage(
         quickAccessTitle: 'Check Approve',
@@ -325,11 +329,9 @@ class AppRouter {
         quickAccessTitle: 'Track UNI Route - 22',
       ),
       AppRoutes.studentDashboardTrackSp7 => const StudentUniRoutePage(
-        routeName: 'UNI-Route-SP7',
         quickAccessTitle: 'Track SP7',
       ),
       AppRoutes.studentDashboardTrack => const StudentUniRoutePage(
-        routeName: 'Track',
         quickAccessTitle: 'Track',
       ),
       AppRoutes.studentDashboardInfo => const StudentInfoScreen(),
@@ -345,8 +347,7 @@ class AppRouter {
       AppRoutes.studentMenuStudentDiary => const StudentDiaryPage(),
       AppRoutes.studentMenuAchievementAwards =>
         const StudentAchievementsAwardsPage(),
-      AppRoutes.studentMenuFeeInformation =>
-        const StudentFeeInformationPage(),
+      AppRoutes.studentMenuFeeInformation => const StudentFeeInformationPage(),
       AppRoutes.studentMenuSizeUniformOrdering =>
         const StudentUniformRequestPage(),
       AppRoutes.studentMenuMedical => const StudentMedicalPage(),
@@ -388,13 +389,9 @@ class AppRouter {
         headerTitle: 'Track UNI Route',
       ),
       AppRoutes.staffTrackSp7 => const StudentUniRoutePage(
-        routeName: 'UNI-Route-SP7',
         headerTitle: 'Track SP7',
       ),
-      AppRoutes.staffTrack => const StudentUniRoutePage(
-        routeName: 'Track',
-        headerTitle: 'Track',
-      ),
+      AppRoutes.staffTrack => const StudentUniRoutePage(headerTitle: 'Track'),
       AppRoutes.staffOverviewDashboard => const StaffOverviewDashboardPage(),
       AppRoutes.staffEventCalendar => const FutureEventCalendarPage(
         groupId: 'grade-10-c',
@@ -465,17 +462,12 @@ class AppRouter {
       AppRoutes.adminQuickCheckApproval => const StaffRequestApprovalPage(),
       AppRoutes.adminQuickTrackUniRoute => const StudentUniRoutePage(
         headerTitle: 'UNI Route',
-        showComingSoon: true,
       ),
       AppRoutes.adminQuickTrackSp => const StudentUniRoutePage(
-        routeName: 'UNI-Route-SP7',
         headerTitle: 'SP Route',
-        showComingSoon: true,
       ),
       AppRoutes.adminQuickTrack => const StudentUniRoutePage(
-        routeName: 'Track',
         headerTitle: 'Track',
-        showComingSoon: true,
       ),
       AppRoutes.adminMedicalEventList => const AdminMedicalEventListPage(),
       AppRoutes.adminMedicalEventListView => AdminMedicalEventViewPage(
@@ -637,8 +629,7 @@ class AppRouter {
           groupId: _eventGroupId(group),
           groupName: group.name,
           groupYear: group.year,
-          isEdit:
-              !viewOnly,
+          isEdit: !viewOnly,
         );
       })(),
       AppRoutes.teacherHomeworkAdd => (() {

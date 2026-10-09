@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/employee_attendance.dart';
+import 'auth_headers.dart';
 
 class EmployeeAttendanceService {
   EmployeeAttendanceService({String? baseUrl})
@@ -14,6 +15,7 @@ class EmployeeAttendanceService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -23,12 +25,13 @@ class EmployeeAttendanceService {
   }
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
-  Map<String, String> get _headers => {'Content-Type': 'application/json'};
-
   Future<List<EmployeeAttendance>> getAll({String? date}) async {
     final query = date == null ? '' : '?date=${Uri.encodeQueryComponent(date)}';
     final response = await http
-        .get(_uri('/api/employee-attendance$query'))
+        .get(
+          _uri('/api/employee-attendance$query'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     return _list(response);
   }
@@ -36,7 +39,10 @@ class EmployeeAttendanceService {
   Future<List<EmployeeAttendance>> getForEmployee(String employeeId) async {
     final query = Uri(queryParameters: {'employeeId': employeeId}).query;
     final response = await http
-        .get(_uri('/api/employee-attendance?$query'))
+        .get(
+          _uri('/api/employee-attendance?$query'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     return _list(response);
   }
@@ -47,6 +53,7 @@ class EmployeeAttendanceService {
           _uri(
             '/api/employee-attendance/pending?date=${Uri.encodeQueryComponent(date)}',
           ),
+          headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 20));
     return _list(response);
@@ -58,6 +65,7 @@ class EmployeeAttendanceService {
           _uri(
             '/api/employee-attendance/late?date=${Uri.encodeQueryComponent(date)}',
           ),
+          headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 20));
     return _list(response);
@@ -69,6 +77,7 @@ class EmployeeAttendanceService {
           _uri(
             '/api/employee-attendance/summary?date=${Uri.encodeQueryComponent(date)}',
           ),
+          headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
@@ -83,12 +92,12 @@ class EmployeeAttendanceService {
                     _uri(
                       '/api/employee-attendance/${Uri.encodeComponent(attendance.id!)}',
                     ),
-                    headers: _headers,
+                    headers: await AuthHeaders.json(),
                     body: jsonEncode(attendance.toJson()),
                   )
                 : http.post(
                     _uri('/api/employee-attendance'),
-                    headers: _headers,
+                    headers: await AuthHeaders.json(),
                     body: jsonEncode(attendance.toJson()),
                   ))
             .timeout(const Duration(seconds: 20));
@@ -104,7 +113,7 @@ class EmployeeAttendanceService {
     final response = await http
         .patch(
           _uri('/api/employee-attendance/${Uri.encodeComponent(id)}/approve'),
-          headers: _headers,
+          headers: await AuthHeaders.json(),
         )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
@@ -117,7 +126,7 @@ class EmployeeAttendanceService {
     final response = await http
         .patch(
           _uri('/api/employee-attendance/${Uri.encodeComponent(id)}/late'),
-          headers: _headers,
+          headers: await AuthHeaders.json(),
           body: jsonEncode({'isLate': isLate}),
         )
         .timeout(const Duration(seconds: 20));

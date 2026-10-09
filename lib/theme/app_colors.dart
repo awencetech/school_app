@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Color palette used across the School App UI.
+/// Color palette used across the MMHS app UI.
 class AppColors {
   AppColors._();
 
@@ -25,4 +25,3 @@ class AppColors {
   static const border = Color(0xFFD2D4DC);
   static const goldBorder = Color(0xFFD9B56A);
 }
-

@@ -186,7 +186,7 @@ class _SchoolResourcesPageState extends State<SchoolResourcesPage> {
           onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
-        title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),
+        title: const Text('MMHS', style: TextStyle(fontSize: 14)),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

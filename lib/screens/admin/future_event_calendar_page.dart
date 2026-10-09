@@ -58,8 +58,8 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
       widget.quickAccessTitle != null
           ? AppRoutes.studentDashboard
           : widget.isStaffView
-              ? AppRoutes.staffDashboard
-              : AppRoutes.teacherGroupClasses,
+          ? AppRoutes.staffDashboard
+          : AppRoutes.teacherGroupClasses,
       arguments: Group(id: widget.groupId, name: widget.groupName),
     );
   }
@@ -82,9 +82,9 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
     }
     try {
       final events = widget.isEdit
-          ? (await _eventService.getEventsForGroup(widget.groupId))
-            .map(CalendarEvent.fromGroupEvent)
-            .toList()
+          ? (await _eventService.getEventsForGroup(
+              widget.groupId,
+            )).map(CalendarEvent.fromGroupEvent).toList()
           : await _eventService.getCalendarEvents();
       if (!mounted) return;
       setState(() {
@@ -156,14 +156,14 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
       appBar: widget.quickAccessTitle != null
           ? QuickAccessAppBar(title: widget.quickAccessTitle!)
           : AppBar(
-        backgroundColor: AppColors.topBar,
-        centerTitle: true,
-        title: Text('Future Events', style: AppTextStyles.appTitle),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: _goBack,
-        ),
-      ),
+              backgroundColor: AppColors.topBar,
+              centerTitle: true,
+              title: Text('Future Events', style: AppTextStyles.appTitle),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.white),
+                onPressed: _goBack,
+              ),
+            ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(2, 4, 2, 28),
         child: Column(
@@ -208,25 +208,40 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
               currentIndex: _selectedBottomIndex,
               onItemSelected: (index) {
                 if (index == 4) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRoutes.main,
-                    (route) => false,
-                  );
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
                   return;
                 }
                 setState(() => _selectedBottomIndex = index);
               },
               items: [
-                BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
-                BottomNavigationBarItem(icon: const Icon(Icons.person), label: l10n.user),
-                BottomNavigationBarItem(icon: const Icon(Icons.info), label: l10n.dashboard),
-                BottomNavigationBarItem(icon: const Icon(Icons.help), label: l10n.support),
-                BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.logout),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.home),
+                  label: l10n.home,
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.person),
+                  label: l10n.user,
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.info),
+                  label: l10n.dashboard,
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.help),
+                  label: l10n.support,
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.logout),
+                  label: l10n.logout,
+                ),
               ],
             )
           : AdminBottomNavigationBar(
               currentIndex: _selectedBottomIndex,
-              onItemSelected: (index) => setState(() => _selectedBottomIndex = index),
+              onItemSelected: (index) =>
+                  setState(() => _selectedBottomIndex = index),
             ),
     );
   }
@@ -438,8 +453,7 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
                 _detailRow('Category', event.category!),
               if (event.startTime != null)
                 _detailRow('Start Time', event.startTime!),
-              if (event.endTime != null)
-                _detailRow('End Time', event.endTime!),
+              if (event.endTime != null) _detailRow('End Time', event.endTime!),
             ],
           ),
         ),
@@ -519,7 +533,9 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
         ..._events.map(
           (event) => Card(
             margin: const EdgeInsets.only(bottom: 8),
-            shape: Border(left: BorderSide(color: _eventColor(event), width: 4)),
+            shape: Border(
+              left: BorderSide(color: _eventColor(event), width: 4),
+            ),
             child: ListTile(
               title: Text(
                 event.title,
@@ -537,15 +553,15 @@ class _FutureEventCalendarPageState extends State<FutureEventCalendarPage> {
                   IconButton(
                     tooltip: 'Edit event',
                     onPressed: event.groupEvent == null
-                      ? null
-                      : () => _openEventForm(event.groupEvent!),
+                        ? null
+                        : () => _openEventForm(event.groupEvent!),
                     icon: const Icon(Icons.edit_outlined),
                   ),
                   IconButton(
                     tooltip: 'Delete event',
                     onPressed: event.groupEvent == null
-                      ? null
-                      : () => _deleteEvent(event.groupEvent!),
+                        ? null
+                        : () => _deleteEvent(event.groupEvent!),
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                   ),
                 ],
@@ -737,7 +753,9 @@ class _GroupEventFormState extends State<_GroupEventForm> {
     super.initState();
     final event = widget.event;
     _titleController = TextEditingController(text: event?.title ?? '');
-    _descriptionController = TextEditingController(text: event?.description ?? '');
+    _descriptionController = TextEditingController(
+      text: event?.description ?? '',
+    );
     _startTimeController = TextEditingController(text: event?.startTime ?? '');
     _endTimeController = TextEditingController(text: event?.endTime ?? '');
     _date = event?.startDate ?? DateUtils.dateOnly(DateTime.now());
@@ -752,11 +770,13 @@ class _GroupEventFormState extends State<_GroupEventForm> {
       if (!mounted) return;
       Group? matchingGroup;
       for (final group in groups) {
-        final groupEventId = group.id.toUpperCase().startsWith('SAMUNI-2022-')
+        final groupEventId =
+            group.id.toUpperCase().startsWith('MMHS-2022-') ||
+                group.id.toUpperCase().startsWith('SAMUNI-2022-')
             ? group.id
             : generateGroupDatabaseId(group.name);
         if (groupEventId == widget.groupId ||
-          group.id == widget.groupId ||
+            group.id == widget.groupId ||
             group.name.trim() == widget.groupName.trim()) {
           matchingGroup = group;
           break;
@@ -777,7 +797,11 @@ class _GroupEventFormState extends State<_GroupEventForm> {
 
   String _eventGroupId(Group group) {
     final id = group.id.trim();
-    if (id.toUpperCase().startsWith('SAMUNI-2022-')) return id;
+    final normalizedId = id.toUpperCase();
+    if (normalizedId.startsWith('MMHS-2022-') ||
+        normalizedId.startsWith('SAMUNI-2022-')) {
+      return id;
+    }
     return generateGroupDatabaseId(group.name.isEmpty ? id : group.name);
   }
 
@@ -814,7 +838,12 @@ class _GroupEventFormState extends State<_GroupEventForm> {
       return;
     }
     final groupId = _selectedGroupId;
-    if (groupId == null || groupId.isEmpty || groupId == 'SAMUNI-2022-Unknown') {
+    final normalizedGroupId = (groupId ?? '').toLowerCase();
+    if (groupId == null ||
+        groupId.isEmpty ||
+        normalizedGroupId == 'unknown' ||
+        normalizedGroupId == 'mmhs-2022-unknown' ||
+        normalizedGroupId == 'samuni-2022-unknown') {
       setState(() => _error = 'Select a group before saving the event.');
       return;
     }
@@ -867,7 +896,10 @@ class _GroupEventFormState extends State<_GroupEventForm> {
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
         centerTitle: true,
-        title: Text(isEditing ? 'Edit Event' : 'Add Event', style: AppTextStyles.appTitle),
+        title: Text(
+          isEditing ? 'Edit Event' : 'Add Event',
+          style: AppTextStyles.appTitle,
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: _goBack,
@@ -895,26 +927,52 @@ class _GroupEventFormState extends State<_GroupEventForm> {
                   : (value) => setState(() => _selectedGroupId = value),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Title')),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
             const SizedBox(height: 12),
             TextField(
               readOnly: true,
               controller: TextEditingController(text: _formatDate(_date)),
               onTap: _pickDate,
-              decoration: const InputDecoration(labelText: 'Date', suffixIcon: Icon(Icons.calendar_month)),
+              decoration: const InputDecoration(
+                labelText: 'Date',
+                suffixIcon: Icon(Icons.calendar_month),
+              ),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _descriptionController, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+            TextField(
+              controller: _descriptionController,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: TextField(controller: _startTimeController, decoration: const InputDecoration(labelText: 'Start time'))),
+                Expanded(
+                  child: TextField(
+                    controller: _startTimeController,
+                    decoration: const InputDecoration(labelText: 'Start time'),
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: TextField(controller: _endTimeController, decoration: const InputDecoration(labelText: 'End time'))),
+                Expanded(
+                  child: TextField(
+                    controller: _endTimeController,
+                    decoration: const InputDecoration(labelText: 'End time'),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            Text('Event Color', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500)),
+            Text(
+              'Event Color',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 10,
@@ -929,11 +987,15 @@ class _GroupEventFormState extends State<_GroupEventForm> {
                       color: _parseColor(color),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected ? AppColors.primaryText : Colors.transparent,
+                        color: selected
+                            ? AppColors.primaryText
+                            : Colors.transparent,
                         width: 3,
                       ),
                     ),
-                    child: selected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+                    child: selected
+                        ? const Icon(Icons.check, size: 16, color: Colors.white)
+                        : null,
                   ),
                 );
               }).toList(),

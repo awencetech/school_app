@@ -100,9 +100,15 @@ class _SplashScreenState extends State<SplashScreen> {
               final info = snapshot.data;
               final splashConfig = context.watch<SplashConfigService>();
 
-              final titleText = splashConfig.title.isNotEmpty ? splashConfig.title : (info?.name ?? 'SCHOOL NAME');
-              final subtitleText = splashConfig.subtitle.isNotEmpty ? splashConfig.subtitle : (info?.motto ?? 'Motto goes here');
-              final sinceText = 'Since ${splashConfig.since.isNotEmpty ? splashConfig.since : (info?.since ?? '1987')}';
+              final titleText = splashConfig.title.isNotEmpty
+                  ? splashConfig.title
+                  : (info?.name.isNotEmpty == true ? info!.name : 'MMHS');
+              final subtitleText = splashConfig.subtitle.isNotEmpty
+                  ? splashConfig.subtitle
+                  : (info?.motto ?? '');
+              final since = splashConfig.since.isNotEmpty
+                  ? splashConfig.since
+                  : (info?.since ?? '');
 
               return Center(
                 child: ConstrainedBox(
@@ -129,15 +135,17 @@ class _SplashScreenState extends State<SplashScreen> {
                             ),
                           );
                         }),
-                        const SizedBox(height: 12),
-                        Text(
-                          sinceText,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.subtitle.copyWith(
-                            fontSize: 11,
-                            color: AppColors.white.withValues(alpha: 0.9),
+                        if (since.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Since $since',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.subtitle.copyWith(
+                              fontSize: 11,
+                              color: AppColors.white.withValues(alpha: 0.9),
+                            ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 10),
                         Text(
                           titleText,
@@ -147,15 +155,17 @@ class _SplashScreenState extends State<SplashScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          subtitleText,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.body.copyWith(
-                            fontSize: 12,
-                            color: AppColors.white.withValues(alpha: 0.85),
+                        if (subtitleText.trim().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitleText,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.body.copyWith(
+                              fontSize: 12,
+                              color: AppColors.white.withValues(alpha: 0.85),
+                            ),
                           ),
-                        ),
+                        ],
                         if (splashConfig.quote.trim().isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(

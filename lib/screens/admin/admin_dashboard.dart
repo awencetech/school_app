@@ -146,7 +146,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       final config = context.watch<SchoolConfigService>();
                       final schoolName = config.schoolName.isNotEmpty
                           ? config.schoolName
-                          : snapshot.data?.name ?? 'SCHOOL NAME';
+                          : snapshot.data?.name ?? 'MMHS';
                       final welcomeText = config.welcome.isNotEmpty
                           ? config.welcome
                           : 'Welcome ${context.watch<AppState>().currentUserId ?? 'Admin'}';

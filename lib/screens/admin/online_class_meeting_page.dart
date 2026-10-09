@@ -83,87 +83,13 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
   @override
   void initState() {
     super.initState();
-    _allMeetings = _generateMockMeetings();
+    _allMeetings = [];
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  // ============================================================================
-  // MOCK DATA
-  // ============================================================================
-
-  List<OnlineMeeting> _generateMockMeetings() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final dayAfter = today.add(const Duration(days: 2));
-
-    return [
-      OnlineMeeting(
-        id: '1',
-        title: 'Mathematics Class',
-        subject: 'Quadratic Equations',
-        date: tomorrow,
-        startTime: const TimeOfDay(hour: 10, minute: 0),
-        endTime: const TimeOfDay(hour: 10, minute: 45),
-        teacher: 'Mr. Kumar',
-        meetingLink: 'https://meet.google.com/abc-defg-hij',
-        description: 'Solving quadratic equations using factorization and formula method.',
-        status: 'Upcoming',
-      ),
-      OnlineMeeting(
-        id: '2',
-        title: 'Science Discussion',
-        subject: 'Physics – Motion',
-        date: tomorrow,
-        startTime: const TimeOfDay(hour: 12, minute: 0),
-        endTime: const TimeOfDay(hour: 12, minute: 45),
-        teacher: 'Ms. Sharma',
-        meetingLink: 'https://meet.google.com/xyz-uvwx-yz',
-        description: 'Laws of motion, velocity, acceleration, and practical examples.',
-        status: 'Upcoming',
-      ),
-      OnlineMeeting(
-        id: '3',
-        title: 'English Class',
-        subject: 'Grammar & Writing',
-        date: today,
-        startTime: const TimeOfDay(hour: 14, minute: 0),
-        endTime: const TimeOfDay(hour: 14, minute: 45),
-        teacher: 'Mr. Patel',
-        meetingLink: 'https://meet.google.com/pqr-stuv-wx',
-        description: 'Focus on tenses, sentence structure, and creative writing techniques.',
-        status: 'Completed',
-      ),
-      OnlineMeeting(
-        id: '4',
-        title: 'History Session',
-        subject: 'Ancient Civilizations',
-        date: dayAfter,
-        startTime: const TimeOfDay(hour: 11, minute: 0),
-        endTime: const TimeOfDay(hour: 11, minute: 45),
-        teacher: 'Dr. Singh',
-        meetingLink: 'https://meet.google.com/mno-pqrs-tuv',
-        description: 'Exploration of ancient Egyptian, Greek, and Roman civilizations.',
-        status: 'Upcoming',
-      ),
-      OnlineMeeting(
-        id: '5',
-        title: 'Computer Science Lab',
-        subject: 'Python Programming',
-        date: dayAfter,
-        startTime: const TimeOfDay(hour: 13, minute: 30),
-        endTime: const TimeOfDay(hour: 14, minute: 30),
-        teacher: 'Ms. Verma',
-        meetingLink: 'https://meet.google.com/abc-xyzk-lmn',
-        description: 'Hands-on coding session on Python fundamentals and data structures.',
-        status: 'Upcoming',
-      ),
-    ];
   }
 
   // ============================================================================
@@ -342,7 +268,6 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Expanded(child: Text('Teacher: Current Teacher', style: const TextStyle(fontSize: 12, color: Color(0xff4a4a4a)))),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -440,9 +365,15 @@ class _OnlineClassMeetingPageState extends State<OnlineClassMeetingPage> {
                             children: [
                               Icon(Icons.video_call_outlined, size: 48, color: const Color(0xffc5cad1)),
                               const SizedBox(height: 12),
-                              const Text('No Online Classes Yet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xff363b60))),
-                              const SizedBox(height: 6),
-                              const Text('Schedule an online class or meeting for this group.', style: TextStyle(fontSize: 12, color: Color(0xff7a7a7a))),
+                              const Text(
+                                'No online class meeting is currently scheduled.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff363b60),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                               const SizedBox(height: 16),
                               if (!widget.isViewOnly) ElevatedButton.icon(
                                 onPressed: _openAddDialog,

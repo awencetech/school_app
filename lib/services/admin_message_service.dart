@@ -16,6 +16,7 @@ class AdminMessageService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -161,7 +162,10 @@ class AdminMessageService {
 
   Future<List<Group>> getGroups() async {
     final response = await http
-        .get(_uri('/api/groups'))
+        .get(
+          _uri('/api/groups'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) throw Exception('Unable to load groups');
     final values = jsonDecode(response.body);

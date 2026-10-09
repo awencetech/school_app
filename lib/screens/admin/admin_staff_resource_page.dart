@@ -317,7 +317,7 @@ class _StaffResourceFormState extends State<StaffResourceForm> {
                   const SizedBox(height: 12),
                   TextFormField(controller: _description, minLines: 3, maxLines: 6, maxLength: 2000, decoration: const InputDecoration(labelText: 'Description', alignLabelWithHint: true, border: OutlineInputBorder()), validator: (value) => value == null || value.trim().isEmpty ? 'Description is required.' : null),
                   const SizedBox(height: 12),
-                  TextFormField(controller: _link, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Links (Optional)', hintText: 'https://example.com', border: OutlineInputBorder()), validator: (value) => _validUrlOrPath(value?.trim() ?? '') ? null : 'Enter a valid URL.'),
+                  TextFormField(controller: _link, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Links (Optional)', hintText: 'https://', border: OutlineInputBorder()), validator: (value) => _validUrlOrPath(value?.trim() ?? '') ? null : 'Enter a valid URL.'),
                   const SizedBox(height: 12),
                   TextFormField(controller: _image, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Upload Slip Report Image URL (Optional)', border: OutlineInputBorder()), validator: (value) => _validUrlOrPath(value?.trim() ?? '') ? null : 'Enter a valid image URL or path.'),
                   if (_image.text.trim().startsWith('http')) ...[

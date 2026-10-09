@@ -136,7 +136,7 @@ class _KnowYourSchoolDetailPageState extends State<KnowYourSchoolDetailPage> {
                       controller: _websiteController,
                       keyboardType: TextInputType.url,
                       decoration: InputDecoration(
-                        hintText: 'https://www.example.com',
+                        hintText: 'https://',
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(

@@ -25,6 +25,7 @@ class StudentAttendanceService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -90,8 +91,8 @@ class StudentAttendanceService {
     String? status,
   }) async {
     final query = <String, String>{
-      if (fromDate != null) 'fromDate': fromDate,
-      if (toDate != null) 'toDate': toDate,
+      'fromDate': ?fromDate,
+      'toDate': ?toDate,
       if (className != null && className.isNotEmpty) 'className': className,
       if (studentId != null && studentId.isNotEmpty) 'studentId': studentId,
       if (status != null && status.isNotEmpty && status != 'All')
@@ -132,16 +133,18 @@ class StudentAttendanceService {
   List<dynamic> _records(String body) {
     final payload = jsonDecode(body);
     if (payload is List) return payload;
-    if (payload is Map && payload['data'] is List)
+    if (payload is Map && payload['data'] is List) {
       return payload['data'] as List;
+    }
     return const [];
   }
 
   String _message(http.Response response) {
     try {
       final body = jsonDecode(response.body);
-      if (body is Map && body['message'] != null)
+      if (body is Map && body['message'] != null) {
         return body['message'].toString();
+      }
     } catch (_) {}
     return 'Student attendance request failed (${response.statusCode}).';
   }

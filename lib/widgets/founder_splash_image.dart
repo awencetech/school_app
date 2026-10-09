@@ -42,7 +42,7 @@ class FounderSplashImage extends StatelessWidget {
         }
       }
     } else {
-      child = Image.asset('assets/images/founder.png', fit: BoxFit.contain);
+      child = const SizedBox.shrink();
     }
 
     return SizedBox(

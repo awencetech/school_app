@@ -70,11 +70,12 @@ class _StudentMarkedAttendancePageState
         _loading = false;
       });
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.toString();
           _loading = false;
         });
+      }
     }
   }
 

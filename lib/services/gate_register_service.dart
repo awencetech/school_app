@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/gate_register.dart';
+import 'auth_headers.dart';
 
 class GateRegisterService {
   GateRegisterService({String? baseUrl})
@@ -14,6 +15,7 @@ class GateRegisterService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode || kIsWeb) return _productionBaseUrl;
@@ -22,14 +24,16 @@ class GateRegisterService {
   }
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
-  Map<String, String> get _headers => {'Content-Type': 'application/json'};
 
   Future<List<GateRegister>> getAll({String? personType}) async {
     final query = personType == null
         ? ''
         : '?personType=${Uri.encodeQueryComponent(personType)}';
     final response = await http
-        .get(_uri('/api/gate-register$query'))
+        .get(
+          _uri('/api/gate-register$query'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
     final decoded = jsonDecode(response.body);
@@ -51,12 +55,12 @@ class GateRegisterService {
                     _uri(
                       '/api/gate-register/${Uri.encodeComponent(record.id!)}',
                     ),
-                    headers: _headers,
+                    headers: await AuthHeaders.json(),
                     body: jsonEncode(record.toJson()),
                   )
                 : http.post(
                     _uri('/api/gate-register'),
-                    headers: _headers,
+                    headers: await AuthHeaders.json(),
                     body: jsonEncode(record.toJson()),
                   ))
             .timeout(const Duration(seconds: 20));
@@ -70,7 +74,10 @@ class GateRegisterService {
 
   Future<void> delete(String id) async {
     final response = await http
-        .delete(_uri('/api/gate-register/${Uri.encodeComponent(id)}'))
+        .delete(
+          _uri('/api/gate-register/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
   }

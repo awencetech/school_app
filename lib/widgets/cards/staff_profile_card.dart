@@ -25,6 +25,17 @@ class StaffProfileCard extends StatelessWidget {
   final String description;
   final bool imageOnLeft;
 
+  Widget _emptyProfileImage() {
+    return Container(
+      color: AppColors.divider,
+      child: const Icon(
+        Icons.person_outline,
+        size: 48,
+        color: AppColors.hintText,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final paragraphs = description
@@ -52,13 +63,7 @@ class StaffProfileCard extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.zero,
               child: image.isEmpty
-                  ? Image.asset(
-                      'assets/images/founder.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(color: AppColors.divider);
-                      },
-                    )
+                  ? _emptyProfileImage()
                   : Builder(builder: (context) {
                       try {
                         final decoded = base64Decode(image);
@@ -66,13 +71,7 @@ class StaffProfileCard extends StatelessWidget {
                           decoded,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/founder.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(color: AppColors.divider);
-                              },
-                            );
+                            return _emptyProfileImage();
                           },
                         );
                       } catch (_) {
@@ -81,13 +80,7 @@ class StaffProfileCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(color: AppColors.divider),
                           errorWidget: (context, url, error) {
-                            return Image.asset(
-                              'assets/images/founder.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(color: AppColors.divider);
-                              },
-                            );
+                            return _emptyProfileImage();
                           },
                         );
                       }
@@ -193,4 +186,3 @@ class StaffProfileCard extends StatelessWidget {
     return memberCard;
   }
 }
-

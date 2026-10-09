@@ -59,9 +59,8 @@ class SchoolConfigService extends ChangeNotifier {
 
   MainPageInfoRepository get repository => _repository;
 
-  String schoolName = 'SCHOOL NAME';
-  String quote =
-      'Every student has the potential to achieve greatness through dedication, discipline, and continuous learning.';
+  String schoolName = '';
+  String quote = '';
   String _welcome = '';
   String websiteUrl = '';
   String schoolMotto = '';
@@ -102,13 +101,7 @@ class SchoolConfigService extends ChangeNotifier {
   String youtubeUrl = '';
   String twitterUrl = '';
   String linkedInUrl = '';
-  List<String> runningItems = const [
-    'Sports Day Registrations Open',
-    'Admissions Open for 2026–27',
-    'Quarterly Exams Start on August 15',
-    'Parent–Teacher Meeting on Friday',
-    'Independence Day Celebration on August 15',
-  ];
+  List<String> runningItems = const [];
   String? posterBase64;
   String? posterUrl;
 

@@ -5,14 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/main_page_info.dart';
+import 'auth_headers.dart';
 
 class MainPageInfoRepository {
-  MainPageInfoRepository({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
+  MainPageInfoRepository({String? baseUrl})
+    : _baseUrl = baseUrl ?? _resolveBaseUrl();
 
   final String _baseUrl;
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) {
       return override;
@@ -48,7 +51,9 @@ class MainPageInfoRepository {
     }
 
     if (value is Map<String, dynamic>) {
-      return value.map((key, nested) => MapEntry(key, _normalizePayload(nested)));
+      return value.map(
+        (key, nested) => MapEntry(key, _normalizePayload(nested)),
+      );
     }
 
     if (value is List) {
@@ -62,9 +67,18 @@ class MainPageInfoRepository {
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
-  Future<String> uploadPoster({required String fileName, required List<int> bytes}) async {
-    final request = http.MultipartRequest('POST', _uri('/api/upload/school-poster'));
-    request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+  Future<String> uploadPoster({
+    required String fileName,
+    required List<int> bytes,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      _uri('/api/upload/school-poster'),
+    );
+    request.headers.addAll(await AuthHeaders.bearer());
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+    );
 
     final response = await request.send().timeout(const Duration(seconds: 30));
     final body = await response.stream.bytesToString();
@@ -97,7 +111,9 @@ class MainPageInfoRepository {
   }
 
   Future<MainPageInfo> _fetchMainPageInfo() async {
-    final response = await http.get(_uri('/api/mainpage-info')).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(_uri('/api/mainpage-info'), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception('Failed to load MongoDB school configuration');
     }
@@ -106,21 +122,35 @@ class MainPageInfoRepository {
     if (payload is! Map<String, dynamic>) {
       throw const FormatException('Invalid main page payload');
     }
-    final normalizedPayload = Map<String, dynamic>.from(_normalizePayload(payload) as Map<String, dynamic>);
+    final normalizedPayload = Map<String, dynamic>.from(
+      _normalizePayload(payload) as Map<String, dynamic>,
+    );
 
     // Backwards compatibility: Some older writes incorrectly stored homeContent
     // inside schoolContent.homeContent. If top-level homeContent is missing but
     // schoolContent.homeContent exists, promote it to top-level so the app reads
     // the correct Home-only content without affecting schoolContent.members.
     try {
-      final List<dynamic>? topHomeContent = normalizedPayload['homeContent'] is List ? List<dynamic>.from(normalizedPayload['homeContent'] as List<dynamic>) : null;
-      final List<dynamic>? legacyHomeContent = normalizedPayload['schoolContent'] is Map<String, dynamic> &&
-              (normalizedPayload['schoolContent'] as Map<String, dynamic>).containsKey('homeContent')
-          ? List<dynamic>.from((normalizedPayload['schoolContent'] as Map<String, dynamic>)['homeContent'] as List<dynamic>)
+      final List<dynamic>? topHomeContent =
+          normalizedPayload['homeContent'] is List
+          ? List<dynamic>.from(
+              normalizedPayload['homeContent'] as List<dynamic>,
+            )
+          : null;
+      final List<dynamic>? legacyHomeContent =
+          normalizedPayload['schoolContent'] is Map<String, dynamic> &&
+              (normalizedPayload['schoolContent'] as Map<String, dynamic>)
+                  .containsKey('homeContent')
+          ? List<dynamic>.from(
+              (normalizedPayload['schoolContent']
+                      as Map<String, dynamic>)['homeContent']
+                  as List<dynamic>,
+            )
           : null;
 
       if (legacyHomeContent != null && legacyHomeContent.isNotEmpty) {
-        if (topHomeContent == null || topHomeContent.length < legacyHomeContent.length) {
+        if (topHomeContent == null ||
+            topHomeContent.length < legacyHomeContent.length) {
           normalizedPayload['homeContent'] = legacyHomeContent;
         }
       }
@@ -128,7 +158,9 @@ class MainPageInfoRepository {
       // ignore and continue
     }
 
-    debugPrint('Loaded school poster URL: ${normalizedPayload['schoolSettings']?['schoolPoster'] ?? 'empty'}');
+    debugPrint(
+      'Loaded school poster URL: ${normalizedPayload['schoolSettings']?['schoolPoster'] ?? 'empty'}',
+    );
     try {
       final loadedQuote = normalizedPayload['splashScreen']?['quote'] ?? '';
       debugPrint('Loaded splash quote: $loadedQuote');
@@ -137,29 +169,41 @@ class MainPageInfoRepository {
   }
 
   Future<MainPageInfo> updateMainPageInfo(MainPageInfo info) async {
-    final response = await http.put(
-      _uri('/api/mainpage-info'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(info.toJson()),
-    ).timeout(const Duration(seconds: 20));
+    final response = await http
+        .put(
+          _uri('/api/mainpage-info'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(info.toJson()),
+        )
+        .timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      debugPrint('_updateSection failed: ${response.statusCode} ${response.body}');
-      throw Exception('Unable to save changes (${response.statusCode}): ${response.body}');
+      debugPrint(
+        '_updateSection failed: ${response.statusCode} ${response.body}',
+      );
+      throw Exception(
+        'Unable to save changes (${response.statusCode}): ${response.body}',
+      );
     }
 
     final payload = jsonDecode(response.body);
     if (payload is! Map<String, dynamic>) {
       throw const FormatException('Invalid updated main page payload');
     }
-    return MainPageInfo.fromJson(Map<String, dynamic>.from(_normalizePayload(payload) as Map<String, dynamic>));
+    return MainPageInfo.fromJson(
+      Map<String, dynamic>.from(
+        _normalizePayload(payload) as Map<String, dynamic>,
+      ),
+    );
   }
 
   Future<MainPageInfo> updateSplashScreen(Map<String, dynamic> payload) async {
     return _updateSection('/api/mainpage-info/splash', payload);
   }
 
-  Future<MainPageInfo> updateSchoolSettings(Map<String, dynamic> payload) async {
+  Future<MainPageInfo> updateSchoolSettings(
+    Map<String, dynamic> payload,
+  ) async {
     return _updateSection('/api/mainpage-info/settings', payload);
   }
 
@@ -171,43 +215,70 @@ class MainPageInfoRepository {
     return _updateSection('/api/mainpage-info/grades', payload);
   }
 
-  Future<MainPageInfo> _updateSection(String path, Map<String, dynamic> payload) async {
-    final response = await http.put(
-      _uri(path),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    ).timeout(const Duration(seconds: 20));
+  Future<MainPageInfo> _updateSection(
+    String path,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await http
+        .put(
+          _uri(path),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(payload),
+        )
+        .timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Unable to save changes (${response.statusCode}): ${response.body}');
+      throw Exception(
+        'Unable to save changes (${response.statusCode}): ${response.body}',
+      );
     }
 
-    debugPrint('_updateSection response: ${response.statusCode} -- body length: ${response.body.length}');
+    debugPrint(
+      '_updateSection response: ${response.statusCode} -- body length: ${response.body.length}',
+    );
     dynamic parsed;
     try {
       parsed = jsonDecode(response.body);
       debugPrint('_updateSection parsed successfully: ${parsed.runtimeType}');
     } catch (e) {
-      debugPrint('_updateSection jsonDecode failed: $e -- body: ${response.body}');
-      throw FormatException('Invalid JSON response from server: ${e.toString()}');
+      debugPrint(
+        '_updateSection jsonDecode failed: $e -- body: ${response.body}',
+      );
+      throw FormatException(
+        'Invalid JSON response from server: ${e.toString()}',
+      );
     }
     if (parsed is! Map<String, dynamic>) {
-      debugPrint('_updateSection unexpected payload type: ${parsed.runtimeType} -- body: ${response.body}');
+      debugPrint(
+        '_updateSection unexpected payload type: ${parsed.runtimeType} -- body: ${response.body}',
+      );
       throw const FormatException('Invalid section payload');
     }
 
-    final normalized = Map<String, dynamic>.from(_normalizePayload(parsed) as Map<String, dynamic>);
+    final normalized = Map<String, dynamic>.from(
+      _normalizePayload(parsed) as Map<String, dynamic>,
+    );
 
     // Backwards compatibility: promote nested schoolContent.homeContent -> top-level homeContent
     try {
-      final List<dynamic>? topHomeContent = normalized['homeContent'] is List ? List<dynamic>.from(normalized['homeContent'] as List<dynamic>) : null;
-      final List<dynamic>? legacyHomeContent = normalized['schoolContent'] is Map<String, dynamic> &&
-              (normalized['schoolContent'] as Map<String, dynamic>).containsKey('homeContent')
-          ? List<dynamic>.from((normalized['schoolContent'] as Map<String, dynamic>)['homeContent'] as List<dynamic>)
+      final List<dynamic>? topHomeContent = normalized['homeContent'] is List
+          ? List<dynamic>.from(normalized['homeContent'] as List<dynamic>)
+          : null;
+      final List<dynamic>? legacyHomeContent =
+          normalized['schoolContent'] is Map<String, dynamic> &&
+              (normalized['schoolContent'] as Map<String, dynamic>).containsKey(
+                'homeContent',
+              )
+          ? List<dynamic>.from(
+              (normalized['schoolContent']
+                      as Map<String, dynamic>)['homeContent']
+                  as List<dynamic>,
+            )
           : null;
 
       if (legacyHomeContent != null && legacyHomeContent.isNotEmpty) {
-        if (topHomeContent == null || topHomeContent.length < legacyHomeContent.length) {
+        if (topHomeContent == null ||
+            topHomeContent.length < legacyHomeContent.length) {
           normalized['homeContent'] = legacyHomeContent;
         }
       }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/demography.dart';
+import 'auth_headers.dart';
 
 class DemographyService {
   DemographyService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -13,6 +14,7 @@ class DemographyService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -25,7 +27,7 @@ class DemographyService {
 
   Future<List<Demography>> getDemographies() async {
     final response = await http
-        .get(_uri('/api/demography'))
+        .get(_uri('/api/demography'), headers: await AuthHeaders.bearer())
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) {
       throw Exception(_messageBody(response.statusCode, response.body));
@@ -40,7 +42,10 @@ class DemographyService {
 
   Future<List<Demography>> getDemographiesByGroup(String groupId) async {
     final response = await http
-        .get(_uri('/api/demography/group/${Uri.encodeComponent(groupId)}'))
+        .get(
+          _uri('/api/demography/group/${Uri.encodeComponent(groupId)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) {
       throw Exception(_messageBody(response.statusCode, response.body));
@@ -57,7 +62,7 @@ class DemographyService {
     final response = await http
         .post(
           _uri('/api/demography'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(item.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -71,7 +76,7 @@ class DemographyService {
     final response = await http
         .put(
           _uri('/api/demography/${Uri.encodeComponent(id)}'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(item.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -83,7 +88,10 @@ class DemographyService {
 
   Future<void> deleteDemography(String id) async {
     final response = await http
-        .delete(_uri('/api/demography/${Uri.encodeComponent(id)}'))
+        .delete(
+          _uri('/api/demography/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception(_messageBody(response.statusCode, response.body));

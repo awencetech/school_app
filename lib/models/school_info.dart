@@ -1,4 +1,4 @@
-/// School branding information loaded from dummy JSON.
+/// School branding information loaded from the configured school data.
 class SchoolInfo {
   const SchoolInfo({
     required this.name,
@@ -16,12 +16,11 @@ class SchoolInfo {
 
   factory SchoolInfo.fromJson(Map<String, dynamic> json) {
     return SchoolInfo(
-      name: json['name'] as String? ?? 'SCHOOL NAME',
-      since: json['since'] as String? ?? '1987',
-      motto: json['motto'] as String? ?? 'Motto goes here',
+      name: json['name'] as String? ?? '',
+      since: json['since'] as String? ?? '',
+      motto: json['motto'] as String? ?? '',
       quote: json['quote'] as String? ?? '',
-      websiteUrl: json['websiteUrl'] as String? ?? 'https://example.com',
+      websiteUrl: json['websiteUrl'] as String? ?? '',
     );
   }
 }
-

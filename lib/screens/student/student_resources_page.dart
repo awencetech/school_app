@@ -11,23 +11,13 @@ class StudentResourcesPage extends StatefulWidget {
 }
 
 class _StudentResourcesPageState extends State<StudentResourcesPage> {
-  static const _resources = [
-    ['GRADE 6 INDEPENDENCE DAY COMPETITION 2022', '22-Aug-22'],
-    ['ACKNOWLEDGEMENT FORM', '11-Mar-23'],
-    ['CBSE - CLASS GROUP PHOTO', '24-Mar-23'],
-    ['ANNUAL DAY - INDIVIDUAL PHOTO', '08-Mar-23'],
-    ['CHOICE FORM 2023-24', '25-Mar-23'],
-    ['SCHOOL APP USERNAME AND PASSWORD', '24-Apr-23'],
-    ["Mathbuddy username and password - 2023 - 24", '10-May-23'],
-    ['CS - UOLO CREDENTIALS (2023-24)', '20-May-23'],
-    ['SCHOOL SUPPLIES CHECK LIST (2023-24)', '07-Jun-23'],
-    ['SCHOOL APP ACKNOWLEDGEMENT FORM (2023-24)', '09-Jun-23'],
-    ['ID COMPETITION - DOODLE MY FACE (2023-24)', '12-Aug-23'],
-  ];
+  static const List<List<String>> _resources = [];
 
   void _openInsert() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const StudentResourceInsertPage()),
+      MaterialPageRoute<void>(
+        builder: (_) => const StudentResourceInsertPage(),
+      ),
     );
   }
 
@@ -46,7 +36,7 @@ class _StudentResourcesPageState extends State<StudentResourcesPage> {
         ),
         centerTitle: true,
         title: const Text(
-          'SAMUNI',
+          'MMHS',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
@@ -82,11 +72,19 @@ class _StudentResourcesPageState extends State<StudentResourcesPage> {
           ),
           const Divider(height: 1, color: Color(0xffd8d8d8)),
           Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              itemCount: _resources.length,
-              itemBuilder: (_, index) => _ResourceRow(resource: _resources[index]),
-            ),
+            child: _resources.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No resources available.',
+                      style: TextStyle(fontSize: 12, color: Color(0xff555555)),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: _resources.length,
+                    itemBuilder: (_, index) =>
+                        _ResourceRow(resource: _resources[index]),
+                  ),
           ),
         ],
       ),
@@ -163,7 +161,8 @@ class StudentResourceInsertPage extends StatefulWidget {
   const StudentResourceInsertPage({super.key});
 
   @override
-  State<StudentResourceInsertPage> createState() => _StudentResourceInsertPageState();
+  State<StudentResourceInsertPage> createState() =>
+      _StudentResourceInsertPageState();
 }
 
 class _StudentResourceInsertPageState extends State<StudentResourceInsertPage> {
@@ -192,7 +191,7 @@ class _StudentResourceInsertPageState extends State<StudentResourceInsertPage> {
         ),
         centerTitle: true,
         title: const Text(
-          'SAMUNI',
+          'MMHS',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
@@ -296,20 +295,20 @@ class _StudentResourceInsertPageState extends State<StudentResourceInsertPage> {
   }
 
   InputDecoration _fieldDecoration() => InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Color(0xffd8d8d8)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Color(0xffd8d8d8)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Color(0xff4aa3ff)),
-        ),
-      );
+    filled: true,
+    fillColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(4),
+      borderSide: const BorderSide(color: Color(0xffd8d8d8)),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(4),
+      borderSide: const BorderSide(color: Color(0xffd8d8d8)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(4),
+      borderSide: const BorderSide(color: Color(0xff4aa3ff)),
+    ),
+  );
 }

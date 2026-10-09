@@ -12,6 +12,7 @@ class ClassTimetableService {
   final String _baseUrl;
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
@@ -25,7 +26,9 @@ class ClassTimetableService {
 
   Future<List<ClassTimetableEntry>> getForGroup(String groupId) async {
     final uri = _uri(groupId);
-    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(uri, headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException(
         response.statusCode,

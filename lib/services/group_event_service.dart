@@ -17,6 +17,7 @@ class GroupEventService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
@@ -30,7 +31,9 @@ class GroupEventService {
     );
     debugPrint('Future Event Calendar groupId: $groupId');
     debugPrint('Future Event Calendar URL: $uri');
-    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(uri, headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
     debugPrint('Event API status: ${response.statusCode}');
     debugPrint('Event API response: ${response.body}');
     if (response.statusCode != 200) {

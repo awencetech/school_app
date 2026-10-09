@@ -271,11 +271,11 @@ class _GroupInfoPageState extends State<GroupInfoPage>
 }
 
 String _resolveApiBaseUrl() {
+  if (kReleaseMode) return 'https://school-app-1uep.onrender.com';
   const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
   if (override.isNotEmpty) return override;
   const production = 'https://school-app-1uep.onrender.com';
   if (kIsWeb) return production;
-  if (kReleaseMode) return production;
   if (Platform.isAndroid) return 'http://10.0.2.2:3001';
   return 'http://localhost:3001';
 }

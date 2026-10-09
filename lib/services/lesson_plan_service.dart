@@ -12,6 +12,7 @@ class LessonPlanService {
   final String _baseUrl;
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb) return kReleaseMode ? _productionBaseUrl : 'http://localhost:3001';
@@ -27,7 +28,9 @@ class LessonPlanService {
   Future<List<LessonPlan>> getForGroup(String groupId) async {
     _requireGroupId(groupId);
     final uri = _uri(groupId);
-    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(uri, headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException(
         response.statusCode,
@@ -46,7 +49,9 @@ class LessonPlanService {
     final uri = Uri.parse(
       '$_baseUrl/api/groups/${Uri.encodeComponent(groupId)}/lesson-plans?date=${date.toIso8601String().split('T')[0]}',
     );
-    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(uri, headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException(
         response.statusCode,

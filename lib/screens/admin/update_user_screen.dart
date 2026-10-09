@@ -55,7 +55,10 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
         title: const Text('Oops...'),
         content: Text(msg),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('OK')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
@@ -92,7 +95,11 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await _userService.updateUser(widget.userId, email: email, password: password.isEmpty ? null : password);
+      await _userService.updateUser(
+        widget.userId,
+        email: email,
+        password: password.isEmpty ? null : password,
+      );
       if (!mounted) return;
       _showSuccess();
     } catch (e) {
@@ -123,7 +130,9 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
               child: Column(
                 children: [
                   TextField(
-                    controller: TextEditingController(text: _user?.userId ?? ''),
+                    controller: TextEditingController(
+                      text: _user?.userId ?? '',
+                    ),
                     readOnly: true,
                     decoration: const InputDecoration(labelText: 'User ID'),
                   ),
@@ -137,7 +146,9 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Password (leave empty to keep existing)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Password (leave empty to keep existing)',
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -149,7 +160,9 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                       ),
                       const SizedBox(width: 12),
                       OutlinedButton(
-                        onPressed: _isSaving ? null : () => Navigator.pop(context, false),
+                        onPressed: _isSaving
+                            ? null
+                            : () => Navigator.pop(context, false),
                         child: const Text('Cancel'),
                       ),
                     ],
@@ -158,29 +171,47 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
                       onPressed: (_isSaving || _isDeleting)
                           ? null
                           : () async {
                               // confirmation
                               final should = await showDialog<bool>(
                                 context: context,
-                                builder: (BuildContext dialogContext) => AlertDialog(
-                                  title: const Text('Delete User?'),
-                                  content: Text(
-                                      'Are you sure you want to permanently delete this user?\n\nUser ID: ${_user?.userId ?? ''}\nEmail: ${_user?.email ?? ''}'),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
-                                    TextButton(
-                                      onPressed: () => Navigator.of(dialogContext).pop(true),
-                                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                builder: (BuildContext dialogContext) =>
+                                    AlertDialog(
+                                      title: const Text(
+                                        'Delete Login Credential?',
+                                      ),
+                                      content: Text(
+                                        'This removes this user\'s MMHS login credential only. It does not delete a Firebase identity, student/staff profile, school records, uploaded files, or other related data. Confirm that related records may be retained before continuing.\n\nUser ID: ${_user?.userId ?? ''}\nEmail: ${_user?.email ?? ''}',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(true),
+                                          child: const Text(
+                                            'Delete',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
                               );
 
                               final navigator = Navigator.of(context);
-                              final messenger = ScaffoldMessenger.maybeOf(context);
+                              final messenger = ScaffoldMessenger.maybeOf(
+                                context,
+                              );
 
                               if (!mounted || should != true) return;
 
@@ -190,20 +221,37 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                 await _userService.deleteUser(widget.userId);
                                 if (!mounted || messenger == null) return;
                                 messenger.showSnackBar(
-                                  const SnackBar(content: Text('User deleted successfully')),
+                                  const SnackBar(
+                                    content: Text(
+                                      'User login credential deleted',
+                                    ),
+                                  ),
                                 );
                                 if (navigator.canPop()) {
                                   navigator.pop(true);
                                 }
                               } catch (e) {
-                                if (mounted) _showError('Failed to delete user: ${e.toString()}');
+                                if (mounted) {
+                                  _showError(
+                                    'Failed to delete user: ${e.toString()}',
+                                  );
+                                }
                               } finally {
                                 if (mounted) {
                                   setState(() => _isDeleting = false);
                                 }
                               }
                             },
-                      child: _isDeleting ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Delete User'),
+                      child: _isDeleting
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Delete User'),
                     ),
                   ),
                 ],

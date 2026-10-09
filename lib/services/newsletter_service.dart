@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/newsletter.dart';
+import 'auth_headers.dart';
 
 class NewsletterService {
   NewsletterService({String? baseUrl})
@@ -15,6 +16,7 @@ class NewsletterService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -27,7 +29,10 @@ class NewsletterService {
 
   Future<List<Newsletter>> getNewsletters() async {
     final response = await http
-        .get(_uri('/api/news-letter?schoolId=$schoolId'))
+        .get(
+          _uri('/api/news-letter?schoolId=$schoolId'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode == 404) return [];
     if (response.statusCode != 200) {
@@ -43,7 +48,10 @@ class NewsletterService {
 
   Future<Newsletter?> getNewsletter(String id) async {
     final response = await http
-        .get(_uri('/api/news-letter/${Uri.encodeComponent(id)}'))
+        .get(
+          _uri('/api/news-letter/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode == 404) return null;
     if (response.statusCode != 200) {
@@ -56,7 +64,7 @@ class NewsletterService {
     final response = await http
         .post(
           _uri('/api/news-letter'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(item.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -70,7 +78,7 @@ class NewsletterService {
     final response = await http
         .put(
           _uri('/api/news-letter/${Uri.encodeComponent(id)}'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(item.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -82,7 +90,10 @@ class NewsletterService {
 
   Future<void> delete(String id) async {
     final response = await http
-        .delete(_uri('/api/news-letter/${Uri.encodeComponent(id)}'))
+        .delete(
+          _uri('/api/news-letter/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception(_messageBody(response.statusCode, response.body));
@@ -91,6 +102,7 @@ class NewsletterService {
 
   Future<String> uploadImage(List<int> bytes, String fileName) async {
     final request = http.MultipartRequest('POST', _uri('/api/upload/attachment'));
+    request.headers.addAll(await AuthHeaders.bearer());
     request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
     final response = await request.send().timeout(const Duration(seconds: 30));
     final body = await response.stream.bytesToString();

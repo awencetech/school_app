@@ -1,17 +1,33 @@
 services:
   - type: web
-    name: school-backend
+    name: school-backend-staging
     env: node
     region: oregon
     plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /health
+    healthCheckPath: /ready
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: MONGODB_DATABASE
+        value: mmhs_staging
+      - key: RUN_STARTUP_MIGRATIONS
+        value: "false"
+      # Set secret values through the Render service's Environment settings.
+      # Never put credentials in this file.
+      # Use a MongoDB user restricted to the mmhs_staging database.
       - key: MONGODB_URI
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      # Configure only the authorized staging Firebase project and credentials.
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
         sync: false

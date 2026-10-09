@@ -6,23 +6,185 @@ import '../models/staff_leave.dart';
 import 'auth_headers.dart';
 
 class StaffLeaveService {
-  StaffLeaveService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
+  StaffLeaveService({String? baseUrl})
+    : _baseUrl = baseUrl ?? _resolveBaseUrl();
   final String _baseUrl;
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
-  static String _resolveBaseUrl() { const override = String.fromEnvironment('API_BASE_URL', defaultValue: ''); if (override.isNotEmpty) return override; if (kReleaseMode) return _productionBaseUrl; if (kIsWeb) return 'http://localhost:3001'; if (Platform.isAndroid) return 'http://10.0.2.2:3001'; return 'http://localhost:3001'; }
+  static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
+    const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (override.isNotEmpty) return override;
+    if (kIsWeb) return 'http://localhost:3001';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3001';
+    return 'http://localhost:3001';
+  }
+
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
-  Future<List<StaffLeaveRequest>> requests(String staffId) async { final response = await http.get(_uri('/api/emp-leave/employee/${Uri.encodeComponent(staffId)}')).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); return _list(response).map(StaffLeaveRequest.fromJson).toList(); }
-  Future<List<StaffLeaveEntitlement>> entitlements(String staffId, int year) async { final response = await http.get(_uri('/api/emp-leave/${Uri.encodeComponent(staffId)}/entitlements?year=$year')).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); return _list(response).map(StaffLeaveEntitlement.fromJson).toList(); }
-  Future<void> submit(Map<String, dynamic> payload) async { final response = await http.post(_uri('/api/emp-leave'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(payload)).timeout(const Duration(seconds: 20)); if (response.statusCode != 201) throw Exception(_message(response)); }
-  Future<void> submitStaffRequest({required String leaveType, required String startDate, required String endDate, required String reason, String notes = ''}) async { final response = await http.post(_uri('/api/staff-request'), headers: await AuthHeaders.json(), body: jsonEncode({'leaveType': leaveType, 'startDate': startDate, 'endDate': endDate, 'reason': reason, 'notes': notes})).timeout(const Duration(seconds: 20)); if (response.statusCode != 201) throw Exception(_message(response)); }
-  Future<List<StaffLeaveRequest>> staffRequests() async { final response = await http.get(_uri('/api/staff-request'), headers: await AuthHeaders.bearer()).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); return _list(response).map(StaffLeaveRequest.fromJson).toList(); }
-  Future<void> updateStaffRequestStatus(String id, String status, {String reason = ''}) async { final response = await http.patch(_uri('/api/staff-request/${Uri.encodeComponent(id)}/status'), headers: await AuthHeaders.json(), body: jsonEncode({'status': status, 'reason': reason})).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); }
-  Future<void> adjust(Map<String, dynamic> payload) async { final response = await http.post(_uri('/api/emp-leave/adjust'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(payload)).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); }
-  Future<void> cancel(String id) async { final response = await http.put(_uri('/api/emp-leave/${Uri.encodeComponent(id)}/cancel')).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); }
-  Future<List<StaffLeaveRequest>> all() async { final response = await http.get(_uri('/api/emp-leave')).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); return _list(response).map(StaffLeaveRequest.fromJson).toList(); }
-  Future<List<StaffLeaveRequest>> history() async { final response = await http.get(_uri('/api/emp-leave/history')).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); return _list(response).map(StaffLeaveRequest.fromJson).toList(); }
-  Future<void> approve(String id, Map<String, dynamic> actor) async { final response = await http.put(_uri('/api/emp-leave/${Uri.encodeComponent(id)}/approve'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'approvedBy': actor})).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); }
-  Future<void> reject(String id, Map<String, dynamic> actor, String reason) async { final response = await http.put(_uri('/api/emp-leave/${Uri.encodeComponent(id)}/reject'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'rejectedBy': actor, 'reason': reason})).timeout(const Duration(seconds: 20)); if (response.statusCode != 200) throw Exception(_message(response)); }
-  List<Map<String, dynamic>> _list(http.Response response) { final decoded = jsonDecode(response.body); final value = decoded is Map ? decoded['data'] : decoded; return value is List ? value.map((item) => Map<String, dynamic>.from(item as Map)).toList() : const []; }
-  String _message(http.Response response) { try { final value = jsonDecode(response.body); if (value is Map && value['message'] != null) return value['message'].toString(); } catch (_) {} return 'Leave request failed (${response.statusCode}).'; }
+  Future<List<StaffLeaveRequest>> requests(String staffId) async {
+    final response = await http
+        .get(
+          _uri('/api/emp-leave/employee/${Uri.encodeComponent(staffId)}'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+    return _list(response).map(StaffLeaveRequest.fromJson).toList();
+  }
+
+  Future<List<StaffLeaveEntitlement>> entitlements(
+    String staffId,
+    int year,
+  ) async {
+    final response = await http
+        .get(
+          _uri(
+            '/api/emp-leave/${Uri.encodeComponent(staffId)}/entitlements?year=$year',
+          ),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+    return _list(response).map(StaffLeaveEntitlement.fromJson).toList();
+  }
+
+  Future<void> submit(Map<String, dynamic> payload) async {
+    final response = await http
+        .post(
+          _uri('/api/emp-leave'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode(payload),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 201) throw Exception(_message(response));
+  }
+
+  Future<void> submitStaffRequest({
+    required String leaveType,
+    required String startDate,
+    required String endDate,
+    required String reason,
+    String notes = '',
+  }) async {
+    final response = await http
+        .post(
+          _uri('/api/staff-request'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode({
+            'leaveType': leaveType,
+            'startDate': startDate,
+            'endDate': endDate,
+            'reason': reason,
+            'notes': notes,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 201) throw Exception(_message(response));
+  }
+
+  Future<List<StaffLeaveRequest>> staffRequests() async {
+    final response = await http
+        .get(_uri('/api/staff-request'), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+    return _list(response).map(StaffLeaveRequest.fromJson).toList();
+  }
+
+  Future<void> updateStaffRequestStatus(
+    String id,
+    String status, {
+    String reason = '',
+  }) async {
+    final response = await http
+        .patch(
+          _uri('/api/staff-request/${Uri.encodeComponent(id)}/status'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode({'status': status, 'reason': reason}),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+  }
+
+  Future<void> adjust(Map<String, dynamic> payload) async {
+    final response = await http
+        .post(
+          _uri('/api/emp-leave/adjust'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode(payload),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+  }
+
+  Future<void> cancel(String id) async {
+    final response = await http
+        .put(
+          _uri('/api/emp-leave/${Uri.encodeComponent(id)}/cancel'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+  }
+
+  Future<List<StaffLeaveRequest>> all() async {
+    final response = await http
+        .get(_uri('/api/emp-leave'), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+    return _list(response).map(StaffLeaveRequest.fromJson).toList();
+  }
+
+  Future<List<StaffLeaveRequest>> history() async {
+    final response = await http
+        .get(
+          _uri('/api/emp-leave/history'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+    return _list(response).map(StaffLeaveRequest.fromJson).toList();
+  }
+
+  Future<void> approve(String id, Map<String, dynamic> actor) async {
+    final response = await http
+        .put(
+          _uri('/api/emp-leave/${Uri.encodeComponent(id)}/approve'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode({'approvedBy': actor}),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+  }
+
+  Future<void> reject(
+    String id,
+    Map<String, dynamic> actor,
+    String reason,
+  ) async {
+    final response = await http
+        .put(
+          _uri('/api/emp-leave/${Uri.encodeComponent(id)}/reject'),
+          headers: await AuthHeaders.json(),
+          body: jsonEncode({'rejectedBy': actor, 'reason': reason}),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) throw Exception(_message(response));
+  }
+
+  List<Map<String, dynamic>> _list(http.Response response) {
+    final decoded = jsonDecode(response.body);
+    final value = decoded is Map ? decoded['data'] : decoded;
+    return value is List
+        ? value.map((item) => Map<String, dynamic>.from(item as Map)).toList()
+        : const [];
+  }
+
+  String _message(http.Response response) {
+    try {
+      final value = jsonDecode(response.body);
+      if (value is Map && value['message'] != null) {
+        return value['message'].toString();
+      }
+    } catch (_) {}
+    return 'Leave request failed (${response.statusCode}).';
+  }
 }

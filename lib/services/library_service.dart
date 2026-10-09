@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/library_book.dart';
+import 'auth_headers.dart';
 
 class LibraryService {
   LibraryService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -13,6 +14,7 @@ class LibraryService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -24,7 +26,9 @@ class LibraryService {
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Future<List<LibraryBook>> getBooks() async {
-    final response = await http.get(_uri('/api/library')).timeout(const Duration(seconds: 20));
+    final response = await http
+        .get(_uri('/api/library'), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 20));
     _check(response);
     final decoded = jsonDecode(response.body);
     if (decoded is! List) return const [];
@@ -36,13 +40,18 @@ class LibraryService {
   Future<LibraryBook> updateBook(String id, LibraryBook book) => _send('put', '/api/library/${Uri.encodeComponent(id)}', book);
 
   Future<void> deleteBook(String id) async {
-    final response = await http.delete(_uri('/api/library/${Uri.encodeComponent(id)}')).timeout(const Duration(seconds: 20));
+    final response = await http
+        .delete(
+          _uri('/api/library/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
     _check(response);
   }
 
   Future<LibraryBook> _send(String method, String path, LibraryBook book) async {
     final request = http.Request(method, _uri(path))
-      ..headers['Content-Type'] = 'application/json'
+      ..headers.addAll(await AuthHeaders.json())
       ..body = jsonEncode(book.toJson());
     final response = await http.Client().send(request).then(http.Response.fromStream);
     _check(response);

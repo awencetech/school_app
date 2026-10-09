@@ -8,8 +8,8 @@ class HelpMenuScreen extends StatefulWidget {
 }
 
 class _HelpMenuScreenState extends State<HelpMenuScreen> {
-  final List<String?> _healthResponses = [null, null];
-  final List<String?> _feelingResponses = [null, null];
+  final List<String?> _healthResponses = [null];
+  final List<String?> _feelingResponses = [null];
 
   static const _feelings = [
     ('\u{1f601}', 'Excited'),
@@ -42,8 +42,8 @@ class _HelpMenuScreenState extends State<HelpMenuScreen> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () => setState(() {
-                    _healthResponses.fillRange(0, 2, null);
-                    _feelingResponses.fillRange(0, 2, null);
+                    _healthResponses.fillRange(0, 1, null);
+                    _feelingResponses.fillRange(0, 1, null);
                   }),
                 ),
               ],
@@ -55,16 +55,8 @@ class _HelpMenuScreenState extends State<HelpMenuScreen> {
             const SizedBox(height: 14),
             _checkIn(
               index: 0,
-              name: 'MOHAMED TADJHEEN R',
               healthQuestion:
-                  'Do you or any of your family members have cold or fever like\nsymptoms or feeling unwell?',
-            ),
-            const SizedBox(height: 14),
-            _checkIn(
-              index: 1,
-              name: 'MOHAMED AZEEMSHA A',
-              healthQuestion:
-                  'Is MOHAMED AZEEMSHA A or any family member have cold\nor fever like symptoms or feeling unwell?',
+                  'Are you experiencing cold, fever, or feeling unwell?',
             ),
             const SizedBox(height: 8),
             Row(
@@ -82,8 +74,8 @@ class _HelpMenuScreenState extends State<HelpMenuScreen> {
                 ),
                 TextButton(
                   onPressed: () => setState(() {
-                    _healthResponses.fillRange(0, 2, null);
-                    _feelingResponses.fillRange(0, 2, null);
+                    _healthResponses.fillRange(0, 1, null);
+                    _feelingResponses.fillRange(0, 1, null);
                   }),
                   style: TextButton.styleFrom(
                     minimumSize: const Size(34, 28),
@@ -102,16 +94,12 @@ class _HelpMenuScreenState extends State<HelpMenuScreen> {
 
   Widget _checkIn({
     required int index,
-    required String name,
     required String healthQuestion,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '# How are $name feeling ..',
-          style: const TextStyle(fontSize: 11),
-        ),
+        const Text('How are you feeling?', style: TextStyle(fontSize: 11)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 7,

@@ -51,14 +51,17 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
   int _selectedBottomIndex = 2;
 
   String get _effectiveGroupId {
+    final normalizedGroupId = widget.groupId.trim().toLowerCase();
     if (widget.groupId.trim().isNotEmpty &&
-        widget.groupId.toLowerCase() != 'samuni-2022-unknown') {
+        normalizedGroupId != 'unknown' &&
+        normalizedGroupId != 'mmhs-2022-unknown' &&
+        normalizedGroupId != 'samuni-2022-unknown') {
       return widget.groupId.trim();
     }
     return generateGroupDatabaseId(widget.groupName);
   }
 
-    List<TodayInClassRecord> get _visibleRecords =>
+  List<TodayInClassRecord> get _visibleRecords =>
       _tabIndex == 0 ? _homeworkRecords : _records;
 
   void _goBack() {
@@ -249,7 +252,9 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                     FilledButton.icon(
                       onPressed: _openAddForm,
                       icon: const Icon(Icons.add, size: 17),
-                      label: Text(_tabIndex == 0 ? 'Add Homework' : 'Today Class'),
+                      label: Text(
+                        _tabIndex == 0 ? 'Add Homework' : 'Today Class',
+                      ),
                     ),
                 ],
               ),
@@ -329,7 +334,11 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.warning, size: 14, color: Colors.red),
+                          const Icon(
+                            Icons.warning,
+                            size: 14,
+                            color: Colors.red,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -372,7 +381,10 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
             const SizedBox(height: 6),
             Text(
               'Message for: ${_recipients(record)}',
-              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText),
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                color: AppColors.secondaryText,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -411,10 +423,13 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
                 ),
               ),
             if (record.isHomework &&
-              (record.dueDate != null || record.priority.isNotEmpty))
+                (record.dueDate != null || record.priority.isNotEmpty))
               Text(
                 'Due: ${record.dueDate == null ? 'Not set' : _formatDate(record.dueDate!)}  Priority: ${record.priority}',
-                style: GoogleFonts.poppins(fontSize: 9, color: AppColors.secondaryText),
+                style: GoogleFonts.poppins(
+                  fontSize: 9,
+                  color: AppColors.secondaryText,
+                ),
               ),
             if (record.attachments.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -439,19 +454,38 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
               child: Row(
                 children: [
                   Icon(
-                    record.commentsAllowed ? Icons.comment_outlined : Icons.comments_disabled_outlined,
+                    record.commentsAllowed
+                        ? Icons.comment_outlined
+                        : Icons.comments_disabled_outlined,
                     size: 15,
-                    color: record.commentsAllowed ? Colors.green : AppColors.secondaryText,
+                    color: record.commentsAllowed
+                        ? Colors.green
+                        : AppColors.secondaryText,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    record.commentsAllowed ? 'Comments allowed' : 'Comments not allowed',
-                    style: GoogleFonts.poppins(fontSize: 10, color: AppColors.secondaryText),
+                    record.commentsAllowed
+                        ? 'Comments allowed'
+                        : 'Comments not allowed',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
                   const Spacer(),
-                  const Icon(Icons.visibility_outlined, size: 14, color: AppColors.secondaryText),
+                  const Icon(
+                    Icons.visibility_outlined,
+                    size: 14,
+                    color: AppColors.secondaryText,
+                  ),
                   const SizedBox(width: 3),
-                  Text('Viewed', style: GoogleFonts.poppins(fontSize: 9, color: AppColors.secondaryText)),
+                  Text(
+                    'Viewed',
+                    style: GoogleFonts.poppins(
+                      fontSize: 9,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -462,7 +496,9 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
   }
 
   String _recipients(TodayInClassRecord record) {
-    if (record.sendToStudents && record.sendToTeachers) return 'Students, Teachers';
+    if (record.sendToStudents && record.sendToTeachers) {
+      return 'Students, Teachers';
+    }
     if (record.sendToStudents) return 'Students';
     if (record.sendToTeachers) return 'Teachers';
     return 'None selected';
@@ -524,32 +560,40 @@ class _HomeworkTodayInClassPageState extends State<HomeworkTodayInClassPage> {
 }
 
 class HomeworkAddPage extends StatelessWidget {
-  const HomeworkAddPage({super.key, required this.groupId, required this.groupName});
+  const HomeworkAddPage({
+    super.key,
+    required this.groupId,
+    required this.groupName,
+  });
 
   final String groupId;
   final String groupName;
 
   @override
   Widget build(BuildContext context) => _TodayInClassForm(
-        service: TodayInClassService(),
-        homeworkService: HomeworkService(),
-        groupId: groupId,
-        isHomework: true,
-      );
+    service: TodayInClassService(),
+    homeworkService: HomeworkService(),
+    groupId: groupId,
+    isHomework: true,
+  );
 }
 
 class TodayClassAddPage extends StatelessWidget {
-  const TodayClassAddPage({super.key, required this.groupId, required this.groupName});
+  const TodayClassAddPage({
+    super.key,
+    required this.groupId,
+    required this.groupName,
+  });
 
   final String groupId;
   final String groupName;
 
   @override
   Widget build(BuildContext context) => _TodayInClassForm(
-        service: TodayInClassService(),
-        groupId: groupId,
-        isHomework: false,
-      );
+    service: TodayInClassService(),
+    groupId: groupId,
+    isHomework: false,
+  );
 }
 
 class _ResponsiveAttachmentPreview extends StatefulWidget {
@@ -570,9 +614,9 @@ class _ResponsiveAttachmentPreviewState
   @override
   void initState() {
     super.initState();
-    final stream = CachedNetworkImageProvider(widget.url).resolve(
-      const ImageConfiguration(),
-    );
+    final stream = CachedNetworkImageProvider(
+      widget.url,
+    ).resolve(const ImageConfiguration());
     stream.addListener(
       ImageStreamListener((imageInfo, synchronousCall) {
         final image = imageInfo.image;
@@ -611,9 +655,8 @@ class _ResponsiveAttachmentPreviewState
                   placeholder: (_, url) => const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  errorWidget: (_, url, error) => const Center(
-                    child: Icon(Icons.attach_file, size: 22),
-                  ),
+                  errorWidget: (_, url, error) =>
+                      const Center(child: Icon(Icons.attach_file, size: 22)),
                 ),
               ),
             ),
@@ -737,8 +780,10 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
     final title = _titleController.text.trim();
     final topic = _topicController.text.trim();
     final message = _messageController.document.toPlainText().trim();
-    if (subject.isEmpty || (widget.isHomework && title.isEmpty) ||
-        (!widget.isHomework && topic.isEmpty) || message.isEmpty) {
+    if (subject.isEmpty ||
+        (widget.isHomework && title.isEmpty) ||
+        (!widget.isHomework && topic.isEmpty) ||
+        message.isEmpty) {
       setState(
         () => _error = subject.isEmpty
             ? 'Subject is required.'
@@ -754,7 +799,9 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
       setState(() => _error = 'Due date cannot be before assign date.');
       return;
     }
-    if (!widget.isHomework && _startTime != null && _endTime != null &&
+    if (!widget.isHomework &&
+        _startTime != null &&
+        _endTime != null &&
         (_endTime!.hour * 60 + _endTime!.minute) <=
             (_startTime!.hour * 60 + _startTime!.minute)) {
       setState(() => _error = 'End time must be after start time.');
@@ -941,66 +988,110 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
                   child: Text(_formatDate(_date)),
                 ),
               ),
-                  if (widget.isHomework) ...[
-                    const SizedBox(height: 12),
-                    _fieldLabel('Due Date'),
-                    InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _dueDate ?? _date,
-                          firstDate: _date,
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) setState(() => _dueDate = picked);
-                      },
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today),
-                        ),
-                        child: Text(
-                          _dueDate == null ? 'Select due date' : _formatDate(_dueDate!),
-                        ),
-                      ),
+              if (widget.isHomework) ...[
+                const SizedBox(height: 12),
+                _fieldLabel('Due Date'),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _dueDate ?? _date,
+                      firstDate: _date,
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setState(() => _dueDate = picked);
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
                     ),
-                  ],
+                    child: Text(
+                      _dueDate == null
+                          ? 'Select due date'
+                          : _formatDate(_dueDate!),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               _fieldLabel('Subject'),
-                  DropdownButtonFormField<String>(
-                    value: _subjectController.text.isEmpty ? null : _subjectController.text,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
-                    hint: const Text('Select subject'),
-                    items: const ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science', 'Other']
-                        .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+              DropdownButtonFormField<String>(
+                value: _subjectController.text.isEmpty
+                    ? null
+                    : _subjectController.text,
+                decoration: const InputDecoration(border: OutlineInputBorder()),
+                hint: const Text('Select subject'),
+                items:
+                    const [
+                          'Mathematics',
+                          'Science',
+                          'English',
+                          'Social Studies',
+                          'Computer Science',
+                          'Other',
+                        ]
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value),
+                          ),
+                        )
                         .toList(),
-                    onChanged: (value) => setState(() => _subjectController.text = value ?? ''),
+                onChanged: (value) =>
+                    setState(() => _subjectController.text = value ?? ''),
               ),
-                  if (widget.isHomework) ...[
-                    const SizedBox(height: 12),
-                    _fieldLabel('Homework Title'),
-                    TextField(controller: _titleController, decoration: const InputDecoration(border: OutlineInputBorder())),
-                    const SizedBox(height: 12),
-                    _fieldLabel('Priority'),
-                    DropdownButtonFormField<String>(
-                      value: _priority,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
-                      items: const ['Low', 'Medium', 'High'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-                      onChanged: (value) => setState(() => _priority = value ?? 'Medium'),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 12),
-                    _fieldLabel('Class Topic'),
-                    TextField(controller: _topicController, decoration: const InputDecoration(border: OutlineInputBorder())),
-                    const SizedBox(height: 12),
-                    _fieldLabel('Class Status'),
-                    DropdownButtonFormField<String>(
-                      value: _status,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
-                      items: const ['Completed', 'In Progress', 'Cancelled'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-                      onChanged: (value) => setState(() => _status = value ?? 'Completed'),
-                    ),
-                  ],
+              if (widget.isHomework) ...[
+                const SizedBox(height: 12),
+                _fieldLabel('Homework Title'),
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _fieldLabel('Priority'),
+                DropdownButtonFormField<String>(
+                  value: _priority,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const ['Low', 'Medium', 'High']
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => _priority = value ?? 'Medium'),
+                ),
+              ] else ...[
+                const SizedBox(height: 12),
+                _fieldLabel('Class Topic'),
+                TextField(
+                  controller: _topicController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _fieldLabel('Class Status'),
+                DropdownButtonFormField<String>(
+                  value: _status,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const ['Completed', 'In Progress', 'Cancelled']
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => _status = value ?? 'Completed'),
+                ),
+              ],
               const SizedBox(height: 12),
               _fieldLabel('Send Messages to'),
               CheckboxListTile(
@@ -1024,13 +1115,31 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
               if (!widget.isHomework) ...[
                 const SizedBox(height: 12),
                 _fieldLabel('Teacher Notes'),
-                TextField(controller: _teacherNotesController, maxLines: 3, decoration: const InputDecoration(border: OutlineInputBorder())),
+                TextField(
+                  controller: _teacherNotesController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _timePicker('Start Time', _startTime, (value) => setState(() => _startTime = value))),
+                    Expanded(
+                      child: _timePicker(
+                        'Start Time',
+                        _startTime,
+                        (value) => setState(() => _startTime = value),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _timePicker('End Time', _endTime, (value) => setState(() => _endTime = value))),
+                    Expanded(
+                      child: _timePicker(
+                        'End Time',
+                        _endTime,
+                        (value) => setState(() => _endTime = value),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1099,13 +1208,15 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _attachments.length,
-                        separatorBuilder: (_, index) => const SizedBox(width: 8),
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(width: 8),
                         itemBuilder: (context, index) => SizedBox(
                           width: 240,
                           child: CachedNetworkImage(
                             imageUrl: _attachments[index],
                             fit: BoxFit.contain,
-                            errorWidget: (_, url, error) => const Icon(Icons.attach_file),
+                            errorWidget: (_, url, error) =>
+                                const Icon(Icons.attach_file),
                           ),
                         ),
                       ),
@@ -1141,7 +1252,9 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                      onPressed: _saving
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -1158,7 +1271,11 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
                                 color: Colors.white,
                               ),
                             )
-                          : Text(widget.isHomework ? 'Add Homework' : 'Add Today Class'),
+                          : Text(
+                              widget.isHomework
+                                  ? 'Add Homework'
+                                  : 'Add Today Class',
+                            ),
                     ),
                   ),
                 ],
@@ -1206,15 +1323,24 @@ class _TodayInClassFormState extends State<_TodayInClassForm> {
 
   String _timeText(TimeOfDay? time) => time == null ? '' : time.format(context);
 
-  Widget _timePicker(String label, TimeOfDay? value, ValueChanged<TimeOfDay> onPicked) =>
-      InkWell(
-        onTap: () async {
-          final picked = await showTimePicker(context: context, initialTime: value ?? TimeOfDay.now());
-          if (picked != null) onPicked(picked);
-        },
-        child: InputDecorator(
-          decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-          child: Text(value?.format(context) ?? 'Select'),
-        ),
+  Widget _timePicker(
+    String label,
+    TimeOfDay? value,
+    ValueChanged<TimeOfDay> onPicked,
+  ) => InkWell(
+    onTap: () async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: value ?? TimeOfDay.now(),
       );
+      if (picked != null) onPicked(picked);
+    },
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      child: Text(value?.format(context) ?? 'Select'),
+    ),
+  );
 }

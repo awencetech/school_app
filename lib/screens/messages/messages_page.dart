@@ -63,7 +63,7 @@ class _MessagesPageState extends State<MessagesPage> {
   @override
   void initState() {
     super.initState();
-    _allMessages = _buildDemoMessages();
+    _allMessages = const [];
     _loadAdminMessages();
   }
 
@@ -75,22 +75,23 @@ class _MessagesPageState extends State<MessagesPage> {
       });
     }
     try {
-      final role = context.read<AppState>().currentUserRole?.trim().toLowerCase() ?? '';
-      if (role != 'student' && role != 'staff' && role != 'teacher' && role != 'admin' && role != 'administrator') {
+      final role =
+          context.read<AppState>().currentUserRole?.trim().toLowerCase() ?? '';
+      if (role != 'student' &&
+          role != 'staff' &&
+          role != 'teacher' &&
+          role != 'admin' &&
+          role != 'administrator') {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
-        final isStudentQuickAccess = widget.quickAccessTitle == 'Messages';
-        final adminMessages = isStudentQuickAccess
+      final isStudentQuickAccess = widget.quickAccessTitle == 'Messages';
+      final adminMessages = isStudentQuickAccess
           ? await _adminMessageService.getStudentMessages()
           : await _adminMessageService.getMessagesForRole(role);
       if (!mounted) return;
-        final liveMessages = adminMessages
-          .map(
-          isStudentQuickAccess
-            ? _toStudentMessageModel
-            : _toMessageModel,
-          )
+      final liveMessages = adminMessages
+          .map(isStudentQuickAccess ? _toStudentMessageModel : _toMessageModel)
           .toList();
       setState(() {
         _allMessages = liveMessages;
@@ -117,7 +118,8 @@ class _MessagesPageState extends State<MessagesPage> {
     return MessageModel(
       id: 'admin-${message.id}',
       title: message.subject,
-      teacherName: 'From: ${message.senderName}${message.senderRole.isEmpty ? '' : ' (${_displayRole(message.senderRole)})'}',
+      teacherName:
+          'From: ${message.senderName}${message.senderRole.isEmpty ? '' : ' (${_displayRole(message.senderRole)})'}',
       createdDate: date == null
           ? ''
           : '${date.day.toString().padLeft(2, '0')} ${_month(date.month)} ${date.year}',
@@ -138,7 +140,8 @@ class _MessagesPageState extends State<MessagesPage> {
     return MessageModel(
       id: 'student-${message.id}',
       title: message.subject,
-      teacherName: 'From: ${message.senderName}${message.senderRole.isEmpty ? '' : ' (${_displayRole(message.senderRole)})'}',
+      teacherName:
+          'From: ${message.senderName}${message.senderRole.isEmpty ? '' : ' (${_displayRole(message.senderRole)})'}',
       createdDate: date == null
           ? ''
           : '${date.day.toString().padLeft(2, '0')} ${_month(date.month)} ${date.year}',
@@ -183,188 +186,6 @@ class _MessagesPageState extends State<MessagesPage> {
       controller.dispose();
     }
     super.dispose();
-  }
-
-  List<MessageModel> _buildDemoMessages() {
-    return [];
-    /* return [
-      MessageModel(
-        id: '1',
-        title: 'Homework - Mathematics',
-        teacherName: 'Mr. Arun Kumar',
-        createdDate: 'Aug 07, 2026',
-        createdTime: '12:41 PM',
-        message:
-            'Complete Exercise 5 from Mathematics textbook and submit it tomorrow.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Homework',
-      ),
-      MessageModel(
-        id: '2',
-        title: 'Science Homework',
-        teacherName: 'Mrs. Priya',
-        createdDate: 'Aug 07, 2026',
-        createdTime: '11:20 AM',
-        message:
-            'Submit the science project before Monday and bring the materials.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Homework',
-      ),
-      MessageModel(
-        id: '3',
-        title: 'English Assignment',
-        teacherName: 'Ms. Saira',
-        createdDate: 'Aug 06, 2026',
-        createdTime: '04:05 PM',
-        message:
-            'Write a short essay on your favorite place and bring it to class.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Homework',
-      ),
-      MessageModel(
-        id: '4',
-        title: 'PTM Announcement',
-        teacherName: 'Principal',
-        createdDate: 'Aug 06, 2026',
-        createdTime: '03:15 PM',
-        message: 'Parent Teacher Meeting is scheduled on Friday at 10:00 AM.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Announcements',
-      ),
-      MessageModel(
-        id: '5',
-        title: 'Holiday Notice',
-        teacherName: 'System',
-        createdDate: 'Aug 05, 2026',
-        createdTime: '09:30 AM',
-        message:
-            'The school will remain closed on Monday due to the public holiday.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Events',
-      ),
-      MessageModel(
-        id: '6',
-        title: 'Sports Day Circular',
-        teacherName: 'Class Teacher',
-        createdDate: 'Aug 05, 2026',
-        createdTime: '08:15 AM',
-        message:
-            'Sports Day practice starts from August 15 and all students must attend.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Circular',
-      ),
-      MessageModel(
-        id: '7',
-        title: 'Attendance Alert',
-        teacherName: 'Mr. Rahul',
-        createdDate: 'Aug 04, 2026',
-        createdTime: '01:40 PM',
-        message:
-            'Please ensure you attend the morning assembly and maintain attendance.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Attendance',
-      ),
-      MessageModel(
-        id: '8',
-        title: 'Fee Reminder',
-        teacherName: 'Accounts',
-        createdDate: 'Aug 04, 2026',
-        createdTime: '10:10 AM',
-        message:
-            'School fee payment is due this week and late charges may apply.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Fees',
-      ),
-      MessageModel(
-        id: '9',
-        title: 'Exam Timetable',
-        teacherName: 'Exam Cell',
-        createdDate: 'Aug 03, 2026',
-        createdTime: '05:20 PM',
-        message:
-            'The annual exam timetable has been updated and shared with all classes.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Exam',
-      ),
-      MessageModel(
-        id: '10',
-        title: 'Project Submission',
-        teacherName: 'Ms. Rani',
-        createdDate: 'Aug 03, 2026',
-        createdTime: '03:50 PM',
-        message:
-            'Please upload your project submission before Wednesday evening.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Homework',
-      ),
-      MessageModel(
-        id: '11',
-        title: 'Independence Day Rehearsal',
-        teacherName: 'Music Teacher',
-        createdDate: 'Aug 02, 2026',
-        createdTime: '02:25 PM',
-        message:
-            'The rehearsal for Independence Day will be held tomorrow morning.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Events',
-      ),
-      MessageModel(
-        id: '12',
-        title: 'Hindi Homework',
-        teacherName: 'Mr. Verma',
-        createdDate: 'Aug 02, 2026',
-        createdTime: '11:55 AM',
-        message: 'Read Chapter 4 and complete the notes for tomorrow’s class.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Homework',
-      ),
-      MessageModel(
-        id: '13',
-        title: 'Library Reminder',
-        teacherName: 'Librarian',
-        createdDate: 'Aug 01, 2026',
-        createdTime: '04:10 PM',
-        message: 'Please return the borrowed books before the end of the week.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Announcements',
-      ),
-      MessageModel(
-        id: '14',
-        title: 'Transport Update',
-        teacherName: 'Transport Office',
-        createdDate: 'Jul 31, 2026',
-        createdTime: '09:00 AM',
-        message: 'The bus timing has been revised for the next two days.',
-        profileImage: null,
-        isViewed: false,
-        category: 'Circular',
-      ),
-      MessageModel(
-        id: '15',
-        title: 'Lab Practical Notice',
-        teacherName: 'Science Dept',
-        createdDate: 'Jul 30, 2026',
-        createdTime: '12:35 PM',
-        message:
-            'Bring your lab record book for the practical session on Friday.',
-        profileImage: null,
-        isViewed: true,
-        category: 'Announcements',
-      ),
-    ]; */
   }
 
   void _applyFilters() {
@@ -435,8 +256,7 @@ class _MessagesPageState extends State<MessagesPage> {
     final greyText = const Color(0xFF757575);
     final routeName = ModalRoute.of(context)?.settings.name;
     final isStudentMessages = routeName == AppRoutes.studentDashboardMessages;
-    final isStaffMessages =
-      routeName == AppRoutes.staffDashboardMessages;
+    final isStaffMessages = routeName == AppRoutes.staffDashboardMessages;
     final isAdminMessages = routeName == AppRoutes.adminQuickMessages;
 
     return Theme(
@@ -468,53 +288,62 @@ class _MessagesPageState extends State<MessagesPage> {
                 ],
               )
             : AppBar(
-          backgroundColor: primaryColor,
-          elevation: 0,
-          leading: IconButton(
-            onPressed: () => navigateBack(context),
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          ),
-          title: Text(
-            'Messages',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          actions: [
-            IconButton(
-              onPressed: _openSearch,
-              icon: const Icon(Icons.search, color: Colors.white),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.filter_list, color: Colors.white),
-              onSelected: (value) {
-                setState(() {
-                  _selectedFilter = value;
-                  _applyFilters();
-                });
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'All', child: Text('All')),
-                PopupMenuItem(value: 'Homework', child: Text('Homework')),
-                PopupMenuItem(value: 'Circular', child: Text('Circular')),
-                PopupMenuItem(value: 'Events', child: Text('Events')),
-                PopupMenuItem(value: 'Attendance', child: Text('Attendance')),
-                PopupMenuItem(value: 'Fees', child: Text('Fees')),
-                PopupMenuItem(value: 'Exam', child: Text('Exam')),
-                PopupMenuItem(
-                  value: 'Announcements',
-                  child: Text('Announcements'),
+                backgroundColor: primaryColor,
+                elevation: 0,
+                leading: IconButton(
+                  onPressed: () => navigateBack(context),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                  ),
                 ),
-              ],
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.notifications_none, color: Colors.white),
-            ),
-          ],
-        ),
+                title: Text(
+                  'Messages',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    onPressed: _openSearch,
+                    icon: const Icon(Icons.search, color: Colors.white),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.filter_list, color: Colors.white),
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedFilter = value;
+                        _applyFilters();
+                      });
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'All', child: Text('All')),
+                      PopupMenuItem(value: 'Homework', child: Text('Homework')),
+                      PopupMenuItem(value: 'Circular', child: Text('Circular')),
+                      PopupMenuItem(value: 'Events', child: Text('Events')),
+                      PopupMenuItem(
+                        value: 'Attendance',
+                        child: Text('Attendance'),
+                      ),
+                      PopupMenuItem(value: 'Fees', child: Text('Fees')),
+                      PopupMenuItem(value: 'Exam', child: Text('Exam')),
+                      PopupMenuItem(
+                        value: 'Announcements',
+                        child: Text('Announcements'),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
         body: RefreshIndicator(
           onRefresh: _refreshMessages,
           color: primaryColor,
@@ -660,7 +489,9 @@ class _MessagesPageState extends State<MessagesPage> {
                                             color: const Color(0xFF444444),
                                           ),
                                         ),
-                                        if (message.recipientLabel.isNotEmpty) ...[
+                                        if (message
+                                            .recipientLabel
+                                            .isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           Text(
                                             'Sent to: ${message.recipientLabel}',
@@ -722,7 +553,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                         contentPadding:
                                             const EdgeInsets.symmetric(
                                               horizontal: 12,
-                                                vertical: 8,
+                                              vertical: 8,
                                             ),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -771,72 +602,71 @@ class _MessagesPageState extends State<MessagesPage> {
                   },
                 ),
         ),
-          bottomNavigationBar: isStudentMessages
-              ? ReusableBottomNavigationBar(
-                  currentIndex: 0,
-                  onItemSelected: (index) {
-                    if (index == 0) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.studentDashboard,
-                        (route) => false,
-                      );
-                    }
-                  },
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.home),
-                      label: 'Home',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.person),
-                      label: 'User',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.info),
-                      label: 'Help',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.help),
-                      label: 'Support',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.logout),
-                      label: 'Logout',
-                    ),
-                  ],
-                )
-              : isStaffMessages
-              ? StaffFooter(
-                  currentIndex: 0,
-                  onItemSelected: (index) async {
-                    if (index == 0) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.staffDashboard,
-                        (route) => false,
-                      );
-                    } else if (index == 4) {
-                      await context.read<AppState>().logout();
-                      if (!context.mounted) return;
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.main,
-                        (route) => false,
-                      );
-                    }
-                  },
-                )
-              : isAdminMessages
-              ? AdminBottomNavigationBar(
-                  currentIndex: 0,
-                  onItemSelected: (index) {
-                    if (index == 0) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.adminDashboard,
-                        (route) => false,
-                      );
-                    }
-                  },
-                )
-              : null,
+        bottomNavigationBar: isStudentMessages
+            ? ReusableBottomNavigationBar(
+                currentIndex: 0,
+                onItemSelected: (index) {
+                  if (index == 0) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.studentDashboard,
+                      (route) => false,
+                    );
+                  }
+                },
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person),
+                    label: 'User',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.info),
+                    label: 'Help',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.help),
+                    label: 'Support',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.logout),
+                    label: 'Logout',
+                  ),
+                ],
+              )
+            : isStaffMessages
+            ? StaffFooter(
+                currentIndex: 0,
+                onItemSelected: (index) async {
+                  if (index == 0) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.staffDashboard,
+                      (route) => false,
+                    );
+                  } else if (index == 4) {
+                    await context.read<AppState>().logout();
+                    if (!context.mounted) return;
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+                  }
+                },
+              )
+            : isAdminMessages
+            ? AdminBottomNavigationBar(
+                currentIndex: 0,
+                onItemSelected: (index) {
+                  if (index == 0) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.adminDashboard,
+                      (route) => false,
+                    );
+                  }
+                },
+              )
+            : null,
       ),
     );
   }

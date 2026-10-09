@@ -62,11 +62,12 @@ class _StaffStudentAttendancePageState
       setState(() => _students = students);
       await _loadDate();
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -93,11 +94,12 @@ class _StaffStudentAttendancePageState
         });
       }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -149,15 +151,17 @@ class _StaffStudentAttendancePageState
         );
       }
       await _loadDate();
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Attendance saved successfully.')),
         );
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -171,17 +175,19 @@ class _StaffStudentAttendancePageState
         toDate: _dateOnly(_toDate),
         status: _reportStatus,
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _records = records;
           _loading = false;
         });
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -194,10 +200,11 @@ class _StaffStudentAttendancePageState
     );
     if (picked == null) return;
     setState(() {
-      if (from)
+      if (from) {
         _fromDate = picked;
-      else
+      } else {
         _toDate = picked;
+      }
     });
     await _loadReport();
   }
@@ -231,11 +238,12 @@ class _StaffStudentAttendancePageState
 
   Widget _attendanceView() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null)
+    if (_error != null) {
       return _stateBox(_error!, () {
         _error = null;
         _loadRoster();
       });
+    }
     return RefreshIndicator(
       onRefresh: _loadRoster,
       child: ListView(

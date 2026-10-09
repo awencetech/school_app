@@ -30,7 +30,7 @@ class _QuillLocalizationsDelegate extends LocalizationsDelegate<FlutterQuillLoca
   bool shouldReload(_QuillLocalizationsDelegate old) => false;
 }
 
-/// Root widget for the School App.
+/// Root widget for MMHS.
 class SchoolApp extends StatelessWidget {
   const SchoolApp({super.key});
 
@@ -46,7 +46,7 @@ class SchoolApp extends StatelessWidget {
       child: Consumer<AppState>(
         builder: (context, appState, child) => MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'School App',
+          title: 'MMHS',
           theme: AppTheme.light,
           locale: Locale(appState.selectedLanguage?.code ?? 'en'),
           localizationsDelegates: [
@@ -78,4 +78,3 @@ class SchoolApp extends StatelessWidget {
     );
   }
 }
-

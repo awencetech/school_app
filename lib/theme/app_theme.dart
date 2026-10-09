@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// Material 3 theme configuration for the School App.
+/// Material 3 theme configuration for MMHS.
 class AppTheme {
   AppTheme._();
 

@@ -1,4 +1,4 @@
-/// Supported languages for the School App.
+/// Supported languages for MMHS.
 enum LanguageOption {
   tamil,
   english,
@@ -25,4 +25,3 @@ extension LanguageOptionX on LanguageOption {
         _ => null,
       };
 }
-

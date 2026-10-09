@@ -72,7 +72,7 @@ class _StudentDiaryPageState extends State<StudentDiaryPage> {
         ),
         centerTitle: true,
         title: const Text(
-          'SAMUNI',
+          'MMHS',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),

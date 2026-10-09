@@ -12,7 +12,7 @@ import '../../widgets/quick_access_app_bar.dart';
 class StaffCampaignsPage extends StatefulWidget {
   const StaffCampaignsPage({
     super.key,
-    this.headerTitle = 'SAMUNI',
+    this.headerTitle = 'MMHS',
     this.quickAccessTitle,
   });
 
@@ -318,7 +318,7 @@ class _StudentCampaignDetailPage extends StatelessWidget {
         ),
         centerTitle: true,
         title: const Text(
-          'SAMUNI',
+          'MMHS',
           style: TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),

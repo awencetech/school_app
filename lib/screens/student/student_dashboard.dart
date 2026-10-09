@@ -35,7 +35,7 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedBottomIndex = 0;
-  String _studentName = 'Student name';
+  String _studentName = '';
   String _studentId = '';
   String _studentImageUrl = '';
   bool _studentLoading = true;
@@ -297,6 +297,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final config = context.watch<SchoolConfigService>();
+    final schoolName = config.schoolName.trim();
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -304,7 +305,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         backgroundColor: AppColors.topBar,
         centerTitle: true,
         title: Text(
-          context.watch<SchoolConfigService>().schoolName,
+          schoolName.isEmpty ? 'MMHS' : schoolName,
           style: AppTextStyles.appTitle,
         ),
         automaticallyImplyLeading: false,
@@ -333,7 +334,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     const SizedBox.shrink(),
                   const SizedBox(height: 4),
                   Text(
-                    context.watch<SchoolConfigService>().schoolName,
+                    schoolName.isEmpty ? 'MMHS' : schoolName,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 22,
@@ -342,15 +343,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Welcome $_studentName',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.secondaryText,
+                  if (_studentName.trim().isNotEmpty)
+                    Text(
+                      'Welcome $_studentName',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.secondaryText,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),

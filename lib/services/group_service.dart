@@ -32,6 +32,7 @@ class GroupService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb) return _productionBaseUrl;
@@ -174,7 +175,10 @@ class GroupService {
     }
     final encodedGroupId = Uri.encodeComponent(normalizedGroupId);
     final resp = await http
-        .get(_uri('/api/groups/$encodedGroupId'))
+        .get(
+          _uri('/api/groups/$encodedGroupId'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) {
       throw ApiException(
@@ -222,7 +226,7 @@ class GroupService {
     final resp = await http
         .post(
           _uri('/api/groups'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode({
             'name': name.trim(),
             'id': id.trim(),

@@ -45,7 +45,9 @@ void main() {
     expect(find.byType(SchoolApp), findsOneWidget);
   });
 
-  testWidgets('AchievementsScreen renders with school configuration', (WidgetTester tester) async {
+  testWidgets('AchievementsScreen renders with school configuration', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(_withSchoolConfig(const AchievementsScreen()));
     await tester.pump();
 
@@ -54,20 +56,27 @@ void main() {
     expect(find.text('Sports Achievements'), findsOneWidget);
   });
 
-  testWidgets('LoginScreen matches the reference sign-in layout', (WidgetTester tester) async {
+  testWidgets('LoginScreen matches the reference sign-in layout', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(_withSchoolConfig(const LoginScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('School name'), findsOneWidget);
+    expect(find.text('School name'), findsNothing);
     expect(find.text('Username or email'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Forgot your password?'), findsOneWidget);
     expect(find.text('Sign In'), findsOneWidget);
     expect(find.text('Don\'t have an account? Register'), findsOneWidget);
-    expect(find.text('Contact our school to get information about registration'), findsOneWidget);
+    expect(
+      find.text('Contact our school to get information about registration'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('LanguageSelectionScreen stays within a narrow browser width', (WidgetTester tester) async {
+  testWidgets('LanguageSelectionScreen stays within a narrow browser width', (
+    WidgetTester tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -91,7 +100,9 @@ void main() {
     expect(find.text('Select your preferred Language'), findsOneWidget);
   });
 
-  testWidgets('AdminCreateIdScreen actions wrap on narrow browser widths', (WidgetTester tester) async {
+  testWidgets('AdminCreateIdScreen actions wrap on narrow browser widths', (
+    WidgetTester tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -110,18 +121,30 @@ void main() {
     expect(find.text('Force reset of Password'), findsOneWidget);
   });
 
-  testWidgets('ForgotPasswordScreen supports email, OTP and password reset flow', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: ForgotPasswordScreen()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'ForgotPasswordScreen directs users to supported password assistance',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: ForgotPasswordScreen()));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Recover Your Password'), findsOneWidget);
-    expect(find.text('Email address'), findsOneWidget);
-    expect(find.text('Send OTP'), findsOneWidget);
-    expect(find.text('Don\'t have an account? Register'), findsOneWidget);
-    expect(find.text('Contact your school if you face issues'), findsOneWidget);
-  });
+      expect(find.text('Password assistance'), findsOneWidget);
+      expect(find.text('Contact school administrator'), findsOneWidget);
+      expect(
+        find.textContaining('Google’s account recovery process'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Do not send your current password'),
+        findsOneWidget,
+      );
+      expect(find.text('Send OTP'), findsNothing);
+      expect(find.text('Verify OTP'), findsNothing);
+    },
+  );
 
-  testWidgets('CreateAccountScreen matches the reference registration layout', (WidgetTester tester) async {
+  testWidgets('CreateAccountScreen matches the reference registration layout', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: CreateAccountScreen()));
     await tester.pumpAndSettle();
 
@@ -131,56 +154,71 @@ void main() {
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Password (Again)'), findsOneWidget);
     expect(find.text('Click here to Register Now!'), findsOneWidget);
-    expect(find.text('By clicking Register, you agree to our Privacy Policy and Terms of Use'), findsOneWidget);
+    expect(
+      find.text(
+        'By clicking Register, you agree to our Privacy Policy and Terms of Use',
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('SchoolScreen renders a staff profile list without blanking', (WidgetTester tester) async {
+  testWidgets('SchoolScreen renders a staff profile list without blanking', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(_withSchoolConfig(const SchoolScreen()));
     await tester.pumpAndSettle();
 
     expect(find.byType(StaffProfileCard), findsWidgets);
   });
 
-  testWidgets('AppBottomNavigation switches to Logout when the user is logged in', (WidgetTester tester) async {
-    final appState = AppState();
+  testWidgets(
+    'AppBottomNavigation switches to Logout when the user is logged in',
+    (WidgetTester tester) async {
+      final appState = AppState();
 
-    await tester.pumpWidget(
-      ChangeNotifierProvider<AppState>.value(
-        value: appState,
-        child: const MaterialApp(
-          home: Scaffold(
-            bottomNavigationBar: AppBottomNavigation(),
-            body: SizedBox(),
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: Scaffold(
+              bottomNavigationBar: AppBottomNavigation(),
+              body: SizedBox(),
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text('Login'), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
 
-    await appState.setLoggedIn(true);
-    await tester.pump();
+      await appState.setLoggedIn(true);
+      await tester.pump();
 
-    expect(find.text('Logout'), findsOneWidget);
-  });
+      expect(find.text('Logout'), findsOneWidget);
+    },
+  );
 
-  testWidgets('StudentInfoScreen matches the reference student information layout', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: StudentInfoScreen()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'StudentInfoScreen matches the reference student information layout',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: StudentInfoScreen()));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Student Info'), findsOneWidget);
-    expect(find.text('Student name'), findsOneWidget);
-    expect(find.text('Student ID'), findsOneWidget);
-    expect(find.text('Mail ID :'), findsOneWidget);
-    expect(find.text('Mobile No :'), findsOneWidget);
-    expect(find.text('Special Needs :'), findsOneWidget);
-    expect(find.text('Address'), findsOneWidget);
-    expect(find.text('Groups and Classes of Student name'), findsOneWidget);
-    expect(find.text('Your Location'), findsOneWidget);
-    expect(find.text('Parent Details'), findsOneWidget);
-  });
+      expect(find.text('Student Info'), findsOneWidget);
+      expect(find.text('Student name'), findsOneWidget);
+      expect(find.text('Student ID'), findsOneWidget);
+      expect(find.text('Mail ID :'), findsOneWidget);
+      expect(find.text('Mobile No :'), findsOneWidget);
+      expect(find.text('Special Needs :'), findsOneWidget);
+      expect(find.text('Address'), findsOneWidget);
+      expect(find.text('Groups and Classes of Student name'), findsOneWidget);
+      expect(find.text('Your Location'), findsOneWidget);
+      expect(find.text('Parent Details'), findsOneWidget);
+    },
+  );
 
-  testWidgets('StudentManagementPage exposes the Add Student button', (WidgetTester tester) async {
+  testWidgets('StudentManagementPage exposes the Add Student button', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
     await tester.pumpAndSettle();
 
@@ -188,55 +226,84 @@ void main() {
     expect(find.text('Add Student'), findsOneWidget);
   });
 
-  testWidgets('StudentManagementPage uses class/section dropdowns with a generated read-only student ID', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'StudentManagementPage uses class/section dropdowns with a generated read-only student ID',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Add Student'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Add Student'));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(2));
-    expect(find.text('Class'), findsOneWidget);
-    expect(find.text('Section'), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(2));
+      expect(find.text('Class'), findsOneWidget);
+      expect(find.text('Section'), findsOneWidget);
 
-    final idField = find.widgetWithText(TextFormField, 'Student ID');
-    expect(idField, findsOneWidget);
-    final tf = tester.widget<TextFormField>(idField);
-    expect(tf.enabled, isFalse);
-    expect(tf.controller!.text, isNotEmpty);
-    expect(tf.controller!.text.startsWith('STU'), isTrue);
-  });
+      final idField = find.widgetWithText(TextFormField, 'Student ID');
+      expect(idField, findsOneWidget);
+      final tf = tester.widget<TextFormField>(idField);
+      expect(tf.enabled, isFalse);
+      expect(tf.controller!.text, isNotEmpty);
+      expect(tf.controller!.text.startsWith('STU'), isTrue);
+    },
+  );
 
-  testWidgets('StudentManagementPage shows saved students with edit and delete actions', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'StudentManagementPage shows saved students with edit and delete actions',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: StudentManagementPage()));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Add Student'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Add Student'));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Naveen');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Class'), 'Grade 10');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Section'), 'A');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Student ID'), 'STU-101');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Parent Name'), 'Ravi');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Mobile Number'), '9876543210');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Address'), 'Street 1');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Name'),
+        'Naveen',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Class'),
+        'Grade 10',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Section'),
+        'A',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Student ID'),
+        'STU-101',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Parent Name'),
+        'Ravi',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Mobile Number'),
+        '9876543210',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Address'),
+        'Street 1',
+      );
 
-    await tester.dragUntilVisible(
-      find.text('Save Student'),
-      find.byType(Scrollable),
-      const Offset(0, -300),
-    );
-    await tester.tap(find.text('Save Student'));
-    await tester.pumpAndSettle();
+      await tester.dragUntilVisible(
+        find.text('Save Student'),
+        find.byType(Scrollable),
+        const Offset(0, -300),
+      );
+      await tester.tap(find.text('Save Student'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Naveen'), findsOneWidget);
-    expect(find.text('Grade 10'), findsOneWidget);
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
-  });
+      expect(find.text('Naveen'), findsOneWidget);
+      expect(find.text('Grade 10'), findsOneWidget);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    },
+  );
 
-  testWidgets('GroupInfoEditPage shows the selected group and edit fields', (WidgetTester tester) async {
+  testWidgets('GroupInfoEditPage shows the selected group and edit fields', (
+    WidgetTester tester,
+  ) async {
     final group = Group(
       id: 'SAMUNI-2022-NCC2022',
       name: 'NCC2022',
@@ -256,22 +323,28 @@ void main() {
     expect(find.text('Group Details'), findsOneWidget);
   });
 
-  testWidgets('StaffHandbookPage renders saved sections in the dashboard grid', (WidgetTester tester) async {
-    final service = _TestStaffHandbookService();
+  testWidgets(
+    'StaffHandbookPage renders saved sections in the dashboard grid',
+    (WidgetTester tester) async {
+      final service = _TestStaffHandbookService();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: StaffHandbookPage(service: service),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(home: StaffHandbookPage(service: service)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Introduction'), findsOneWidget);
-    expect(find.text('School Policies'), findsOneWidget);
-    expect(find.text('Staff attendance and weekly reporting process.'), findsOneWidget);
-  });
+      expect(find.text('Introduction'), findsOneWidget);
+      expect(find.text('School Policies'), findsOneWidget);
+      expect(
+        find.text('Staff attendance and weekly reporting process.'),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('ImportantNewsTicker does not overflow', (WidgetTester tester) async {
+  testWidgets('ImportantNewsTicker does not overflow', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(

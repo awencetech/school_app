@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/event_celebration.dart';
+import 'auth_headers.dart';
 
 class EventCelebrationService {
   EventCelebrationService({String? baseUrl})
@@ -15,6 +16,7 @@ class EventCelebrationService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -27,7 +29,10 @@ class EventCelebrationService {
 
   Future<List<EventCelebration>> getEvents() async {
     final response = await http
-        .get(_uri('/api/events-celebration?schoolId=$schoolId'))
+        .get(
+          _uri('/api/events-celebration?schoolId=$schoolId'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode == 404) return [];
     if (response.statusCode != 200) {
@@ -43,7 +48,10 @@ class EventCelebrationService {
 
   Future<EventCelebration?> getEvent(String id) async {
     final response = await http
-        .get(_uri('/api/events-celebration/$id'))
+        .get(
+          _uri('/api/events-celebration/$id'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode == 404) return null;
     if (response.statusCode != 200) throw Exception(_message(response));
@@ -56,7 +64,7 @@ class EventCelebrationService {
     final response = await http
         .post(
           _uri('/api/events-celebration'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(item.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -72,7 +80,7 @@ class EventCelebrationService {
     final response = await http
         .put(
           _uri('/api/events-celebration/$id'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(item.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -84,7 +92,10 @@ class EventCelebrationService {
 
   Future<void> delete(String id) async {
     final response = await http
-        .delete(_uri('/api/events-celebration/$id'))
+        .delete(
+          _uri('/api/events-celebration/$id'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception(_message(response));
@@ -96,6 +107,7 @@ class EventCelebrationService {
       'POST',
       _uri('/api/upload/attachment'),
     );
+    request.headers.addAll(await AuthHeaders.bearer());
     request.files.add(
       http.MultipartFile.fromBytes('file', bytes, filename: fileName),
     );

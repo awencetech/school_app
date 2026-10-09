@@ -44,7 +44,7 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
       final matchingStaff = currentUserId == null || currentUserId.isEmpty
           ? null
           : staffList.where((item) => item.employeeId.trim().toLowerCase() == currentUserId).firstOrNull;
-      setState(() => _staff = matchingStaff ?? staffList.first);
+      setState(() => _staff = matchingStaff);
     } catch (_) {
       // Keep the legacy fallback content when the service is unavailable.
     } finally {
@@ -56,8 +56,8 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
   Widget build(BuildContext context) {
     final config = context.watch<SchoolConfigService>();
     final staff = _staff;
-    final staffName = staff?.name ?? 'MOHAMED TADJHEEN R';
-    final staffEmail = staff?.mailId ?? 'secretary.pr.universals@sriaurobindomira.org';
+    final staffName = staff?.name ?? '';
+    final staffEmail = staff?.mailId ?? '';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -78,6 +78,10 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
             ? _StaffEditForm(
                 staff: staff,
                 onClose: () => setState(() => _isEditing = false),
+              )
+            : staff == null
+            ? const Center(
+                child: Text('Staff information is currently unavailable.'),
               )
             : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -126,7 +130,7 @@ class _StaffInfoPageState extends State<StaffInfoPage> {
                             ),
                             const SizedBox(width: 16),
                             _ProfilePhoto(
-                              imageSource: staff?.imageUrl ?? config.secretaryPhotoBase64,
+                              imageSource: staff.imageUrl ?? config.secretaryPhotoBase64,
                             ),
                           ],
                         ),
@@ -179,24 +183,36 @@ class _StaffEditFormState extends State<_StaffEditForm> {
   void initState() {
     super.initState();
     final staff = widget.staff;
-    String value(String? current, String fallback) => current ?? fallback;
+    String value(String? current) => current ?? '';
     _controllers = {
-      'Employee Name': TextEditingController(text: value(staff?.name, 'MOHAMED TADJHEEN R')),
-      'Mobile No': TextEditingController(text: value(staff?.mobileNo, '9500468146')),
-      'Shareable Contact No': TextEditingController(text: value(staff?.shareableContactNo, '9500468146')),
-      'Mail Id': TextEditingController(text: value(staff?.mailId, 'secretary.pr.universals@sriaurobindomira.org')),
-      'Address': TextEditingController(text: value(staff?.address, '36, Palani Andavar Kovil Street, Thiruparankundram, Madurai-05.')),
-      'Brief Introduction - Something about yourself': TextEditingController(text: value(staff?.briefIntroduction, 'This is R. Mohamed Tadjheen, working as Designer & Secretary to principal at Sri Aurobindo Mira Universal School, Keelamathur, Madurai.')),
-      'Hobbies and Interest': TextEditingController(text: value(staff?.hobbiesAndInterest, 'My hobbies is to Watch Movies & Playing Games. Interest in Taking Photography.')),
-      'Sport/s you actively participate': TextEditingController(text: value(staff?.sports, 'Cricket, Football, Carrom, kho-kho and chess.')),
-      'Sports - Training School/Trained by details': TextEditingController(text: value(staff?.sportsTrainingDetails, 'Football and kho-kho')),
-      'Sports - Name the Team/s or Club/s you are associated with': TextEditingController(text: value(staff?.sportsTeamClub, 'No team')),
-      'Achievements- Academic or Non-Academic outside of School': TextEditingController(text: value(staff?.achievements, 'Zonal Level Runner in kho-kho.')),
-      'Extra-Curricular activity/s that you actively participate': TextEditingController(text: value(staff?.extraCurricularActivities, 'Photography, Art & Craft and Dancing')),
-      'Extra-Curricular - Training School/Trained by details': TextEditingController(text: 'No team'),
-      'Extra-Curricular - Name the Team/s or Club/s you are associated with': TextEditingController(text: value(staff?.extraCurricularTeamClub, 'No team')),
-      'Professional Body Association': TextEditingController(text: value(staff?.professionalBodyAssociation, 'No Professional body association')),
-      'What you do': TextEditingController(text: value(staff?.whatYouDo, 'I am Designer & Secretary to principal in SAM Universal, Photographer and System Admin work.')),
+      'Employee Name': TextEditingController(text: value(staff?.name)),
+      'Mobile No': TextEditingController(text: value(staff?.mobileNo)),
+      'Shareable Contact No': TextEditingController(
+        text: value(staff?.shareableContactNo),
+      ),
+      'Mail Id': TextEditingController(text: value(staff?.mailId)),
+      'Address': TextEditingController(text: value(staff?.address)),
+      'Brief Introduction - Something about yourself':
+          TextEditingController(text: value(staff?.briefIntroduction)),
+      'Hobbies and Interest':
+          TextEditingController(text: value(staff?.hobbiesAndInterest)),
+      'Sport/s you actively participate':
+          TextEditingController(text: value(staff?.sports)),
+      'Sports - Training School/Trained by details':
+          TextEditingController(text: value(staff?.sportsTrainingDetails)),
+      'Sports - Name the Team/s or Club/s you are associated with':
+          TextEditingController(text: value(staff?.sportsTeamClub)),
+      'Achievements- Academic or Non-Academic outside of School':
+          TextEditingController(text: value(staff?.achievements)),
+      'Extra-Curricular activity/s that you actively participate':
+          TextEditingController(text: value(staff?.extraCurricularActivities)),
+      'Extra-Curricular - Training School/Trained by details':
+          TextEditingController(),
+      'Extra-Curricular - Name the Team/s or Club/s you are associated with':
+          TextEditingController(text: value(staff?.extraCurricularTeamClub)),
+      'Professional Body Association':
+          TextEditingController(text: value(staff?.professionalBodyAssociation)),
+      'What you do': TextEditingController(text: value(staff?.whatYouDo)),
     };
   }
 
@@ -406,6 +422,16 @@ class _EmployeeDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final details = <({String label, String value})>[
+      (label: 'Employee Id', value: staff?.employeeId ?? ''),
+      (label: 'Employee Category', value: staff?.employeeCategory ?? ''),
+      (label: 'Role', value: staff?.role ?? ''),
+      (label: 'Mail Id', value: email),
+      (label: 'Mobile No', value: staff?.mobileNo ?? ''),
+      (label: 'Shareable Contact No', value: staff?.shareableContactNo ?? ''),
+      (label: 'Designation', value: staff?.designation ?? ''),
+    ].where((detail) => detail.value.trim().isNotEmpty);
+
     return DefaultTextStyle(
       style: const TextStyle(
         fontSize: 13,
@@ -415,20 +441,16 @@ class _EmployeeDetails extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+          if (name.trim().isNotEmpty)
+            Text(
+              name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF111827),
+              ),
             ),
-          ),
-          Text('Employee Id : ${staff?.employeeId ?? 'SAMNTS56'}'),
-          Text('Employee Category : ${staff?.employeeCategory ?? 'NTS-Grade 1'}'),
-          Text('Role : ${staff?.role ?? 'Staff'}'),
-          Text('Mail Id : $email'),
-          Text('Mobile No : ${staff?.mobileNo ?? '9500468146'}'),
-          Text('Shareable Contact No : ${staff?.shareableContactNo ?? '9500468146'}'),
-          Text('Designation : ${staff?.designation ?? 'Secretary'}'),
+          for (final detail in details)
+            Text('${detail.label} : ${detail.value}'),
         ],
       ),
     );
@@ -522,7 +544,7 @@ class _ClassesTable extends StatelessWidget {
             ),
             const TableRow(
               children: [
-                _TableCell('Not associated with any class or group.'),
+                _TableCell('No class or group information available.'),
                 _TableCell(''),
                 _TableCell(''),
                 _TableCell(''),
@@ -566,6 +588,30 @@ class _OtherDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final employee = staff;
+    final details = <({String label, String value})>[
+      (label: 'Employee Category', value: employee?.employeeCategory ?? ''),
+      (label: 'Address', value: employee?.address ?? ''),
+      (label: 'About', value: employee?.about ?? ''),
+      (label: 'Interested Area', value: employee?.hobbiesAndInterest ?? ''),
+      (label: 'Sports', value: employee?.sports ?? ''),
+      (label: 'Sports training', value: employee?.sportsTrainingDetails ?? ''),
+      (label: 'Sports team or club', value: employee?.sportsTeamClub ?? ''),
+      (label: 'Achievements', value: employee?.achievements ?? ''),
+      (
+        label: 'Extra-curricular activities',
+        value: employee?.extraCurricularActivities ?? '',
+      ),
+      (
+        label: 'Extra-curricular team or club',
+        value: employee?.extraCurricularTeamClub ?? '',
+      ),
+      (
+        label: 'Professional body association',
+        value: employee?.professionalBodyAssociation ?? '',
+      ),
+      (label: 'What you do', value: employee?.whatYouDo ?? ''),
+    ].where((detail) => detail.value.trim().isNotEmpty);
+
     return Padding(
       padding: EdgeInsets.zero,
       child: DefaultTextStyle(
@@ -586,90 +632,21 @@ class _OtherDetails extends StatelessWidget {
                 color: Color(0xFF234E9B),
               ),
             ),
-            Text('Employee Category: ${employee?.employeeCategory ?? 'NTS-Grade 1'}'),
-            const SizedBox(height: 10),
-            const Text(
-              'Address',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text(employee?.address ?? '36, Palani Andavar Kovil Street, Thiruparankundram, Madurai-05.'),
-            const SizedBox(height: 10),
-            const Text(
-              'About',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text(employee?.about ?? 'This is R. Mohamed Tajdheen, working as Designer & Secretary to principal at Sri Aurobindo Mira Universal School, Keelamathur.'),
-            const SizedBox(height: 10),
-            const Text(
-              'Interested Area:',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text(employee?.hobbiesAndInterest ?? 'My hobbies is to Watch Movies & Playing Games. Interest in Taking Photography.'),
-            const SizedBox(height: 10),
-            const Text(
-              'Sports',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text('Actively Participates in : ${employee?.sports ?? 'Cricket, Football, Carrom, kho-kho and chess.'}'),
-            Text('Training School : ${employee?.sportsTrainingDetails ?? 'Football and kho-kho'}'),
-            Text('Part of Team/Club : ${employee?.sportsTeamClub ?? 'No team'}'),
-            const SizedBox(height: 10),
-            const Text(
-              'Achievements-Academic or Non-Academic outside of School',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text(employee?.achievements ?? 'Zonal Level Runner in kho-kho.'),
-            const SizedBox(height: 10),
-            const Text(
-              'Extra-Curricular',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text('Actively Participates in : ${employee?.extraCurricularActivities ?? 'Photography, Art & Craft and Dancing'}'),
-            Text('Part of Team/Club : ${employee?.extraCurricularTeamClub ?? 'No team'}'),
-            const SizedBox(height: 10),
-            const Text(
-              'Professional Body Association',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text(employee?.professionalBodyAssociation ?? 'No Professional body association'),
-            const SizedBox(height: 10),
-            const Text(
-              'What you do:',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-            Text(employee?.whatYouDo ?? 'I am Designer & Secretary to principal in SAM Universal, Photographer and System Admin work.'),
+            if (details.isEmpty)
+              const Text('Additional staff information is unavailable.')
+            else
+              for (final detail in details) ...[
+                Text(
+                  detail.label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+                Text(detail.value),
+                const SizedBox(height: 10),
+              ],
           ],
         ),
       ),

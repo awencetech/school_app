@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/staff_handbook.dart';
+import 'auth_headers.dart';
 
 class StaffHandbookService {
   StaffHandbookService({String? baseUrl})
@@ -14,6 +15,7 @@ class StaffHandbookService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -26,7 +28,10 @@ class StaffHandbookService {
 
   Future<StaffHandbook> getHandbook() async {
     final response = await http
-        .get(_uri('/api/school-handbook/$schoolId'))
+        .get(
+          _uri('/api/school-handbook/$schoolId'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) throw Exception(_message(response));
     return StaffHandbook.fromJson(
@@ -40,7 +45,7 @@ class StaffHandbookService {
         : '/api/school-handbook/${Uri.encodeComponent(handbook.id!)}';
     final response = await (handbook.id == null ? http.post : http.put)(
       _uri(path),
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode(handbook.toJson()),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -56,6 +61,7 @@ class StaffHandbookService {
       'POST',
       _uri('/api/upload/attachment'),
     );
+    request.headers.addAll(await AuthHeaders.bearer());
     request.files.add(
       http.MultipartFile.fromBytes('file', bytes, filename: fileName),
     );

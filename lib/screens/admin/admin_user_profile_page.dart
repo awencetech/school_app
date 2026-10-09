@@ -50,7 +50,6 @@ class AdminUserProfilePage extends StatefulWidget {
 }
 
 class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
-  // Mock user data - initialized with default values
   late UserProfileData _profileData;
   bool _isEditing = false;
 
@@ -66,21 +65,21 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
   @override
   void initState() {
     super.initState();
-    _initializeMockData();
+    _initializeProfileData();
     _fullNameController = TextEditingController(text: _profileData.fullName);
     _emailController = TextEditingController(text: _profileData.email);
     _phoneController = TextEditingController(text: _profileData.phoneNumber);
     _usernameController = TextEditingController(text: _profileData.username);
   }
 
-  void _initializeMockData() {
+  void _initializeProfileData() {
     _profileData = UserProfileData(
       profilePhotoUrl: null,
-      fullName: 'Admin User',
-      email: 'admin@school.com',
-      phoneNumber: '+1-800-123-4567',
-      username: 'admin_user',
-      classRole: 'Administrator',
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      username: '',
+      classRole: '',
     );
   }
 
@@ -148,7 +147,9 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
   }
 
   bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
     return emailRegex.hasMatch(email);
   }
 
@@ -199,9 +200,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
           _selectedImageBytes = bytes;
           // Update the profile photo URL with a marker for display
           // In a real app, you would upload this to a server
-          _profileData = _profileData.copyWith(
-            profilePhotoUrl: 'selected',
-          );
+          _profileData = _profileData.copyWith(profilePhotoUrl: 'selected');
         });
         _showSuccessDialog('Image selected successfully');
       }
@@ -249,29 +248,29 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                             ),
                           )
                         : _profileData.profilePhotoUrl != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(60),
-                                child: Image.network(
-                                  _profileData.profilePhotoUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(
-                                      child: Icon(
-                                        Icons.person,
-                                        size: 60,
-                                        color: AppColors.hintText,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: AppColors.hintText,
-                                ),
-                              ),
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(60),
+                            child: Image.network(
+                              _profileData.profilePhotoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: AppColors.hintText,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.person,
+                              size: 60,
+                              color: AppColors.hintText,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 12),
                   if (_isEditing)
@@ -282,7 +281,10 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.blueButton,
                         foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                     ),
                 ],
@@ -291,10 +293,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
             const SizedBox(height: 24),
 
             // Profile Information Section
-            if (!_isEditing)
-              _buildViewMode()
-            else
-              _buildEditMode(),
+            if (!_isEditing) _buildViewMode() else _buildEditMode(),
 
             const SizedBox(height: 24),
 
@@ -307,13 +306,18 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                     child: ElevatedButton(
                       onPressed: _toggleEditMode,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isEditing ? AppColors.border : AppColors.blueButton,
+                        backgroundColor: _isEditing
+                            ? AppColors.border
+                            : AppColors.blueButton,
                         foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: Text(
                         _isEditing ? 'Cancel' : 'Edit Profile',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -330,7 +334,10 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                         ),
                         child: const Text(
                           'Save Changes',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -429,7 +436,10 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
           decoration: InputDecoration(
             hintText: 'Enter $label',
             hintStyle: const TextStyle(fontSize: 12, color: AppColors.hintText),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
               borderSide: const BorderSide(color: AppColors.border),
@@ -440,7 +450,10 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: const BorderSide(color: AppColors.blueButton, width: 2),
+              borderSide: const BorderSide(
+                color: AppColors.blueButton,
+                width: 2,
+              ),
             ),
           ),
           style: const TextStyle(fontSize: 13),

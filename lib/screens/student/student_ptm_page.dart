@@ -12,7 +12,7 @@ import '../../widgets/quick_access_app_bar.dart';
 class StudentPtmPage extends StatefulWidget {
   const StudentPtmPage({
     super.key,
-    this.headerTitle = 'SAMUNI',
+    this.headerTitle = 'MMHS',
     this.quickAccessTitle,
     this.staffMode = false,
   });

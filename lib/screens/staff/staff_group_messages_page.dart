@@ -15,7 +15,7 @@ import '../../widgets/dashboard_bottom_nav.dart';
 import 'staff_write_message_page.dart';
 
 class StaffGroupMessagesPage extends StatefulWidget {
-  const StaffGroupMessagesPage({super.key, this.headerTitle = 'SAMUNI'});
+  const StaffGroupMessagesPage({super.key, this.headerTitle = 'MMHS'});
 
   final String headerTitle;
 

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../models/admin_message.dart';
 import '../../models/school_news.dart';
 import '../../routes/app_routes.dart';
+import '../../services/admin_message_service.dart';
+import '../../services/app_state.dart';
 import '../../services/school_news_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
@@ -29,20 +33,24 @@ class _StaffOverviewDashboardPageState
       appBar: widget.quickAccessTitle != null
           ? QuickAccessAppBar(title: widget.quickAccessTitle!)
           : AppBar(
-        backgroundColor: AppColors.topBar,
-        foregroundColor: Colors.white,
-        toolbarHeight: 45,
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => navigateBack(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-        ),
-        title: const Text(
-          'Dashboard Summary',
-          style: TextStyle(color: Colors.white, fontSize: 15),
-        ),
-      ),
+              backgroundColor: AppColors.topBar,
+              foregroundColor: Colors.white,
+              toolbarHeight: 45,
+              automaticallyImplyLeading: false,
+              centerTitle: true,
+              leading: IconButton(
+                onPressed: () => navigateBack(context),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              title: const Text(
+                'Dashboard Summary',
+                style: TextStyle(color: Colors.white, fontSize: 15),
+              ),
+            ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(3, 7, 3, 20),
         child: Column(
@@ -53,13 +61,6 @@ class _StaffOverviewDashboardPageState
               style: TextStyle(fontSize: 11, color: Color(0xff1d3557)),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Educational Tour | Pondicherry - Mahabalipuram - Chennai | 27-30 Aug',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 9, color: Color(0xff222222)),
-            ),
-            const SizedBox(height: 4),
             Row(
               children: [
                 _Tab(
@@ -158,12 +159,13 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
     return FutureBuilder<List<SchoolNews>>(
       future: _schoolNewsFuture,
       builder: (context, snapshot) {
-        final publishedNews = List<SchoolNews>.from(snapshot.data ?? const <SchoolNews>[])
-          ..sort((a, b) {
-            final aDate = a.date ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bDate = b.date ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bDate.compareTo(aDate);
-          });
+        final publishedNews =
+            List<SchoolNews>.from(snapshot.data ?? const <SchoolNews>[])
+              ..sort((a, b) {
+                final aDate = a.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+                final bDate = b.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+                return bDate.compareTo(aDate);
+              });
 
         final newsCards = publishedNews.isEmpty
             ? const [
@@ -185,21 +187,7 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Section(
-              title: 'New Messages 141',
-              lines: [
-                '27-Aug-26 - from Employee Leaves to Approve',
-                '27-Aug-26 - from Employee Leaves to Approve',
-                '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-                '26-Aug-26 - from System from School',
-                '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-                '26-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-                '26-Aug-26 - from JEWILLPAUL from Parent of JEWILLIN PAUL GIDEONS in 12 B Grade 12 B - 2026-27 (2026)',
-                '25-Aug-26 - from Gurunagesh_S Teacher of 10 C Grade 10 C - 2026-27 (2026)',
-                '24-Aug-26 - from imayavarman from Parent of IMAYAVARMAN.K in 1 B Grade 1 B - 2026-27 (2026)',
-                '25-Aug-26 - from Priyavandhana_B from Sri Aurobindo Mira Universal School',
-              ],
-            ),
+            const _UnreadMessagesSection(),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
@@ -211,7 +199,10 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
                 children: [
                   Container(
                     color: const Color(0xffeeeeee),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
                     child: const Text(
                       'News',
                       style: TextStyle(
@@ -226,16 +217,74 @@ class _UserDashboardContentState extends State<_UserDashboardContent> {
                     child: snapshot.connectionState == ConnectionState.waiting
                         ? const Text(
                             'Loading school news...',
-                            style: TextStyle(fontSize: 8, color: Color(0xff355c8a)),
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Color(0xff355c8a),
+                            ),
                           )
-                        : Column(
-                            children: newsCards,
-                          ),
+                        : Column(children: newsCards),
                   ),
                 ],
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _UnreadMessagesSection extends StatefulWidget {
+  const _UnreadMessagesSection();
+
+  @override
+  State<_UnreadMessagesSection> createState() => _UnreadMessagesSectionState();
+}
+
+class _UnreadMessagesSectionState extends State<_UnreadMessagesSection> {
+  late final Future<List<AdminMessage>> _messagesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final role =
+        context.read<AppState>().currentUserRole?.trim().toLowerCase() ?? '';
+    _messagesFuture = AdminMessageService().getMessagesForRole(role);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<AdminMessage>>(
+      future: _messagesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _Section(
+            title: 'New Messages',
+            lines: ['Loading messages...'],
+          );
+        }
+        if (snapshot.hasError) {
+          return const _Section(
+            title: 'New Messages',
+            lines: ['Unable to load messages.'],
+          );
+        }
+
+        final unreadMessages = (snapshot.data ?? const <AdminMessage>[])
+            .where((message) => !message.read)
+            .toList();
+        final lines = unreadMessages.isEmpty
+            ? const ['No new messages available.']
+            : unreadMessages.take(10).map((message) {
+                final date = message.createdAt == null
+                    ? ''
+                    : '${DateFormat('dd-MMM-yy').format(message.createdAt!)} - ';
+                return '$date${message.senderName}: ${message.subject}';
+              }).toList();
+
+        return _Section(
+          title: 'New Messages (${unreadMessages.length})',
+          lines: lines,
         );
       },
     );
@@ -250,48 +299,9 @@ class _AdminDashboardContent extends StatelessWidget {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Section(
-          title: '6 Approve Student Leave',
-          lines: [
-            'SAMUNI-2026-11-B : 1',
-            'SAMUNI-2026-09-C : 1',
-            'SAMUNI-2026-UNI-Route-Z1 : 1',
-            'SAMUNI-2026-4-A : 1',
-            'SAMUNI-2026-12-C : 1',
-            'SAMUNI-2026-Gr12_Special_Class&Tuition_Class-A : 1',
-            '* Action Required Click here',
-          ],
-        ),
-        SizedBox(height: 6),
-        _Section(title: 'Admission Applications 27', lines: ['27']),
-        SizedBox(height: 6),
-        _Section(
-          title: '1027 Request to Complete',
-          lines: ['Clarification : 946', 'In Progress : 81'],
-        ),
-        SizedBox(height: 6),
-        _Section(
-          title: '242 Approve Employee Leave',
-          lines: ['* Action Required Click here to approve requests'],
-        ),
+        _Section(title: 'Dashboard', lines: ['No dashboard data available.']),
         SizedBox(height: 6),
         _TrendTable(),
-        SizedBox(height: 8),
-        Text(
-          'Note: Above report is based on data as of yesterday night',
-          style: TextStyle(
-            fontSize: 10,
-            fontStyle: FontStyle.italic,
-            color: Color(0xff355c8a),
-          ),
-        ),
-        SizedBox(height: 10),
-        Center(
-          child: Text(
-            'Absence Trend',
-            style: TextStyle(fontSize: 10, color: Color(0xff555555)),
-          ),
-        ),
       ],
     );
   }
@@ -404,13 +414,7 @@ class _TrendTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const rows = [
-      ['20260826', '86', '0', '0'],
-      ['20260825', '781', '0', '0'],
-      ['20260824', '781', '0', '0'],
-      ['20260823', '85', '0', '0'],
-      ['20260822', '133', '0', '0'],
-    ];
+    const rows = <List<String>>[];
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xffdddddd)),
@@ -431,7 +435,16 @@ class _TrendTable extends StatelessWidget {
             values: ['Date', 'Msgs', 'SMS', 'Notifications'],
             header: true,
           ),
-          ...rows.map((row) => _TrendRow(values: row)),
+          if (rows.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(6),
+              child: Text(
+                'No message trend data available.',
+                style: TextStyle(fontSize: 8, color: Color(0xff355c8a)),
+              ),
+            )
+          else
+            ...rows.map((row) => _TrendRow(values: row)),
         ],
       ),
     );

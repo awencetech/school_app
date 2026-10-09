@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/medical_event.dart';
+import 'auth_headers.dart';
 
 class MedicalEventService {
   MedicalEventService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -13,6 +14,7 @@ class MedicalEventService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode || kIsWeb) return _productionBaseUrl;
@@ -23,7 +25,9 @@ class MedicalEventService {
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Future<List<MedicalEvent>> getAll() async {
-    final response = await http.get(_uri('/api/medical-events')).timeout(const Duration(seconds: 20));
+    final response = await http
+        .get(_uri('/api/medical-events'), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
     final decoded = jsonDecode(response.body);
     final items = decoded is Map ? decoded['data'] : decoded;
@@ -32,7 +36,12 @@ class MedicalEventService {
   }
 
   Future<MedicalEvent> getById(String id) async {
-    final response = await http.get(_uri('/api/medical-events/${Uri.encodeComponent(id)}')).timeout(const Duration(seconds: 20));
+    final response = await http
+        .get(
+          _uri('/api/medical-events/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
     final decoded = jsonDecode(response.body);
     return MedicalEvent.fromJson(Map<String, dynamic>.from(decoded is Map && decoded['data'] is Map ? decoded['data'] : decoded));
@@ -41,8 +50,8 @@ class MedicalEventService {
   Future<MedicalEvent> save(MedicalEvent event) async {
     final editing = event.id != null && event.id!.isNotEmpty;
     final response = await (editing
-        ? http.put(_uri('/api/medical-events/${Uri.encodeComponent(event.id!)}'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(event.toJson()))
-        : http.post(_uri('/api/medical-events'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(event.toJson())))
+        ? http.put(_uri('/api/medical-events/${Uri.encodeComponent(event.id!)}'), headers: await AuthHeaders.json(), body: jsonEncode(event.toJson()))
+        : http.post(_uri('/api/medical-events'), headers: await AuthHeaders.json(), body: jsonEncode(event.toJson())))
       .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200 && response.statusCode != 201) throw Exception(_message(response));
     final decoded = jsonDecode(response.body);
@@ -50,12 +59,18 @@ class MedicalEventService {
   }
 
   Future<void> delete(String id) async {
-    final response = await http.delete(_uri('/api/medical-events/${Uri.encodeComponent(id)}')).timeout(const Duration(seconds: 20));
+    final response = await http
+        .delete(
+          _uri('/api/medical-events/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
+        .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
   }
 
   Future<String> uploadReport(String fileName, List<int> bytes) async {
-    final request = http.MultipartRequest('POST', _uri('/api/upload/attachment'))
+    final request = http.MultipartRequest('POST', _uri('/api/upload/medical-report'))
+      ..headers.addAll(await AuthHeaders.bearer())
       ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
     final response = await http.Response.fromStream(await request.send()).timeout(const Duration(seconds: 30));
     if (response.statusCode != 200) throw Exception(_message(response));

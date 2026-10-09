@@ -142,7 +142,7 @@ class _MeetingAppBar extends StatelessWidget implements PreferredSizeWidget {
         onPressed: () => navigateBack(context),
         icon: const Icon(Icons.arrow_back, size: 20),
       ),
-      title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),
+      title: const Text('MMHS', style: TextStyle(fontSize: 14)),
     );
   }
 

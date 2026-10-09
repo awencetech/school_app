@@ -277,7 +277,7 @@ class HandbookDocumentPage extends StatelessWidget {
             child: ListView(
               children: [
                 const Text(
-                  'SAMUNI',
+                  'MMHS',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                 ),

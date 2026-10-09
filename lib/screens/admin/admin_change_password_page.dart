@@ -7,7 +7,8 @@ class AdminChangePasswordPage extends StatefulWidget {
   const AdminChangePasswordPage({super.key});
 
   @override
-  State<AdminChangePasswordPage> createState() => _AdminChangePasswordPageState();
+  State<AdminChangePasswordPage> createState() =>
+      _AdminChangePasswordPageState();
 }
 
 class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
@@ -62,12 +63,6 @@ class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
 
     if (newPassword != confirmPassword) {
       _showErrorMessage('New password and confirm password do not match');
-      return false;
-    }
-
-    // Mock validation: current password must be "password123"
-    if (currentPassword != 'password123') {
-      _showErrorMessage('Current password is incorrect');
       return false;
     }
 
@@ -134,19 +129,12 @@ class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Color(0xFFB8860B),
-                    size: 20,
-                  ),
+                  Icon(Icons.info_outline, color: Color(0xFFB8860B), size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Password must be at least 8 characters long.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF664D03),
-                      ),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF664D03)),
                     ),
                   ),
                 ],
@@ -249,31 +237,15 @@ class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
                   const SizedBox(height: 8),
                   _buildRequirement('Current password cannot be empty'),
                   _buildRequirement('New password cannot be empty'),
-                  _buildRequirement('New password must be at least 8 characters'),
+                  _buildRequirement(
+                    'New password must be at least 8 characters',
+                  ),
                   _buildRequirement('Confirm password must match new password'),
                 ],
               ),
             ),
 
             const SizedBox(height: 16),
-
-            // Demo Note
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE7F3FF),
-                border: Border.all(color: const Color(0xFFB3D9FF)),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'Demo: For testing, use current password as "password123"',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF0066CC),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -304,7 +276,10 @@ class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
           decoration: InputDecoration(
             hintText: 'Enter $label',
             hintStyle: const TextStyle(fontSize: 12, color: AppColors.hintText),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
               borderSide: const BorderSide(color: AppColors.border),
@@ -315,7 +290,10 @@ class _AdminChangePasswordPageState extends State<AdminChangePasswordPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
-              borderSide: const BorderSide(color: AppColors.blueButton, width: 2),
+              borderSide: const BorderSide(
+                color: AppColors.blueButton,
+                width: 2,
+              ),
             ),
             suffixIcon: IconButton(
               icon: Icon(

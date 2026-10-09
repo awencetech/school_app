@@ -31,7 +31,7 @@ class _StaffTodoTasksPageState extends State<StaffTodoTasksPage> {
           onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
-        title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),
+        title: const Text('MMHS', style: TextStyle(fontSize: 14)),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -265,7 +265,7 @@ class _TodoCreatePageState extends State<TodoCreatePage> {
           onPressed: () => navigateBack(context),
           icon: const Icon(Icons.arrow_back, size: 20),
         ),
-        title: const Text('SAMUNI', style: TextStyle(fontSize: 14)),
+        title: const Text('MMHS', style: TextStyle(fontSize: 14)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(11, 8, 16, 12),

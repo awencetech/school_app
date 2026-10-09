@@ -21,7 +21,7 @@ class StudentMoreOptionsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
         ),
         title: Text(
-          'SCHOOL NAME',
+          'MMHS',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,

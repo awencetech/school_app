@@ -16,6 +16,7 @@ class SchoolResourceService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return _productionBaseUrl;
@@ -31,7 +32,7 @@ class SchoolResourceService {
         ? '/api/school-resources'
         : '/api/class-resources/${Uri.encodeComponent(groupId)}';
     final response = await http
-        .get(_uri(path))
+        .get(_uri(path), headers: await AuthHeaders.bearer())
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception(_messageBody(response.statusCode, response.body));
@@ -46,7 +47,10 @@ class SchoolResourceService {
 
   Future<SchoolResource?> getResourceById(String id) async {
     final response = await http
-        .get(_uri('/api/school-resources/${Uri.encodeComponent(id)}'))
+        .get(
+          _uri('/api/school-resources/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode == 404) return null;
     if (response.statusCode != 200) {
@@ -67,7 +71,7 @@ class SchoolResourceService {
       final response = await http
           .post(
             _uri('/api/school-resources'),
-            headers: {'Content-Type': 'application/json'},
+            headers: await AuthHeaders.json(),
             body: jsonEncode(item.toJson()),
           )
           .timeout(const Duration(seconds: 20));

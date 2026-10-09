@@ -8,7 +8,7 @@ import '../../theme/app_text_styles.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
     super.key,
-    this.title = 'SCHOOL NAME',
+    this.title = 'MMHS',
     this.showBack = false,
   });
 
@@ -35,4 +35,3 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 }
-

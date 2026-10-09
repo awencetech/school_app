@@ -10,7 +10,7 @@ import '../../widgets/quick_access_app_bar.dart';
 class StaffRequestMessagePage extends StatefulWidget {
   const StaffRequestMessagePage({
     super.key,
-    this.headerTitle = 'SAMUNI',
+    this.headerTitle = 'MMHS',
     this.quickAccessTitle,
     this.studentMode = false,
   });

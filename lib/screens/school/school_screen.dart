@@ -89,10 +89,17 @@ class SchoolScreen extends StatelessWidget {
     return SafeArea(
       child: FutureBuilder<List<StaffMember>>(
         future: DummyDataService.getLeadership(),
-        initialData: DummyDataService.fallbackLeadership,
         builder: (context, snapshot) {
-          final defaultStaff = snapshot.data ?? DummyDataService.fallbackLeadership;
-          final staff = _buildStaffFromConfig(config).isNotEmpty ? _buildStaffFromConfig(config) : defaultStaff;
+          final configuredStaff = _buildStaffFromConfig(config);
+          final staff = configuredStaff.isNotEmpty
+              ? configuredStaff
+              : snapshot.data ?? const <StaffMember>[];
+
+          if (staff.isEmpty) {
+            return const Center(
+              child: Text('School information is currently unavailable.'),
+            );
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),

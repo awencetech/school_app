@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/staff_info.dart';
+import 'auth_headers.dart';
 
 class StaffService {
   StaffService({String? baseUrl}) : _baseUrl = baseUrl ?? _resolveBaseUrl();
@@ -13,6 +14,7 @@ class StaffService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
@@ -24,7 +26,7 @@ class StaffService {
 
   Future<List<StaffInfo>> getStaff() async {
     final response = await http
-        .get(_uri('/api/staff'))
+        .get(_uri('/api/staff'), headers: await AuthHeaders.bearer())
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception('Unable to load staff information.');
@@ -69,7 +71,7 @@ class StaffService {
   }) async {
     final response = await (create ? http.post : http.put)(
       _uri(path),
-      headers: {'Content-Type': 'application/json'},
+      headers: await AuthHeaders.json(),
       body: jsonEncode(staff.toJson()),
     ).timeout(const Duration(seconds: 20));
     if (response.statusCode != (create ? 201 : 200)) {
@@ -83,7 +85,10 @@ class StaffService {
 
   Future<void> deleteStaff(String id) async {
     final response = await http
-        .delete(_uri('/api/staff/${Uri.encodeComponent(id)}'))
+        .delete(
+          _uri('/api/staff/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception(_message(response.statusCode, response.body));
@@ -98,6 +103,7 @@ class StaffService {
       'POST',
       _uri('/api/upload/staff-image'),
     );
+    request.headers.addAll(await AuthHeaders.bearer());
     request.files.add(
       http.MultipartFile.fromBytes('file', bytes, filename: fileName),
     );

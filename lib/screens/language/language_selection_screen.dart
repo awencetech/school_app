@@ -57,12 +57,7 @@ class LanguageSelectionScreen extends StatelessWidget {
       );
     }
 
-    return Image.asset(
-      'assets/images/school_poster.png',
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) =>
-          _languagePosterPlaceholder(context),
-    );
+    return _languagePosterPlaceholder(context);
   }
 
   @override

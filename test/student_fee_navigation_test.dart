@@ -4,7 +4,7 @@ import 'package:school_app/screens/student/student_fee_information_page.dart';
 import 'package:school_app/screens/student/student_menu_screen.dart';
 
 void main() {
-  testWidgets('fee information tile opens fee list and select opens fee detail', (tester) async {
+  testWidgets('fee information tile opens a safe empty state', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: StudentMenuScreen()));
 
     await tester.dragUntilVisible(
@@ -15,9 +15,11 @@ void main() {
     await tester.tap(find.text('Fee Information'));
     await tester.pumpAndSettle();
     expect(find.byType(StudentFeeInformationPage), findsOneWidget);
-
-    await tester.tap(find.text('Select').first);
-    await tester.pumpAndSettle();
-    expect(find.byType(StudentFeeDetailPage), findsOneWidget);
+    expect(
+      find.text('Fee information is currently unavailable.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('MOHAMED'), findsNothing);
+    expect(find.textContaining('Outstanding:'), findsNothing);
   });
 }

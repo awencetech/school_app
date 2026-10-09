@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'auth_headers.dart';
+
 class StudentRecord {
   const StudentRecord({
     this.id,
@@ -76,6 +78,7 @@ class StudentService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kIsWeb || kReleaseMode) return _productionBaseUrl;
@@ -89,7 +92,7 @@ class StudentService {
 
   Future<List<StudentRecord>> getStudents() async {
     final response = await http
-        .get(_uri('/api/students'))
+        .get(_uri('/api/students'), headers: await AuthHeaders.bearer())
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception('Unable to load student information.');
@@ -120,7 +123,7 @@ class StudentService {
 
   Future<String> getNextStudentId() async {
     final response = await http
-        .get(_uri('/api/students/next-id'))
+        .get(_uri('/api/students/next-id'), headers: await AuthHeaders.bearer())
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw Exception('Unable to generate student ID.');
@@ -136,7 +139,7 @@ class StudentService {
     final response = await http
         .post(
           _uri('/api/students'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(student.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -158,7 +161,7 @@ class StudentService {
     final response = await http
         .put(
           _uri('/api/students/${Uri.encodeComponent(student.id!)}'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(student.toJson()),
         )
         .timeout(const Duration(seconds: 20));
@@ -175,7 +178,10 @@ class StudentService {
 
   Future<void> deleteStudent(String id) async {
     final response = await http
-        .delete(_uri('/api/students/${Uri.encodeComponent(id)}'))
+        .delete(
+          _uri('/api/students/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       final msg = _message(response.statusCode, response.body);

@@ -18,9 +18,9 @@ class SplashConfigService extends ChangeNotifier {
   final MainPageInfoRepository _repository = MainPageInfoRepository();
 
   String? imageBase64;
-  String title = 'SCHOOL NAME';
-  String subtitle = 'Motto goes here';
-  String since = '1987';
+  String title = '';
+  String subtitle = '';
+  String since = '';
   String quote = '';
   double imageScale = 1.0;
   double imageOffsetX = 0.0;

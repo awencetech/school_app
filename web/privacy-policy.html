@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Privacy Policy for MMHS School App">
+<meta name="description" content="Privacy Policy for MMHS">
 <meta name="theme-color" content="#333856">
 <title>MMHS App - Privacy Policy</title>
 <style>
@@ -150,58 +150,70 @@ footer a:hover {
 <body>
 <header>
   <h1>Privacy Policy for MMHS</h1>
-  <p class="updated"><strong>Last updated:</strong> August 24, 2026</p>
+  <p class="updated"><strong>Last updated:</strong> October 8, 2026</p>
 </header>
 
 <div class="container">
-  <p class="intro-text">This Privacy Policy explains how MMHS ("we", "our", or "the app") handles information when you use the MMHS school application.</p>
+  <p class="intro-text">This Privacy Policy explains how MMHS ("we", "our", or "the app") handles information when you use the MMHS school application and associated school systems.</p>
 
-<h2>1. Information We May Collect</h2>
-<p>Depending on the features you use, MMHS may process information such as:</p>
+<h2>1. Scope of this policy</h2>
+<p>This Privacy Policy describes the personal and school-related information processed by the MMHS mobile application and associated MMHS backend services when the app is used for school administration, communication, and student support.</p>
+
+<h2>2. Information the app may process</h2>
+<p>Depending on the features used by the user and school, the app may process account identifiers and contact information, school-related records, and technical service data such as:</p>
 <ul>
-<li>Name and school-related identification information.</li>
-<li>Contact information such as phone number or email address, when provided for account or communication purposes.</li>
-<li>School information such as class, attendance, academic information, notices, or other information required to provide school services.</li>
-<li>Information you voluntarily submit through the app.</li>
-<li>Technical information needed to operate, secure, and troubleshoot the app.</li>
+<li>User account details such as email address, user ID, school role, and authentication data used to sign in and authorize access.</li>
+<li>Student and parent or guardian profile details may include names, student or admission identifiers, class and section, parent or guardian name, mobile number, and address.</li>
+<li>Teacher and staff identification, contact, and work information maintained for school administration.</li>
+<li>Attendance, academic records, class information, notices, messages, and staff or student activity within the app.</li>
+<li>Uploaded files, images, attachments, or reports when a feature allows document or media upload.</li>
+<li>Medical event records or related school support information when those features are used and the school enables them.</li>
+<li>Bus GPS or route-related location data when the bus tracking feature is active.</li>
+<li>Device and app technical data necessary to operate, secure, and troubleshoot the service.</li>
 </ul>
 
-<h2>2. How We Use Information</h2>
-<p>Information may be used to:</p>
+<h2>3. Authentication and access</h2>
+<p>The app uses Firebase Authentication and Google Sign-In for Google sign-in. MMHS username and password credentials are authenticated by the MMHS backend. The app does not provide an automated password-reset service; contact the school administrator for password assistance. The backend validates user identity and authorization before allowing school-specific access. Email, identifiers, passwords, and authentication tokens are processed by the relevant sign-in service and backend for authentication and account access management.</p>
+
+<h2>4. How information is used</h2>
+<p>The app may use this information to:</p>
 <ul>
-<li>Provide and operate the school's app features.</li>
-<li>Authenticate users and manage access.</li>
-<li>Display school-related information and communications.</li>
-<li>Maintain app security and prevent misuse.</li>
-<li>Fix technical problems and improve reliability.</li>
-<li>Comply with applicable legal requirements.</li>
+<li>Provide school login, role-based access, and user account management.</li>
+<li>Display class, attendance, academic, and school communication data to the relevant user.</li>
+<li>Send notices, messages, or support communications.</li>
+<li>Support school workflows such as attendance, medical-event tracking, homework uploads, and bus tracking when enabled.</li>
+<li>Maintain service security, troubleshoot errors, and operate the application reliably.</li>
+<li>Comply with applicable school or legal requirements.</li>
 </ul>
 
-<h2>3. Sharing of Information</h2>
-<p>We do not sell personal information. Information may be shared only when necessary to provide the app and school services, comply with law, protect users or the service, or when authorized by the school or the user.</p>
+<h2>5. Files, images, and attachments</h2>
+<p>Some features allow users to upload files or images. When enabled, the uploaded file, file name, and related metadata may be transmitted to the MMHS backend for storage and access by the relevant school users. Access is limited by the app's role-based functionality and the school's operational rules.</p>
 
-<h2>4. Data Security</h2>
-<p>We take reasonable technical and organizational measures to protect information against unauthorized access, alteration, disclosure, or destruction. However, no internet-based service can guarantee absolute security.</p>
+<h2>6. School communications and student data</h2>
+<p>MMHS may process student, parent, teacher, and school operational data to support class communication, attendance, notices, resource sharing, and related school workflows. This information is used for legitimate educational and operational purposes within the app and associated school systems.</p>
 
-<h2>5. Data Retention</h2>
-<p>Information is retained only for as long as reasonably necessary to provide the app and school services, meet legitimate operational needs, or comply with applicable legal requirements. Retention periods may depend on the type of information and the school's requirements.</p>
+<h2>7. Medical and location-related data</h2>
+<p>Medical-event records may include a student identifier, name, class, reported symptoms, known special needs, event description, reporter details, and an image. The app also processes bus route and GPS-device status information. The inspected Android release does not request device-location permissions, and the app source does not collect device or background location. The bus records inspected contain route and device-status details, not a live stream of device GPS coordinates. The class-demography map displays configured points using OpenStreetMap tiles.</p>
 
-<h2>6. Children's Privacy</h2>
-<p>MMHS is a school-related application and may be used by students. Where student information is processed, it is handled for legitimate school and educational purposes and in accordance with applicable laws and school requirements. We do not knowingly use children's personal information for targeted advertising.</p>
+<h2>8. Sharing and service providers</h2>
+<p>School information submitted in the app is processed by the MMHS backend, hosted on Render, and stored in its configured MongoDB database. Uploaded files may be stored in MongoDB GridFS or backend upload storage, depending on the upload route. Firebase Authentication and Google Sign-In are used for sign-in. Firebase Analytics is included in the Android release; if analytics collection is enabled, Google may automatically process app-usage and device identifiers according to Firebase and project settings. The Android release manifest includes advertising-ID and attribution permissions from bundled Google/Firebase libraries, so their collection settings should be reviewed before release. The class-demography map requests map tiles from OpenStreetMap, which receives tile requests, requested map areas, and the requesting network address. No in-app ad-serving code was found.</p>
 
-<h2>7. Third-Party Services</h2>
-<p>The app may use third-party services for functions such as hosting, authentication, notifications, analytics, crash reporting, maps, or other technical services. If such services are used, their processing of information is governed by their applicable privacy policies.</p>
+<h2>9. Data security and retention</h2>
+<p>The app and backend use reasonable technical and organizational safeguards to protect information against unauthorized access, loss, or misuse. However, no internet-based service can guarantee absolute security. Retention period requires an explicit product/legal decision; data is retained only as long as needed for school operations, system functioning, or applicable legal requirements.</p>
 
-<h2>8. Permissions</h2>
-<p>The app may request device permissions only when a feature requires them. For example, camera, storage, notifications, location, or other permissions may be requested if those features are implemented. You can manage available permissions through your device settings.</p>
+<h2>10. Children's and student privacy</h2>
+<p>MMHS is a school-related application and may process student information for educational, administrative, and safety purposes. Information is handled in line with the app's school-use workflows and applicable requirements. The app does not use student data for advertising or targeted marketing.</p>
 
-<h2>9. Your Choices and Data Requests</h2>
-<p>You may contact the school/app administrator to ask about the personal information associated with your use of the app, request correction of inaccurate information, or request deletion where applicable and legally permitted.</p>
+<h2>11. Permissions and choices</h2>
+<p>The inspected Android release declares internet and network access, wake-lock, advertising-ID and attribution, Google services and install-referrer, and biometric/fingerprint permissions; several are contributed by bundled Google/Firebase or AndroidX libraries. A manifest declaration alone does not mean the app uses that feature. The release does not declare location, camera, microphone, contacts, phone, SMS, media/storage, or notification permissions, and the app source does not request device location. Users may contact the school administrator to ask about school-related personal information associated with app use where applicable and legally permitted.</p>
 
-<h2>10. Changes to This Privacy Policy</h2>
-<p>We may update this Privacy Policy when the app, its data practices, or applicable requirements change. The updated version will be published at this location with a revised "Last updated" date.</p>
+<h2>12. Account deletion and data requests</h2>
+<p>To request review of deletion of an MMHS app login account, contact the school administration at <a href="mailto:headmaster@muthuthevarmhss.com">headmaster@muthuthevarmhss.com</a>. The current app does not provide self-service account deletion. An administrator can remove an MMHS login credential, but that action does not delete a Firebase identity, student or staff profile, school records, uploaded files, medical records, messages, or other related records. The school must review the scope of a request and any applicable record-retention requirements; no automatic deletion of those records is promised. Do not send passwords or sign-in tokens in a request.</p>
 
-<h2>11. Contact Us</h2>
+<h2>13. Changes to this policy</h2>
+<p>This policy may be updated when the app, its data practices, or the implemented features change. The updated version will be published with a revised "Last updated" date.</p>
+
+<h2>14. Contact Us</h2>
 <p>If you have questions about this Privacy Policy or how information is handled, please contact:</p>
 <div class="contact-info">
   <strong>MMHS App / School Administration</strong>

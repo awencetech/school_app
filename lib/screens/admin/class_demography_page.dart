@@ -35,10 +35,6 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
   String? _error;
   ClassDemography? _demography;
 
-  // Replace with school coordinates when they become available from the API.
-  static const schoolLatitude = 11.0168;
-  static const schoolLongitude = 76.9558;
-
   @override
   void initState() {
     super.initState();
@@ -71,13 +67,11 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
           _demography = ClassDemography(
             className: record!.groupName,
             academicYear: widget.group.year,
-            schoolName: 'Sri Aurobindo Mira Universal School',
+            schoolName: '',
             classTeachers: record.teachers.map((member) => member.displayText).toList(),
             otherTeachers: record.otherTeachers.map((member) => member.displayText).toList(),
             students: record.students.map((member) => member.displayText).toList(),
-            locations: [
-              const MapLocation(name: 'School', latitude: schoolLatitude, longitude: schoolLongitude, type: MarkerType.school),
-            ],
+            locations: const [],
           );
           _isLoading = false;
         });
@@ -87,19 +81,16 @@ class _ClassDemographyPageState extends State<ClassDemographyPage> {
       final users = await _userService.getUsers();
       final students = users.where((user) => user.role.toLowerCase() == 'student').map(_userLabel).toList();
       final teachers = users.where((user) => user.role.toLowerCase() == 'staff' || user.role.toLowerCase() == 'teacher').map(_userLabel).toList();
-      final locations = <MapLocation>[
-        const MapLocation(name: 'School', latitude: schoolLatitude, longitude: schoolLongitude, type: MarkerType.school),
-      ];
       if (!mounted) return;
       setState(() {
         _demography = ClassDemography(
           className: widget.group.name,
           academicYear: widget.group.year,
-          schoolName: 'Sri Aurobindo Mira Universal School',
+          schoolName: '',
           classTeachers: teachers.take(3).toList(),
           otherTeachers: teachers.skip(3).toList(),
           students: students,
-          locations: locations,
+          locations: const [],
         );
         _isLoading = false;
       });
@@ -205,22 +196,56 @@ class _DemographyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final center = demography.locations.first.point;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 76),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        SizedBox(
-          height: 170,
-          width: double.infinity,
-          child: FlutterMap(
-            options: MapOptions(initialCenter: center, initialZoom: 13, interactionOptions: const InteractionOptions(flags: InteractiveFlag.all)),
-            children: [
-              TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'school_app'),
-              MarkerLayer(markers: demography.locations.map((location) => Marker(point: location.point, width: 16, height: 16, child: _MapMarker(type: location.type))).toList()),
-              RichAttributionWidget(attributions: [TextSourceAttribution('OpenStreetMap contributors')]),
-            ],
+        if (demography.locations.isNotEmpty)
+          SizedBox(
+            height: 170,
+            width: double.infinity,
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: demography.locations.first.point,
+                initialZoom: 13,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'school_app',
+                ),
+                MarkerLayer(
+                  markers: demography.locations
+                      .map(
+                        (location) => Marker(
+                          point: location.point,
+                          width: 16,
+                          height: 16,
+                          child: _MapMarker(type: location.type),
+                        ),
+                      )
+                      .toList(),
+                ),
+                RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution('OpenStreetMap contributors'),
+                  ],
+                ),
+              ],
+            ),
+          )
+        else
+          const SizedBox(
+            height: 170,
+            child: Center(
+              child: Text(
+                'Map location not available.',
+                style: TextStyle(color: Color(0xff7a7a7a), fontSize: 12),
+              ),
+            ),
           ),
-        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 5, 4, 20),
           child: _DemographyText(demography: demography),
@@ -256,7 +281,11 @@ class _DemographyText extends StatelessWidget {
     return DefaultTextStyle(
       style: const TextStyle(fontSize: 10.5, height: 1.32, color: Color(0xff222222)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(demography.schoolName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        if (demography.schoolName.trim().isNotEmpty)
+          Text(
+            demography.schoolName,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
         const SizedBox(height: 6),
         const Text('Class Teacher:', style: TextStyle(fontWeight: FontWeight.w600)),
         ...demography.classTeachers.asMap().entries.map((entry) => Text('${entry.key + 1}. ${entry.value}')),

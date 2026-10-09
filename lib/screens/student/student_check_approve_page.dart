@@ -9,7 +9,7 @@ import '../../widgets/quick_access_app_bar.dart';
 class StudentCheckApprovePage extends StatefulWidget {
   const StudentCheckApprovePage({
     super.key,
-    this.headerTitle = 'SAMUNI',
+    this.headerTitle = 'MMHS',
     this.quickAccessTitle,
     this.approvalMode = false,
   });
@@ -30,18 +30,7 @@ class _StudentCheckApprovePageState extends State<StudentCheckApprovePage> {
   bool _loadingRequests = false;
   String? _requestError;
 
-  static const _pendingMessages = [
-    _ApprovalMessage(
-      'Notification',
-      'Created on: Aug 27, 2026 9:32 AM Comments not allowed\nMessage for 3-B by Ramya_Nivas from Teacher of 3 A Grade 3 A - 2026-27 (2026)\nMessage is sent to Students',
-      'Attention Students of Class 3A 📣 This is a Gentle reminder regarding your upcoming computer science submissions. You are required to submit the following work on Monday, 31st August 2026: CS Class Notebook 📖 CS Uolo Tekie Book 📚 Important Instructions: *All incomplete exercises and activities in Chapter 2 and Chapter 3 must be completed without fail.',
-    ),
-    _ApprovalMessage(
-      'Notification',
-      'Created on: Aug 27, 2026 9:33 AM Comments not allowed\nMessage for 3-B by Ramya_Nivas from Teacher of 3 B Grade 3 B - 2026-27 (2026)\nMessage is sent to Students',
-      'Attention Students of Class 3B 📣 This is a Gentle reminder regarding your upcoming computer science submissions. You are required to submit the following work on Monday, 31st August 2026: CS Class Notebook 📖 CS Uolo Tekie Book 📚 Important Instructions: *All incomplete exercises and activities in Chapter 2 and Chapter 3 must be completed without fail.',
-    ),
-  ];
+  static const List<_ApprovalMessage> _pendingMessages = [];
 
   @override
   void initState() {
@@ -147,7 +136,9 @@ class _StudentCheckApprovePageState extends State<StudentCheckApprovePage> {
             child: widget.approvalMode
                 ? _buildRequestApprovalList()
                 : _showMyMessages
-                ? const SizedBox()
+                ? const Center(child: Text('No messages available.'))
+                : _pendingMessages.isEmpty
+                ? const Center(child: Text('No notices available.'))
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
                     itemCount: _pendingMessages.length,

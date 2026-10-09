@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/one_on_one_meeting.dart';
+import 'auth_headers.dart';
 
 class OneOnOneMeetingService {
   OneOnOneMeetingService({String? baseUrl})
@@ -14,6 +15,7 @@ class OneOnOneMeetingService {
   static const _productionBaseUrl = 'https://school-app-1uep.onrender.com';
 
   static String _resolveBaseUrl() {
+    if (kReleaseMode) return _productionBaseUrl;
     const override = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (override.isNotEmpty) return override;
     if (kReleaseMode || kIsWeb) return _productionBaseUrl;
@@ -22,7 +24,7 @@ class OneOnOneMeetingService {
   }
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
-  Map<String, String> get _headers => {'Content-Type': 'application/json'};
+  Future<Map<String, String>> get _headers => AuthHeaders.json();
 
   Future<List<OneOnOneMeeting>> getAllForStaff(String staffId) async {
     final response = await http
@@ -30,6 +32,7 @@ class OneOnOneMeetingService {
           _uri(
             '/api/one-on-one-meetings/staff/${Uri.encodeComponent(staffId)}',
           ),
+          headers: await AuthHeaders.bearer(),
         )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
@@ -70,12 +73,12 @@ class OneOnOneMeetingService {
                     _uri(
                       '/api/one-on-one-meetings/${Uri.encodeComponent(meeting.id!)}',
                     ),
-                    headers: _headers,
+                    headers: await _headers,
                     body: jsonEncode(meeting.toJson()),
                   )
                 : http.post(
                     _uri('/api/one-on-one-meetings'),
-                    headers: _headers,
+                    headers: await _headers,
                     body: jsonEncode(meeting.toJson()),
                   ))
             .timeout(const Duration(seconds: 20));
@@ -94,7 +97,10 @@ class OneOnOneMeetingService {
 
   Future<void> delete(String id) async {
     final response = await http
-        .delete(_uri('/api/one-on-one-meetings/${Uri.encodeComponent(id)}'))
+        .delete(
+          _uri('/api/one-on-one-meetings/${Uri.encodeComponent(id)}'),
+          headers: await AuthHeaders.bearer(),
+        )
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) throw Exception(_message(response));
   }

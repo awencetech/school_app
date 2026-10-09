@@ -26,6 +26,18 @@ class HomeScreen extends StatelessWidget {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  Widget _posterUnavailable() {
+    return Container(
+      color: AppColors.divider,
+      child: Center(
+        child: Text(
+          'School poster is currently unavailable.',
+          style: AppTextStyles.subtitle.copyWith(color: AppColors.hintText),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -50,18 +62,7 @@ class HomeScreen extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       debugPrint('School poster loading error: $error');
-                      debugPrint('Poster URL: $posterSource');
-                      return Container(
-                        color: AppColors.divider,
-                        child: Center(
-                          child: Text(
-                            'School Poster',
-                            style: AppTextStyles.subtitle.copyWith(
-                              color: AppColors.hintText,
-                            ),
-                          ),
-                        ),
-                      );
+                      return _posterUnavailable();
                     },
                   );
                 }
@@ -70,38 +71,12 @@ class HomeScreen extends StatelessWidget {
                   base64Decode(posterSource),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: AppColors.divider,
-                      child: Center(
-                        child: Text(
-                          'School Poster',
-                          style: AppTextStyles.subtitle.copyWith(
-                            color: AppColors.hintText,
-                          ),
-                        ),
-                      ),
-                    );
+                    return _posterUnavailable();
                   },
                 );
               }
 
-              return Image.asset(
-                'assets/images/school_poster.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppColors.divider,
-                    child: Center(
-                      child: Text(
-                        'School Poster',
-                        style: AppTextStyles.subtitle.copyWith(
-                          color: AppColors.hintText,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
+              return _posterUnavailable();
             }(),
           ),
           const SizedBox(height: 16),
@@ -114,14 +89,13 @@ class HomeScreen extends StatelessWidget {
                 final config = context.watch<SchoolConfigService>();
                 final displayName = config.schoolName.isNotEmpty
                     ? config.schoolName
-                    : (info?.name ?? 'SCHOOL NAME');
+                    : (info?.name ?? '');
                 final displayQuote = config.quote.isNotEmpty
-                    ? config.quote
-                    : (info?.quote ??
-                          'Every student has the potential to achieve greatness through dedication, discipline, and continuous learning.');
+                      ? config.quote
+                      : (info?.quote ?? '');
                 final displayWelcome = config.welcome.isNotEmpty
-                    ? config.welcome
-                    : 'Welcome To $displayName';
+                      ? config.welcome
+                      : '';
                 final website = config.websiteUrl.isNotEmpty
                     ? config.websiteUrl
                     : (info?.websiteUrl ?? '');
@@ -129,35 +103,41 @@ class HomeScreen extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      displayName,
-                      style: AppTextStyles.sectionTitle,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      displayQuote,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF616161),
+                    if (displayName.trim().isNotEmpty) ...[
+                      Text(
+                        displayName,
+                        style: AppTextStyles.sectionTitle,
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                    ],
+                    if (displayQuote.trim().isNotEmpty) ...[
+                      Text(
+                        displayQuote,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF616161),
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     ImportantNewsMarquee(
                       items: config.runningItems
                           .map((item) => NewsItem(title: item, description: ''))
                           .toList(),
                       height: 30,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      displayWelcome,
-                      style: AppTextStyles.subtitle,
-                      textAlign: TextAlign.center,
-                    ),
+                    if (displayWelcome.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        displayWelcome,
+                        style: AppTextStyles.subtitle,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     PrimaryButton(
                       label: 'Sign In',

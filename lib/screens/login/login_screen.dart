@@ -139,10 +139,9 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           // Log error for debugging but show generic message to user
           debugPrint('Login error: $e');
-          String message = l10n?.invalidCredentials ?? 'Invalid credentials';
-          if (e is! Exception) {
-            message = l10n?.connectionError ?? 'Connection error';
-          }
+          final message = e is ApiException
+              ? e.message
+              : (l10n?.connectionError ?? 'Connection error');
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(message)));

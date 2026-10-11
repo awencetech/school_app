@@ -119,11 +119,24 @@ class UserService {
         )
         .timeout(const Duration(seconds: 15));
 
-    if (resp.statusCode != 200) {
-      // Avoid revealing whether user exists
+    if (resp.statusCode == 401) {
       throw ApiException(
         resp.statusCode,
         'Invalid email or password',
+        uri.toString(),
+      );
+    }
+    if (resp.statusCode >= 500) {
+      throw ApiException(
+        resp.statusCode,
+        'Sign-in service is temporarily unavailable. Please try again later.',
+        uri.toString(),
+      );
+    }
+    if (resp.statusCode != 200) {
+      throw ApiException(
+        resp.statusCode,
+        'Unable to sign in. Please contact the school administrator.',
         uri.toString(),
       );
     }

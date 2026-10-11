@@ -25,7 +25,7 @@ const {
   uploadGroupPhotoToGridFS,
   validateBackendConfig,
 } = require('./staging_safety');
-const { createCorsMiddleware } = require('./cors_middleware');
+const { createCorsMiddleware, parseAllowedOrigins } = require('./cors_middleware');
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, 'env.development') });
@@ -42,12 +42,7 @@ if (!authSecret || authSecret.length < 32) {
   throw new Error('AUTH_SECRET must be configured with at least 32 characters.');
 }
 
-const allowedCorsOrigins = new Set(
-  String(process.env.CORS_ORIGINS || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-);
+const allowedCorsOrigins = new Set(parseAllowedOrigins(process.env.CORS_ORIGINS));
 
 fs.mkdirSync(uploadDirectory, { recursive: true });
 const servePublicUpload = express.static(uploadDirectory, {

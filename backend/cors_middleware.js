@@ -5,6 +5,13 @@ const DEVELOPMENT_ORIGINS = [
   'http://127.0.0.1:8000',
 ];
 
+function parseAllowedOrigins(value = '') {
+  return String(value)
+    .split(',')
+    .map((origin) => origin.trim().replace(/^-+\s*/, ''))
+    .filter(Boolean);
+}
+
 function createCorsMiddleware({
   cors,
   allowedOrigins = [],
@@ -38,4 +45,4 @@ function createCorsMiddleware({
   };
 }
 
-module.exports = { createCorsMiddleware };
+module.exports = { createCorsMiddleware, parseAllowedOrigins };

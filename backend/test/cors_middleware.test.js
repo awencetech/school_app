@@ -3,7 +3,7 @@ const cors = require('cors');
 const express = require('express');
 const http = require('node:http');
 const test = require('node:test');
-const { createCorsMiddleware } = require('../cors_middleware');
+const { createCorsMiddleware, parseAllowedOrigins } = require('../cors_middleware');
 
 async function withServer(allowedOrigins, onRejectedOrigin, run) {
   const app = express();
@@ -82,6 +82,16 @@ test('rejects an unconfigured origin and logs only its origin and method', async
     assert.equal(response.headers['access-control-allow-origin'], undefined);
     assert.deepEqual(logEntries, [['https://untrusted.example.invalid', 'OPTIONS']]);
   });
+});
+
+test('normalizes env-style CORS origins with a leading dash and whitespace', () => {
+  const origins = parseAllowedOrigins('- http://localhost:8000, http://127.0.0.1:8000, https://example.com ');
+
+  assert.deepEqual(origins, [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://example.com',
+  ]);
 });
 
 test('does not use a wildcard origin when the request has no Origin header', async () => {

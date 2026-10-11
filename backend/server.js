@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const compression = require('compression');
 const dotenv = require('dotenv');
 const fs = require('fs');
@@ -24,6 +25,7 @@ const {
   uploadGroupPhotoToGridFS,
   validateBackendConfig,
 } = require('./staging_safety');
+const { createCorsMiddleware } = require('./cors_middleware');
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, 'env.development') });
@@ -58,30 +60,15 @@ const servePublicUpload = express.static(uploadDirectory, {
   },
 });
 
+app.use(createCorsMiddleware({
+  cors,
+  allowedOrigins: [...allowedCorsOrigins],
+  onRejectedOrigin(origin, method) {
+    console.warn(`Rejected CORS ${method} request from unconfigured origin: ${origin}`);
+  },
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(compression());
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    const isLocalDevelopmentOrigin =
-      process.env.NODE_ENV !== 'production' &&
-      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-    if (!allowedCorsOrigins.has(origin) && !isLocalDevelopmentOrigin) {
-      return res.status(403).json({ message: 'Origin is not allowed.' });
-    }
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-
-  return next();
-});
 app.use('/uploads', (req, res, next) => {
   void (async () => {
     const filename = path.basename(req.path);
@@ -7329,7 +7316,10 @@ app.post('/api/login', async (req, res) => {
     });
     return res.json({ success: true, token, user: sanitizeUserForResponse(user) });
   } catch (error) {
-    console.error('POST /api/login failed:', error);
+    console.error(
+      'POST /api/login failed:',
+      error instanceof Error ? error.name : 'Unknown error',
+    );
     return res.status(500).json({ message: 'Unable to authenticate user.' });
   }
 });
@@ -7981,8 +7971,8 @@ async function startServer() {
     }
   }
 
-  app.listen(port, () => {
-    console.log(`Backend running on http://localhost:${port}`);
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Backend listening on port ${port}`);
   });
 }
 

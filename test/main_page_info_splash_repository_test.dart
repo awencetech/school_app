@@ -62,4 +62,39 @@ void main() {
 
     expect(result.splashScreen.title, 'Updated');
   });
+
+  test('splash GET is not sent when the stored token is missing', () async {
+    SharedPreferences.setMockInitialValues({});
+    var requestSent = false;
+    final repository = MainPageInfoRepository(
+      baseUrl: 'https://school-app.example',
+      client: MockClient((request) async {
+        requestSent = true;
+        return http.Response('{}', 200);
+      }),
+    );
+
+    await expectLater(repository.getSplashScreen(), throwsStateError);
+
+    expect(requestSent, isFalse);
+  });
+
+  test('splash PUT is not sent when the stored token is blank', () async {
+    SharedPreferences.setMockInitialValues({'auth_user_token': '  '});
+    var requestSent = false;
+    final repository = MainPageInfoRepository(
+      baseUrl: 'https://school-app.example',
+      client: MockClient((request) async {
+        requestSent = true;
+        return http.Response('{}', 200);
+      }),
+    );
+
+    await expectLater(
+      repository.updateSplashScreen({'title': 'Updated'}),
+      throwsStateError,
+    );
+
+    expect(requestSent, isFalse);
+  });
 }

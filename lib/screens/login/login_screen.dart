@@ -87,11 +87,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
             final authorizedRole =
                 authorization['role']?.toString() ?? user.role;
+            final authorizedToken = authorization['token']?.toString().trim();
+            final loginToken = user.token?.trim();
+            final backendToken =
+                authorizedToken != null && authorizedToken.isNotEmpty
+                ? authorizedToken
+                : loginToken;
+            if (backendToken == null || backendToken.isEmpty) {
+              throw StateError('Backend authentication token was not issued.');
+            }
             await appState.setAuthenticatedUser(
               userId: user.userId,
               email: user.email,
               role: authorizedRole,
-              token: authorization['token']?.toString() ?? user.token,
+              token: backendToken,
             );
 
             if (!mounted) return;
@@ -252,11 +261,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final role = authorization['role']?.toString() ?? 'student';
+    final backendToken = authorization['token']?.toString().trim();
+    if (backendToken == null || backendToken.isEmpty) {
+      throw StateError('Backend authentication token was not issued.');
+    }
     await appState.setAuthenticatedUser(
       userId: user.uid,
       email: email,
       role: role,
-      token: authorization['token']?.toString(),
+      token: backendToken,
     );
 
     if (!mounted) return;

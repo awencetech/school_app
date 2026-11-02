@@ -118,7 +118,7 @@ class MainPageInfoRepository {
   Future<MainPageInfo> getSplashScreen() async {
     const path = '/api/mainpage-info/splash';
     final response = await _client
-        .get(_uri(path), headers: await AuthHeaders.bearer())
+        .get(_uri(path), headers: await AuthHeaders.requiredBearer())
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       debugPrint('GET $path failed with HTTP ${response.statusCode}.');
@@ -224,7 +224,11 @@ class MainPageInfoRepository {
   }
 
   Future<MainPageInfo> updateSplashScreen(Map<String, dynamic> payload) async {
-    return _updateSection('/api/mainpage-info/splash', payload);
+    return _updateSection(
+      '/api/mainpage-info/splash',
+      payload,
+      requireAuthentication: true,
+    );
   }
 
   Future<MainPageInfo> updateSchoolSettings(
@@ -243,12 +247,15 @@ class MainPageInfoRepository {
 
   Future<MainPageInfo> _updateSection(
     String path,
-    Map<String, dynamic> payload,
-  ) async {
+    Map<String, dynamic> payload, {
+    bool requireAuthentication = false,
+  }) async {
     final response = await _client
         .put(
           _uri(path),
-          headers: await AuthHeaders.json(),
+          headers: requireAuthentication
+              ? await AuthHeaders.requiredJson()
+              : await AuthHeaders.json(),
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 20));

@@ -37,23 +37,32 @@ function request(baseUrl, path, method, headers) {
   });
 }
 
-for (const origin of ['http://localhost:8000', 'http://127.0.0.1:8000']) {
-  test(`allows preflight from ${origin}`, async () => {
+for (const origin of ['http://localhost:8081', 'http://localhost:8000', 'http://127.0.0.1:8000']) {
+  test(`allows preflight from ${origin} for the requested API routes`, async () => {
     await withServer([], undefined, async (baseUrl) => {
-      const response = await request(baseUrl, '/api/login', 'OPTIONS', {
-        Origin: origin,
-        'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'content-type,authorization',
-      });
+      for (const path of [
+        '/api/login',
+        '/api/mainpage-info',
+        '/api/auth/check-email',
+        '/api/users',
+      ]) {
+        const response = await request(baseUrl, path, 'OPTIONS', {
+          Origin: origin,
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'content-type,authorization,x-requested-with',
+        });
 
-      assert.equal(response.statusCode, 204);
-      assert.equal(response.headers['access-control-allow-origin'], origin);
-      for (const method of ['POST', 'GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
-        assert.match(response.headers['access-control-allow-methods'], new RegExp(`\\b${method}\\b`));
+        assert.equal(response.statusCode, 204, `${path} should return HTTP 204`);
+        assert.equal(response.headers['access-control-allow-origin'], origin);
+        assert.match(response.headers.vary, /Origin/i);
+        for (const method of ['POST', 'GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
+          assert.match(response.headers['access-control-allow-methods'], new RegExp(`\\b${method}\\b`));
+        }
+        assert.match(response.headers['access-control-allow-headers'], /Content-Type/i);
+        assert.match(response.headers['access-control-allow-headers'], /Authorization/i);
+        assert.match(response.headers['access-control-allow-headers'], /X-Requested-With/i);
+        assert.equal(response.headers['access-control-allow-credentials'], undefined);
       }
-      assert.match(response.headers['access-control-allow-headers'], /Content-Type/i);
-      assert.match(response.headers['access-control-allow-headers'], /Authorization/i);
-      assert.equal(response.headers['access-control-allow-credentials'], 'true');
     });
   });
 }
@@ -67,6 +76,8 @@ test('allows an explicitly configured production origin', async () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.headers['access-control-allow-origin'], productionOrigin);
+    assert.match(response.headers.vary, /Origin/i);
+    assert.equal(response.headers['access-control-allow-credentials'], undefined);
   });
 });
 
@@ -80,6 +91,7 @@ test('rejects an unconfigured origin and logs only its origin and method', async
 
     assert.equal(response.statusCode, 403);
     assert.equal(response.headers['access-control-allow-origin'], undefined);
+    assert.match(response.headers.vary, /Origin/i);
     assert.deepEqual(logEntries, [['https://untrusted.example.invalid', 'OPTIONS']]);
   });
 });
@@ -112,5 +124,7 @@ test('invalid credentials remain an authentication failure with CORS headers', a
 
     assert.equal(response.statusCode, 401);
     assert.equal(response.headers['access-control-allow-origin'], 'http://localhost:8000');
+    assert.match(response.headers.vary, /Origin/i);
+    assert.equal(response.headers['access-control-allow-credentials'], undefined);
   });
 });

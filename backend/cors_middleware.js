@@ -1,6 +1,7 @@
 const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 const ALLOWED_HEADERS = ['Content-Type', 'Authorization', 'X-Requested-With'];
 const DEVELOPMENT_ORIGINS = [
+  'http://localhost:8081',
   'http://localhost:8000',
   'http://127.0.0.1:8000',
 ];
@@ -29,7 +30,6 @@ function createCorsMiddleware({
       if (!origin) return callback(null, false);
       callback(null, origin);
     },
-    credentials: true,
     methods: ALLOWED_METHODS,
     allowedHeaders: ALLOWED_HEADERS,
     optionsSuccessStatus: 204,
@@ -37,6 +37,7 @@ function createCorsMiddleware({
 
   return (req, res, next) => {
     const origin = req.get('Origin');
+    res.vary('Origin');
     if (origin && !originAllowlist.has(origin)) {
       onRejectedOrigin(origin, req.method);
       return res.status(403).json({ message: 'Origin is not allowed.' });

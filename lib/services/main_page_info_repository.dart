@@ -9,10 +9,12 @@ import 'auth_headers.dart';
 import '../config/api_config.dart';
 
 class MainPageInfoRepository {
-  MainPageInfoRepository({String? baseUrl})
-    : _baseUrl = baseUrl ?? _resolveBaseUrl();
+  MainPageInfoRepository({String? baseUrl, http.Client? client})
+    : _baseUrl = baseUrl ?? _resolveBaseUrl(),
+      _client = client ?? http.Client();
 
   final String _baseUrl;
+  final http.Client _client;
   static const _productionBaseUrl = ApiConfig.productionBaseUrl;
 
   static String _resolveBaseUrl() {
@@ -111,6 +113,27 @@ class MainPageInfoRepository {
       _inFlightMainPageInfoFuture = null;
     });
     return _inFlightMainPageInfoFuture!;
+  }
+
+  Future<MainPageInfo> getSplashScreen() async {
+    const path = '/api/mainpage-info/splash';
+    final response = await _client
+        .get(_uri(path), headers: await AuthHeaders.bearer())
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      debugPrint('GET $path failed with HTTP ${response.statusCode}.');
+      throw Exception('Unable to load splash screen (${response.statusCode}).');
+    }
+
+    final payload = jsonDecode(response.body);
+    if (payload is! Map<String, dynamic>) {
+      throw const FormatException('Invalid splash screen payload');
+    }
+    return MainPageInfo.fromJson(
+      Map<String, dynamic>.from(
+        _normalizePayload(payload) as Map<String, dynamic>,
+      ),
+    );
   }
 
   Future<MainPageInfo> _fetchMainPageInfo() async {
@@ -222,18 +245,17 @@ class MainPageInfoRepository {
     String path,
     Map<String, dynamic> payload,
   ) async {
-    final response = await http
+    final response = await _client
         .put(
           _uri(path),
-          headers: {'Content-Type': 'application/json'},
+          headers: await AuthHeaders.json(),
           body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(
-        'Unable to save changes (${response.statusCode}): ${response.body}',
-      );
+      debugPrint('PUT $path failed with HTTP ${response.statusCode}.');
+      throw Exception('Unable to save changes (${response.statusCode}).');
     }
 
     debugPrint(

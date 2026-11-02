@@ -56,9 +56,15 @@ class SplashConfigService extends ChangeNotifier {
     if (s != null && s.isNotEmpty) subtitle = s;
     if (y != null && y.isNotEmpty) since = y;
     if (q != null && q.isNotEmpty) quote = q;
-    if (scale != null && scale.isNotEmpty) imageScale = double.tryParse(scale) ?? imageScale;
-    if (offX != null && offX.isNotEmpty) imageOffsetX = double.tryParse(offX) ?? imageOffsetX;
-    if (offY != null && offY.isNotEmpty) imageOffsetY = double.tryParse(offY) ?? imageOffsetY;
+    if (scale != null && scale.isNotEmpty) {
+      imageScale = double.tryParse(scale) ?? imageScale;
+    }
+    if (offX != null && offX.isNotEmpty) {
+      imageOffsetX = double.tryParse(offX) ?? imageOffsetX;
+    }
+    if (offY != null && offY.isNotEmpty) {
+      imageOffsetY = double.tryParse(offY) ?? imageOffsetY;
+    }
 
     notifyListeners();
 
@@ -86,18 +92,68 @@ class SplashConfigService extends ChangeNotifier {
       await PreferencesService.setString(_imageScaleKey, imageScale.toString());
 
       imageOffsetX = saved.splashScreen.imageOffsetX;
-      await PreferencesService.setString(_imageOffsetXKey, imageOffsetX.toString());
+      await PreferencesService.setString(
+        _imageOffsetXKey,
+        imageOffsetX.toString(),
+      );
 
       imageOffsetY = saved.splashScreen.imageOffsetY;
-      await PreferencesService.setString(_imageOffsetYKey, imageOffsetY.toString());
-    } catch (_) {
+      await PreferencesService.setString(
+        _imageOffsetYKey,
+        imageOffsetY.toString(),
+      );
+    } catch (error) {
       // Keep the cached values if the server is temporarily unavailable.
+      debugPrint('Unable to load splash configuration (${error.runtimeType}).');
     }
 
     notifyListeners();
   }
 
-  Future<bool> save({String? imageBase64, String? title, String? subtitle, String? since, String? quote, double? imageScale, double? imageOffsetX, double? imageOffsetY}) async {
+  Future<void> reloadForEditor() async {
+    try {
+      final saved = await _repository.getSplashScreen();
+      title = saved.splashScreen.title;
+      subtitle = saved.splashScreen.subtitle;
+      since = saved.splashScreen.sinceYear;
+      quote = saved.splashScreen.quote;
+      imageBase64 = saved.splashScreen.image;
+      imageScale = saved.splashScreen.imageScale;
+      imageOffsetX = saved.splashScreen.imageOffsetX;
+      imageOffsetY = saved.splashScreen.imageOffsetY;
+
+      await PreferencesService.setString(_titleKey, title);
+      await PreferencesService.setString(_subtitleKey, subtitle);
+      await PreferencesService.setString(_sinceKey, since);
+      await PreferencesService.setString(_quoteKey, quote);
+      await PreferencesService.setString(_imageKey, imageBase64 ?? '');
+      await PreferencesService.setString(_imageScaleKey, imageScale.toString());
+      await PreferencesService.setString(
+        _imageOffsetXKey,
+        imageOffsetX.toString(),
+      );
+      await PreferencesService.setString(
+        _imageOffsetYKey,
+        imageOffsetY.toString(),
+      );
+    } catch (error) {
+      debugPrint(
+        'Unable to load authenticated splash configuration (${error.runtimeType}).',
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<bool> save({
+    String? imageBase64,
+    String? title,
+    String? subtitle,
+    String? since,
+    String? quote,
+    double? imageScale,
+    double? imageOffsetX,
+    double? imageOffsetY,
+  }) async {
     // Backend-first save: attempt to persist to server and only update local cache on success.
     try {
       // Build splash payload using current in-memory state overridden by arguments
@@ -114,9 +170,13 @@ class SplashConfigService extends ChangeNotifier {
       if (newImage.isNotEmpty && !newImage.startsWith('http')) {
         try {
           final bytes = base64Decode(newImage);
-          final uploadedUrl = await _repository.uploadPoster(fileName: 'splash-${DateTime.now().millisecondsSinceEpoch}.png', bytes: bytes);
+          final uploadedUrl = await _repository.uploadPoster(
+            fileName: 'splash-${DateTime.now().millisecondsSinceEpoch}.png',
+            bytes: bytes,
+          );
           newImage = uploadedUrl;
-        } catch (e) {
+        } catch (error) {
+          debugPrint('Unable to upload splash image (${error.runtimeType}).');
           return false;
         }
       }
@@ -136,11 +196,21 @@ class SplashConfigService extends ChangeNotifier {
       final updated = await _repository.updateSplashScreen(payload);
 
       // Update local state and preferences only after successful backend save
-      if (updated.splashScreen.title.isNotEmpty) this.title = updated.splashScreen.title;
-      if (updated.splashScreen.subtitle.isNotEmpty) this.subtitle = updated.splashScreen.subtitle;
-      if (updated.splashScreen.quote.isNotEmpty) this.quote = updated.splashScreen.quote;
-      if (updated.splashScreen.sinceYear.isNotEmpty) this.since = updated.splashScreen.sinceYear;
-      if (updated.splashScreen.image.isNotEmpty) this.imageBase64 = updated.splashScreen.image;
+      if (updated.splashScreen.title.isNotEmpty) {
+        this.title = updated.splashScreen.title;
+      }
+      if (updated.splashScreen.subtitle.isNotEmpty) {
+        this.subtitle = updated.splashScreen.subtitle;
+      }
+      if (updated.splashScreen.quote.isNotEmpty) {
+        this.quote = updated.splashScreen.quote;
+      }
+      if (updated.splashScreen.sinceYear.isNotEmpty) {
+        this.since = updated.splashScreen.sinceYear;
+      }
+      if (updated.splashScreen.image.isNotEmpty) {
+        this.imageBase64 = updated.splashScreen.image;
+      }
       imageScale = updated.splashScreen.imageScale;
       imageOffsetX = updated.splashScreen.imageOffsetX;
       imageOffsetY = updated.splashScreen.imageOffsetY;
@@ -151,14 +221,24 @@ class SplashConfigService extends ChangeNotifier {
       await PreferencesService.setString(_subtitleKey, this.subtitle);
       await PreferencesService.setString(_sinceKey, this.since);
       await PreferencesService.setString(_quoteKey, this.quote);
-      await PreferencesService.setString(_imageScaleKey, newImageScale.toString());
-      await PreferencesService.setString(_imageOffsetXKey, newImageOffsetX.toString());
-      await PreferencesService.setString(_imageOffsetYKey, newImageOffsetY.toString());
+      await PreferencesService.setString(
+        _imageScaleKey,
+        newImageScale.toString(),
+      );
+      await PreferencesService.setString(
+        _imageOffsetXKey,
+        newImageOffsetX.toString(),
+      );
+      await PreferencesService.setString(
+        _imageOffsetYKey,
+        newImageOffsetY.toString(),
+      );
 
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (error) {
       // Do not overwrite local cache if backend save fails
+      debugPrint('Unable to save splash configuration (${error.runtimeType}).');
       return false;
     }
   }

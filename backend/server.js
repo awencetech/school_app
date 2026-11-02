@@ -26,6 +26,7 @@ const {
   validateBackendConfig,
 } = require('./staging_safety');
 const { createCorsMiddleware, parseAllowedOrigins } = require('./cors_middleware');
+const { createSplashRouter } = require('./splash_routes');
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, 'env.development') });
@@ -7454,22 +7455,13 @@ app.put('/api/mainpage-info', requireAdmin, async (req, res) => {
   }
 });
 
-app.put('/api/mainpage-info/splash', requireAdmin, async (req, res) => {
-  try {
-    const current = (await getMainPageDocument()) || buildDefaultDocument();
-    const updated = await upsertMainPageDocument({
-      ...current,
-      splashScreen: {
-        ...(current.splashScreen || {}),
-        ...(req.body || {}),
-      },
-    });
-    return res.json(updated);
-  } catch (error) {
-    console.error('PUT /api/mainpage-info/splash failed:', error);
-    return res.status(500).json({ message: 'Unable to save changes. Please try again.' });
-  }
-});
+app.use('/api/mainpage-info/splash', createSplashRouter({
+  express,
+  requireAdmin,
+  getMainPageDocument,
+  buildDefaultDocument,
+  upsertMainPageDocument,
+}));
 
 app.put('/api/mainpage-info/settings', requireAdmin, async (req, res) => {
   try {

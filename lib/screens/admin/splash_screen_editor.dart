@@ -20,13 +20,19 @@ class SplashScreenEditor extends StatefulWidget {
   State<SplashScreenEditor> createState() => _SplashScreenEditorState();
 }
 
-
-
 class _SplashScreenEditorState extends State<SplashScreenEditor> {
-  final TextEditingController _titleController = TextEditingController(text: 'Splash Screen');
-  final TextEditingController _subtitleController = TextEditingController(text: '');
-  final TextEditingController _quoteController = TextEditingController(text: '');
-  final TextEditingController _sinceController = TextEditingController(text: '1987');
+  final TextEditingController _titleController = TextEditingController(
+    text: 'Splash Screen',
+  );
+  final TextEditingController _subtitleController = TextEditingController(
+    text: '',
+  );
+  final TextEditingController _quoteController = TextEditingController(
+    text: '',
+  );
+  final TextEditingController _sinceController = TextEditingController(
+    text: '1987',
+  );
   String? _imageBase64;
   double _imageScale = 1.0;
   double _imageOffsetX = 0.0;
@@ -47,8 +53,10 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final svc = context.read<SplashConfigService>();
+      await svc.reloadForEditor();
+      if (!mounted) return;
       setState(() {
         _titleController.text = svc.title;
         _subtitleController.text = svc.subtitle;
@@ -67,11 +75,15 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
     final title = _titleController.text.trim();
     final since = _sinceController.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Title cannot be empty')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Title cannot be empty')));
       return;
     }
     if (since.isEmpty || int.tryParse(since) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Since must be a valid year')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Since must be a valid year')),
+      );
       return;
     }
 
@@ -92,7 +104,9 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
 
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Splash screen updated successfully.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Splash screen updated successfully.')),
+      );
       // Keep UI in sync with saved values
       setState(() {
         _titleController.text = svc.title;
@@ -105,7 +119,11 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
         _imageOffsetY = svc.imageOffsetY;
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to save splash screen. Please try again.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to save splash screen. Please try again.'),
+        ),
+      );
     }
   }
 
@@ -116,7 +134,10 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
       try {
         final ctx = _previewKey.currentContext;
         if (ctx != null) {
-          Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 300),
+          );
         }
       } catch (_) {}
     });
@@ -140,7 +161,10 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
   Widget build(BuildContext context) {
     // No local sizing here; `FounderSplashImage` handles responsive sizing.
     return Scaffold(
-      appBar: AppBar(backgroundColor: AppColors.topBar, title: const Text('Splash Screen')),
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        title: const Text('Splash Screen'),
+      ),
       body: SingleChildScrollView(
         controller: _scrollController,
         padding: const EdgeInsets.all(16.0),
@@ -200,29 +224,31 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                 GestureDetector(
                   onTap: _pickImage,
                   child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: _imageBase64 != null
-                          ? Center(
-                              child: _imageBase64!.trim().startsWith('http')
-                                  ? CachedNetworkImage(
-                                      imageUrl: _imageBase64!,
-                                      fit: BoxFit.contain,
-                                      placeholder: (context, url) => const SizedBox.shrink(),
-                                      errorWidget: (context, url, error) => const Icon(Icons.image, size: 36),
-                                    )
-                                  : Image.memory(
-                                      base64Decode(_imageBase64!),
-                                      fit: BoxFit.contain,
-                                    ),
-                            )
-                          : const Icon(Icons.image, size: 36),
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      border: Border.all(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(6),
                     ),
+                    child: _imageBase64 != null
+                        ? Center(
+                            child: _imageBase64!.trim().startsWith('http')
+                                ? CachedNetworkImage(
+                                    imageUrl: _imageBase64!,
+                                    fit: BoxFit.contain,
+                                    placeholder: (context, url) =>
+                                        const SizedBox.shrink(),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.image, size: 36),
+                                  )
+                                : Image.memory(
+                                    base64Decode(_imageBase64!),
+                                    fit: BoxFit.contain,
+                                  ),
+                          )
+                        : const Icon(Icons.image, size: 36),
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: _pickImage,
@@ -244,7 +270,13 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
               children: [
                 ElevatedButton.icon(
                   onPressed: _isSaving ? null : _save,
-                  icon: _isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
                   label: Text(_isSaving ? 'Saving...' : 'Save'),
                 ),
                 OutlinedButton.icon(
@@ -276,14 +308,37 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                       child: FounderSplashImage(imageBase64: _imageBase64),
                     ),
                   const SizedBox(height: 16),
-                  Text('Since ${_sinceController.text}', style: AppTextStyles.subtitle.copyWith(color: AppColors.white)),
+                  Text(
+                    'Since ${_sinceController.text}',
+                    style: AppTextStyles.subtitle.copyWith(
+                      color: AppColors.white,
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  Text(_titleController.text, style: AppTextStyles.appTitle.copyWith(color: AppColors.white)),
+                  Text(
+                    _titleController.text,
+                    style: AppTextStyles.appTitle.copyWith(
+                      color: AppColors.white,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(_subtitleController.text, textAlign: TextAlign.center, style: AppTextStyles.body.copyWith(color: AppColors.white.withValues(alpha: 0.85))),
+                  Text(
+                    _subtitleController.text,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
                   if (_quoteController.text.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text('"${_quoteController.text}"', textAlign: TextAlign.center, style: AppTextStyles.body.copyWith(color: AppColors.white.withValues(alpha: 0.95), fontStyle: FontStyle.italic)),
+                    Text(
+                      '"${_quoteController.text}"',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.white.withValues(alpha: 0.95),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -314,10 +369,9 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
               Navigator.of(context).pushNamed(AppRoutes.supportQuery);
               break;
             case 4:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.main,
-                (route) => false,
-              );
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
               break;
           }
         },

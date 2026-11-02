@@ -63,8 +63,14 @@ function readBearerToken(req) {
 
 function createAuthenticate({ secret, loadUser }) {
   return async function authenticate(req, res, next) {
-    const payload = verifyAuthToken(readBearerToken(req), secret);
+    const token = readBearerToken(req);
+    const payload = verifyAuthToken(token, secret);
     if (!payload) {
+      console.warn(
+        `Authentication rejected for ${req.method} ${req.path}: ${
+          token ? 'invalid or expired bearer token' : 'missing bearer token'
+        }.`,
+      );
       return res.status(401).json({ message: 'Authentication required.' });
     }
 
@@ -72,11 +78,17 @@ function createAuthenticate({ secret, loadUser }) {
       const user = await loadUser(payload.userId, payload.role);
       if (!user || String(user.userId || user.userID || '') !== payload.userId ||
           !USER_ROLES.has(canonicalRole(user.role))) {
+        console.warn(
+          `Authentication rejected for ${req.method} ${req.path}: account not found or invalid.`,
+        );
         return res.status(401).json({ message: 'Authentication required.' });
       }
 
       const acceptedRole = canonicalRole(user.role);
       if (acceptedRole !== payload.role.toLowerCase()) {
+        console.warn(
+          `Authentication rejected for ${req.method} ${req.path}: account role changed.`,
+        );
         return res.status(401).json({ message: 'Authentication required.' });
       }
 
@@ -86,6 +98,9 @@ function createAuthenticate({ secret, loadUser }) {
       if (['inactive', 'disabled', 'blocked', 'suspended', 'deactivated'].includes(status) ||
           user.active === false || user.isActive === false ||
           user.enabled === false || user.isEnabled === false) {
+        console.warn(
+          `Authentication rejected for ${req.method} ${req.path}: account is inactive.`,
+        );
         return res.status(401).json({ message: 'Authentication required.' });
       }
 

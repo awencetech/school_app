@@ -117,8 +117,10 @@ class MainPageInfoRepository {
 
   Future<MainPageInfo> getSplashScreen() async {
     const path = '/api/mainpage-info/splash';
+    final uri = _uri(path);
+    final headers = await _splashHeaders('GET', uri);
     final response = await _client
-        .get(_uri(path), headers: await AuthHeaders.requiredBearer())
+        .get(uri, headers: headers)
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       debugPrint('GET $path failed with HTTP ${response.statusCode}.');
@@ -227,7 +229,7 @@ class MainPageInfoRepository {
     return _updateSection(
       '/api/mainpage-info/splash',
       payload,
-      requireAuthentication: true,
+      splashAuthentication: true,
     );
   }
 
@@ -248,16 +250,14 @@ class MainPageInfoRepository {
   Future<MainPageInfo> _updateSection(
     String path,
     Map<String, dynamic> payload, {
-    bool requireAuthentication = false,
+    bool splashAuthentication = false,
   }) async {
+    final uri = _uri(path);
+    final headers = splashAuthentication
+        ? await _splashHeaders('PUT', uri, includeJsonContentType: true)
+        : await AuthHeaders.json();
     final response = await _client
-        .put(
-          _uri(path),
-          headers: requireAuthentication
-              ? await AuthHeaders.requiredJson()
-              : await AuthHeaders.json(),
-          body: jsonEncode(payload),
-        )
+        .put(uri, headers: headers, body: jsonEncode(payload))
         .timeout(const Duration(seconds: 20));
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -317,5 +317,32 @@ class MainPageInfoRepository {
     } catch (_) {}
 
     return MainPageInfo.fromJson(normalized);
+  }
+
+  Future<Map<String, String>> _splashHeaders(
+    String method,
+    Uri uri, {
+    bool includeJsonContentType = false,
+  }) async {
+    final headers = includeJsonContentType
+        ? await AuthHeaders.json()
+        : await AuthHeaders.bearer();
+    final authorization = headers['Authorization'];
+    final tokenExists =
+        authorization != null &&
+        authorization.startsWith('Bearer ') &&
+        authorization.substring('Bearer '.length).trim().isNotEmpty;
+    final authorizationHeaderAttached =
+        authorization != null && authorization.isNotEmpty;
+    debugPrint(
+      'HTTP $method $uri tokenExists=$tokenExists '
+      'authorizationHeaderAttached=$authorizationHeaderAttached',
+    );
+    if (!tokenExists || !authorizationHeaderAttached) {
+      throw StateError(
+        'Backend authentication token is unavailable. Please sign in again.',
+      );
+    }
+    return headers;
   }
 }

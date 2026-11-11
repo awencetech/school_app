@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-11-11",
+  "target": "https://school-app-1uep.onrender.com",
+  "benchmark": "Phase 0 protected backend performance",
+  "requestsExecuted": 0,
+  "samples": [],
+  "summaries": [],
+  "timeouts": 0,
+  "httpErrors": 0,
+  "skippedCases": [
+    { "case": "login", "method": "POST", "path": "/api/login", "reason": "Missing BASELINE_LOGIN_IDENTIFIER and BASELINE_LOGIN_PASSWORD." },
+    { "case": "admin-dashboard", "method": "GET", "path": "/api/mainpage-info", "reason": "Missing BASELINE_ADMIN_TOKEN." },
+    { "case": "staff-dashboard", "method": "GET", "path": "/api/staff/profile", "reason": "Missing BASELINE_STAFF_TOKEN." },
+    { "case": "student-dashboard", "method": "GET", "path": "/api/students/profile", "reason": "Missing BASELINE_STUDENT_TOKEN." },
+    { "case": "messages", "method": "GET", "path": "/api/messages/inbox", "reason": "Missing BASELINE_STUDENT_TOKEN." },
+    { "case": "attendance", "method": "GET", "path": "/api/student-attendance", "reason": "Missing BASELINE_STUDENT_TOKEN." },
+    { "case": "diary", "method": "GET", "path": "/api/diary/student", "reason": "Missing BASELINE_STUDENT_TOKEN." },
+    { "case": "groups", "method": "GET", "path": "/api/groups", "reason": "Missing BASELINE_STUDENT_TOKEN." },
+    { "case": "classes", "method": "GET", "path": "/api/classes", "reason": "Missing BASELINE_STAFF_TOKEN." },
+    { "case": "resources", "method": "GET", "path": "/api/school-resources", "reason": "Missing BASELINE_STUDENT_TOKEN." }
+  ],
+  "measurementStatus": {
+    "protectedEndpointTiming": "not measured",
+    "databaseTiming": "not measured",
+    "credentialsAvailable": false
+  }
+}

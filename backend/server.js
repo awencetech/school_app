@@ -1117,6 +1117,31 @@ function sanitizeStudentMessageForResponse(doc) {
   };
 }
 
+const INBOX_MESSAGE_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  subject: 1,
+  title: 1,
+  message: 1,
+  content: 1,
+  messageType: 1,
+  category: 1,
+  senderId: 1,
+  studentId: 1,
+  senderName: 1,
+  senderEmail: 1,
+  senderRole: 1,
+  studentName: 1,
+  recipientId: 1,
+  recipientLabel: 1,
+  groupId: 1,
+  groupName: 1,
+  isViewed: 1,
+  read: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
+
 function normalizedMessageRole(role) {
   const value = String(role || '').trim().toLowerCase();
   if (value === 'administrator') return 'admin';
@@ -1192,8 +1217,8 @@ app.get('/api/messages/inbox', requirePtmReader, async (req, res) => {
             ],
           },
         ],
-      }).toArray(),
-      groupMessagesCollection.find(legacyFilter).toArray(),
+      }, { projection: INBOX_MESSAGE_PROJECTION }).toArray(),
+      groupMessagesCollection.find(legacyFilter, { projection: INBOX_MESSAGE_PROJECTION }).toArray(),
     ]);
     const messages = [...direct, ...legacy]
       .map((message) => sanitizeStudentMessageForResponse(message))
@@ -2184,6 +2209,28 @@ function sanitizeStudentForResponse(doc) {
     updatedAt: doc.updatedAt || null,
   };
 }
+
+const STUDENT_LIST_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  name: 1,
+  className: 1,
+  section: 1,
+  studentId: 1,
+  admissionNumber: 1,
+  admissionNo: 1,
+  parentName: 1,
+  mobileNumber: 1,
+  address: 1,
+  about: 1,
+  hobbies: 1,
+  specialNeeds: 1,
+  special_needs: 1,
+  role: 1,
+  imageUrl: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
 
 function sanitizeStaffLeaveForResponse(doc) {
   if (!doc) return null;
@@ -6915,7 +6962,7 @@ app.delete('/api/staff/:id', requireAdmin, async (req, res) => {
 app.get('/api/students', requireRecipientRole(['admin', 'staff']), async (req, res) => {
   try {
     await connectMongo();
-    let students = await studentInfoCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    let students = await studentInfoCollection.find({}, { projection: STUDENT_LIST_PROJECTION }).sort({ createdAt: -1, _id: -1 }).toArray();
     if (req.auth.role === 'staff') {
       const allowedStudentIds = await staffAssignedStudentIds(req.auth);
       students = students.filter((student) => studentIsInAssignedGroups(student, allowedStudentIds));

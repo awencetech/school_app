@@ -1,14 +1,14 @@
 # Phase 0 Performance Baseline Report
 
-Generated: 2026-11-11T06:02:55.683Z
+Generated: 2026-11-11T07:12:22.881Z
 Target: https://school-app-1uep.onrender.com
 
 This report contains measurements collected by the safe baseline runner. It does not claim a true cold start unless the first observed request happened after a service restart. Protected cases without an explicitly supplied staging token are skipped. No production endpoint was benchmarked by default.
 
 ## Measurement status
 
-- Instrumented backend timing: not observed; response timing is client-side only
-- MongoDB timing/count: not observed
+- Instrumented backend timing: available
+- MongoDB timing/count: available on instrumented requests
 - Cache validation: 40 conditional-cache samples; 0 returned HTTP 304
 - Skipped cases: 11
 
@@ -16,12 +16,12 @@ This report contains measurements collected by the safe baseline runner. It does
 
 | Case | Phase | Samples | p50 ms | p95 ms | p99 ms | Average ms | Max ms | HTTP errors | Avg payload bytes |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| health | cold-observed | 1 | 1349.238 | 1349.238 | 1349.238 | 1349.238 | 1349.238 | 0 | 15 |
-| health | warm | 20 | 397.4 | 451.741 | 963.516 | 405.788 | 963.516 | 0 | 15 |
-| health | cached-conditional | 20 | 363.871 | 502.157 | 510.027 | 373.018 | 510.027 | 0 | 15 |
-| readiness | cold-observed | 1 | 649.861 | 649.861 | 649.861 | 649.861 | 649.861 | 0 | 18 |
-| readiness | warm | 20 | 596.949 | 966.242 | 1126.755 | 638.835 | 1126.755 | 0 | 18 |
-| readiness | cached-conditional | 20 | 589.505 | 654.564 | 656.198 | 584.218 | 656.198 | 0 | 18 |
+| health | cold-observed | 1 | 2256.457 | 2256.457 | 2256.457 | 2256.457 | 2256.457 | 0 | 15 |
+| health | warm | 20 | 403.296 | 566.704 | 845.653 | 431.725 | 845.653 | 0 | 15 |
+| health | cached-conditional | 20 | 397.716 | 461.221 | 644.859 | 395.828 | 644.859 | 0 | 15 |
+| readiness | cold-observed | 1 | 655.613 | 655.613 | 655.613 | 655.613 | 655.613 | 0 | 18 |
+| readiness | warm | 20 | 604.439 | 763.452 | 871.113 | 633.003 | 871.113 | 0 | 18 |
+| readiness | cached-conditional | 20 | 647.449 | 798.789 | 962.473 | 657.243 | 962.473 | 0 | 18 |
 
 ## Bottleneck evidence
 
@@ -33,7 +33,7 @@ This report contains measurements collected by the safe baseline runner. It does
 
 ## Skipped and blocked cases
 
-- login (POST /api/login): Set BASELINE_LOGIN_IDENTIFIER and BASELINE_LOGIN_PASSWORD.
+- login (POST /api/login): Set BASELINE_LOGIN_TOKEN.
 - admin-dashboard (GET /api/mainpage-info): Set BASELINE_ADMIN_TOKEN.
 - staff-dashboard (GET /api/staff/profile): Set BASELINE_STAFF_TOKEN.
 - student-dashboard (GET /api/students/profile): Set BASELINE_STUDENT_TOKEN.

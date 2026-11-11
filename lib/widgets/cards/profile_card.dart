@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
-/// Staff profile card used in the School screen (Founder/Secretary/Principal).
+/// Staff profile card used in the School screen.
 class ProfileCard extends StatelessWidget {
   const ProfileCard({
     super.key,

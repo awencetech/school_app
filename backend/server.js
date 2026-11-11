@@ -27,6 +27,7 @@ const {
 } = require('./staging_safety');
 const { createCorsMiddleware, parseAllowedOrigins } = require('./cors_middleware');
 const { createSplashRouter } = require('./splash_routes');
+const { createPerformanceInstrumentation } = require('./performance_instrumentation');
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, 'env.development') });
@@ -65,6 +66,8 @@ app.use(createCorsMiddleware({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(compression());
+const performanceInstrumentation = createPerformanceInstrumentation({ env: process.env });
+app.use(performanceInstrumentation.middleware);
 app.use('/uploads', (req, res, next) => {
   void (async () => {
     const filename = path.basename(req.path);
@@ -1837,6 +1840,7 @@ const connectMongo = createMongoConnector({
 async function initializeMongo() {
   if (!client) {
     client = new MongoClient(mongoUri);
+    performanceInstrumentation.attachMongoClient(client);
     await client.connect();
     const db = client.db(mongoDatabase);
     mainPageInfoCollection = db.collection('mainPageInfo');

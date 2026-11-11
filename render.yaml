@@ -4,10 +4,13 @@ services:
     env: node
     region: oregon
     plan: free
+    branch: master
+    autoDeployTrigger: commit
     rootDir: backend
     buildCommand: npm install
-    startCommand: node server.js
-    healthCheckPath: /ready
+    startCommand: npm start
+    # Liveness must not depend on MongoDB. /ready remains the dependency check.
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,6 +20,10 @@ services:
         value: mmhs_staging
       - key: RUN_STARTUP_MIGRATIONS
         value: "false"
+      - key: PERFORMANCE_INSTRUMENTATION
+        value: "true"
+      - key: PERFORMANCE_INSTRUMENTATION_ENV
+        value: staging
       # Set secret values through the Render service's Environment settings.
       # Never put credentials in this file.
       # Use a MongoDB user restricted to the mmhs_staging database.

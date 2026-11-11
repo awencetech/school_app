@@ -1,5 +1,12 @@
 const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 const ALLOWED_HEADERS = ['Content-Type', 'Authorization', 'X-Requested-With'];
+const EXPOSED_HEADERS = [
+  'X-Performance-Request-Id',
+  'X-Performance-Total-Ms',
+  'X-Performance-DB-Operations',
+  'X-Performance-DB-Time-Ms',
+  'Server-Timing',
+];
 const DEVELOPMENT_ORIGINS = [
   'http://localhost:8081',
   'http://localhost:8000',
@@ -32,6 +39,7 @@ function createCorsMiddleware({
     },
     methods: ALLOWED_METHODS,
     allowedHeaders: ALLOWED_HEADERS,
+    exposedHeaders: EXPOSED_HEADERS,
     optionsSuccessStatus: 204,
   });
 

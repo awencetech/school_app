@@ -28,6 +28,10 @@ const {
 const { createCorsMiddleware, parseAllowedOrigins } = require('./cors_middleware');
 const { createSplashRouter } = require('./splash_routes');
 const { createPerformanceInstrumentation } = require('./performance_instrumentation');
+const {
+  createMainPageInfoCacheMiddleware,
+  filterMainPageInfoForUser,
+} = require('./main_page_info_security');
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, 'env.development') });
@@ -94,12 +98,7 @@ app.use('/uploads', (req, res, next) => {
     }
   });
 });
-app.use('/api/mainpage-info', (req, res, next) => {
-  if (req.method === 'GET') {
-    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
-  }
-  next();
-});
+app.use('/api/mainpage-info', createMainPageInfoCacheMiddleware());
 app.use('/api/groups', (req, res, next) => {
   if (req.method === 'GET') {
     res.setHeader('Cache-Control', 'private, max-age=15, stale-while-revalidate=60');
@@ -7411,7 +7410,7 @@ app.get('/api/mainpage-info', optionalAuthenticateUser, async (req, res) => {
         { $set: created },
         { upsert: true, returnDocument: 'after' }
       );
-      return res.json(mainPageInfoForUser(result.value || created, req.auth));
+      return res.json(filterMainPageInfoForUser(result.value || created, req.auth, normalizeRole));
     }
 
     const hasTopLevelHomeContent = Array.isArray(doc.homeContent) && doc.homeContent.length > 0;
@@ -7433,23 +7432,12 @@ app.get('/api/mainpage-info', optionalAuthenticateUser, async (req, res) => {
     doc.homeContent = selectedHomeContent;
 
     console.log('GET /api/mainpage-info: returning document with homeContent count', (doc.homeContent || []).length);
-    return res.json(mainPageInfoForUser(doc, req.auth));
+    return res.json(filterMainPageInfoForUser(doc, req.auth, normalizeRole));
   } catch (error) {
     console.error('GET /api/mainpage-info failed:', error);
     return res.status(500).json({ message: 'Unable to load the school configuration.' });
   }
 });
-
-function mainPageInfoForUser(doc, auth) {
-  if (normalizeRole(auth?.role) === 'admin') return doc;
-  const visible = { ...doc };
-  delete visible.gradePage;
-  if (visible.schoolContent && typeof visible.schoolContent === 'object') {
-    visible.schoolContent = { ...visible.schoolContent };
-    delete visible.schoolContent.gradePage;
-  }
-  return visible;
-}
 
 app.put('/api/mainpage-info', requireAdmin, async (req, res) => {
   try {

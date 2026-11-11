@@ -12,6 +12,7 @@ import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 import '../../widgets/quick_access_app_bar.dart';
 import '../../widgets/staff_footer.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
 
 class MessageModel {
   MessageModel({
@@ -646,11 +647,7 @@ class _MessagesPageState extends State<MessagesPage> {
                       (route) => false,
                     );
                   } else if (index == 4) {
-                    await context.read<AppState>().logout();
-                    if (!context.mounted) return;
-                    Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+                    await confirmAndLogout(context);
                   }
                 },
               )

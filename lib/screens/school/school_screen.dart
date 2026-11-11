@@ -21,7 +21,7 @@ class SchoolScreen extends StatelessWidget {
         (config.founderPhotoBase64?.isNotEmpty ?? false)) {
       members.add(
         StaffMember(
-          name: config.founderName.isNotEmpty ? config.founderName : 'Founder',
+          name: config.founderName,
           designation: config.founderDesignation,
           heading: config.founderVisionTitle,
           description: config.founderVisionDescription,
@@ -38,7 +38,7 @@ class SchoolScreen extends StatelessWidget {
         (config.secretaryPhotoBase64?.isNotEmpty ?? false)) {
       members.add(
         StaffMember(
-          name: config.secretaryName.isNotEmpty ? config.secretaryName : 'Secretary',
+          name: config.secretaryName,
           designation: config.secretaryDesignation,
           heading: config.secretaryWelcomeTitle,
           description: config.secretaryWelcomeMessage,
@@ -55,7 +55,7 @@ class SchoolScreen extends StatelessWidget {
         (config.headmasterPhotoBase64?.isNotEmpty ?? false)) {
       members.add(
         StaffMember(
-          name: config.headmasterName.isNotEmpty ? config.headmasterName : 'Headmaster',
+          name: config.headmasterName,
           designation: config.headmasterDesignation,
           heading: config.headmasterMessageTitle,
           description: config.headmasterMessage,

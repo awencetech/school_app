@@ -21,6 +21,7 @@ import '../../widgets/dashboard_bottom_nav.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/help_menu_screen.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
 import '../support/support_screen.dart';
 import '../admin/homework_today_in_class_page.dart';
 import '../admin/class_demography_page.dart';
@@ -796,11 +797,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         currentIndex: _selectedBottomIndex,
         onItemSelected: (index) async {
           if (index == 4) {
-            await context.read<AppState>().logout();
-            if (!context.mounted) return;
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+            await confirmAndLogout(context);
             return;
           }
 
@@ -917,11 +914,7 @@ class _StudentQuickAccessDetailsPage extends StatelessWidget {
         currentIndex: 2,
         onItemSelected: (index) async {
           if (index == 4) {
-            await context.read<AppState>().logout();
-            if (!context.mounted) return;
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+            await confirmAndLogout(context);
           }
         },
         items: const [

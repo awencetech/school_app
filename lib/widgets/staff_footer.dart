@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../generated/l10n/app_localizations.dart';
-import '../routes/app_routes.dart';
-import '../services/app_state.dart';
+import 'logout_confirmation_dialog.dart';
 
 class StaffFooter extends StatelessWidget {
   const StaffFooter({super.key, this.currentIndex = 2, this.onItemSelected});
@@ -24,17 +22,13 @@ class StaffFooter extends StatelessWidget {
       elevation: 0,
       currentIndex: currentIndex,
       onTap: (index) async {
+        if (index == 4) {
+          await confirmAndLogout(context);
+          return;
+        }
         if (onItemSelected != null) {
           onItemSelected!(index);
           return;
-        }
-        if (index == 4) {
-          await context.read<AppState>().logout();
-          if (!context.mounted) return;
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRoutes.main,
-            (route) => false,
-          );
         }
       },
       items: [

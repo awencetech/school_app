@@ -4,10 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/school_resource.dart';
 import '../../routes/app_routes.dart';
-import '../../services/app_state.dart';
 import '../../services/school_resource_service.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
-import 'package:provider/provider.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
 
 class SchoolResourcesPage extends StatefulWidget {
   const SchoolResourcesPage({super.key});
@@ -72,13 +71,7 @@ class _SchoolResourcesPageState extends State<SchoolResourcesPage> {
         );
         break;
       case 4:
-        await context.read<AppState>().logout();
-        if (!mounted) return;
-        if (!context.mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          AppRoutes.main,
-          (route) => false,
-        );
+        await confirmAndLogout(context);
         break;
     }
   }

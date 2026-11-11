@@ -5,6 +5,7 @@ import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
 import '../../theme/app_colors.dart';
+import '../logout_confirmation_dialog.dart';
 
 /// Bottom navigation used on the main area screens.
 class AppBottomNavigation extends StatelessWidget {
@@ -57,9 +58,7 @@ class AppBottomNavigation extends StatelessWidget {
       currentIndex: state?.bottomNavIndex ?? 0,
       onTap: (index) async {
         if (index == 4 && isLoggedIn) {
-          await state?.logout();
-          if (!context.mounted) return;
-          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+          await confirmAndLogout(context);
           return;
         }
 

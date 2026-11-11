@@ -24,6 +24,7 @@ import '../../widgets/dashboard_extra_quick_access.dart';
 import '../../widgets/dashboard_icon_grid.dart';
 import '../../widgets/user_action_popup.dart';
 import '../../widgets/help_menu_screen.dart';
+import '../../widgets/logout_confirmation_dialog.dart';
 import '../messages/messages_page.dart';
 import '../support/support_screen.dart';
 import '../admin/class_demography_page.dart';
@@ -840,11 +841,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
           }
 
           if (index == 4) {
-            await context.read<AppState>().logout();
-            if (!context.mounted) return;
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+            await confirmAndLogout(context);
             return;
           }
 

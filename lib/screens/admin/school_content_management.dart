@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -14,22 +14,35 @@ class SchoolContentManagementScreen extends StatefulWidget {
   const SchoolContentManagementScreen({super.key});
 
   @override
-  State<SchoolContentManagementScreen> createState() => _SchoolContentManagementScreenState();
+  State<SchoolContentManagementScreen> createState() =>
+      _SchoolContentManagementScreenState();
 }
 
-class _SchoolContentManagementScreenState extends State<SchoolContentManagementScreen> {
+class _SchoolContentManagementScreenState
+    extends State<SchoolContentManagementScreen> {
   final TextEditingController _founderNameController = TextEditingController();
-  final TextEditingController _founderDesignationController = TextEditingController();
-  final TextEditingController _founderVisionTitleController = TextEditingController();
-  final TextEditingController _founderVisionDescriptionController = TextEditingController();
-  final TextEditingController _secretaryNameController = TextEditingController();
-  final TextEditingController _secretaryDesignationController = TextEditingController();
-  final TextEditingController _secretaryWelcomeTitleController = TextEditingController();
-  final TextEditingController _secretaryWelcomeMessageController = TextEditingController();
-  final TextEditingController _headmasterNameController = TextEditingController();
-  final TextEditingController _headmasterDesignationController = TextEditingController();
-  final TextEditingController _headmasterMessageTitleController = TextEditingController();
-  final TextEditingController _headmasterMessageController = TextEditingController();
+  final TextEditingController _founderDesignationController =
+      TextEditingController();
+  final TextEditingController _founderVisionTitleController =
+      TextEditingController();
+  final TextEditingController _founderVisionDescriptionController =
+      TextEditingController();
+  final TextEditingController _secretaryNameController =
+      TextEditingController();
+  final TextEditingController _secretaryDesignationController =
+      TextEditingController();
+  final TextEditingController _secretaryWelcomeTitleController =
+      TextEditingController();
+  final TextEditingController _secretaryWelcomeMessageController =
+      TextEditingController();
+  final TextEditingController _headmasterNameController =
+      TextEditingController();
+  final TextEditingController _headmasterDesignationController =
+      TextEditingController();
+  final TextEditingController _headmasterMessageTitleController =
+      TextEditingController();
+  final TextEditingController _headmasterMessageController =
+      TextEditingController();
 
   late final SchoolConfigService _config;
   String? _founderPhotoBase64;
@@ -149,113 +162,188 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
 
   Future<void> _showMemberDialog({ManagementMember? member, int? index}) async {
     final nameController = TextEditingController(text: member?.name ?? '');
-    final designationController = TextEditingController(text: member?.designation ?? '');
+    final designationController = TextEditingController(
+      text: member?.designation ?? '',
+    );
     final titleController = TextEditingController(text: member?.title ?? '');
-    final descriptionController = TextEditingController(text: member?.description ?? '');
+    final descriptionController = TextEditingController(
+      text: member?.description ?? '',
+    );
     String? memberPhotoBase64 = member?.photoBase64;
     bool memberEdited = false;
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        return StatefulBuilder(builder: (context, setState) {
-          return AlertDialog(
-            title: Text(index == null ? 'Add Member' : 'Edit Member'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextButton.icon(
-                    onPressed: () async {
-                      await _pickImage((base64) {
-                        setState(() {
-                          memberPhotoBase64 = base64;
-                          memberEdited = true;
-                        });
-                      });
-                    },
-                    icon: const Icon(Icons.upload_file),
-                    label: Text(memberPhotoBase64 == null ? 'Upload Photo' : 'Replace Photo'),
-                  ),
-                  const SizedBox(height: 12),
-                  if (memberPhotoBase64 != null)
-                    AspectRatio(
-                      aspectRatio: 1,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.memory(
-                          base64Decode(memberPhotoBase64!),
-                          fit: BoxFit.contain,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final hasPhoto = memberPhotoBase64?.isNotEmpty == true;
+            final fieldBorder = OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade400),
+            );
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        index == null ? 'Add Member' : 'Edit Member',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    )
-                  else
-                    Container(
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 20),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _pickImage((base64) {
+                            setState(() {
+                              memberPhotoBase64 = base64;
+                              memberEdited = true;
+                            });
+                          });
+                        },
+                        icon: const Icon(Icons.upload_file),
+                        label: Text(
+                          hasPhoto ? 'Replace Photo' : 'Upload Photo',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
-                      child: const Center(child: Text('No Photo Selected')),
-                    ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 148,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: hasPhoto
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.memory(
+                                  base64Decode(memberPhotoBase64!),
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Center(
+                                        child: Text('No Photo Selected'),
+                                      ),
+                                ),
+                              )
+                            : const Center(child: Text('No Photo Selected')),
+                      ),
+                      const SizedBox(height: 18),
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          border: fieldBorder,
+                          enabledBorder: fieldBorder,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: designationController,
+                        decoration: InputDecoration(
+                          labelText: 'Designation',
+                          border: fieldBorder,
+                          enabledBorder: fieldBorder,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          labelText: 'Title',
+                          border: fieldBorder,
+                          enabledBorder: fieldBorder,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: descriptionController,
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                          border: fieldBorder,
+                          enabledBorder: fieldBorder,
+                        ),
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: 22),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              final updatedMember = ManagementMember(
+                                id:
+                                    member?.id ??
+                                    DateTime.now().millisecondsSinceEpoch
+                                        .toString(),
+                                photoBase64: memberPhotoBase64 ?? '',
+                                name: nameController.text.trim(),
+                                designation: designationController.text.trim(),
+                                title: titleController.text.trim(),
+                                description: descriptionController.text.trim(),
+                              );
+                              setState(() {
+                                memberEdited = true;
+                              });
+                              if (index == null) {
+                                _managementMembers.add(updatedMember);
+                              } else {
+                                _managementMembers[index] = updatedMember;
+                              }
+                              _hasUserEdited = true;
+                              Navigator.of(dialogContext).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(88, 44),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: designationController,
-                    decoration: const InputDecoration(labelText: 'Designation', border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Title', border: OutlineInputBorder()),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
-                    maxLines: 3,
-                  ),
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final updatedMember = ManagementMember(
-                    id: member?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                    photoBase64: memberPhotoBase64 ?? '',
-                    name: nameController.text.trim(),
-                    designation: designationController.text.trim(),
-                    title: titleController.text.trim(),
-                    description: descriptionController.text.trim(),
-                  );
-                  setState(() {
-                    memberEdited = true;
-                  });
-                  if (index == null) {
-                    _managementMembers.add(updatedMember);
-                  } else {
-                    _managementMembers[index] = updatedMember;
-                  }
-                  _hasUserEdited = true;
-                  Navigator.of(dialogContext).pop();
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        });
+            );
+          },
+        );
       },
     );
+
+    nameController.dispose();
+    designationController.dispose();
+    titleController.dispose();
+    descriptionController.dispose();
 
     if (memberEdited) {
       setState(() {});
@@ -353,7 +441,9 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
                   ElevatedButton.icon(
                     onPressed: onPick,
                     icon: const Icon(Icons.upload_file),
-                    label: Text(base64 == null ? 'Upload Image' : 'Replace Image'),
+                    label: Text(
+                      base64 == null ? 'Upload Image' : 'Replace Image',
+                    ),
                   ),
                 ],
               ),
@@ -364,10 +454,17 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, {int maxLines = 1}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    int maxLines = 1,
+  }) {
     return TextField(
       controller: controller,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
       maxLines: maxLines,
     );
   }
@@ -375,77 +472,120 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: AppColors.topBar, title: const Text('School Content Management')),
+      appBar: AppBar(
+        backgroundColor: AppColors.topBar,
+        title: const Text('School Content Management'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSectionHeading('Founder Details'),
+            _buildSectionHeading('Member Details'),
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildImageCard('Founder Photo', _founderPhotoBase64, _selectFounderPhoto),
-                    const SizedBox(height: 16),
-                    _buildTextField(_founderNameController, 'Founder Name'),
-                    const SizedBox(height: 12),
-                    _buildTextField(_founderDesignationController, 'Designation'),
-                    const SizedBox(height: 12),
-                    _buildTextField(_founderVisionTitleController, 'Vision Title'),
-                    const SizedBox(height: 12),
-                    _buildTextField(_founderVisionDescriptionController, 'Vision Description', maxLines: 3),
-                  ],
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            _buildSectionHeading('Secretary Details'),
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildImageCard('Secretary Photo', _secretaryPhotoBase64, _selectSecretaryPhoto),
+                    _buildImageCard(
+                      'Member Photo',
+                      _founderPhotoBase64,
+                      _selectFounderPhoto,
+                    ),
                     const SizedBox(height: 16),
-                    _buildTextField(_secretaryNameController, 'Secretary Name'),
-                    const SizedBox(height: 12),
-                    _buildTextField(_secretaryDesignationController, 'Designation'),
-                    const SizedBox(height: 12),
-                    _buildTextField(_secretaryWelcomeTitleController, 'Vision Title'),
+                    _buildTextField(_founderNameController, 'Name'),
                     const SizedBox(height: 12),
                     _buildTextField(
-                      _secretaryWelcomeMessageController,
-                      'Vision Description (20-100 words)',
+                      _founderDesignationController,
+                      'Designation',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      _founderVisionTitleController,
+                      'Title',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      _founderVisionDescriptionController,
+                      'Description',
                       maxLines: 3,
                     ),
                   ],
                 ),
               ),
             ),
-            _buildSectionHeading('Headmaster Details'),
+            _buildSectionHeading('Member Details'),
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildImageCard('Headmaster Photo', _headmasterPhotoBase64, _selectHeadmasterPhoto),
+                    _buildImageCard(
+                      'Member Photo',
+                      _secretaryPhotoBase64,
+                      _selectSecretaryPhoto,
+                    ),
                     const SizedBox(height: 16),
-                    _buildTextField(_headmasterNameController, 'Headmaster Name'),
+                    _buildTextField(_secretaryNameController, 'Name'),
                     const SizedBox(height: 12),
-                    _buildTextField(_headmasterDesignationController, 'Designation'),
+                    _buildTextField(
+                      _secretaryDesignationController,
+                      'Designation',
+                    ),
                     const SizedBox(height: 12),
-                    _buildTextField(_headmasterMessageTitleController, 'Vision Title'),
+                    _buildTextField(
+                      _secretaryWelcomeTitleController,
+                      'Title',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      _secretaryWelcomeMessageController,
+                      'Description',
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _buildSectionHeading('Member Details'),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildImageCard(
+                      'Member Photo',
+                      _headmasterPhotoBase64,
+                      _selectHeadmasterPhoto,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(_headmasterNameController, 'Name'),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      _headmasterDesignationController,
+                      'Designation',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      _headmasterMessageTitleController,
+                      'Title',
+                    ),
                     const SizedBox(height: 12),
                     _buildTextField(
                       _headmasterMessageController,
-                      'Vision Description (20-100 words)',
+                      'Description',
                       maxLines: 3,
                     ),
                   ],
@@ -454,7 +594,9 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
             ),
             _buildSectionHeading('Management Members'),
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -473,7 +615,9 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Center(child: Text('No management members added yet.')),
+                            child: const Center(
+                              child: Text('No management members added yet.'),
+                            ),
                           )
                         : ReorderableListView.builder(
                             shrinkWrap: true,
@@ -486,22 +630,35 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
                                 key: ValueKey(member.hashCode ^ index),
                                 leading: CircleAvatar(
                                   backgroundImage: member.photoBase64.isNotEmpty
-                                      ? MemoryImage(base64Decode(member.photoBase64))
+                                      ? MemoryImage(
+                                          base64Decode(member.photoBase64),
+                                        )
                                       : null,
-                                  child: member.photoBase64.isEmpty ? const Icon(Icons.person) : null,
+                                  child: member.photoBase64.isEmpty
+                                      ? const Icon(Icons.person)
+                                      : null,
                                 ),
-                                title: Text(member.name.isNotEmpty ? member.name : 'Unnamed Member'),
-                                subtitle: Text(member.designation.isNotEmpty
-                                    ? '${member.designation} · ${member.title}'
-                                    : member.title.isNotEmpty
-                                        ? member.title
-                                        : 'No designation/title'),
+                                title: Text(
+                                  member.name.isNotEmpty
+                                      ? member.name
+                                      : 'Unnamed Member',
+                                ),
+                                subtitle: Text(
+                                  member.designation.isNotEmpty
+                                      ? '${member.designation} · ${member.title}'
+                                      : member.title.isNotEmpty
+                                      ? member.title
+                                      : 'No designation/title',
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.edit),
-                                      onPressed: () => _showMemberDialog(member: member, index: index),
+                                      onPressed: () => _showMemberDialog(
+                                        member: member,
+                                        index: index,
+                                      ),
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete),
@@ -549,10 +706,9 @@ class _SchoolContentManagementScreenState extends State<SchoolContentManagementS
               Navigator.of(context).pushNamed(AppRoutes.supportQuery);
               break;
             case 4:
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.main,
-                (route) => false,
-              );
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
               break;
           }
         },

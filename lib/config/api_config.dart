@@ -2,7 +2,7 @@ class ApiConfig {
   ApiConfig._();
 
   static const productionBaseUrl = 'https://school-app-1uep.onrender.com';
-  static const stagingBaseUrl = 'https://school-backend-staging.onrender.com';
+  static const stagingBaseUrl = 'https://school-app-1uep.onrender.com';
   static const releaseTarget = String.fromEnvironment('API_ENV');
 
   static String get releaseBaseUrl => resolveReleaseBaseUrl(releaseTarget);

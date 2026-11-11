@@ -3,9 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../generated/l10n/app_localizations.dart';
-import '../routes/app_routes.dart';
-import '../services/app_state.dart';
 import '../services/user_menu_state.dart';
+import 'logout_confirmation_dialog.dart';
 
 /// Shared footer navigation for the admin dashboard section only.
 /// Manages the User button popup menu with proper toggle behavior.
@@ -50,12 +49,7 @@ class AdminBottomNavigationBar extends StatelessWidget {
         // Logout button
         if (index == 4) {
           context.read<UserMenuState>().close();
-          await context.read<AppState>().logout();
-          if (!context.mounted) return;
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRoutes.main,
-            (route) => false,
-          );
+          await confirmAndLogout(context);
           return;
         }
 

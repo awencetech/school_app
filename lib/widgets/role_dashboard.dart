@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import '../generated/l10n/app_localizations.dart';
-import '../screens/home/main_shell.dart';
-import '../services/app_state.dart';
 import '../theme/app_colors.dart';
+import 'logout_confirmation_dialog.dart';
 
 /// Reusable dashboard widget for demo role-based authentication.
 class RoleDashboard extends StatelessWidget {
@@ -87,15 +85,7 @@ class RoleDashboard extends StatelessWidget {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: () {
-                        context.read<AppState>().setBottomNavIndex(4);
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const MainShell(),
-                          ),
-                          (route) => false,
-                        );
-                      },
+                      onPressed: () => confirmAndLogout(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         elevation: 0,

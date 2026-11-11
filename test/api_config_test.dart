@@ -6,7 +6,7 @@ void main() {
     test('selects staging only when explicitly requested', () {
       expect(
         ApiConfig.resolveReleaseBaseUrl('staging'),
-        'https://school-backend-staging.onrender.com',
+        'https://school-app-1uep.onrender.com',
       );
     });
 
@@ -15,6 +15,12 @@ void main() {
         ApiConfig.resolveReleaseBaseUrl('production'),
         'https://school-app-1uep.onrender.com',
       );
+    });
+
+    test('staging and production URLs are HTTPS origins without trailing slashes', () {
+      expect(ApiConfig.stagingBaseUrl, 'https://school-app-1uep.onrender.com');
+      expect(ApiConfig.stagingBaseUrl.endsWith('/'), isFalse);
+      expect(ApiConfig.productionBaseUrl.endsWith('/'), isFalse);
     });
 
     test('fails closed for missing or unknown release targets', () {

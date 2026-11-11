@@ -1839,7 +1839,9 @@ const connectMongo = createMongoConnector({
 
 async function initializeMongo() {
   if (!client) {
-    client = new MongoClient(mongoUri);
+    client = new MongoClient(mongoUri, {
+      monitorCommands: true,
+    });
     performanceInstrumentation.attachMongoClient(client);
     await client.connect();
     const db = client.db(mongoDatabase);

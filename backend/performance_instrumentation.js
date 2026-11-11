@@ -5,7 +5,7 @@ const { appendFile } = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
 
 const DB_COMMANDS = new Set([
-  'aggregate', 'bulkWrite', 'count', 'countDocuments', 'delete', 'distinct',
+  'aggregate', 'bulkWrite', 'count', 'countDocuments', 'delete', 'distinct', 'ping',
   'find', 'findAndModify', 'getMore', 'insert', 'update', 'findOneAndUpdate',
 ]);
 

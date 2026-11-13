@@ -70,8 +70,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
 
       final classes = await ClassService().getClasses(refresh: true);
       final assignedClass = classes.cast<Group?>().firstWhere(
-        (item) => item != null &&
-            assignedIds.contains(_classReference(item)),
+        (item) => item != null && assignedIds.contains(_classReference(item)),
         orElse: () => null,
       );
       if (!mounted) return;
@@ -482,9 +481,8 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       onSp7Tap: () => Navigator.of(
                         context,
                       ).pushNamed(AppRoutes.staffTrackSp7),
-                      onTrackTap: () => Navigator.of(
-                        context,
-                      ).pushNamed(AppRoutes.staffTrack),
+                      onTrackTap: () =>
+                          Navigator.of(context).pushNamed(AppRoutes.staffTrack),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -681,17 +679,18 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     icon: Icons.message,
                                     label: 'Write Group\nMessages',
                                     color: Color(0xFF4CAF50),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.staffWriteGroupMessage,
-                                    ),
+                                    onTap: () =>
+                                        Navigator.of(context).pushNamed(
+                                          AppRoutes.staffWriteGroupMessage,
+                                        ),
                                   ),
                                   _ClassAction(
                                     icon: Icons.upload_file,
                                     label: 'Upload\nHW,CW',
                                     color: Color(0xFFD32F2F),
-                                    onTap: () => Navigator.of(context).pushNamed(
-                                      AppRoutes.staffUploadHomework,
-                                    ),
+                                    onTap: () => Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.staffUploadHomework),
                                   ),
                                   GestureDetector(
                                     onTap: () => Navigator.of(
@@ -748,9 +747,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               icon: Icons.newspaper,
                               label: l10n.newsletter,
                               color: Color(0xFF5C84C3),
-                              onTap: () => Navigator.of(context).pushNamed(
-                                AppRoutes.adminDashboardNewsletter,
-                              ),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.adminDashboardNewsletter),
                             ),
                             _SchoolLinkChip(
                               icon: Icons.announcement,
@@ -815,9 +814,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               icon: Icons.library_books,
                               label: l10n.library,
                               color: Color(0xFF795548),
-                              onTap: () => Navigator.of(
-                                context,
-                              ).pushNamed(AppRoutes.adminDashboardLibrary),
+                              onTap: () => AppRoutes.openLibrary(context),
                             ),
                           ],
                         ),

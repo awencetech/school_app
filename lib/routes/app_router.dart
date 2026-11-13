@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/app_state.dart';
 import '../screens/home/main_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/language/language_selection_screen.dart';
@@ -73,6 +74,8 @@ import '../screens/admin/student_info_page.dart';
 import '../models/staff_info.dart';
 import '../models/staff_access.dart';
 import '../models/staff_resource.dart';
+import '../services/class_service.dart';
+import '../services/library_service.dart';
 import '../services/student_service.dart';
 import '../screens/admin/add_options.dart';
 import '../screens/admin/student_create_id_screen.dart';
@@ -143,6 +146,7 @@ import '../screens/admin/pick_drop_entry_page.dart';
 import '../screens/admin/admin_user_profile_page.dart';
 import '../screens/admin/admin_change_password_page.dart';
 import '../utils/slug_generator.dart';
+import 'app_route_access_guard.dart';
 import 'app_routes.dart';
 
 /// App-wide route factory.
@@ -264,12 +268,15 @@ class AppRouter {
       return PageRouteBuilder<bool?>(
         settings: settings,
         pageBuilder: (context, animation, secondaryAnimation) =>
-            StaffAccessEditPage(
-              record: settings.arguments is StaffAccessRecord
-                  ? settings.arguments as StaffAccessRecord
-                  : null,
-              staffId: Uri.decodeComponent(
-                settings.name!.substring(staffAccessEditPrefix.length),
+            AppRouteAccessGuard(
+              allowedRoles: allowedRolesForRoute(settings.name),
+              child: StaffAccessEditPage(
+                record: settings.arguments is StaffAccessRecord
+                    ? settings.arguments as StaffAccessRecord
+                    : null,
+                staffId: Uri.decodeComponent(
+                  settings.name!.substring(staffAccessEditPrefix.length),
+                ),
               ),
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
@@ -487,7 +494,11 @@ class AppRouter {
             : const EmptyAdminOptionPage(title: 'Meeting Info History'),
       AppRoutes.adminGateRegister => const GateRegisterPage(),
       AppRoutes.adminDashboardNewsletter => const NewsLetterPage(),
-      AppRoutes.adminDashboardLibrary => const LibraryPage(),
+      AppRoutes.adminDashboardLibrary => LibraryPage(
+        service: settings.arguments is LibraryService
+            ? settings.arguments as LibraryService
+            : null,
+      ),
       AppRoutes.adminSchoolNews => const SchoolNewsPage(),
       AppRoutes.adminDashboardDemography => ClassDemographyPage(
         group: Group(id: 'grade-10-c', name: 'Grade 10 C', year: '2026-27'),
@@ -536,8 +547,10 @@ class AppRouter {
       AppRoutes.adminKnowYourSchoolLibraryEdit => const LibraryEditPage(),
       AppRoutes.adminStudentOptions => const StudentManagementPage(),
       AppRoutes.adminListStudents => const ListStudentsPage(),
-      AppRoutes.adminListClasses => const EmptyAdminOptionPage(
-        title: 'Classes',
+      AppRoutes.adminListClasses => CreateClassesScreen(
+        classService: settings.arguments is ClassService
+            ? settings.arguments as ClassService
+            : null,
       ),
       AppRoutes.adminStudentInfo => (() {
         final student = settings.arguments;
@@ -806,7 +819,11 @@ class AppRouter {
 
     return PageRouteBuilder(
       settings: settings,
-      pageBuilder: (context, animation, secondaryAnimation) => page,
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          AppRouteAccessGuard(
+            allowedRoles: allowedRolesForRoute(settings.name),
+            child: page,
+          ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(
           parent: animation,
@@ -815,6 +832,33 @@ class AppRouter {
         return FadeTransition(opacity: curved, child: child);
       },
     );
+  }
+
+  static Set<String>? allowedRolesForRoute(String? routeName) {
+    if (routeName == AppRoutes.adminDashboardLibrary) {
+      return AppState.supportedRoles;
+    }
+
+    final route = routeName ?? '';
+    if (route == AppRoutes.adminDashboard ||
+        route.startsWith('${AppRoutes.adminDashboard}/') ||
+        route.startsWith('/admin/')) {
+      return const {'admin'};
+    }
+    if (route == AppRoutes.staffDashboard ||
+        route.startsWith('${AppRoutes.staffDashboard}/') ||
+        route.startsWith('/teacher/')) {
+      return const {'staff'};
+    }
+    if (route == AppRoutes.studentDashboard ||
+        route.startsWith('${AppRoutes.studentDashboard}/') ||
+        route == AppRoutes.studentInfo ||
+        route == AppRoutes.studentMoreOptions ||
+        route == AppRoutes.studentMenu ||
+        route == AppRoutes.groupClassMenu) {
+      return const {'student'};
+    }
+    return null;
   }
 
   static Widget _adminGroupMenuPage(RouteSettings settings) {

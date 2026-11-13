@@ -7,6 +7,19 @@ import '../services/app_state.dart';
 class AppRoutes {
   AppRoutes._();
 
+  static String? dashboardForRole(String? role) =>
+      switch (AppState.normalizeSupportedRole(role)) {
+        'admin' => adminDashboard,
+        'staff' => staffDashboard,
+        'student' => studentDashboard,
+        _ => null,
+      };
+
+  static Future<T?> openLibrary<T>(BuildContext context, {Object? arguments}) =>
+      Navigator.of(
+        context,
+      ).pushNamed<T>(adminDashboardLibrary, arguments: arguments);
+
   static const splash = '/';
   static const language = '/language';
   static const main = '/main';
@@ -16,16 +29,14 @@ class AppRoutes {
   static const studentDashboardCalendar = '$studentDashboard/calendar';
   static const studentDashboardDashboardSummaryInfo =
       '$studentDashboard/dashboard-summary-info';
-  static const studentDashboardWriteMessage =
-      '$studentDashboard/write-message';
+  static const studentDashboardWriteMessage = '$studentDashboard/write-message';
   static const studentDashboardRequest = '$studentDashboard/request';
   static const studentDashboardCampaignSurvey =
       '$studentDashboard/campaign-survey';
   static const studentDashboardPtm = '$studentDashboard/ptm';
   static const studentDashboardGroupsClassDiscussion =
       '$studentDashboard/groups-class-discussion';
-  static const studentDashboardCheckApprove =
-      '$studentDashboard/check-approve';
+  static const studentDashboardCheckApprove = '$studentDashboard/check-approve';
   static const studentDashboardTrackUniRoute22 =
       '$studentDashboard/track-uni-route-22';
   static const studentDashboardTrackSp7 = '$studentDashboard/track-sp7';
@@ -59,22 +70,21 @@ class AppRoutes {
   static const groupClassMenu = '/group-class-menu';
   static const studentMenu = '/student-menu';
   static const staffDashboard = '/staff-dashboard';
-    static const staffCheckApprove = '$staffDashboard/check-approve';
-    static const staffDashboardMessages = '$staffDashboard/msg-staff';
-    static const staffUploadHomework = '$staffDashboard/upload-hw';
-    static const staffWriteMessage = '$staffDashboard/staff-msg';
-    static const staffWriteGroupMessage = '$staffDashboard/wrie-group-msg';
-    static const staffWriteGroupMessageGroups =
-        '$staffWriteGroupMessage/groups';
-    static const staffWriteGroupMessageClasses =
-        '$staffWriteGroupMessage/classes';
-        static const staffRequest = '$staffDashboard/staff-req';
-        static const staffCampaignSurvey = '$staffDashboard/cmp-survey';
-          static const staffPtm = '$staffDashboard/ptm';
-          static const staffGroupsBuses = '$staffDashboard/groups-buses';
-          static const staffTrackUniRoute = '$staffDashboard/track-1';
-          static const staffTrackSp7 = '$staffDashboard/track-2';
-          static const staffTrack = '$staffDashboard/track-3';
+  static const staffCheckApprove = '$staffDashboard/check-approve';
+  static const staffDashboardMessages = '$staffDashboard/msg-staff';
+  static const staffUploadHomework = '$staffDashboard/upload-hw';
+  static const staffWriteMessage = '$staffDashboard/staff-msg';
+  static const staffWriteGroupMessage = '$staffDashboard/wrie-group-msg';
+  static const staffWriteGroupMessageGroups = '$staffWriteGroupMessage/groups';
+  static const staffWriteGroupMessageClasses =
+      '$staffWriteGroupMessage/classes';
+  static const staffRequest = '$staffDashboard/staff-req';
+  static const staffCampaignSurvey = '$staffDashboard/cmp-survey';
+  static const staffPtm = '$staffDashboard/ptm';
+  static const staffGroupsBuses = '$staffDashboard/groups-buses';
+  static const staffTrackUniRoute = '$staffDashboard/track-1';
+  static const staffTrackSp7 = '$staffDashboard/track-2';
+  static const staffTrack = '$staffDashboard/track-3';
   static const staffOverviewDashboard = '/staff-dashboard/dashboard-summary';
   static const staffEventCalendar = '/staff-dashboard/event-calendar';
   static const staffInfo = '/staff-dashboard/staff-info';
@@ -99,8 +109,7 @@ class AppRoutes {
   static const adminQuickRequest = '$adminQuickAccess/request';
   static const adminQuickGroupClass = '$adminQuickAccess/group-class';
   static const adminQuickPtm = '$adminQuickAccess/ptm';
-  static const adminQuickGroupsClassBus =
-      '$adminQuickAccess/groups-class-bus';
+  static const adminQuickGroupsClassBus = '$adminQuickAccess/groups-class-bus';
   static const adminQuickCheckApproval = '$adminQuickAccess/check-approval';
   static const adminQuickTrackUniRoute = '$adminQuickAccess/track-uni-route';
   static const adminQuickTrackSp = '$adminQuickAccess/track-sp';
@@ -113,10 +122,9 @@ class AppRoutes {
   static const adminDashboardLibrary = '$adminDashboard/library';
   static const adminSchoolNews = '/admin/other-options/schoolnews';
   static const adminOtherOptions = '/admin/other-options';
-  static const adminOtherStaffResource =
-      '$adminOtherOptions/staff-resource';
-    static const adminStaffAccess = '$adminOtherOptions/stf-access';
-    static const adminStaffAccessEdit = '$adminStaffAccess/edit';
+  static const adminOtherStaffResource = '$adminOtherOptions/staff-resource';
+  static const adminStaffAccess = '$adminOtherOptions/stf-access';
+  static const adminStaffAccessEdit = '$adminStaffAccess/edit';
   static const adminOtherStaffResourceHistory =
       '$adminOtherStaffResource/history';
   static const adminOtherStaffResourceHistoryView =
@@ -237,8 +245,8 @@ class AppRoutes {
       '$teacherGroupClassMenu/online-assessment-edit';
   static const teacherEditGroupInfoEdit = teacherGroupInfoEdit;
   static const teacherGroupDashboard = '$teacherGroupClasses/group-dashboard';
-    static const teacherDiarySummary =
-            '/staff-dashboard/group-classes/diary-summary';
+  static const teacherDiarySummary =
+      '/staff-dashboard/group-classes/diary-summary';
   static const teacherTakeAttendance = '$teacherGroupClasses/take-attendance';
   static const teacherAppreciateAward = '$teacherGroupClasses/appreciate-award';
   static const teacherLeaveApproval = '$teacherGroupClasses/leave-approval';
@@ -265,24 +273,21 @@ class AppRoutes {
 
 /// Pops the current route, or leaves a directly opened page safely.
 Future<void> navigateBack(BuildContext context, {String? fallbackRoute}) async {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-        navigator.pop();
-        return;
-    }
+  final navigator = Navigator.of(context);
+  if (navigator.canPop()) {
+    navigator.pop();
+    return;
+  }
 
-    final role = context.read<AppState>().currentUserRole?.trim().toLowerCase();
-    final currentRoute = ModalRoute.of(context)?.settings.name;
-    final route = fallbackRoute ??
-        (currentRoute != null &&
-                currentRoute.startsWith('${AppRoutes.studentDashboardMenu}/')
-            ? AppRoutes.studentDashboardMenu
-            : null) ??
-        switch (role) {
-        'student' => AppRoutes.studentDashboard,
-        'staff' => AppRoutes.staffDashboard,
-        'admin' => AppRoutes.adminDashboard,
-        _ => AppRoutes.main,
-    };
-    navigator.pushReplacementNamed(route);
+  final role = context.read<AppState>().currentUserRole?.trim().toLowerCase();
+  final currentRoute = ModalRoute.of(context)?.settings.name;
+  final route =
+      fallbackRoute ??
+      (currentRoute != null &&
+              currentRoute.startsWith('${AppRoutes.studentDashboardMenu}/')
+          ? AppRoutes.studentDashboardMenu
+          : null) ??
+      AppRoutes.dashboardForRole(role) ??
+      AppRoutes.main;
+  navigator.pushReplacementNamed(route);
 }

@@ -28,6 +28,7 @@ const {
 const { createCorsMiddleware, parseAllowedOrigins } = require('./cors_middleware');
 const { createSplashRouter } = require('./splash_routes');
 const { createPerformanceInstrumentation } = require('./performance_instrumentation');
+const { buildCampaignPerformance } = require('./campaign_performance');
 const {
   createMainPageInfoCacheMiddleware,
   filterMainPageInfoForUser,
@@ -144,12 +145,48 @@ function credentialCollectionEntries() {
   ];
 }
 
-async function findCredentialByUserId(userId, role) {
+async function findCredentialByUserId(userId, role, options) {
   const collection = credentialCollectionForRole(role);
   const credential = collection
-    ? await collection.findOne({ userId })
-    : await findCredentialAcrossRoleCollections({ userId });
-  return credential || usersCollection.findOne({ userId });
+    ? options
+      ? await collection.findOne({ userId }, options)
+      : await collection.findOne({ userId })
+    : await findCredentialAcrossRoleCollections({ userId }, options);
+  return credential || (options
+    ? usersCollection.findOne({ userId }, options)
+    : usersCollection.findOne({ userId }));
+}
+
+const AUTHENTICATED_CREDENTIAL_PROJECTION = Object.freeze({
+  userId: 1,
+  userID: 1,
+  role: 1,
+  status: 1,
+  accountStatus: 1,
+  State: 1,
+  state: 1,
+  active: 1,
+  isActive: 1,
+  enabled: 1,
+  isEnabled: 1,
+  email: 1,
+  emailAddress: 1,
+  userEmail: 1,
+});
+
+async function findCredentialForAuthentication(userId, role) {
+  const collection = credentialCollectionForRole(role);
+  const options = { projection: AUTHENTICATED_CREDENTIAL_PROJECTION };
+  let credential;
+  if (collection) {
+    credential = await collection.findOne({ userId }, options);
+  } else {
+    const credentials = await Promise.all(
+      credentialCollectionEntries().map((entry) => entry.collection.findOne({ userId }, options)),
+    );
+    credential = credentials.find(Boolean) || null;
+  }
+  return credential || usersCollection.findOne({ userId }, options);
 }
 
 function credentialLookupVariants(value) {
@@ -188,9 +225,11 @@ function credentialLookupVariants(value) {
   return filters;
 }
 
-async function findCredentialAcrossRoleCollections(filter) {
+async function findCredentialAcrossRoleCollections(filter, options) {
   const credentials = await Promise.all(
-    credentialCollectionEntries().map((entry) => entry.collection.findOne(filter)),
+    credentialCollectionEntries().map((entry) => options
+      ? entry.collection.findOne(filter, options)
+      : entry.collection.findOne(filter)),
   );
   return credentials.find(Boolean) || null;
 }
@@ -410,16 +449,38 @@ function isStudentRecordOwner(auth, record) {
   return isRecordOwner(auth, record, ['studentId', 'admissionNumber', 'admissionNo']);
 }
 
-async function staffAssignedStudentIds(auth) {
-  const staff = await findStaffForAccess(auth?.userId);
-  if (!staff) return new Set();
+const STAFF_ACCESS_IDENTITY_PROJECTION = Object.freeze({
+  _id: 1,
+  employeeId: 1,
+  id: 1,
+});
+
+const STAFF_GROUP_ACCESS_PROJECTION = Object.freeze({
+  groupIds: 1,
+  classTeacherIds: 1,
+});
+
+const STAFF_ASSIGNED_GROUP_PROJECTION = Object.freeze({
+  students: 1,
+  className: 1,
+  name: 1,
+});
+
+async function staffAssignedGroupData(auth) {
+  const staff = await findStaffForAccess(auth?.userId, {
+    projection: STAFF_ACCESS_IDENTITY_PROJECTION,
+  });
+  if (!staff) return { studentIds: new Set(), classNames: new Set() };
   const staffId = String(staff.employeeId || staff._id || '').trim();
-  const access = await staffAccessCollection.findOne({ staffId });
+  const access = await staffAccessCollection.findOne(
+    { staffId },
+    { projection: STAFF_GROUP_ACCESS_PROJECTION },
+  );
   const groupIds = [
     ...(Array.isArray(access?.groupIds) ? access.groupIds : []),
     ...(Array.isArray(access?.classTeacherIds) ? access.classTeacherIds : []),
   ].map((value) => String(value).trim()).filter(Boolean);
-  if (groupIds.length === 0) return new Set();
+  if (groupIds.length === 0) return { studentIds: new Set(), classNames: new Set() };
 
   const objectIds = groupIds
     .filter((value) => ObjectId.isValid(value))
@@ -431,11 +492,14 @@ async function staffAssignedStudentIds(auth) {
     ],
   };
   const [groups, classes] = await Promise.all([
-    groupsCollection.find(selector).toArray(),
-    classesCollection.find(selector).toArray(),
+    groupsCollection.find(selector, { projection: STAFF_ASSIGNED_GROUP_PROJECTION }).toArray(),
+    classesCollection.find(selector, { projection: STAFF_ASSIGNED_GROUP_PROJECTION }).toArray(),
   ]);
   const identifiers = new Set();
+  const classNames = new Set();
   for (const group of [...groups, ...classes]) {
+    const className = String(group.className || group.name || '').trim();
+    if (className) classNames.add(normalizedClassScope(className));
     for (const student of Array.isArray(group.students) ? group.students : []) {
       for (const value of [
         student?.id,
@@ -449,7 +513,11 @@ async function staffAssignedStudentIds(auth) {
       }
     }
   }
-  return identifiers;
+  return { studentIds: identifiers, classNames };
+}
+
+async function staffAssignedStudentIds(auth) {
+  return (await staffAssignedGroupData(auth)).studentIds;
 }
 
 function normalizedClassScope(value) {
@@ -457,36 +525,8 @@ function normalizedClassScope(value) {
 }
 
 async function staffAssignedClassNames(auth) {
-  const staff = await findStaffForAccess(auth?.userId);
-  if (!staff) return new Set();
-  const staffId = String(staff.employeeId || staff._id || '').trim();
-  const access = await staffAccessCollection.findOne({ staffId });
-  const groupIds = [
-    ...(Array.isArray(access?.groupIds) ? access.groupIds : []),
-    ...(Array.isArray(access?.classTeacherIds) ? access.classTeacherIds : []),
-  ].map((value) => String(value).trim()).filter(Boolean);
-  if (groupIds.length === 0) return new Set();
-
-  const objectIds = groupIds
-    .filter((value) => ObjectId.isValid(value))
-    .map((value) => new ObjectId(value));
-  const selector = {
-    $or: [
-      { id: { $in: groupIds } },
-      ...(objectIds.length ? [{ _id: { $in: objectIds } }] : []),
-    ],
-  };
-  const [groups, classes, studentIds] = await Promise.all([
-    groupsCollection.find(selector).toArray(),
-    classesCollection.find(selector).toArray(),
-    staffAssignedStudentIds(auth),
-  ]);
-  const names = new Set();
-  for (const group of [...groups, ...classes]) {
-    const className = String(group.className || group.name || '').trim();
-    if (className) names.add(normalizedClassScope(className));
-  }
-
+  const { studentIds, classNames } = await staffAssignedGroupData(auth);
+  const names = new Set(classNames);
   if (studentIds.size > 0) {
     const identifiers = [...studentIds];
     const students = await studentInfoCollection.find({
@@ -494,7 +534,7 @@ async function staffAssignedClassNames(auth) {
         { studentId: { $in: identifiers } },
         { admissionNumber: { $in: identifiers } },
       ],
-    }).toArray();
+    }, { projection: { className: 1 } }).toArray();
     for (const student of students) {
       const className = String(student.className || '').trim();
       if (className) names.add(normalizedClassScope(className));
@@ -524,7 +564,7 @@ async function studentHasGroupAccess(auth, group) {
   if (!userId || !group) return false;
   const student = await studentInfoCollection.findOne({
     $or: [{ studentId: userId }, { admissionNumber: userId }],
-  });
+  }, { projection: { _id: 1, studentId: 1, admissionNumber: 1 } });
   if (!student) return false;
   const identityValues = [
     userId,
@@ -540,10 +580,11 @@ async function studentHasGroupAccess(auth, group) {
 }
 
 async function findAccessGroupByReference(groupId) {
-  return await findGroupByReference(groupId) ||
+  const projection = { _id: 1, id: 1, name: 1, students: 1 };
+  return await findGroupByReference(groupId, { projection }) ||
     await classesCollection.findOne(ObjectId.isValid(groupId)
       ? { _id: new ObjectId(groupId) }
-      : { id: groupId });
+      : { id: groupId }, { projection });
 }
 
 function requireGroupAccess(req, res, next) {
@@ -567,12 +608,17 @@ function requireGroupAccess(req, res, next) {
         return next();
       }
 
-      const staff = await findStaffForAccess(req.auth.userId);
+      const staff = await findStaffForAccess(req.auth.userId, {
+        projection: STAFF_ACCESS_IDENTITY_PROJECTION,
+      });
       if (!staff) {
         return res.status(403).json({ message: 'Staff access record not found.' });
       }
       const staffId = staff.employeeId || staff._id.toString();
-      const access = await staffAccessCollection.findOne({ staffId });
+      const access = await staffAccessCollection.findOne(
+        { staffId },
+        { projection: STAFF_GROUP_ACCESS_PROJECTION },
+      );
       const allowedIds = [
         ...(Array.isArray(access?.groupIds) ? access.groupIds : []),
         ...(Array.isArray(access?.classTeacherIds) ? access.classTeacherIds : []),
@@ -625,7 +671,10 @@ app.get('/api/student-campaigns', requireCampaignReader, async (req, res) => {
     const now = new Date().toISOString();
     const filter = { status: 'Active', startDate: { $lte: now }, endDate: { $gte: now } };
     if ((req.auth.role || '').toLowerCase() === 'student') {
-      const student = await studentInfoCollection.findOne({ $or: [{ studentId: req.auth.userId }, { admissionNumber: req.auth.userId }] });
+      const student = await studentInfoCollection.findOne(
+        { $or: [{ studentId: req.auth.userId }, { admissionNumber: req.auth.userId }] },
+        { projection: { className: 1, section: 1 } },
+      );
       const className = [student?.className, student?.section].filter(Boolean).join('-');
       filter.$or = [{ className: '' }, { className: className }];
     }
@@ -707,7 +756,7 @@ app.get('/api/student-ptm', requirePtmReader, async (req, res) => {
     if ((req.auth.role || '').toLowerCase() === 'student') {
       const student = await studentInfoCollection.findOne({
         $or: [{ studentId: req.auth.userId }, { admissionNumber: req.auth.userId }],
-      });
+      }, { projection: { className: 1, section: 1 } });
       if (!student?.className || !student?.section) {
         return res.status(422).json({ message: 'Student class and section are not available.' });
       }
@@ -875,10 +924,19 @@ app.post('/api/messages/staff', requireRecipientRole('staff'), async (req, res) 
 async function getAdminMessagesForRecipient(req, res, role) {
   try {
     await connectMongo();
-    const user = await findCredentialByUserId(req.auth.userId, role);
+    const profileProjection = { groupId: 1, groupName: 1, className: 1, class: 1 };
+    const user = await findCredentialByUserId(req.auth.userId, role, {
+      projection: profileProjection,
+    });
     const profile = role === 'student'
-      ? await studentInfoCollection.findOne({ studentId: req.auth.userId })
-      : await employeeInfoCollection.findOne({ $or: [{ employeeId: req.auth.userId }, { staffId: req.auth.userId }] });
+      ? await studentInfoCollection.findOne(
+        { studentId: req.auth.userId },
+        { projection: profileProjection },
+      )
+      : await employeeInfoCollection.findOne(
+        { $or: [{ employeeId: req.auth.userId }, { staffId: req.auth.userId }] },
+        { projection: profileProjection },
+      );
     const groupValues = [
       user?.groupId, user?.groupName, user?.className, user?.class,
       profile?.groupId, profile?.groupName, profile?.className, profile?.class,
@@ -891,7 +949,7 @@ async function getAdminMessagesForRecipient(req, res, role) {
       senderRole: 'admin',
       [recipientField]: true,
       ...groupFilter,
-    }).sort({ createdAt: -1 }).toArray();
+    }, { projection: ADMIN_MESSAGE_PROJECTION }).sort({ createdAt: -1 }).toArray();
     return res.json({ success: true, data: messages.map(sanitizeAdminMessageForResponse) });
   } catch (error) {
     console.error(`GET /api/messages/${role} failed:`, error);
@@ -901,83 +959,11 @@ async function getAdminMessagesForRecipient(req, res, role) {
 
 app.get('/api/messages/student', requireRecipientRole('student'), (req, res) => getAdminMessagesForRecipient(req, res, 'student'));
 
-function performanceNumber(value) {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const parsed = Number.parseFloat(String(value ?? '').replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function nestedPerformanceValue(student, names) {
-  const normalizedNames = names.map((name) => name.toLowerCase());
-  const visit = (value, path = '') => {
-    if (!value || typeof value !== 'object') return null;
-    for (const [key, child] of Object.entries(value)) {
-      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const normalizedPath = `${path}${normalizedKey}`;
-      if (normalizedNames.some((name) => normalizedPath.includes(name))) {
-        const number = performanceNumber(child);
-        if (number != null) return number;
-      }
-      const nested = visit(child, `${normalizedPath}.`);
-      if (nested != null) return nested;
-    }
-    return null;
-  };
-  return visit(student);
-}
-
-function performanceTotalMark(student, testNames) {
-  return nestedPerformanceValue(student, testNames) || 100;
-}
-
-function performancePhoto(student) {
-  return student.imageUrl || student.photo || student.profileImage || '';
-}
-
 app.get('/api/campaign-performance', requireRecipientRole('staff'), async (req, res) => {
   try {
     await connectMongo();
     const students = await studentInfoCollection.find({ role: { $in: ['student', 'Student', ''] } }).toArray();
-    const makeResults = (testNames, testName) => students
-      .map((student) => {
-        const mark = nestedPerformanceValue(student, testNames);
-        if (mark == null) return null;
-        const totalMark = performanceTotalMark(student, [...testNames, 'totalmark', 'maxmark']);
-        return {
-          name: student.name || student.studentId || '',
-          className: [student.className, student.section].filter(Boolean).join('-'),
-          photoUrl: performancePhoto(student),
-          testName,
-          mark,
-          totalMark,
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.mark - a.mark);
-
-    const classTestResults = makeResults(['classtest', 'class_test'], 'Class Test');
-    const monthlyTestResults = makeResults(['monthlytest', 'monthly_test'], 'Monthly Test');
-    const withRanks = (results) => {
-      if (!results.length) return [];
-      const highest = results[0].mark;
-      return results
-        .filter((item) => item.mark === highest)
-        .map((item) => ({ ...item, rank: 1 }));
-    };
-    const explicitAchievement = students.filter((student) =>
-      student.achieved === true || String(student.status || '').toLowerCase() === 'achieved',
-    ).length;
-    const totalStudents = students.length;
-    return res.json({
-      success: true,
-      data: {
-        totalStudents,
-        achievedStudents: explicitAchievement,
-        achievementPercentage: totalStudents ? (explicitAchievement / totalStudents) * 100 : 0,
-        classTestToppers: withRanks(classTestResults),
-        monthlyTestToppers: withRanks(monthlyTestResults),
-      },
-    });
+    return res.json(buildCampaignPerformance(students));
   } catch (error) {
     console.error('GET /api/campaign-performance failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to load class performance.' });
@@ -1319,7 +1305,13 @@ app.get('/api/messages/group/:groupId', requireRecipientRole('student'), async (
   try {
     await connectMongo();
     const groupId = String(req.params.groupId || '').trim();
-    const messages = await groupMessagesCollection.find({ senderRole: 'admin', groupId: { $in: [groupId, null, ''] }, sendToStudents: true }).sort({ createdAt: -1 }).toArray();
+    const messages = await groupMessagesCollection
+      .find(
+        { senderRole: 'admin', groupId: { $in: [groupId, null, ''] }, sendToStudents: true },
+        { projection: ADMIN_MESSAGE_PROJECTION },
+      )
+      .sort({ createdAt: -1 })
+      .toArray();
     return res.json({ success: true, data: messages.map(sanitizeAdminMessageForResponse) });
   } catch (_) {
     return res.status(500).json({ success: false, message: 'Unable to load group messages.' });
@@ -1372,6 +1364,40 @@ function sanitizeDiaryForResponse(doc) {
   };
 }
 
+const DIARY_PROJECTION = Object.freeze({
+  _id: 1,
+  studentId: 1,
+  studentName: 1,
+  diaryId: 1,
+  groupId: 1,
+  classId: 1,
+  diaryDate: 1,
+  date: 1,
+  'parentObservation.wentToBedAt': 1,
+  'parentObservation.gotUpAt': 1,
+  'parentObservation.brushedTeeth': 1,
+  'parentObservation.didYoga': 1,
+  'parentObservation.breakfast': 1,
+  'parentObservation.homework': 1,
+  'parentObservation.assignmentCompletion': 1,
+  'parentObservation.helpfulAtHome': 1,
+  'parentObservation.respectfulToElders': 1,
+  'parentObservation.parentsRemark': 1,
+  'studentObservation.mood': 1,
+  'teacherObservation.punctuality': 1,
+  'teacherObservation.food': 1,
+  'subjectFeedback.subject': 1,
+  'subjectFeedback.completionOfDueAssignment': 1,
+  'subjectFeedback.performanceInClassToday': 1,
+  'subjectFeedback.note': 1,
+  gkScore: 1,
+  area: 1,
+  status: 1,
+  diaryDetails: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
+
 function diaryStudentMatch(student, studentId) {
   const values = [student?.id, student?._id, student?.studentId, student?.admissionNo, student?.admissionNumber]
     .filter((value) => value != null && String(value).trim())
@@ -1380,10 +1406,17 @@ function diaryStudentMatch(student, studentId) {
 }
 
 async function staffHasGroupAccess(auth, requestedGroupId, group) {
-  const staff = await findStaffForAccess(auth?.userId);
+  const staff = await findStaffForAccess(auth?.userId, {
+    projection: STAFF_ACCESS_IDENTITY_PROJECTION,
+  });
   if (!staff) return false;
   const staffId = String(staff.employeeId || staff._id || '').trim();
-  const access = staffId ? await staffAccessCollection.findOne({ staffId }) : null;
+  const access = staffId
+    ? await staffAccessCollection.findOne(
+      { staffId },
+      { projection: STAFF_GROUP_ACCESS_PROJECTION },
+    )
+    : null;
   const allowedIds = [
     ...(Array.isArray(access?.groupIds) ? access.groupIds : []),
     ...(Array.isArray(access?.classTeacherIds) ? access.classTeacherIds : []),
@@ -1416,7 +1449,10 @@ app.get('/api/diary', requireDiaryRead, async (req, res) => {
     }
     filter.diaryDate = filter.date;
     delete filter.date;
-    const records = await diaryCollection.find(filter).sort({ studentName: 1 }).toArray();
+    const records = await diaryCollection
+      .find(filter, { projection: DIARY_PROJECTION })
+      .sort({ studentName: 1 })
+      .toArray();
     return res.json({ success: true, data: records.map(sanitizeDiaryForResponse) });
   } catch (error) {
     console.error('GET /api/diary failed:', error);
@@ -1437,7 +1473,7 @@ app.get('/api/diary/student', requireDiaryRead, async (req, res) => {
     const userId = String(req.auth.userId || '').trim();
     const profile = await studentInfoCollection.findOne({
       $or: [{ studentId: userId }, { admissionNumber: userId }],
-    });
+    }, { projection: { _id: 1, studentId: 1, admissionNumber: 1 } });
     const studentIds = [
       userId,
       profile?.studentId,
@@ -1445,8 +1481,14 @@ app.get('/api/diary/student', requireDiaryRead, async (req, res) => {
       profile?._id?.toString(),
     ].filter((value) => value).map((value) => String(value));
     const [studentRecords, staffRecords] = await Promise.all([
-      studentDiaryCollection.find({ studentId: { $in: studentIds }, diaryDate: date }).toArray(),
-      diaryCollection.find({ studentId: { $in: studentIds }, diaryDate: date }).toArray(),
+      studentDiaryCollection.find(
+        { studentId: { $in: studentIds }, diaryDate: date },
+        { projection: DIARY_PROJECTION },
+      ).toArray(),
+      diaryCollection.find(
+        { studentId: { $in: studentIds }, diaryDate: date },
+        { projection: DIARY_PROJECTION },
+      ).toArray(),
     ]);
     const recordsByKey = new Map(
       staffRecords.map((record) => [`${record.studentId}:${record.diaryDate || record.date}`, record]),
@@ -1474,7 +1516,10 @@ app.get('/api/diary/student-observation/:id', requireDiaryRead, async (req, res)
       return res.status(400).json({ message: 'Invalid diary record ID.' });
     }
     await connectMongo();
-    const record = await studentDiaryCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const record = await studentDiaryCollection.findOne(
+      { _id: new ObjectId(req.params.id) },
+      { projection: DIARY_PROJECTION },
+    );
     if (!record) return res.status(404).json({ message: 'Student observation not found.' });
     if (req.auth.role === 'student' &&
         !(await studentAttendanceIdentifiers(req.auth)).includes(String(record.studentId))) {
@@ -1499,7 +1544,10 @@ app.get('/api/diary/:id', requireDiaryRead, async (req, res) => {
       return res.status(400).json({ message: 'Invalid diary record ID.' });
     }
     await connectMongo();
-    const record = await diaryCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const record = await diaryCollection.findOne(
+      { _id: new ObjectId(req.params.id) },
+      { projection: DIARY_PROJECTION },
+    );
     if (!record) return res.status(404).json({ message: 'Diary observation not found.' });
     if (req.auth.role === 'student' &&
         !(await studentAttendanceIdentifiers(req.auth)).includes(String(record.studentId))) {
@@ -1582,7 +1630,7 @@ app.post('/api/diary', requireDiaryWrite, async (req, res) => {
     const existing = await diaryCollection.findOne({
       studentId,
       $or: [{ diaryDate: date }, { date }],
-    });
+    }, { projection: { _id: 1 } });
     const document = {
       studentId,
       studentName: String(studentRecord.name || '').trim(),
@@ -1637,7 +1685,10 @@ app.post('/api/diary', requireDiaryWrite, async (req, res) => {
       { $set: document, $setOnInsert: { createdAt: now } },
       { upsert: true },
     );
-    const saved = await diaryCollection.findOne({ studentId, diaryDate: date });
+    const saved = await diaryCollection.findOne(
+      { studentId, diaryDate: date },
+      { projection: DIARY_PROJECTION },
+    );
     return res.status(200).json({ success: true, message: 'Parent observations saved successfully.', data: sanitizeDiaryForResponse(saved) });
   } catch (error) {
     console.error('POST /api/diary failed:', error);
@@ -1689,7 +1740,10 @@ app.post('/api/diary/student-observation', requireRecipientRole('student'), asyn
       },
       { upsert: true },
     );
-    const saved = await studentDiaryCollection.findOne({ studentId, diaryId });
+    const saved = await studentDiaryCollection.findOne(
+      { studentId, diaryId },
+      { projection: DIARY_PROJECTION },
+    );
     return res.status(200).json({ success: true, message: 'Student observation saved.', data: sanitizeDiaryForResponse(saved) });
   } catch (error) {
     console.error('POST /api/diary/student-observation failed:', error);
@@ -2421,6 +2475,18 @@ function sanitizeSchoolResourceForResponse(doc) {
   };
 }
 
+const SCHOOL_RESOURCE_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  schoolId: 1,
+  heading: 1,
+  date: 1,
+  resourceName: 1,
+  imageUrl: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
+
 function sanitizeClassResourceForResponse(doc) {
   if (!doc) return null;
   const id = doc._id ? doc._id.toString() : doc.id || '';
@@ -2440,6 +2506,26 @@ function sanitizeClassResourceForResponse(doc) {
     updatedAt: doc.updatedAt || null,
   };
 }
+
+const CLASS_RESOURCE_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  groupId: 1,
+  title: 1,
+  heading: 1,
+  createdAt: 1,
+  date: 1,
+  description: 1,
+  resourceName: 1,
+  fileUrl: 1,
+  imageUrl: 1,
+  resourceType: 1,
+  fileName: 1,
+  fileSize: 1,
+  mimeType: 1,
+  createdBy: 1,
+  updatedAt: 1,
+});
 
 function sanitizeNewsLetterForResponse(doc) {
   if (!doc) return null;
@@ -2661,6 +2747,50 @@ function sanitizeGroupMessageForResponse(doc) {
   };
 }
 
+const GROUP_MESSAGE_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  groupId: 1,
+  groupName: 1,
+  title: 1,
+  content: 1,
+  message: 1,
+  authorId: 1,
+  authorRole: 1,
+  senderName: 1,
+  senderEmail: 1,
+  category: 1,
+  messageType: 1,
+  priority: 1,
+  audience: 1,
+  target: 1,
+  approved: 1,
+  approvedById: 1,
+  imageUrl: 1,
+  expiryDate: 1,
+  createdBy: 1,
+  commentsAllowed: 1,
+  likedBy: 1,
+  comments: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
+
+const GROUP_MESSAGE_COMMENT_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  messageId: 1,
+  groupId: 1,
+  studentId: 1,
+  userId: 1,
+  studentName: 1,
+  name: 1,
+  comment: 1,
+  text: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
+
 function sanitizeAdminMessageForResponse(doc) {
   if (!doc) return null;
   const id = doc._id ? doc._id.toString() : doc.id || '';
@@ -2680,6 +2810,25 @@ function sanitizeAdminMessageForResponse(doc) {
     updatedAt: doc.updatedAt || null,
   };
 }
+
+const ADMIN_MESSAGE_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  subject: 1,
+  title: 1,
+  message: 1,
+  content: 1,
+  messageType: 1,
+  category: 1,
+  senderId: 1,
+  senderName: 1,
+  sendToStudents: 1,
+  sendToStaff: 1,
+  groupId: 1,
+  groupName: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
 
 function groupIdVariants(groupId) {
   const variants = [groupId];
@@ -2712,13 +2861,17 @@ function groupReferenceSlug(value) {
   return value.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-async function findGroupByReference(groupId) {
+async function findGroupByReference(groupId, options) {
   const variants = groupIdVariants(groupId);
-  const exact = await groupsCollection.findOne({ id: { $in: variants } });
+  const exact = options
+    ? await groupsCollection.findOne({ id: { $in: variants } }, options)
+    : await groupsCollection.findOne({ id: { $in: variants } });
   if (exact) return exact;
 
   const requestedSlug = groupReferenceSlug(groupId.replace(/^SAMUNI-2022-/i, ''));
-  const groups = await groupsCollection.find({}).toArray();
+  const groups = options
+    ? await groupsCollection.find({}, options).toArray()
+    : await groupsCollection.find({}).toArray();
   return groups.find((group) => [group.id, group.name]
     .some((value) => groupReferenceSlug(value) === requestedSlug)) || null;
 }
@@ -3013,12 +3166,31 @@ function studentAttendancePayload(body) {
   };
 }
 
+const STUDENT_ATTENDANCE_PROJECTION = Object.freeze({
+  _id: 1,
+  id: 1,
+  studentId: 1,
+  studentName: 1,
+  admissionNumber: 1,
+  className: 1,
+  section: 1,
+  attendanceDate: 1,
+  subject: 1,
+  classType: 1,
+  reason: 1,
+  status: 1,
+  present: 1,
+  markedBy: 1,
+  createdAt: 1,
+  updatedAt: 1,
+});
+
 async function studentAttendanceIdentifiers(auth) {
   const userId = String(auth?.userId || '').trim();
   if (!userId) return [];
   const profile = await studentInfoCollection.findOne({
     $or: [{ studentId: userId }, { admissionNumber: userId }],
-  });
+  }, { projection: { studentId: 1, admissionNumber: 1 } });
   return [...new Set([
     userId,
     profile?.studentId,
@@ -3067,7 +3239,10 @@ app.get('/api/student-attendance', requireRecipientRole(['student', 'staff', 'te
     }
     if (req.query.className) filter.className = String(req.query.className).trim();
     if (req.query.status) filter.status = String(req.query.status).trim();
-    const records = await studentAttendanceCollection.find(filter).sort({ attendanceDate: -1, createdAt: -1 }).toArray();
+    const records = await studentAttendanceCollection
+      .find(filter, { projection: STUDENT_ATTENDANCE_PROJECTION })
+      .sort({ attendanceDate: -1, createdAt: -1 })
+      .toArray();
     const data = records.map((record) => ({ ...record, _id: record._id.toString() }));
     console.log('GET /api/student-attendance returned records:', data.length);
     return res.json({ success: true, data });
@@ -3326,9 +3501,16 @@ app.get('/api/classes', requireRecipientRole(['admin', 'staff']), async (req, re
     const role = (auth?.role || '').toLowerCase();
     let visibleClasses = classes;
     if (role === 'staff' || role === 'teacher') {
-      const staff = await findStaffForAccess(auth.userId);
+      const staff = await findStaffForAccess(auth.userId, {
+        projection: STAFF_ACCESS_IDENTITY_PROJECTION,
+      });
       const staffId = staff?.employeeId || staff?._id?.toString();
-      const access = staffId ? await staffAccessCollection.findOne({ staffId }) : null;
+      const access = staffId
+        ? await staffAccessCollection.findOne(
+          { staffId },
+          { projection: STAFF_GROUP_ACCESS_PROJECTION },
+        )
+        : null;
       const allowed = new Set(
         access && Array.isArray(access.classTeacherIds)
           ? access.classTeacherIds.map((value) => String(value))
@@ -3466,9 +3648,16 @@ app.get('/api/groups', requireRecipientRole(['admin', 'staff', 'student']), asyn
     const role = normalizeRole(req.auth.role);
     let visibleStudentIds = null;
     if (role === 'staff') {
-      const staff = await findStaffForAccess(req.auth.userId);
+      const staff = await findStaffForAccess(req.auth.userId, {
+        projection: STAFF_ACCESS_IDENTITY_PROJECTION,
+      });
       const staffId = staff?.employeeId || staff?._id?.toString();
-      const access = staffId ? await staffAccessCollection.findOne({ staffId }) : null;
+      const access = staffId
+        ? await staffAccessCollection.findOne(
+          { staffId },
+          { projection: STAFF_GROUP_ACCESS_PROJECTION },
+        )
+        : null;
       const allowed = new Set(
         access
           ? [
@@ -3486,7 +3675,7 @@ app.get('/api/groups', requireRecipientRole(['admin', 'staff', 'student']), asyn
           { studentId: req.auth.userId },
           { admissionNumber: req.auth.userId },
         ],
-      });
+      }, { projection: { _id: 1, studentId: 1, admissionNumber: 1 } });
       if (!student) return res.status(403).json({ message: 'Student profile not found.' });
       const identityValues = [
         req.auth.userId,
@@ -3528,7 +3717,7 @@ app.get('/api/groups/:groupId', async (req, res) => {
           { studentId: req.auth.userId },
           { admissionNumber: req.auth.userId },
         ],
-      });
+      }, { projection: { _id: 1, studentId: 1, admissionNumber: 1 } });
       visibleStudentIds = new Set([
         req.auth.userId,
         student?.studentId,
@@ -4328,7 +4517,10 @@ app.get('/api/groups/:groupId/messages', async (req, res) => {
     await connectMongo();
     const groupId = (req.params.groupId || '').trim();
     const messages = await groupMessagesCollection
-      .find({ groupId: { $in: groupIdVariants(groupId) } })
+      .find(
+        { groupId: { $in: groupIdVariants(groupId) } },
+        { projection: GROUP_MESSAGE_PROJECTION },
+      )
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -4341,7 +4533,7 @@ app.get('/api/groups/:groupId/messages', async (req, res) => {
           .find({
             groupId: { $in: groupIdVariants(groupId) },
             messageId: { $in: messageKeys },
-          })
+          }, { projection: GROUP_MESSAGE_COMMENT_PROJECTION })
           .sort({ createdAt: 1 })
           .toArray();
     const commentsByMessage = new Map();
@@ -4392,7 +4584,9 @@ app.post('/api/groups/:groupId/messages/:messageId/like', async (req, res) => {
       selector = { id: messageId, groupId: { $in: groupIdVariants(groupId) } };
     }
 
-    const message = await groupMessagesCollection.findOne(selector);
+    const message = await groupMessagesCollection.findOne(selector, {
+      projection: { _id: 1, likedBy: 1 },
+    });
     if (!message) {
       return res.status(404).json({ message: 'Message not found.' });
     }
@@ -4429,7 +4623,10 @@ app.get('/api/groups/:groupId/messages/:messageId/comments', async (req, res) =>
     const messageId = (req.params.messageId || '').trim();
 
     const comments = await groupMessageCommentsCollection
-      .find({ groupId: { $in: groupIdVariants(groupId) }, messageId })
+      .find(
+        { groupId: { $in: groupIdVariants(groupId) }, messageId },
+        { projection: GROUP_MESSAGE_COMMENT_PROJECTION },
+      )
       .sort({ createdAt: 1 })
       .toArray();
 
@@ -4473,7 +4670,10 @@ app.post('/api/groups/:groupId/messages/:messageId/comments', requireRecipientRo
       updatedAt: new Date().toISOString(),
     });
 
-    const created = await groupMessageCommentsCollection.findOne({ _id: saved.insertedId });
+    const created = await groupMessageCommentsCollection.findOne(
+      { _id: saved.insertedId },
+      { projection: GROUP_MESSAGE_COMMENT_PROJECTION },
+    );
     return res.status(201).json({
       id: created?._id ? created._id.toString() : null,
       messageId,
@@ -4515,7 +4715,10 @@ app.put('/api/groups/:groupId/messages/:messageId/comments/:commentId', requireR
     });
     if (!result.matchedCount) return res.status(404).json({ message: 'Comment not found.' });
 
-    const updated = await groupMessageCommentsCollection.findOne(selector);
+    const updated = await groupMessageCommentsCollection.findOne(
+      selector,
+      { projection: GROUP_MESSAGE_COMMENT_PROJECTION },
+    );
     return res.json({
       id: updated?._id ? updated._id.toString() : updated?.id || null,
       messageId: updated?.messageId || messageId,
@@ -4618,7 +4821,10 @@ app.post('/api/groups/:groupId/messages', requireRecipientRole('student'), async
       updatedAt: now,
     };
     const result = await groupMessagesCollection.insertOne(message);
-    const saved = await groupMessagesCollection.findOne({ _id: result.insertedId });
+    const saved = await groupMessagesCollection.findOne(
+      { _id: result.insertedId },
+      { projection: GROUP_MESSAGE_PROJECTION },
+    );
     return res.status(201).json(sanitizeGroupMessageForResponse(saved));
   } catch (error) {
     console.error('POST /api/groups/:groupId/messages failed:', error);
@@ -4668,7 +4874,10 @@ app.put('/api/groups/:groupId/messages/:messageId', async (req, res) => {
     const result = await groupMessagesCollection.updateOne(selector, { $set: update });
     if (!result.matchedCount) return res.status(404).json({ message: 'Message not found.' });
     
-    const saved = await groupMessagesCollection.findOne(selector);
+    const saved = await groupMessagesCollection.findOne(
+      selector,
+      { projection: GROUP_MESSAGE_PROJECTION },
+    );
     return res.json(sanitizeGroupMessageForResponse(saved));
   } catch (error) {
     console.error('PUT /api/groups/:groupId/messages/:messageId failed:', error);
@@ -4862,7 +5071,7 @@ const userManagementRepository = {
   },
   async findByIdentity(userId, role) {
     await connectMongo();
-    const user = await findCredentialByUserId(userId, role);
+    const user = await findCredentialForAuthentication(userId, role);
     return isCredentialDocumentAllowed(user) ? user : null;
   },
   async findConflict(filter) {
@@ -5436,7 +5645,10 @@ app.get('/api/class-resources/:groupId', requireGroupAccess, async (req, res) =>
   try {
     await connectMongo();
     const groupId = (req.params.groupId || '').trim();
-    const items = await classResourcesCollection.find({ groupId }).sort({ createdAt: -1, _id: -1 }).toArray();
+    const items = await classResourcesCollection
+      .find({ groupId }, { projection: CLASS_RESOURCE_PROJECTION })
+      .sort({ createdAt: -1, _id: -1 })
+      .toArray();
     return res.json(items.map(sanitizeClassResourceForResponse));
   } catch (error) {
     console.error('GET /api/class-resources/:groupId failed:', error);
@@ -5472,7 +5684,10 @@ app.post('/api/class-resources/:groupId', requireGroupAccess, requireTeacher, up
       updatedAt: now,
     };
     const result = await classResourcesCollection.insertOne(payload);
-    const saved = await classResourcesCollection.findOne({ _id: result.insertedId });
+    const saved = await classResourcesCollection.findOne(
+      { _id: result.insertedId },
+      { projection: CLASS_RESOURCE_PROJECTION },
+    );
     return res.status(201).json(sanitizeClassResourceForResponse(saved));
   } catch (error) {
     console.error('POST /api/class-resources/:groupId failed:', error);
@@ -5492,7 +5707,10 @@ app.put('/api/class-resources/:groupId/:id', requireGroupAccess, requireTeacher,
       { $set: { title, description, resourceType, updatedAt: new Date().toISOString() } },
     );
     if (!result.matchedCount) return res.status(404).json({ message: 'Class resource not found.' });
-    const saved = await classResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const saved = await classResourcesCollection.findOne(
+      { _id: new ObjectId(req.params.id) },
+      { projection: CLASS_RESOURCE_PROJECTION },
+    );
     return res.json(sanitizeClassResourceForResponse(saved));
   } catch (error) {
     console.error('PUT /api/class-resources/:groupId/:id failed:', error);
@@ -5521,7 +5739,7 @@ app.get('/api/school-resources', requireRecipientRole(['admin', 'staff', 'studen
     await connectMongo();
     const schoolId = String(req.query.schoolId || 'default-school').trim() || 'default-school';
     const items = await schoolResourcesCollection
-      .find({ schoolId })
+      .find({ schoolId }, { projection: SCHOOL_RESOURCE_PROJECTION })
       .sort({ date: -1, createdAt: -1, _id: -1 })
       .toArray();
     return res.json(items.map(sanitizeSchoolResourceForResponse));
@@ -5534,7 +5752,10 @@ app.get('/api/school-resources', requireRecipientRole(['admin', 'staff', 'studen
 app.get('/api/school-resources/:id', requireRecipientRole(['admin', 'staff', 'student']), async (req, res) => {
   try {
     await connectMongo();
-    const item = await schoolResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const item = await schoolResourcesCollection.findOne(
+      { _id: new ObjectId(req.params.id) },
+      { projection: SCHOOL_RESOURCE_PROJECTION },
+    );
     if (!item) return res.status(404).json({ message: 'School resource not found.' });
     return res.json(sanitizeSchoolResourceForResponse(item));
   } catch (error) {
@@ -5568,7 +5789,10 @@ app.post('/api/school-resources', requireRecipientRole(['admin', 'staff']), asyn
     };
 
     const result = await schoolResourcesCollection.insertOne(payload);
-    const saved = await schoolResourcesCollection.findOne({ _id: result.insertedId });
+    const saved = await schoolResourcesCollection.findOne(
+      { _id: result.insertedId },
+      { projection: SCHOOL_RESOURCE_PROJECTION },
+    );
     return res.status(201).json(sanitizeSchoolResourceForResponse(saved));
   } catch (error) {
     console.error('POST /api/school-resources failed:', error);
@@ -5604,7 +5828,10 @@ app.put('/api/school-resources/:id', requireRecipientRole(['admin', 'staff']), a
     );
 
     if (result.matchedCount === 0) return res.status(404).json({ message: 'School resource not found.' });
-    const updated = await schoolResourcesCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const updated = await schoolResourcesCollection.findOne(
+      { _id: new ObjectId(req.params.id) },
+      { projection: SCHOOL_RESOURCE_PROJECTION },
+    );
     return res.json(sanitizeSchoolResourceForResponse(updated));
   } catch (error) {
     console.error('PUT /api/school-resources/:id failed:', error);
@@ -6701,12 +6928,15 @@ function staffAccessResponse(staff, access) {
   };
 }
 
-async function findStaffForAccess(staffId) {
+async function findStaffForAccess(staffId, options) {
   const value = String(staffId || '').trim();
   if (!value) return null;
   const filters = [{ employeeId: value }, { id: value }];
   if (ObjectId.isValid(value)) filters.push({ _id: new ObjectId(value) });
-  return employeeInfoCollection.findOne({ $or: filters });
+  const selector = { $or: filters };
+  return options
+    ? employeeInfoCollection.findOne(selector, options)
+    : employeeInfoCollection.findOne(selector);
 }
 
 app.get('/api/stf-access', requireAdmin, async (req, res) => {

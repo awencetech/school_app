@@ -6,6 +6,8 @@ import 'staff_access_service.dart';
 
 /// Global app state (language + bottom navigation) backed by SharedPreferences.
 class AppState extends ChangeNotifier {
+  static const supportedRoles = {'admin', 'staff', 'student'};
+
   static const _languageKey = 'selected_language';
   static const _loggedInKey = 'user_logged_in';
   static const _authUserIdKey = 'auth_user_id';
@@ -48,41 +50,50 @@ class AppState extends ChangeNotifier {
 
   bool get hasSelectedLanguage => _selectedLanguage != null;
 
+  static String? normalizeSupportedRole(String? role) {
+    final normalized = role?.trim().toLowerCase();
+    return supportedRoles.contains(normalized) ? normalized : null;
+  }
+
   Future<void> _loadInitialState() async {
     try {
       // Add timeout protection to prevent splash screen from hanging indefinitely
       // if SharedPreferences or any other startup operation is slow
       await Future.wait([
-        PreferencesService.getString(_languageKey),
-        PreferencesService.getBool(_loggedInKey),
-        PreferencesService.getString(_authUserIdKey),
-        PreferencesService.getString(_authEmailKey),
-        PreferencesService.getString(_authRoleKey),
-        PreferencesService.getString(_authTokenKey),
-      ]).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          // If loading takes too long, proceed with defaults
-          debugPrint('WARNING: AppState initialization timeout after 5 seconds. Using default values.');
-          return <dynamic>[null, null, null, null, null, null];
-        },
-      ).then((results) {
-        if (results.isEmpty || results.length < 6) return;
-        final savedLanguageCode = results[0] as String?;
-        final savedLoggedInState = results[1] as bool?;
-        final savedUserId = results[2] as String?;
-        final savedEmail = results[3] as String?;
-        final savedRole = results[4] as String?;
-        final savedToken = results[5] as String?;
-        
-        _selectedLanguage = LanguageOptionX.fromCode(savedLanguageCode);
-        _isLoggedIn = savedLoggedInState ?? false;
-        _currentUserId = savedUserId;
-        _currentUserEmail = savedEmail;
-        _currentUserRole = savedRole;
-        _currentAuthToken = savedToken;
-        cachedUserRole = savedRole;
-      });
+            PreferencesService.getString(_languageKey),
+            PreferencesService.getBool(_loggedInKey),
+            PreferencesService.getString(_authUserIdKey),
+            PreferencesService.getString(_authEmailKey),
+            PreferencesService.getString(_authRoleKey),
+            PreferencesService.getString(_authTokenKey),
+          ])
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              // If loading takes too long, proceed with defaults
+              debugPrint(
+                'WARNING: AppState initialization timeout after 5 seconds. Using default values.',
+              );
+              return <dynamic>[null, null, null, null, null, null];
+            },
+          )
+          .then((results) {
+            if (results.isEmpty || results.length < 6) return;
+            final savedLanguageCode = results[0] as String?;
+            final savedLoggedInState = results[1] as bool?;
+            final savedUserId = results[2] as String?;
+            final savedEmail = results[3] as String?;
+            final savedRole = results[4] as String?;
+            final savedToken = results[5] as String?;
+
+            _selectedLanguage = LanguageOptionX.fromCode(savedLanguageCode);
+            _isLoggedIn = savedLoggedInState ?? false;
+            _currentUserId = savedUserId;
+            _currentUserEmail = savedEmail;
+            _currentUserRole = savedRole;
+            _currentAuthToken = savedToken;
+            cachedUserRole = savedRole;
+          });
       if ((_currentUserRole ?? '').toLowerCase() == 'staff' &&
           (_currentAuthToken ?? '').isNotEmpty) {
         try {
@@ -119,8 +130,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await setLoggedIn(false);
-    // Clear stored authenticated user info
+    _isLoggedIn = false;
     _currentUserId = null;
     _currentUserEmail = null;
     _currentUserRole = null;
@@ -128,25 +138,39 @@ class AppState extends ChangeNotifier {
     _staffAccessGroups = null;
     cachedStaffAccessGroups = null;
     cachedUserRole = null;
-    await PreferencesService.setString(_authUserIdKey, '');
-    await PreferencesService.setString(_authEmailKey, '');
-    await PreferencesService.setString(_authRoleKey, '');
-    await PreferencesService.setString(_authTokenKey, '');
+    await Future.wait([
+      PreferencesService.setBool(_loggedInKey, false),
+      PreferencesService.setString(_authUserIdKey, ''),
+      PreferencesService.setString(_authEmailKey, ''),
+      PreferencesService.setString(_authRoleKey, ''),
+      PreferencesService.setString(_authTokenKey, ''),
+    ]);
     setBottomNavIndex(0);
+    notifyListeners();
   }
 
-  Future<void> setAuthenticatedUser({required String userId, required String email, required String role, String? token}) async {
+  Future<void> setAuthenticatedUser({
+    required String userId,
+    required String email,
+    required String role,
+    String? token,
+  }) async {
+    final normalizedRole = normalizeSupportedRole(role);
+    if (normalizedRole == null) {
+      throw ArgumentError.value(role, 'role', 'Unsupported user role.');
+    }
+
     _currentUserId = userId;
     _currentUserEmail = email;
-    _currentUserRole = role;
+    _currentUserRole = normalizedRole;
     _currentAuthToken = token;
-    cachedUserRole = role;
+    cachedUserRole = normalizedRole;
     await PreferencesService.setString(_authUserIdKey, userId);
     await PreferencesService.setString(_authEmailKey, email);
-    await PreferencesService.setString(_authRoleKey, role);
+    await PreferencesService.setString(_authRoleKey, normalizedRole);
     await PreferencesService.setString(_authTokenKey, token ?? '');
     await setLoggedIn(true);
-    if (role.toLowerCase() == 'staff' && (token ?? '').isNotEmpty) {
+    if (normalizedRole == 'staff' && (token ?? '').isNotEmpty) {
       try {
         final access = await StaffAccessService().getMine();
         _staffAccessGroups = access.accessGroups.toSet();
@@ -173,4 +197,3 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 }
-

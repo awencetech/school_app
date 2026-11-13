@@ -106,6 +106,13 @@ class SchoolScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Member Details',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
                 for (var i = 0; i < staff.length; i++) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),

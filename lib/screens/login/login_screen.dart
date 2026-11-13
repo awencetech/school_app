@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../services/login_role_validation.dart';
 import '../../services/user_service.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
 
             if (authorization['authorized'] != true) {
-              await FirebaseAuth.instance.signOut();
+              await _clearAuthentication(appState);
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -85,8 +86,21 @@ class _LoginScreenState extends State<LoginScreen> {
               return;
             }
 
-            final authorizedRole =
-                authorization['role']?.toString() ?? user.role;
+            final role = await LoginRoleValidation.validateOrLogout(
+              role: authorization['role']?.toString() ?? user.role,
+              appState: appState,
+              signOut: _signOutFirebase,
+            );
+            if (role == null) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n?.invalidUserRole ?? 'Invalid user role'),
+                ),
+              );
+              return;
+            }
+
             final authorizedToken = authorization['token']?.toString().trim();
             final loginToken = user.token?.trim();
             final backendToken =
@@ -99,41 +113,34 @@ class _LoginScreenState extends State<LoginScreen> {
             await appState.setAuthenticatedUser(
               userId: user.userId,
               email: user.email,
-              role: authorizedRole,
+              role: role,
               token: backendToken,
             );
 
             if (!mounted) return;
             final navigator = Navigator.of(context);
-            final messenger = ScaffoldMessenger.of(context);
 
-            if (authorizedRole == 'student') {
+            if (role == 'student') {
               navigator.pushNamedAndRemoveUntil(
                 AppRoutes.studentDashboard,
                 (route) => false,
               );
-            } else if (authorizedRole == 'staff') {
+            } else if (role == 'staff') {
               navigator.pushNamedAndRemoveUntil(
                 AppRoutes.staffDashboard,
                 (route) => false,
               );
-            } else if (authorizedRole == 'admin') {
+            } else if (role == 'admin') {
               navigator.pushNamedAndRemoveUntil(
                 AppRoutes.adminDashboard,
                 (route) => false,
-              );
-            } else {
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(l10n?.invalidUserRole ?? 'Invalid user role'),
-                ),
               );
             }
           } catch (e, stackTrace) {
             debugPrint('Email authorization check failed: $e');
             debugPrintStack(stackTrace: stackTrace);
             if (!mounted) return;
-            await FirebaseAuth.instance.signOut();
+            await _clearAuthentication(appState);
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -160,6 +167,13 @@ class _LoginScreenState extends State<LoginScreen> {
             setState(() => _isLoading = false);
           }
         });
+  }
+
+  Future<void> _signOutFirebase() => FirebaseAuth.instance.signOut();
+
+  Future<void> _clearAuthentication(AppState appState) async {
+    await appState.logout();
+    await _signOutFirebase();
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -252,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (authorization['authorized'] != true) {
-      await FirebaseAuth.instance.signOut();
+      await _clearAuthentication(appState);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text(_unregisteredGoogleEmailMessage)),
@@ -260,7 +274,19 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final role = authorization['role']?.toString() ?? 'student';
+    final role = await LoginRoleValidation.validateOrLogout(
+      role: authorization['role']?.toString(),
+      appState: appState,
+      signOut: _signOutFirebase,
+    );
+    if (role == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invalid user role')));
+      return;
+    }
+
     final backendToken = authorization['token']?.toString().trim();
     if (backendToken == null || backendToken.isEmpty) {
       throw StateError('Backend authentication token was not issued.');
@@ -273,20 +299,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (!mounted) return;
-    final destination = switch (role) {
-      'admin' => AppRoutes.adminDashboard,
-      'staff' => AppRoutes.staffDashboard,
-      'student' => AppRoutes.studentDashboard,
-      _ => null,
-    };
-
+    final destination = AppRoutes.dashboardForRole(role);
     if (destination == null) {
-      await FirebaseAuth.instance.signOut();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invalid user role')));
-      return;
+      throw StateError('Unsupported role passed login validation.');
     }
 
     Navigator.of(

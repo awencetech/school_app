@@ -31,7 +31,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
     text: '',
   );
   final TextEditingController _sinceController = TextEditingController(
-    text: '1987',
+    text: '',
   );
   String? _imageBase64;
   double _imageScale = 1.0;
@@ -46,6 +46,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
     _titleController.dispose();
     _subtitleController.dispose();
     _quoteController.dispose();
+    _sinceController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -80,7 +81,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
       ).showSnackBar(const SnackBar(content: Text('Title cannot be empty')));
       return;
     }
-    if (since.isEmpty || int.tryParse(since) == null) {
+    if (since.isNotEmpty && int.tryParse(since) == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Since must be a valid year')),
       );
@@ -160,6 +161,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
   @override
   Widget build(BuildContext context) {
     // No local sizing here; `FounderSplashImage` handles responsive sizing.
+    final imageData = _imageBase64?.trim();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.topBar,
@@ -208,10 +210,11 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
             TextField(
               controller: _sinceController,
               decoration: const InputDecoration(
-                labelText: 'Since (year)',
+                labelText: 'Since (year, optional)',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
             Text('Image', style: Theme.of(context).textTheme.bodyMedium),
@@ -231,11 +234,11 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                       border: Border.all(color: Colors.grey.shade400),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: _imageBase64 != null
+                    child: imageData != null && imageData.isNotEmpty
                         ? Center(
-                            child: _imageBase64!.trim().startsWith('http')
+                            child: imageData.startsWith('http')
                                 ? CachedNetworkImage(
-                                    imageUrl: _imageBase64!,
+                                    imageUrl: imageData,
                                     fit: BoxFit.contain,
                                     placeholder: (context, url) =>
                                         const SizedBox.shrink(),
@@ -243,7 +246,7 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                                         const Icon(Icons.image, size: 36),
                                   )
                                 : Image.memory(
-                                    base64Decode(_imageBase64!),
+                                    base64Decode(imageData),
                                     fit: BoxFit.contain,
                                   ),
                           )
@@ -303,18 +306,20 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_imageBase64 != null)
+                  if (imageData != null && imageData.isNotEmpty)
                     Center(
-                      child: FounderSplashImage(imageBase64: _imageBase64),
+                      child: FounderSplashImage(imageBase64: imageData),
                     ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Since ${_sinceController.text}',
-                    style: AppTextStyles.subtitle.copyWith(
-                      color: AppColors.white,
+                  if (_sinceController.text.trim().isNotEmpty) ...[
+                    Text(
+                      'Since ${_sinceController.text.trim()}',
+                      style: AppTextStyles.subtitle.copyWith(
+                        color: AppColors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
+                  ],
                   Text(
                     _titleController.text,
                     style: AppTextStyles.appTitle.copyWith(

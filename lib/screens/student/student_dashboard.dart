@@ -171,7 +171,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Future<void> _openLibrary(BuildContext context) async {
     if (!context.mounted) return;
-    Navigator.of(context).pushNamed(AppRoutes.adminDashboardLibrary);
+    await AppRoutes.openLibrary(context);
   }
 
   Future<void> _openSocialUrl(
@@ -403,9 +403,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Event Calendar',
                           details:
                               'View upcoming school events and important dates.',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppRoutes.studentDashboardCalendar,
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.studentDashboardCalendar),
                         ),
                         _studentQuickAction(
                           context,
@@ -427,9 +427,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Write Message',
                           details:
                               'Create and send a message to your school or teachers.',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppRoutes.studentDashboardWriteMessage,
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.studentDashboardWriteMessage),
                         ),
                         _studentQuickAction(
                           context,
@@ -438,9 +438,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           color: Color(0xFFF4B400),
                           title: 'Request Message',
                           details: 'View and submit requests to the school.',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppRoutes.studentDashboardRequest,
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.studentDashboardRequest),
                         ),
                         _studentQuickAction(
                           context,
@@ -450,9 +450,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'Campaigns and Surveys',
                           details:
                               'Read active campaigns and surveys, then respond when required.',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppRoutes.studentDashboardCampaignSurvey,
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.studentDashboardCampaignSurvey),
                         ),
                         _studentQuickAction(
                           context,
@@ -462,24 +462,24 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           title: 'PTM Status',
                           details:
                               'Check parent-teacher meeting status and related updates.',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppRoutes.studentDashboardPtm,
-                          ),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.studentDashboardPtm),
                         ),
                       ],
                       onGroupClassBusTap: () => Navigator.of(context).pushNamed(
                         AppRoutes.studentDashboardGroupsClassDiscussion,
                       ),
                       showCheckApprove: false,
-                      onUniRouteZ2Tap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.studentDashboardTrackUniRoute22,
-                      ),
-                      onSp7Tap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.studentDashboardTrackSp7,
-                      ),
-                      onTrackTap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.studentDashboardTrack,
-                      ),
+                      onUniRouteZ2Tap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.studentDashboardTrackUniRoute22),
+                      onSp7Tap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.studentDashboardTrackSp7),
+                      onTrackTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.studentDashboardTrack),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -580,9 +580,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.of(
-                                    context,
-                                  ).pushNamed(
+                                  onTap: () => Navigator.of(context).pushNamed(
                                     AppRoutes.studentDashboardAttendance,
                                   ),
                                   child: const _InfoChip(
@@ -592,9 +590,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.of(
-                                    context,
-                                  ).pushNamed(
+                                  onTap: () => Navigator.of(context).pushNamed(
                                     AppRoutes.studentDashboardExamResults,
                                   ),
                                   child: const _InfoChip(
@@ -614,9 +610,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.of(
-                                    context,
-                                  ).pushNamed(
+                                  onTap: () => Navigator.of(context).pushNamed(
                                     AppRoutes.studentDashboardFacultyFeedback,
                                   ),
                                   child: const _InfoChip(
@@ -806,11 +800,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
           });
         },
         items: [
-          BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.home),
-          BottomNavigationBarItem(icon: const Icon(Icons.person), label: l10n.user),
-          BottomNavigationBarItem(icon: const Icon(Icons.info), label: l10n.help),
-          BottomNavigationBarItem(icon: const Icon(Icons.help), label: l10n.support),
-          BottomNavigationBarItem(icon: const Icon(Icons.logout), label: l10n.logout),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.home),
+            label: l10n.home,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person),
+            label: l10n.user,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.info),
+            label: l10n.help,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.help),
+            label: l10n.support,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.logout),
+            label: l10n.logout,
+          ),
         ],
       ),
     );

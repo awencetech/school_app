@@ -36,31 +36,22 @@ class _SplashScreenState extends State<SplashScreen> {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
 
+    final appState = context.read<AppState>();
+
+    // Let route authorization inspect a fully loaded authentication state.
+    try {
+      await appState.initialization.timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('ERROR: AppState initialization failed: $e');
+    }
+
+    if (!mounted) return;
+
     // If a specific target route was requested, navigate there directly
     if (widget.targetRoute != null && widget.targetRoute != AppRoutes.splash) {
       Navigator.of(context).pushReplacementNamed(widget.targetRoute!);
       return;
     }
-
-    final appState = context.read<AppState>();
-
-    // Wait for initialization with timeout protection
-    try {
-      await appState.initialization.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          debugPrint(
-            'WARNING: AppState initialization timeout. Proceeding with available data.',
-          );
-        },
-      );
-    } catch (e) {
-      debugPrint(
-        'ERROR: Initialization error: $e. Proceeding with available data.',
-      );
-    }
-
-    if (!mounted) return;
 
     // Navigation logic based on authentication and language state:
     // 1. If not logged in AND no language selected -> go to language selection
@@ -89,162 +80,109 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primary, AppColors.primaryDark],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxWidth < 420;
-              final horizontalPadding = isCompact ? 20.0 : 32.0;
-              final verticalInset = isCompact ? 48.0 : 80.0;
+      backgroundColor: AppColors.primary,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: SizedBox(
+                width: double.infinity,
+                child: FutureBuilder<SchoolInfo>(
+                  future: DummyDataService.getSchoolInfo(),
+                  builder: (context, snapshot) {
+                    final info = snapshot.data;
+                    final splashConfig = context.watch<SplashConfigService>();
 
-              return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: isCompact ? 24 : 40,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: (constraints.maxHeight - verticalInset)
-                        .clamp(0.0, double.infinity)
-                        .toDouble(),
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 620),
-                      child: FutureBuilder<SchoolInfo>(
-                        future: DummyDataService.getSchoolInfo(),
-                        builder: (context, snapshot) {
-                          final info = snapshot.data;
-                          final splashConfig = context
-                              .watch<SplashConfigService>();
+                    final titleText = splashConfig.title.isNotEmpty
+                        ? splashConfig.title
+                        : (info?.name.isNotEmpty == true ? info!.name : 'MMHS');
+                    final subtitleText = splashConfig.subtitle.isNotEmpty
+                        ? splashConfig.subtitle
+                        : (info?.motto ?? '');
+                    final since = splashConfig.since.trim();
 
-                          final titleText = splashConfig.title.isNotEmpty
-                              ? splashConfig.title
-                              : (info?.name.isNotEmpty == true
-                                    ? info!.name
-                                    : 'MMHS');
-                          final subtitleText = splashConfig.subtitle.isNotEmpty
-                              ? splashConfig.subtitle
-                              : (info?.motto ?? '');
-                          final since = splashConfig.since.isNotEmpty
-                              ? splashConfig.since
-                              : (info?.since ?? '');
-
-                          return Container(
-                            padding: EdgeInsets.fromLTRB(
-                              isCompact ? 20 : 40,
-                              isCompact ? 24 : 36,
-                              isCompact ? 20 : 40,
-                              isCompact ? 26 : 38,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.white.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(28),
-                              border: Border.all(
-                                color: AppColors.white.withValues(alpha: 0.16),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.16),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 16),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // The shared widget keeps the uploaded logo unchanged.
-                                Container(
-                                  padding: EdgeInsets.all(isCompact ? 12 : 16),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.96,
-                                    ),
-                                    borderRadius: BorderRadius.circular(22),
-                                  ),
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: screenWidth),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.08,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Center(
                                   child: FounderSplashImage(
                                     imageBase64: splashConfig.imageBase64,
                                   ),
                                 ),
-                                if (since.isNotEmpty) ...[
-                                  const SizedBox(height: 22),
-                                  Text(
-                                    'Since $since',
-                                    textAlign: TextAlign.center,
-                                    style: AppTextStyles.subtitle.copyWith(
-                                      fontSize: isCompact ? 11 : 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.white.withValues(
-                                        alpha: 0.78,
-                                      ),
-                                      letterSpacing: 0.4,
-                                    ),
-                                  ),
-                                ],
-                                SizedBox(height: isCompact ? 8 : 10),
+                              ),
+                              if (since.isNotEmpty) ...[
+                                const SizedBox(height: 12),
                                 Text(
-                                  titleText,
+                                  'Since $since',
                                   textAlign: TextAlign.center,
-                                  style: AppTextStyles.appTitle.copyWith(
-                                    fontSize: isCompact ? 21 : 25,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.2,
+                                  style: AppTextStyles.subtitle.copyWith(
+                                    fontSize: 11,
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.9,
+                                    ),
                                   ),
                                 ),
-                                if (subtitleText.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    subtitleText,
-                                    textAlign: TextAlign.center,
-                                    style: AppTextStyles.body.copyWith(
-                                      fontSize: isCompact ? 12 : 13,
-                                      color: AppColors.white.withValues(
-                                        alpha: 0.82,
-                                      ),
-                                      height: 1.45,
-                                    ),
-                                  ),
-                                ],
-                                if (splashConfig.quote.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 14),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                    child: Text(
-                                      '"${splashConfig.quote}"',
-                                      textAlign: TextAlign.center,
-                                      style: AppTextStyles.body.copyWith(
-                                        fontSize: isCompact ? 12 : 13,
-                                        color: AppColors.white.withValues(
-                                          alpha: 0.92,
-                                        ),
-                                        fontStyle: FontStyle.italic,
-                                        height: 1.45,
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
-                            ),
-                          );
-                        },
+                              const SizedBox(height: 10),
+                              Text(
+                                titleText,
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.appTitle.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (subtitleText.trim().isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  subtitleText,
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.body.copyWith(
+                                    fontSize: 12,
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (splashConfig.quote.trim().isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '"${splashConfig.quote}"',
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.body.copyWith(
+                                    fontSize: 12,
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.95,
+                                    ),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),

@@ -15,7 +15,13 @@ class SplashConfigService extends ChangeNotifier {
   static const _imageOffsetXKey = 'splash_image_offset_x';
   static const _imageOffsetYKey = 'splash_image_offset_y';
 
-  final MainPageInfoRepository _repository = MainPageInfoRepository();
+  SplashConfigService({MainPageInfoRepository? repository})
+    : _repository = repository ?? MainPageInfoRepository() {
+    initialization = _load();
+  }
+
+  final MainPageInfoRepository _repository;
+  late final Future<void> initialization;
 
   String? imageBase64;
   String title = '';
@@ -25,10 +31,6 @@ class SplashConfigService extends ChangeNotifier {
   double imageScale = 1.0;
   double imageOffsetX = 0.0;
   double imageOffsetY = 0.0;
-
-  SplashConfigService() {
-    _load();
-  }
 
   Future<void> _load() async {
     final cached = await PreferencesService.getStrings([
@@ -54,7 +56,7 @@ class SplashConfigService extends ChangeNotifier {
     imageBase64 = img;
     if (t != null && t.isNotEmpty) title = t;
     if (s != null && s.isNotEmpty) subtitle = s;
-    if (y != null && y.isNotEmpty) since = y;
+    if (y != null) since = y;
     if (q != null && q.isNotEmpty) quote = q;
     if (scale != null && scale.isNotEmpty) {
       imageScale = double.tryParse(scale) ?? imageScale;
@@ -205,9 +207,7 @@ class SplashConfigService extends ChangeNotifier {
       if (updated.splashScreen.quote.isNotEmpty) {
         this.quote = updated.splashScreen.quote;
       }
-      if (updated.splashScreen.sinceYear.isNotEmpty) {
-        this.since = updated.splashScreen.sinceYear;
-      }
+      this.since = updated.splashScreen.sinceYear;
       if (updated.splashScreen.image.isNotEmpty) {
         this.imageBase64 = updated.splashScreen.image;
       }

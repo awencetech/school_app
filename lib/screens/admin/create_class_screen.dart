@@ -10,14 +10,16 @@ import '../../theme/app_colors.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
 class CreateClassesScreen extends StatefulWidget {
-  const CreateClassesScreen({super.key});
+  const CreateClassesScreen({super.key, this.classService});
+
+  final ClassService? classService;
 
   @override
   State<CreateClassesScreen> createState() => _CreateClassesScreenState();
 }
 
 class _CreateClassesScreenState extends State<CreateClassesScreen> {
-  final ClassService _classService = ClassService();
+  late final ClassService _classService;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _nameController = TextEditingController();
@@ -38,6 +40,7 @@ class _CreateClassesScreenState extends State<CreateClassesScreen> {
   @override
   void initState() {
     super.initState();
+    _classService = widget.classService ?? ClassService();
     _loadClasses(refresh: true);
   }
 

@@ -208,6 +208,11 @@ class _SchoolContentManagementScreenState
                         ),
                       ),
                       const SizedBox(height: 20),
+                      const Text(
+                        'Member Photo',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
                       OutlinedButton.icon(
                         onPressed: () async {
                           await _pickImage((base64) {
@@ -272,7 +277,7 @@ class _SchoolContentManagementScreenState
                       TextField(
                         controller: titleController,
                         decoration: InputDecoration(
-                          labelText: 'Title',
+                          labelText: 'Vision Title',
                           border: fieldBorder,
                           enabledBorder: fieldBorder,
                         ),
@@ -281,7 +286,7 @@ class _SchoolContentManagementScreenState
                       TextField(
                         controller: descriptionController,
                         decoration: InputDecoration(
-                          labelText: 'Description',
+                          labelText: 'Vision Description',
                           border: fieldBorder,
                           enabledBorder: fieldBorder,
                         ),
@@ -506,12 +511,12 @@ class _SchoolContentManagementScreenState
                     const SizedBox(height: 12),
                     _buildTextField(
                       _founderVisionTitleController,
-                      'Title',
+                      'Vision Title',
                     ),
                     const SizedBox(height: 12),
                     _buildTextField(
                       _founderVisionDescriptionController,
-                      'Description',
+                      'Vision Description',
                       maxLines: 3,
                     ),
                   ],
@@ -543,12 +548,12 @@ class _SchoolContentManagementScreenState
                     const SizedBox(height: 12),
                     _buildTextField(
                       _secretaryWelcomeTitleController,
-                      'Title',
+                      'Vision Title',
                     ),
                     const SizedBox(height: 12),
                     _buildTextField(
                       _secretaryWelcomeMessageController,
-                      'Description',
+                      'Vision Description',
                       maxLines: 3,
                     ),
                   ],
@@ -580,19 +585,19 @@ class _SchoolContentManagementScreenState
                     const SizedBox(height: 12),
                     _buildTextField(
                       _headmasterMessageTitleController,
-                      'Title',
+                      'Vision Title',
                     ),
                     const SizedBox(height: 12),
                     _buildTextField(
                       _headmasterMessageController,
-                      'Description',
+                      'Vision Description',
                       maxLines: 3,
                     ),
                   ],
                 ),
               ),
             ),
-            _buildSectionHeading('Management Members'),
+            _buildSectionHeading('Member Details'),
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -616,7 +621,7 @@ class _SchoolContentManagementScreenState
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Center(
-                              child: Text('No management members added yet.'),
+                              child: Text('No members added yet.'),
                             ),
                           )
                         : ReorderableListView.builder(

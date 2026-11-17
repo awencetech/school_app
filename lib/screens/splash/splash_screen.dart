@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/school_info.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
-import '../../services/dummy_data_service.dart';
 import '../../services/splash_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -21,6 +19,11 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  static const _defaultTitle = 'MMHSS';
+  static const _defaultSchoolName =
+      'Muthuthevar Mukkulathor Higher Secondary School';
+  static const _defaultSince = '1995';
+
   bool _hasNavigated = false;
 
   @override
@@ -80,110 +83,96 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: SizedBox(
-                width: double.infinity,
-                child: FutureBuilder<SchoolInfo>(
-                  future: DummyDataService.getSchoolInfo(),
-                  builder: (context, snapshot) {
-                    final info = snapshot.data;
-                    final splashConfig = context.watch<SplashConfigService>();
+          builder: (context, constraints) {
+            final splashConfig = context.watch<SplashConfigService>();
+            final titleText = splashConfig.title.trim().isNotEmpty
+                ? splashConfig.title.trim()
+                : _defaultTitle;
+            final subtitleText = splashConfig.subtitle.trim().isNotEmpty
+                ? splashConfig.subtitle.trim()
+                : _defaultSchoolName;
+            final configuredSince = splashConfig.since.trim();
+            final since = configuredSince.isNotEmpty
+                ? configuredSince
+                : splashConfig.hasConfiguredSince
+                ? ''
+                : _defaultSince;
 
-                    final titleText = splashConfig.title.isNotEmpty
-                        ? splashConfig.title
-                        : (info?.name.isNotEmpty == true ? info!.name : 'MMHS');
-                    final subtitleText = splashConfig.subtitle.isNotEmpty
-                        ? splashConfig.subtitle
-                        : (info?.motto ?? '');
-                    final since = splashConfig.since.trim();
-
-                    return Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: screenWidth),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.08,
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        FounderSplashImage(
+                          imageBase64: splashConfig.imageBase64,
+                          allowRemoteImage: false,
+                        ),
+                        if (since.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            'Since $since',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.subtitle.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.white.withValues(alpha: 0.92),
+                            ),
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Center(
-                                  child: FounderSplashImage(
-                                    imageBase64: splashConfig.imageBase64,
-                                  ),
-                                ),
-                              ),
-                              if (since.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Since $since',
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.subtitle.copyWith(
-                                    fontSize: 11,
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.9,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 10),
-                              Text(
-                                titleText,
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.appTitle.copyWith(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              if (subtitleText.trim().isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  subtitleText,
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.body.copyWith(
-                                    fontSize: 12,
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.85,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              if (splashConfig.quote.trim().isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  '"${splashConfig.quote}"',
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.body.copyWith(
-                                    fontSize: 12,
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.95,
-                                    ),
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ],
-                            ],
+                          const SizedBox(height: 9),
+                        ],
+                        Text(
+                          titleText,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.appTitle.copyWith(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2.2,
                           ),
                         ),
-                      ),
-                    );
-                  },
+                        const SizedBox(height: 6),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 330),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              subtitleText,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.body.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.white.withValues(alpha: 0.88),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (splashConfig.quote.trim().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '"${splashConfig.quote.trim()}"',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.body.copyWith(
+                              fontSize: 12,
+                              color: AppColors.white.withValues(alpha: 0.95),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

@@ -14,7 +14,6 @@ import '../../services/app_state.dart';
 import '../../services/class_service.dart';
 import '../../services/school_config_service.dart';
 import '../../services/staff_service.dart';
-import '../../services/staff_access_service.dart';
 import '../../services/social_url_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -57,8 +56,16 @@ class _StaffDashboardState extends State<StaffDashboard> {
 
   Future<void> _loadAssignedClass() async {
     try {
-      final access = await StaffAccessService().getMine();
-      final assignedIds = access.classTeacherIds.toSet();
+      final appState = context.read<AppState>();
+      await appState.initialization;
+      await appState.staffAccessInitialization;
+      if (!mounted) return;
+      final accessError = appState.staffAccessError;
+      if (accessError != null) {
+        throw StateError(accessError);
+      }
+
+      final assignedIds = appState.staffClassTeacherIds.toSet();
       if (assignedIds.isEmpty) {
         if (!mounted) return;
         setState(() {

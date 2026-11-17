@@ -66,10 +66,15 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('SchoolApp builds', (WidgetTester tester) async {
+  testWidgets('SchoolApp reaches its initial screen during startup', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const SchoolApp());
     await tester.pump(const Duration(seconds: 4));
-    expect(find.byType(SchoolApp), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select your preferred Language'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('AchievementsScreen renders with school configuration', (

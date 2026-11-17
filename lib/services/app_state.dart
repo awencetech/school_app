@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/language_option.dart';
+import '../models/staff_access.dart';
 import 'preferences_service.dart';
 import 'staff_access_service.dart';
 
@@ -24,15 +25,26 @@ class AppState extends ChangeNotifier {
   String? _currentUserRole;
   String? _currentAuthToken;
   Set<String>? _staffAccessGroups;
+  List<String> _staffClassTeacherIds = const [];
+  String? _staffAccessError;
+  Future<void> _staffAccessInitialization = Future<void>.value();
+  int _staffAccessGeneration = 0;
+  bool _disposed = false;
 
   static Set<String>? cachedStaffAccessGroups;
   static String? cachedUserRole;
 
   late final Future<void> initialization;
+  Future<void> get staffAccessInitialization => _staffAccessInitialization;
+  List<String> get staffClassTeacherIds => _staffClassTeacherIds;
+  String? get staffAccessError => _staffAccessError;
 
-  AppState() {
+  AppState({StaffAccessService? staffAccessService})
+    : _staffAccessService = staffAccessService ?? StaffAccessService() {
     initialization = _loadInitialState();
   }
+
+  final StaffAccessService _staffAccessService;
 
   LanguageOption? get selectedLanguage => _selectedLanguage;
 
@@ -94,17 +106,7 @@ class AppState extends ChangeNotifier {
             _currentAuthToken = savedToken;
             cachedUserRole = savedRole;
           });
-      if ((_currentUserRole ?? '').toLowerCase() == 'staff' &&
-          (_currentAuthToken ?? '').isNotEmpty) {
-        try {
-          final access = await StaffAccessService().getMine();
-          _staffAccessGroups = access.accessGroups.toSet();
-          cachedStaffAccessGroups = _staffAccessGroups;
-        } catch (_) {
-          _staffAccessGroups = null;
-          cachedStaffAccessGroups = null;
-        }
-      }
+      _beginStaffAccessLoad();
     } catch (e, stackTrace) {
       debugPrint('ERROR: Failed to load initial app state: $e\n$stackTrace');
       // Do NOT crash on startup error. Proceed with default values.
@@ -136,6 +138,10 @@ class AppState extends ChangeNotifier {
     _currentUserRole = null;
     _currentAuthToken = null;
     _staffAccessGroups = null;
+    _staffClassTeacherIds = const [];
+    _staffAccessError = null;
+    _staffAccessGeneration++;
+    _staffAccessInitialization = Future<void>.value();
     cachedStaffAccessGroups = null;
     cachedUserRole = null;
     await Future.wait([
@@ -165,22 +171,62 @@ class AppState extends ChangeNotifier {
     _currentUserRole = normalizedRole;
     _currentAuthToken = token;
     cachedUserRole = normalizedRole;
-    await PreferencesService.setString(_authUserIdKey, userId);
-    await PreferencesService.setString(_authEmailKey, email);
-    await PreferencesService.setString(_authRoleKey, normalizedRole);
-    await PreferencesService.setString(_authTokenKey, token ?? '');
+    _staffAccessGroups = null;
+    _staffClassTeacherIds = const [];
+    _staffAccessError = null;
+    _staffAccessGeneration++;
+    _staffAccessInitialization = Future<void>.value();
+    cachedStaffAccessGroups = null;
+    await Future.wait([
+      PreferencesService.setString(_authUserIdKey, userId),
+      PreferencesService.setString(_authEmailKey, email),
+      PreferencesService.setString(_authRoleKey, normalizedRole),
+      PreferencesService.setString(_authTokenKey, token ?? ''),
+    ]);
     await setLoggedIn(true);
-    if (normalizedRole == 'staff' && (token ?? '').isNotEmpty) {
-      try {
-        final access = await StaffAccessService().getMine();
-        _staffAccessGroups = access.accessGroups.toSet();
-        cachedStaffAccessGroups = _staffAccessGroups;
-      } catch (_) {
-        _staffAccessGroups = null;
-        cachedStaffAccessGroups = null;
+    _beginStaffAccessLoad();
+    notifyListeners();
+  }
+
+  void _beginStaffAccessLoad() {
+    if (!_isLoggedIn ||
+        (_currentUserRole ?? '').toLowerCase() != 'staff' ||
+        (_currentAuthToken ?? '').isEmpty) {
+      _staffAccessInitialization = Future<void>.value();
+      return;
+    }
+
+    final generation = ++_staffAccessGeneration;
+    _staffAccessInitialization = _loadStaffAccess(generation);
+  }
+
+  Future<void> _loadStaffAccess(int generation) async {
+    try {
+      final StaffAccessRecord access = await _staffAccessService.getMine();
+      if (generation != _staffAccessGeneration || !_isLoggedIn) return;
+      _staffAccessGroups = access.accessGroups.toSet();
+      _staffClassTeacherIds = access.classTeacherIds;
+      _staffAccessError = null;
+      cachedStaffAccessGroups = _staffAccessGroups;
+    } catch (error) {
+      if (generation != _staffAccessGeneration) return;
+      _staffAccessGroups = null;
+      _staffClassTeacherIds = const [];
+      _staffAccessError = 'Unable to load staff access.';
+      cachedStaffAccessGroups = null;
+      debugPrint('ERROR: Failed to load staff access (${error.runtimeType}).');
+    } finally {
+      if (generation == _staffAccessGeneration && !_disposed) {
+        notifyListeners();
       }
     }
-    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _staffAccessGeneration++;
+    super.dispose();
   }
 
   static bool staffCanAccess(String group) {

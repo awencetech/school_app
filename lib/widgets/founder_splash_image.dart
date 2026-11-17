@@ -1,56 +1,91 @@
 import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class FounderSplashImage extends StatelessWidget {
   const FounderSplashImage({
     super.key,
-    required this.imageBase64,
+    this.imageBase64,
+    this.allowRemoteImage = true,
   });
 
   final String? imageBase64;
+  final bool allowRemoteImage;
 
-  static const double _srcW = 928.0;
-  static const double _srcH = 1137.0;
+  static const String localAssetPath = 'assets/images/founder.png';
+  static const Color _portraitBlue = Color(0xFF0B2D70);
+  static const double _borderWidth = 2.5;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final aspectRatio = _srcW / _srcH;
-    final imageWidth = (screenWidth * 0.45).clamp(120.0, 320.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final imageWidth =
+            (availableWidth * 0.52).clamp(154.0, 230.0).toDouble();
+        final imageHeight = imageWidth * 1.25;
 
-    Widget child;
-    if (imageBase64 != null && imageBase64!.trim().isNotEmpty) {
-      final trimmed = imageBase64!.trim();
-      if (trimmed.startsWith('http')) {
-        child = CachedNetworkImage(
-          imageUrl: trimmed,
-          fit: BoxFit.contain,
-          alignment: Alignment.center,
-          placeholder: (context, url) => const SizedBox.shrink(),
-          errorWidget: (context, url, error) => const SizedBox.shrink(),
+        return SizedBox(
+          width: imageWidth,
+          height: imageHeight,
+          child: DecoratedBox(
+            decoration: const ShapeDecoration(
+              color: _portraitBlue,
+              shape: OvalBorder(
+                side: BorderSide(
+                  color: Color(0xFFD9B56A),
+                  width: _borderWidth,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: ClipOval(child: _image()),
+            ),
+          ),
         );
-      } else {
-        try {
-          child = Image.memory(
-            base64Decode(trimmed),
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-          );
-        } catch (_) {
-          child = const SizedBox.shrink();
-        }
+      },
+    );
+  }
+
+  Widget _image() {
+    final trimmed = imageBase64?.trim() ?? '';
+    if (allowRemoteImage && trimmed.isNotEmpty) {
+      if (trimmed.startsWith('http')) {
+        return CachedNetworkImage(
+          imageUrl: trimmed,
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+          placeholder: (context, url) => _localImage(),
+          errorWidget: (context, url, error) => _localImage(),
+        );
       }
-    } else {
-      child = const SizedBox.shrink();
+
+      try {
+        return Image.memory(
+          base64Decode(trimmed),
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+          errorBuilder: (context, error, stackTrace) => _localImage(),
+        );
+      } catch (_) {
+        return _localImage();
+      }
     }
 
-    return SizedBox(
-      width: imageWidth,
-      child: AspectRatio(
-        aspectRatio: aspectRatio,
-        child: child,
-      ),
+    return _localImage();
+  }
+
+  Widget _localImage() {
+    return Image.asset(
+      localAssetPath,
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      errorBuilder: (context, error, stackTrace) =>
+          const ColoredBox(color: _portraitBlue),
     );
   }
 }

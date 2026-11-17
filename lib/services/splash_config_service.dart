@@ -26,11 +26,21 @@ class SplashConfigService extends ChangeNotifier {
   String? imageBase64;
   String title = '';
   String subtitle = '';
-  String since = '';
+  String _since = '';
   String quote = '';
   double imageScale = 1.0;
   double imageOffsetX = 0.0;
   double imageOffsetY = 0.0;
+  bool _hasConfiguredSince = false;
+
+  String get since => _since;
+
+  set since(String value) {
+    _since = value;
+    _hasConfiguredSince = true;
+  }
+
+  bool get hasConfiguredSince => _hasConfiguredSince;
 
   Future<void> _load() async {
     final cached = await PreferencesService.getStrings([
@@ -56,7 +66,10 @@ class SplashConfigService extends ChangeNotifier {
     imageBase64 = img;
     if (t != null && t.isNotEmpty) title = t;
     if (s != null && s.isNotEmpty) subtitle = s;
-    if (y != null) since = y;
+    if (y != null) {
+      _since = y;
+      _hasConfiguredSince = true;
+    }
     if (q != null && q.isNotEmpty) quote = q;
     if (scale != null && scale.isNotEmpty) {
       imageScale = double.tryParse(scale) ?? imageScale;
@@ -80,8 +93,9 @@ class SplashConfigService extends ChangeNotifier {
       subtitle = saved.splashScreen.subtitle;
       await PreferencesService.setString(_subtitleKey, subtitle);
 
-      since = saved.splashScreen.sinceYear;
-      await PreferencesService.setString(_sinceKey, since);
+      _since = saved.splashScreen.sinceYear;
+      if (_since.trim().isNotEmpty) _hasConfiguredSince = true;
+      await PreferencesService.setString(_sinceKey, _since);
 
       quote = saved.splashScreen.quote;
       await PreferencesService.setString(_quoteKey, quote);

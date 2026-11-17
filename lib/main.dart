@@ -1,26 +1,33 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
-import 'firebase_options.dart';
+import 'services/firebase_bootstrap.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Set up global error handling to prevent app crashes from unhandled exceptions
-  FlutterError.onError = (FlutterErrorDetails details) {
-    debugPrintStack(
-      label: 'FLUTTER ERROR: ${details.exception}',
-      stackTrace: details.stack,
-    );
-  };
+      FlutterError.onError = (FlutterErrorDetails details) {
+        debugPrint('FLUTTER ERROR: ${details.exception}');
+        FlutterError.presentError(details);
+      };
 
+      runApp(const SchoolApp());
+      unawaited(_initializeFirebase());
+    },
+    (Object error, StackTrace stackTrace) {
+      debugPrint('UNHANDLED ASYNC ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    },
+  );
+}
+
+Future<void> _initializeFirebase() async {
   try {
-    final firebaseApp = await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    final firebaseApp = await FirebaseBootstrap.initialize();
     debugPrint(
       'Firebase initialized: projectId=${firebaseApp.options.projectId}, '
       'appId=${firebaseApp.options.appId}, authDomain=${firebaseApp.options.authDomain}',
@@ -29,14 +36,4 @@ Future<void> main() async {
     debugPrint('FIREBASE INITIALIZATION ERROR: ${error.runtimeType}: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
-
-  runZonedGuarded(
-    () {
-      runApp(const SchoolApp());
-    },
-    (Object error, StackTrace stackTrace) {
-      debugPrint('UNHANDLED ASYNC ERROR: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    },
-  );
 }

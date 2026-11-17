@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -7,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../generated/l10n/app_localizations.dart';
 import '../../routes/app_routes.dart';
 import '../../services/app_state.dart';
+import '../../services/firebase_bootstrap.dart';
 import '../../services/login_role_validation.dart';
 import '../../services/user_service.dart';
 import '../../services/school_config_service.dart';
@@ -169,7 +171,10 @@ class _LoginScreenState extends State<LoginScreen> {
         });
   }
 
-  Future<void> _signOutFirebase() => FirebaseAuth.instance.signOut();
+  Future<void> _signOutFirebase() async {
+    if (Firebase.apps.isEmpty) return;
+    await FirebaseAuth.instance.signOut();
+  }
 
   Future<void> _clearAuthentication(AppState appState) async {
     await appState.logout();
@@ -180,6 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isGoogleLoading = true);
 
     try {
+      await FirebaseBootstrap.initialize();
+
       if (kIsWeb) {
         final provider = GoogleAuthProvider();
         provider.addScope('email');

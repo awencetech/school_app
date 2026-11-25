@@ -13,6 +13,7 @@ import '../../models/sports_achievement_entry.dart';
 import '../../models/topper_entry.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../routes/app_routes.dart';
 
@@ -71,7 +72,14 @@ class _GradeContentManagementScreenState extends State<GradeContentManagementScr
       return null;
     }
 
-    final bytes = base64Decode(base64Image);
+    final bytes = SafeImageHelper.safeBase64Decode(base64Image);
+    if (bytes == null || bytes.isEmpty) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid image data for cropping.')),
+      );
+      return null;
+    }
     final tempDir = Directory.systemTemp;
     final tempFile = File('${tempDir.path}${Platform.pathSeparator}grade_crop_${DateTime.now().millisecondsSinceEpoch}.png');
     await tempFile.writeAsBytes(bytes);

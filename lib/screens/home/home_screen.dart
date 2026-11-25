@@ -13,6 +13,7 @@ import '../../services/dummy_data_service.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/buttons/secondary_button.dart';
 import '../../widgets/cards/important_news_marquee.dart';
@@ -48,36 +49,13 @@ class HomeScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             height: 220,
-            child: () {
-              final posterSource = context
+            child: SafeImageHelper.buildImage(
+              source: context
                   .watch<SchoolConfigService>()
-                  .posterDisplaySource;
-              if (posterSource != null && posterSource.isNotEmpty) {
-                final uri = Uri.tryParse(posterSource);
-                if (uri != null &&
-                    uri.hasScheme &&
-                    (uri.scheme == 'http' || uri.scheme == 'https')) {
-                  return Image.network(
-                    posterSource,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      debugPrint('School poster loading error: $error');
-                      return _posterUnavailable();
-                    },
-                  );
-                }
-
-                return Image.memory(
-                  base64Decode(posterSource),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _posterUnavailable();
-                  },
-                );
-              }
-
-              return _posterUnavailable();
-            }(),
+                  .posterDisplaySource,
+              fit: BoxFit.cover,
+              fallback: _posterUnavailable(),
+            ),
           ),
           const SizedBox(height: 16),
           Padding(

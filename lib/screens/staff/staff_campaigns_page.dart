@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/student_campaign.dart';
 import '../../routes/app_routes.dart';
 import '../../services/student_campaign_service.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/dashboard_bottom_nav.dart';
 import '../../widgets/quick_access_app_bar.dart';
 
@@ -274,11 +273,17 @@ class _StaffCampaignsPageState extends State<StaffCampaignsPage> {
   }
 
   Widget _image(String source, {required double width, required double height}) {
-    if (source.isEmpty) return SizedBox(width: width, height: height, child: const Icon(Icons.image_outlined));
-    final ImageProvider<Object> provider = source.startsWith('data:image')
-      ? MemoryImage(base64Decode(source.split(',').last))
-      : NetworkImage(source);
-    return Image(image: provider, width: width, height: height, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined));
+    return SafeImageHelper.buildImage(
+      source: source,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      fallback: SizedBox(
+        width: width,
+        height: height,
+        child: const Icon(Icons.image_outlined),
+      ),
+    );
   }
 
   String _date(DateTime? value) => value == null ? 'Not set' : '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
@@ -388,25 +393,16 @@ class _StudentCampaignDetailPage extends StatelessWidget {
   }
 
   Widget _largeImage(String source) {
-    if (source.isEmpty) {
-      return Container(
+    return SafeImageHelper.buildImage(
+      source: source,
+      width: double.infinity,
+      height: 220,
+      fit: BoxFit.contain,
+      fallback: Container(
         height: 190,
         color: const Color(0xffeeeeee),
         alignment: Alignment.center,
         child: const Icon(Icons.image_outlined, size: 48, color: Color(0xff999999)),
-      );
-    }
-    final ImageProvider<Object> provider = source.startsWith('data:image')
-        ? MemoryImage(base64Decode(source.split(',').last))
-        : NetworkImage(source);
-    return Image(
-      image: provider,
-      width: double.infinity,
-      height: 220,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => const SizedBox(
-        height: 190,
-        child: Icon(Icons.image_not_supported_outlined, size: 48),
       ),
     );
   }

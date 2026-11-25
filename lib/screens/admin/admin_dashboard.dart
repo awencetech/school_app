@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,6 +14,7 @@ import '../../services/app_state.dart';
 import '../../services/user_menu_state.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
@@ -164,73 +162,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               child: SizedBox(
                                 width: double.infinity,
                                 height: 220,
-                                child: () {
-                                  final posterSource =
-                                      config.posterDisplaySource;
-                                  if (posterSource != null &&
-                                      posterSource.isNotEmpty) {
-                                    final uri = Uri.tryParse(posterSource);
-                                    if (uri != null &&
-                                        uri.hasScheme &&
-                                        (uri.scheme == 'http' ||
-                                            uri.scheme == 'https')) {
-                                      return CachedNetworkImage(
-                                        imageUrl: posterSource,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        placeholder: (context, url) =>
-                                            Container(
-                                              color: const Color(0xFF1AA596),
-                                            ),
-                                        errorWidget: (context, url, error) {
-                                          debugPrint(
-                                            'School poster loading error: $error',
-                                          );
-                                          debugPrint(
-                                            'Poster URL: $posterSource',
-                                          );
-                                          return Container(
-                                            color: const Color(0xFF1AA596),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              'School Poster\\n(W-1920 x H-1080)',
-                                              textAlign: TextAlign.center,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.primaryText,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }
-
-                                    return Image.memory(
-                                      base64Decode(posterSource),
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: const Color(0xFF1AA596),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            'School Poster\\n(W-1920 x H-1080)',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.primaryText,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  }
-
-                                  return Container(
+                                child: SafeImageHelper.buildImage(
+                                  source: config.posterDisplaySource,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fallback: Container(
                                     width: double.infinity,
                                     height: double.infinity,
                                     color: const Color(0xFF1AA596),
@@ -244,8 +181,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         color: AppColors.primaryText,
                                       ),
                                     ),
-                                  );
-                                }(),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 10),

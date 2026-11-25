@@ -1,10 +1,8 @@
-import 'dart:convert';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 
 class SplashPreview extends StatelessWidget {
   const SplashPreview({
@@ -51,28 +49,16 @@ class SplashPreview extends StatelessWidget {
                       offset: Offset(imageOffsetX * 40, imageOffsetY * 40),
                       child: Transform.scale(
                         scale: imageScale,
-                        child: imageBase64!.trim().startsWith('http')
-                            ? CachedNetworkImage(
-                                imageUrl: imageBase64!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                                placeholder: (context, url) => const Center(child: Icon(Icons.person)),
-                                errorWidget: (context, url, error) => const Center(
-                                  child: Icon(Icons.person),
-                                ),
-                              )
-                            : Image.memory(
-                                base64Decode(imageBase64!),
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                                errorBuilder: (context, error, stackTrace) => const Center(
-                                  child: Icon(Icons.person),
-                                ),
-                              ),
+                        child: SafeImageHelper.buildImage(
+                          source: imageBase64,
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          fallback: const Center(
+                            child: Icon(Icons.person),
+                          ),
+                        ),
                       ),
                     ),
             ),

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +17,7 @@ import '../../services/staff_access_service.dart';
 import '../../services/social_url_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/cards/important_news_marquee.dart';
 import '../../widgets/staff_footer.dart';
 import '../../widgets/dashboard_extra_quick_access.dart';
@@ -318,36 +318,16 @@ class _StaffDashboardState extends State<StaffDashboard> {
                       child: SizedBox(
                         width: double.infinity,
                         height: 220,
-                        child: () {
-                          final posterSource = config.posterDisplaySource!;
-                          final uri = Uri.tryParse(posterSource);
-                          if (uri != null &&
-                              uri.hasScheme &&
-                              (uri.scheme == 'http' || uri.scheme == 'https')) {
-                            return CachedNetworkImage(
-                              imageUrl: posterSource,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) =>
-                                  Container(color: AppColors.divider),
-                              errorWidget: (context, url, error) {
-                                debugPrint(
-                                  'School poster loading error: $error',
-                                );
-                                debugPrint('Poster URL: $posterSource');
-                                return Container(
-                                  color: AppColors.divider,
-                                  child: const Center(
-                                    child: Text('School Poster'),
-                                  ),
-                                );
-                              },
-                            );
-                          }
-                          return Image.memory(
-                            base64Decode(posterSource),
-                            fit: BoxFit.cover,
-                          );
-                        }(),
+                        child: SafeImageHelper.buildImage(
+                          source: config.posterDisplaySource,
+                          fit: BoxFit.cover,
+                          fallback: Container(
+                            color: AppColors.divider,
+                            child: const Center(
+                              child: Text('School Poster'),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   const SizedBox(height: 4),

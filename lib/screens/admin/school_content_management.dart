@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../models/management_member.dart';
 import '../../services/school_config_service.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/admin_bottom_nav.dart';
 import '../../routes/app_routes.dart';
 
@@ -244,13 +245,12 @@ class _SchoolContentManagementScreenState
                         child: hasPhoto
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.memory(
-                                  base64Decode(memberPhotoBase64!),
+                                child: SafeImageHelper.buildImage(
+                                  source: memberPhotoBase64,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Center(
-                                        child: Text('No Photo Selected'),
-                                      ),
+                                  fallback: const Center(
+                                    child: Text('No Photo Selected'),
+                                  ),
                                 ),
                               )
                             : const Center(child: Text('No Photo Selected')),
@@ -429,12 +429,14 @@ class _SchoolContentManagementScreenState
                 aspectRatio: 1,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: base64 != null
-                      ? Image.memory(base64Decode(base64), fit: BoxFit.contain)
-                      : Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(child: Text('No image selected')),
-                        ),
+                  child: SafeImageHelper.buildImage(
+                    source: base64,
+                    fit: BoxFit.contain,
+                    fallback: Container(
+                      color: Colors.grey.shade200,
+                      child: const Center(child: Text('No image selected')),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -634,12 +636,11 @@ class _SchoolContentManagementScreenState
                               return ListTile(
                                 key: ValueKey(member.hashCode ^ index),
                                 leading: CircleAvatar(
-                                  backgroundImage: member.photoBase64.isNotEmpty
-                                      ? MemoryImage(
-                                          base64Decode(member.photoBase64),
-                                        )
-                                      : null,
-                                  child: member.photoBase64.isEmpty
+                                  backgroundImage: SafeImageHelper.safeImageProvider(
+                                    member.photoBase64,
+                                  ),
+                                  child: SafeImageHelper.safeBase64Decode(member.photoBase64) == null &&
+                                          !SafeImageHelper.isValidHttpUrl(member.photoBase64)
                                       ? const Icon(Icons.person)
                                       : null,
                                 ),

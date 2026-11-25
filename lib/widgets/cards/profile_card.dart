@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 
 /// Staff profile card used in the School screen.
 class ProfileCard extends StatelessWidget {
@@ -39,16 +39,17 @@ class ProfileCard extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: imageUrl == null
-                        ? Container(
-                            color: AppColors.background,
-                            child: const Icon(Icons.person,
-                                color: AppColors.hintText),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: imageUrl!,
-                            fit: BoxFit.cover,
-                          ),
+                    child: SafeImageHelper.buildImage(
+                      source: imageUrl,
+                      fit: BoxFit.cover,
+                      fallback: Container(
+                        color: AppColors.background,
+                        child: const Icon(
+                          Icons.person,
+                          color: AppColors.hintText,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),

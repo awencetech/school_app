@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import '../../routes/app_routes.dart';
 import '../../services/splash_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/founder_splash_image.dart';
 import '../../widgets/admin_bottom_nav.dart';
 
@@ -234,23 +234,13 @@ class _SplashScreenEditorState extends State<SplashScreenEditor> {
                       border: Border.all(color: Colors.grey.shade400),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: imageData != null && imageData.isNotEmpty
-                        ? Center(
-                            child: imageData.startsWith('http')
-                                ? CachedNetworkImage(
-                                    imageUrl: imageData,
-                                    fit: BoxFit.contain,
-                                    placeholder: (context, url) =>
-                                        const SizedBox.shrink(),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.image, size: 36),
-                                  )
-                                : Image.memory(
-                                    base64Decode(imageData),
-                                    fit: BoxFit.contain,
-                                  ),
-                          )
-                        : const Icon(Icons.image, size: 36),
+                    child: Center(
+                      child: SafeImageHelper.buildImage(
+                        source: imageData,
+                        fit: BoxFit.contain,
+                        fallback: const Icon(Icons.image, size: 36),
+                      ),
+                    ),
                   ),
                 ),
                 ElevatedButton.icon(

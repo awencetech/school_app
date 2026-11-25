@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +8,7 @@ import '../../services/app_state.dart';
 import '../../services/school_config_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/safe_image_helper.dart';
 import '../../widgets/appbar/custom_app_bar.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/cards/language_card.dart';
@@ -32,32 +30,11 @@ class LanguageSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildPoster(BuildContext context, String? posterSource) {
-    if (posterSource != null && posterSource.isNotEmpty) {
-      final uri = Uri.tryParse(posterSource);
-      if (uri != null &&
-          uri.hasScheme &&
-          (uri.scheme == 'http' || uri.scheme == 'https')) {
-        return CachedNetworkImage(
-          imageUrl: posterSource,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(color: AppColors.divider),
-          errorWidget: (context, url, error) {
-            debugPrint('School poster loading error: $error');
-            debugPrint('Poster URL: $posterSource');
-            return _languagePosterPlaceholder(context);
-          },
-        );
-      }
-
-      return Image.memory(
-        base64Decode(posterSource),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _languagePosterPlaceholder(context),
-      );
-    }
-
-    return _languagePosterPlaceholder(context);
+    return SafeImageHelper.buildImage(
+      source: posterSource,
+      fit: BoxFit.cover,
+      fallback: _languagePosterPlaceholder(context),
+    );
   }
 
   @override

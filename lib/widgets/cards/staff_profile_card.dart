@@ -1,10 +1,8 @@
-import 'dart:convert';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
+import '../../utils/safe_image_helper.dart';
 
 /// Reusable staff profile card used on the School tab.
 class StaffProfileCard extends StatelessWidget {
@@ -62,29 +60,11 @@ class StaffProfileCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.zero,
-              child: image.isEmpty
-                  ? _emptyProfileImage()
-                  : Builder(builder: (context) {
-                      try {
-                        final decoded = base64Decode(image);
-                        return Image.memory(
-                          decoded,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _emptyProfileImage();
-                          },
-                        );
-                      } catch (_) {
-                        return CachedNetworkImage(
-                          imageUrl: image,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(color: AppColors.divider),
-                          errorWidget: (context, url, error) {
-                            return _emptyProfileImage();
-                          },
-                        );
-                      }
-                    }),
+              child: SafeImageHelper.buildImage(
+                source: image,
+                fit: BoxFit.cover,
+                fallback: _emptyProfileImage(),
+              ),
             ),
           ),
         ],

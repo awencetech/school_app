@@ -806,7 +806,12 @@ class AppRouter {
       AppRoutes.adminSchoolContentManagement =>
         const SchoolContentManagementScreen(),
       AppRoutes.adminSection => (() {
-        final title = settings.arguments as String? ?? 'Section';
+        final arguments = settings.arguments;
+        final title = arguments is String
+            ? arguments
+            : (arguments is Map
+                ? (arguments['title']?.toString() ?? 'Section')
+                : (arguments?.toString() ?? 'Section'));
         return AdminSectionPage(title: title);
       })(),
       AppRoutes.adminSplashScreenEditor => const SplashScreenEditor(),
